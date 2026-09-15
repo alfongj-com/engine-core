@@ -1,0 +1,64 @@
+name: Rust correctness gates
+on:
+  pull_request:
+  push:
+    branches: [main, production-hardening]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      redis:
+        image: redis:7.4.2-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      CARGO_TERM_COLOR: always
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_PROFILE_TEST_DEBUG: "0"
+      TEST_REDIS_URL: redis://127.0.0.1:6379/
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Native build and test dependencies
+        run: sudo apt-get update && sudo apt-get install -y libudev-dev libusb-1.0-0-dev pkg-config libssl-dev clang cmake redis-server
+      - name: Install pinned Rust toolchain
+        run: rustup show
+      - uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684
+        with:
+          path: |
+            ~/.cargo/registry
+            target
+          key: ${{ runner.os }}-rust-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}
+      - name: Formatting
+        run: cargo fmt --all --check
+      - name: Compile every test and binary
+        run: cargo test --locked --workspace --no-run
+      - name: Unit and hermetic integration suites
+        run: cargo test --locked --workspace -- --test-threads=1
+      - name: EOA Redis, RPC and deployment ownership regressions
+        run: cargo test --locked -p engine-executors --lib -- --ignored --test-threads=1
+      - name: HTTP authorization and admission integration
+        run: cargo test --locked -p thirdweb-engine --test api_safety -- --ignored
+      - name: Queue lease and acknowledgement race regressions
+        run: cargo test --locked -p twmq --lib -- --ignored
+      - name: Install pinned local EVM
+        run: |
+          curl -fL --retry 3 https://github.com/foundry-rs/foundry/releases/download/v1.8.1/foundry_v1.8.1_linux_amd64.tar.gz -o /tmp/foundry.tar.gz
+          echo "37b45855232e57624d90113b049ca54f0c92055bb5c1997fcbdc3076c7b89c10  /tmp/foundry.tar.gz" | sha256sum -c -
+          mkdir -p /tmp/engine-foundry
+          tar xzf /tmp/foundry.tar.gz -C /tmp/engine-foundry anvil
+      - name: Actual server crash recovery and duplicate admission
+        run: |
+          cargo build --locked --bin thirdweb-engine
+          ANVIL_BIN=/tmp/engine-foundry/anvil python3 scripts/local_eoa_recovery.py --report /tmp/local-eoa-recovery.json
+      - name: Dependency advisories
+        run: |
+          cargo install cargo-audit --version 0.22.2 --locked
+          cargo audit
