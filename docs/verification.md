@@ -11,6 +11,7 @@ macOS arm64, Apple M4 (10 cores), 16 GiB RAM; Rust 1.98.1; Redis 7.4.2 built fro
 | Gate | Result and evidence |
 | --- | --- |
 | Standard suites | 45/45 pass across non-queue workspace crates; queue tests run separately below. [Log](baselines/workspace-tests-final.log). |
+| Clippy | `cargo clippy --locked --workspace --all-targets` completes successfully; existing size, style and dead-code warnings remain. Two unchecked test-fixture reads were corrected, then 8/8 webhook tests passed again. |
 | Full workspace compilation | `cargo test --locked --workspace --no-run`; private Vault dependencies removed. |
 | Queue regressions | 14/14 pass against real Redis: competing ACKs, lease takeover, cancellation, same-ID reuse, refill, concurrency limits, idle behavior and shutdown. [Log](baselines/queue-fixed-regressions.log). |
 | Existing queue integration tests | 16/16 pass, including 100,000 lanes and pruning races. [Log](baselines/queue-legacy-tests-final.log). |
@@ -31,6 +32,7 @@ Use a disposable Redis instance; the legacy suite also performs aggressive pruni
 
 ```sh
 cargo fmt --all --check
+cargo clippy --locked --workspace --all-targets
 cargo test --locked --workspace --no-run
 cargo test --locked --workspace -- --test-threads=1
 cargo test --locked -p twmq --lib -- --ignored

@@ -592,7 +592,10 @@ mod tests {
         let server = tokio::spawn(async move {
             let (mut socket, _) = listener.accept().await.unwrap();
             let mut request = [0u8; 1024];
-            socket.read(&mut request).await.unwrap();
+            assert!(
+                socket.read(&mut request).await.unwrap() > 0,
+                "client must begin its request before the fixture replies"
+            );
             socket
                 .write_all(
                     format!(

@@ -1,0 +1,44 @@
+    Blocking waiting for file lock on build directory
+   Compiling engine-executors v0.1.0 (/Users/alfongj/Code/engine-core/executors)
+warning: constant `MAX_INFLIGHT_PER_EOA` is never used
+  --> executors/src/eoa/worker/mod.rs:36:7
+   |
+36 | const MAX_INFLIGHT_PER_EOA: u64 = 100; // Default from spec
+   |       ^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: constant `MAX_RECYCLED_THRESHOLD` is never used
+  --> executors/src/eoa/worker/mod.rs:37:7
+   |
+37 | const MAX_RECYCLED_THRESHOLD: u64 = 50; // Circuit breaker from spec
+   |       ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: constant `TARGET_TRANSACTIONS_PER_EOA` is never used
+  --> executors/src/eoa/worker/mod.rs:38:7
+   |
+38 | const TARGET_TRANSACTIONS_PER_EOA: u64 = 10; // Fleet management from spec
+   |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: constant `MIN_TRANSACTIONS_PER_EOA` is never used
+  --> executors/src/eoa/worker/mod.rs:39:7
+   |
+39 | const MIN_TRANSACTIONS_PER_EOA: u64 = 1; // Fleet management from spec
+   |       ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: `engine-executors` (lib test) generated 4 warnings
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 5.46s
+     Running unittests src/lib.rs (target/debug/deps/engine_executors-45de30cd2199f16b)
+
+running 8 tests
+test webhook::tests::multibyte_error_preview_never_slices_inside_a_character ... ok
+test webhook::destination::tests::rejects_nonpublic_and_transition_addresses_including_mixed_dns_answers ... ok
+test webhook::destination::tests::default_denies_and_allowlist_compares_exact_normalized_origins ... ok
+test webhook::destination::tests::rejects_ambiguous_urls_and_invalid_operator_configuration ... ok
+test webhook::tests::dispatch_enforces_policy_before_request_construction ... ok
+test webhook::tests::response_reader_stops_at_limit_without_waiting_for_large_body_to_finish ... ok
+test webhook::destination::tests::production_client_rejects_http_before_connecting ... ok
+test webhook::destination::tests::redirect_response_is_returned_without_contacting_second_destination ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 32 filtered out; finished in 0.04s
+

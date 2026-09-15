@@ -344,7 +344,10 @@ mod tests {
         let server = tokio::spawn(async move {
             let (mut socket, _) = first.accept().await.unwrap();
             let mut buffer = [0u8; 1024];
-            socket.read(&mut buffer).await.unwrap();
+            assert!(
+                socket.read(&mut buffer).await.unwrap() > 0,
+                "client must begin its request before the fixture replies"
+            );
             socket.write_all(format!("HTTP/1.1 302 Found\r\nLocation: http://{second_address}/private\r\nContent-Length: 0\r\nConnection: close\r\n\r\n").as_bytes()).await.unwrap();
         });
         // Only this test relaxes HTTPS to exercise real redirect behavior with
