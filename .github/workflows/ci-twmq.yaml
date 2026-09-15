@@ -54,9 +54,9 @@ jobs:
         run: cargo nextest run -p twmq --profile ci
 
       - name: Test Report
-        uses: dorny/test-reporter@6e6a65b7a0bd2c9197df7d0ae36ac5cee784230c # @v2
-        if: success() || failure() # run this step even if previous step failed
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
         with:
-          name: Integration Tests # Name of the check run which will be created
-          path: target/nextest/ci/junit.xml # Path to test results
-          reporter: java-junit # Format of test results
+          name: twmq-test-results
+          path: target/nextest/ci/junit.xml
+          if-no-files-found: warn

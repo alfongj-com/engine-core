@@ -4,6 +4,9 @@ on:
   push:
     branches: [main, production-hardening]
   workflow_dispatch:
+concurrency:
+  group: rust-correctness-${{ github.event.pull_request.head.ref || github.ref_name }}
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:
