@@ -2,7 +2,7 @@
 
 ## What is ready
 
-The fork is [alfongj-com/engine-core](https://github.com/alfongj-com/engine-core/tree/production-hardening), branch `production-hardening`. The original audit/design was committed before implementation. Upstream `main` is preserved.
+The fork is [alfongj-com/engine-core](https://github.com/alfongj-com/engine-core/tree/production-hardening), branch `production-hardening`. [Draft PR #1](https://github.com/alfongj-com/engine-core/pull/1) is ready for review. The original audit/design was committed before implementation. Upstream `main` is preserved.
 
 - Removed the private Vault SDK. The workspace builds with a pinned Rust toolchain. A local EVM signer reads an environment key; queued jobs contain its public address only and reject identity-changing key rotation.
 - Fixed reproduced queue lease/Redis transaction races, unsafe nonce transitions, duplicate EOA re-admission, ambiguous receipt recovery, deployment lock ownership, legacy fee parsing, exposed admin mutations, secret diagnostics, webhook SSRF, AA replay identity, and default-account UserOperation signing. See the [audits](docs/audit-security.md) and [migration instructions](docs/replay-migration.md).
@@ -20,6 +20,8 @@ The fork is [alfongj-com/engine-core](https://github.com/alfongj-com/engine-core
 | Dependency audit | **26 → 0 known-vulnerability findings** | One unsoundness advisory and four unmaintained-package warnings remain, with reachability notes. |
 
 Details and reproducible evidence: [queue results](docs/baselines/queue-results.md), [local recovery](docs/baselines/local-eoa-recovery.json), [dependency review](docs/baselines/dependency-security.md), [verification](docs/verification.md).
+
+**Hosted verification:** all three Linux workflows passed on source commit `648ef08`: full Rust correctness (including crash recovery and dependency audit), queue tests, and queue coverage. [Results](docs/baselines/ci-results.json).
 
 ## Four things I need from you
 

@@ -26,6 +26,10 @@ macOS arm64, Apple M4 (10 cores), 16 GiB RAM; Rust 1.98.1; Redis 7.4.2 built fro
 
 The queue regression suite was first replayed against unchanged upstream: six of seven tests failed, including 32 competing successful acknowledgements/hooks where one was required. Separately, deliberately restoring defective EOA branches made eleven of thirteen regressions fail. [Upstream queue evidence](baselines/queue-upstream-regressions.log), [EOA mutation evidence](baselines/eoa-mutation-regressions.log).
 
+## Hosted verification
+
+Source commit `648ef088cb95168e12d5e7643ae825c8791ed7b5` passed all three Linux workflows: [Rust correctness](https://github.com/alfongj-com/engine-core/actions/runs/34943655662), [queue tests](https://github.com/alfongj-com/engine-core/actions/runs/34943655977), and [queue coverage](https://github.com/alfongj-com/engine-core/actions/runs/34943655828). The full workflow includes the actual server crash/restart scenario and a fresh dependency audit. [Recorded run metadata](baselines/ci-results.json) retains the commit, job/step outcomes and timestamps. The following documentation-only commit records these results without changing tested code.
+
 ## Reproduce the final gates
 
 Use a disposable Redis instance; the legacy suite also performs aggressive pruning. Install Rust via rustup and make Redis 7.4.2 available. Set `TEST_REDIS_URL`, `REDIS_SERVER_BIN` and `ANVIL_BIN` to your isolated tools/services.
@@ -50,5 +54,5 @@ The local run partitioned standard tests into `--workspace --exclude twmq` and t
 - Queue results measure committed Redis state with persistence disabled. They do not establish Redis restart/failover durability, exactly-once external delivery, or blockchain TPS. Final dependency upgrades are separate from the queue's identical-lockfile comparisons.
 - Local EOA recovery proves one process-crash window with a non-mining mempool. Redis power loss, crash before every state transition, chain reorgs, external nonce consumption, and multi-provider disagreement still need fault tests.
 - Local signature recovery alone cannot prove deployed wallet/EntryPoint compatibility. ERC-4337 and EIP-7702 require qualification against pinned account implementations, EntryPoint, bundler and chain.
-- No live KMS/IAW, public-chain load test, 24-hour soak, production webhook delivery, Docker build or hosted CI pass is claimed.
+- No live KMS/IAW, public-chain load test, 24-hour soak, production webhook delivery or Docker build is claimed.
 - Existing compiler warnings remain in legacy queue fixtures and unused executor tuning constants. They are not hidden by the gates.
