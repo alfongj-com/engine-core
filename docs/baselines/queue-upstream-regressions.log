@@ -1,0 +1,68 @@
+   Compiling twmq v0.1.0 (/tmp/engine-core-queue-regression-baseline/twmq)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.71s
+     Running unittests src/lib.rs (target/debug/deps/twmq-244407ab82f31d0a)
+
+running 7 tests
+test lease_tests::cancelled_expired_job_is_not_reborrowed_in_the_same_batch ... FAILED
+test lease_tests::cancellation_after_nack_removes_delayed_work ... FAILED
+test multilane::lease_tests::cancelled_expired_lane_job_is_not_reborrowed ... FAILED
+test multilane::lease_tests::same_id_reuse_creates_a_new_lease_generation ... FAILED
+test lease_tests::old_completion_cannot_ack_a_reborrowed_job_or_commit_hooks ... ok
+test lease_tests::concurrent_acknowledgements_commit_one_outcome_and_one_hook ... FAILED
+test multilane::lease_tests::concurrent_lane_acknowledgements_commit_once ... FAILED
+
+failures:
+
+---- lease_tests::cancelled_expired_job_is_not_reborrowed_in_the_same_batch stdout ----
+
+thread 'lease_tests::cancelled_expired_job_is_not_reborrowed_in_the_same_batch' (10535577) panicked at twmq/src/lease_tests.rs:87:5:
+assertion failed: queue.pop_batch_jobs(1).await.unwrap().is_empty()
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- lease_tests::cancellation_after_nack_removes_delayed_work stdout ----
+
+thread 'lease_tests::cancellation_after_nack_removes_delayed_work' (10535576) panicked at twmq/src/lease_tests.rs:180:5:
+assertion `left == right` failed
+  left: 1
+ right: 0
+
+---- multilane::lease_tests::cancelled_expired_lane_job_is_not_reborrowed stdout ----
+
+thread 'multilane::lease_tests::cancelled_expired_lane_job_is_not_reborrowed' (10535580) panicked at twmq/src/multilane_lease_tests.rs:45:5:
+assertion `left == right` failed
+  left: 1
+ right: 0
+
+---- multilane::lease_tests::same_id_reuse_creates_a_new_lease_generation stdout ----
+
+thread 'multilane::lease_tests::same_id_reuse_creates_a_new_lease_generation' (10535582) panicked at twmq/src/multilane_lease_tests.rs:69:5:
+assertion `left != right` failed
+  left: "1789456208_reused_1"
+ right: "1789456208_reused_1"
+
+---- lease_tests::concurrent_acknowledgements_commit_one_outcome_and_one_hook stdout ----
+
+thread 'lease_tests::concurrent_acknowledgements_commit_one_outcome_and_one_hook' (10535578) panicked at twmq/src/lease_tests.rs:147:5:
+assertion `left == right` failed
+  left: 32
+ right: 1
+
+---- multilane::lease_tests::concurrent_lane_acknowledgements_commit_once stdout ----
+
+thread 'multilane::lease_tests::concurrent_lane_acknowledgements_commit_once' (10535581) panicked at twmq/src/multilane_lease_tests.rs:112:5:
+assertion `left == right` failed
+  left: 32
+ right: 1
+
+
+failures:
+    lease_tests::cancellation_after_nack_removes_delayed_work
+    lease_tests::cancelled_expired_job_is_not_reborrowed_in_the_same_batch
+    lease_tests::concurrent_acknowledgements_commit_one_outcome_and_one_hook
+    multilane::lease_tests::cancelled_expired_lane_job_is_not_reborrowed
+    multilane::lease_tests::concurrent_lane_acknowledgements_commit_once
+    multilane::lease_tests::same_id_reuse_creates_a_new_lease_generation
+
+test result: FAILED. 1 passed; 6 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+error: test failed, to rerun pass `-p twmq --lib`

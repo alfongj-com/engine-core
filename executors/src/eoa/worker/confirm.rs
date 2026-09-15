@@ -1,14 +1,17 @@
-use alloy::{primitives::B256, providers::Provider};
+use alloy::{
+    primitives::B256,
+    providers::{Provider, RootProvider},
+};
 use engine_core::{chain::Chain, error::AlloyRpcErrorToEngineError};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    FlashblocksTransactionCount, TransactionCounts,
+    FlashblocksTransactionCount,
     eoa::{
         EoaExecutorStore,
         store::{
-            CleanupReport, ConfirmedTransaction, ReplacedTransaction,
-            SubmittedTransactionDehydrated, TransactionStoreError,
+            CleanupReport, ConfirmedTransaction, SubmittedTransactionDehydrated,
+            TransactionStoreError,
         },
         worker::{
             EoaExecutorWorker,
@@ -27,6 +30,51 @@ pub struct ConfirmedTransactionWithRichReceipt {
     pub transaction_id: String,
     pub receipt: alloy::rpc::types::TransactionReceipt,
 }
+
+/// Missing or failed receipt reads are unknown outcomes. The store may only
+/// requeue a different intent when a known receipt proves same-nonce replacement.
+async fn fetch_confirmed_transaction_receipts(
+    provider: &RootProvider,
+    submitted_txs: Vec<SubmittedTransactionDehydrated>,
+) -> Vec<ConfirmedTransactionWithRichReceipt> {
+    let receipt_futures = submitted_txs.iter().filter_map(|tx| {
+        let hash = match tx.transaction_hash.parse::<B256>() {
+            Ok(hash) => hash,
+            Err(_) => {
+                tracing::warn!(transaction_hash = tx.transaction_hash, "Invalid stored hash; keeping outcome unresolved");
+                return None;
+            }
+        };
+        Some(async move {
+            match provider.get_transaction_receipt(hash).await {
+                Ok(Some(receipt)) if receipt.transaction_hash == hash => Some(ConfirmedTransactionWithRichReceipt {
+                    nonce: tx.nonce,
+                    transaction_hash: tx.transaction_hash.clone(),
+                    transaction_id: tx.transaction_id.clone(),
+                    receipt,
+                }),
+                Ok(Some(_)) => {
+                    tracing::warn!(transaction_hash = tx.transaction_hash, "RPC returned a receipt for a different hash; keeping outcome unresolved");
+                    None
+                }
+                Ok(None) => None,
+                Err(error) => {
+                    tracing::warn!(transaction_hash = tx.transaction_hash, %error, "Receipt query failed; keeping outcome unresolved");
+                    None
+                }
+            }
+        })
+    });
+    futures::future::join_all(receipt_futures)
+        .await
+        .into_iter()
+        .flatten()
+        .collect()
+}
+
+#[cfg(test)]
+#[path = "receipt_tests.rs"]
+mod receipt_tests;
 
 impl<C: Chain> EoaExecutorWorker<C> {
     // ========== CONFIRM FLOW ==========
@@ -214,8 +262,8 @@ impl<C: Chain> EoaExecutorWorker<C> {
         }
 
         // Fetch receipts and categorize transactions
-        let (confirmed_txs, _replaced_txs) =
-            self.fetch_confirmed_transaction_receipts(waiting_txs).await;
+        let confirmed_txs =
+            fetch_confirmed_transaction_receipts(self.chain.provider(), waiting_txs).await;
 
         // Process confirmed transactions
         let successes: Vec<ConfirmedTransaction> = confirmed_txs
@@ -254,10 +302,7 @@ impl<C: Chain> EoaExecutorWorker<C> {
             .store
             .clean_submitted_transactions(
                 &successes,
-                TransactionCounts {
-                    latest: transaction_counts.latest.saturating_sub(1), // Use latest for replacement detection
-                    preconfirmed: transaction_counts.preconfirmed.saturating_sub(1), // Use preconfirmed for confirmation
-                },
+                transaction_counts,
                 self.webhook_queue.clone(),
             )
             .await?;
@@ -280,61 +325,6 @@ impl<C: Chain> EoaExecutorWorker<C> {
         }
 
         Ok(report)
-    }
-
-    /// Fetch receipts for all submitted transactions and categorize them
-    async fn fetch_confirmed_transaction_receipts(
-        &self,
-        submitted_txs: Vec<SubmittedTransactionDehydrated>,
-    ) -> (
-        Vec<ConfirmedTransactionWithRichReceipt>,
-        Vec<ReplacedTransaction>,
-    ) {
-        // Fetch all receipts in parallel
-        let receipt_futures: Vec<_> = submitted_txs
-            .iter()
-            .filter_map(|tx| match tx.transaction_hash.parse::<B256>() {
-                Ok(hash_bytes) => Some(async move {
-                    let receipt = self
-                        .chain
-                        .provider()
-                        .get_transaction_receipt(hash_bytes)
-                        .await;
-                    (tx, receipt)
-                }),
-                Err(_) => {
-                    tracing::warn!("Invalid hash format: {}, skipping", tx.transaction_hash);
-                    None
-                }
-            })
-            .collect();
-
-        let receipt_results = futures::future::join_all(receipt_futures).await;
-
-        // Categorize transactions
-        let mut confirmed_txs = Vec::new();
-        let mut failed_txs = Vec::new();
-
-        for (tx, receipt_result) in receipt_results {
-            match receipt_result {
-                Ok(Some(receipt)) => {
-                    confirmed_txs.push(ConfirmedTransactionWithRichReceipt {
-                        nonce: tx.nonce,
-                        transaction_hash: tx.transaction_hash.clone(),
-                        transaction_id: tx.transaction_id.clone(),
-                        receipt,
-                    });
-                }
-                Ok(None) | Err(_) => {
-                    failed_txs.push(ReplacedTransaction {
-                        transaction_hash: tx.transaction_hash.clone(),
-                        transaction_id: tx.transaction_id.clone(),
-                    });
-                }
-            }
-        }
-
-        (confirmed_txs, failed_txs)
     }
 
     // ========== GAS BUMP METHODS ==========

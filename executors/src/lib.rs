@@ -1,3 +1,4 @@
+#![recursion_limit = "256"]
 pub mod eip7702_executor;
 pub mod eoa;
 pub mod external_bundler;

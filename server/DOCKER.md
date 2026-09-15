@@ -1,6 +1,6 @@
 # Docker Setup for Thirdweb Engine Server
 
-This document describes how to build and run the Thirdweb Engine server using Docker.
+This document describes the inherited Docker deployment setup. Vault SSH dependencies have been removed, but this hardening pass did not build or run the container. See [the current signer configuration](../README.md) and [release gates](../TO_ALFONSO.md) before using it.
 
 ## Building the Image
 
@@ -31,7 +31,6 @@ APP__THIRDWEB__SECRET=your_secret_key_here
 APP__THIRDWEB__CLIENT_ID=your_client_id_here
 APP__THIRDWEB__URLS__RPC=https://your-rpc-url.com
 APP__THIRDWEB__URLS__BUNDLER=https://your-bundler-url.com
-APP__THIRDWEB__URLS__VAULT=https://your-vault-url.com
 APP__THIRDWEB__URLS__PAYMASTER=https://your-paymaster-url.com
 APP__THIRDWEB__URLS__ABI_SERVICE=https://your-abi-service-url.com
 
@@ -55,7 +54,6 @@ docker run -p 8080:8080 \
   -e APP__THIRDWEB__CLIENT_ID=your_client_id \
   -e APP__THIRDWEB__URLS__RPC=https://your-rpc-url.com \
   -e APP__THIRDWEB__URLS__BUNDLER=https://your-bundler-url.com \
-  -e APP__THIRDWEB__URLS__VAULT=https://your-vault-url.com \
   -e APP__THIRDWEB__URLS__PAYMASTER=https://your-paymaster-url.com \
   -e APP__THIRDWEB__URLS__ABI_SERVICE=https://your-abi-service-url.com \
   thirdweb-engine
@@ -72,7 +70,6 @@ APP__THIRDWEB__SECRET=your_secret_key_here
 APP__THIRDWEB__CLIENT_ID=your_client_id_here
 APP__THIRDWEB__URLS__RPC=https://your-rpc-url.com
 APP__THIRDWEB__URLS__BUNDLER=https://your-bundler-url.com
-APP__THIRDWEB__URLS__VAULT=https://your-vault-url.com
 APP__THIRDWEB__URLS__PAYMASTER=https://your-paymaster-url.com
 APP__THIRDWEB__URLS__ABI_SERVICE=https://your-abi-service-url.com
 APP__QUEUE__EXECUTION_NAMESPACE=production
@@ -132,7 +129,6 @@ services:
       - APP__THIRDWEB__CLIENT_ID=${APP__THIRDWEB__CLIENT_ID}
       - APP__THIRDWEB__URLS__RPC=${APP__THIRDWEB__URLS__RPC}
       - APP__THIRDWEB__URLS__BUNDLER=${APP__THIRDWEB__URLS__BUNDLER}
-      - APP__THIRDWEB__URLS__VAULT=${APP__THIRDWEB__URLS__VAULT}
       - APP__THIRDWEB__URLS__PAYMASTER=${APP__THIRDWEB__URLS__PAYMASTER}
       - APP__THIRDWEB__URLS__ABI_SERVICE=${APP__THIRDWEB__URLS__ABI_SERVICE}
     depends_on:
@@ -169,7 +165,7 @@ The Dockerfile uses `cargo-chef` for dependency caching, which significantly spe
 - The container runs as a non-root user (`appuser`) for security
 - Only the necessary runtime dependencies are included in the final image
 - Sensitive configuration is provided via environment variables, not baked into the image
-- The image is based on `debian:bookworm-slim` for a minimal attack surface
+- The image is based on `debian:trixie-slim` for a minimal attack surface
 
 ## Troubleshooting
 

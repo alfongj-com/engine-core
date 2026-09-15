@@ -13,7 +13,7 @@ pub trait DeploymentCache: Send + Sync {
 }
 
 pub enum AcquireLockResult {
-    Acquired,
+    Acquired(LockId),
     AlreadyLocked(String),
 }
 
@@ -29,19 +29,12 @@ pub trait DeploymentLock: Send + Sync {
     ) -> impl Future<Output = Option<(LockId, Duration)>> + Send;
 
     /// Try to acquire a deployment lock
-    /// Returns true if successful, false if already locked
+    /// Returns the unique ownership token on success.
     fn acquire_lock(
         &self,
         chain_id: u64,
         account_address: &Address,
     ) -> impl Future<Output = Result<AcquireLockResult, EngineError>> + Send;
-
-    /// Release a deployment lock
-    fn release_lock(
-        &self,
-        chain_id: u64,
-        account_address: &Address,
-    ) -> impl Future<Output = Result<bool, EngineError>> + Send;
 
     /// Release a deployment lock only if it still holds the given `lock_id`.
     /// Atomic compare-and-delete; returns true if a matching lock was removed.

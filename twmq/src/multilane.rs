@@ -27,6 +27,9 @@ where
     H: DurableExecution,
 {
     pub redis: ConnectionManager,
+    #[cfg(test)]
+    pub(crate) poll_count: std::sync::atomic::AtomicUsize,
+    transaction_connections: crate::transaction::TransactionConnections,
     handler: Arc<H>,
     options: QueueOptions,
     /// Unique identifier for this multilane queue instance
@@ -55,6 +58,9 @@ impl<H: DurableExecution> MultilaneQueue<H> {
 
         let queue = Self {
             redis,
+            #[cfg(test)]
+            poll_count: std::sync::atomic::AtomicUsize::new(0),
+            transaction_connections: crate::transaction::TransactionConnections::new(client),
             queue_id: queue_id.to_string(),
             options: options.unwrap_or_default(),
             handler: Arc::new(handler),
@@ -443,6 +449,7 @@ impl<H: DurableExecution> MultilaneQueue<H> {
     pub fn work(self: &Arc<Self>) -> WorkerHandle<MultilaneQueue<H>> {
         let (shutdown_tx, mut shutdown_rx) = tokio::sync::oneshot::channel::<()>();
         let semaphore = Arc::new(Semaphore::new(self.options.local_concurrency));
+        let completed = Arc::new(tokio::sync::Notify::new());
         let handler = self.handler.clone();
         let outer_queue_clone = self.clone();
 
@@ -463,7 +470,14 @@ impl<H: DurableExecution> MultilaneQueue<H> {
                         break;
                     }
 
-                    _ = interval.tick() => {
+                    // Completed permits refill backlog immediately; the timer still
+                    // discovers external work and performs lease/delay housekeeping.
+                    _ = async {
+                        tokio::select! {
+                            _ = interval.tick() => {},
+                            _ = completed.notified() => {},
+                        }
+                    } => {
                         let queue_clone = outer_queue_clone.clone();
                         let available_permits = semaphore.available_permits();
 
@@ -483,6 +497,7 @@ impl<H: DurableExecution> MultilaneQueue<H> {
                                     let queue_clone = queue_clone.clone();
                                     let job_id = job.id().to_string();
                                     let handler_clone = handler_clone.clone();
+                                    let completed = completed.clone();
 
                                     tokio::spawn(async move {
                                         let result = handler_clone.process(&job).await;
@@ -496,6 +511,7 @@ impl<H: DurableExecution> MultilaneQueue<H> {
                                         }
 
                                         drop(permit);
+                                        completed.notify_one();
                                     }.instrument(tracing::info_span!("twmq_multilane_worker", job_id, lane_id)));
                                 }
                             }
@@ -544,12 +560,16 @@ impl<H: DurableExecution> MultilaneQueue<H> {
         self: &Arc<Self>,
         batch_size: usize,
     ) -> RedisResult<Vec<(String, BorrowedJob<H::JobData>)>> {
+        #[cfg(test)]
+        self.poll_count
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         let script = redis::Script::new(
             r#"
             local queue_id = ARGV[1]
             local now = tonumber(ARGV[2])
             local batch_size = tonumber(ARGV[3])
             local lease_seconds = tonumber(ARGV[4])
+            local pop_id = ARGV[5]
 
             local lanes_zset_name = KEYS[1]
             local job_data_hash_name = KEYS[2]
@@ -636,7 +656,7 @@ impl<H: DurableExecution> MultilaneQueue<H> {
                 local created_at = redis.call('HGET', job_meta_hash, 'created_at') or now
                 local attempts = redis.call('HINCRBY', job_meta_hash, 'attempts', 1)
 
-                local lease_token = now .. '_' .. job_id .. '_' .. attempts
+                local lease_token = now .. '_' .. job_id .. '_' .. attempts .. '_' .. pop_id
                 local lease_key = 'twmq_multilane:' .. queue_id .. ':job:' .. job_id .. ':lease:' .. lease_token
                 
                 redis.call('SET', lease_key, '1')
@@ -656,6 +676,7 @@ impl<H: DurableExecution> MultilaneQueue<H> {
                 
                 if lane_id then
                     local lane_active_hash = 'twmq_multilane:' .. queue_id .. ':lane:' .. lane_id .. ':active'
+                    cleanup_lane_leases(lane_id)
                     
                     if redis.call('HEXISTS', lane_active_hash, job_id) == 1 then
                         -- Still processing, keep in cancellation set
@@ -666,6 +687,9 @@ impl<H: DurableExecution> MultilaneQueue<H> {
                             -- Job succeeded, add it back to success list
                             redis.call('LPUSH', success_list_name, job_id)
                         else
+                            redis.call('LREM', 'twmq_multilane:' .. queue_id .. ':lane:' .. lane_id .. ':pending', 0, job_id)
+                            redis.call('ZREM', 'twmq_multilane:' .. queue_id .. ':lane:' .. lane_id .. ':delayed', job_id)
+                            redis.call('LREM', failed_list_name, 0, job_id)
                             redis.call('LPUSH', failed_list_name, job_id)
                             redis.call('HSET', job_meta_hash, 'finished_at', now)
                             table.insert(cancelled_jobs, {lane_id, job_id})
@@ -764,6 +788,7 @@ impl<H: DurableExecution> MultilaneQueue<H> {
             .arg(now)
             .arg(batch_size)
             .arg(self.options.lease_duration.as_secs())
+            .arg(nanoid::nanoid!())
             .invoke_async(&mut self.redis.clone())
             .await?;
 
@@ -1262,57 +1287,19 @@ impl<H: DurableExecution> MultilaneQueue<H> {
             }
         }
 
-        // Execute with lease protection (same pattern as single-lane queue)
         let lease_key = self.lease_key_name(&job.job.id, &job.lease_token);
-
-        loop {
-            let mut conn = self.redis.clone();
-
-            redis::cmd("WATCH")
-                .arg(&lease_key)
-                .query_async::<()>(&mut conn)
-                .await?;
-
-            let lease_exists: bool = conn.exists(&lease_key).await?;
-            if !lease_exists {
-                redis::cmd("UNWATCH").query_async::<()>(&mut conn).await?;
-                tracing::warn!(
-                    job_id = job.job.id,
-                    "Lease no longer exists, job was cancelled or timed out"
-                );
-                return Ok(());
-            }
-
-            let mut atomic_pipeline = hook_pipeline.clone();
-            atomic_pipeline.atomic();
-
-            match atomic_pipeline
-                .query_async::<Vec<redis::Value>>(&mut conn)
-                .await
-            {
-                Ok(_) => {
-                    match &result {
-                        Ok(_) => self.post_success_completion().await?,
-                        Err(JobError::Nack { .. }) => self.post_nack_completion().await?,
-                        Err(JobError::Fail(_)) => self.post_fail_completion().await?,
-                    }
-
-                    tracing::debug!(
-                        job_id = job.job.id,
-                        lane_id = lane_id,
-                        "Job completion successful"
-                    );
-                    return Ok(());
-                }
-                Err(_) => {
-                    tracing::debug!(
-                        job_id = job.job.id,
-                        "WATCH failed during completion, retrying"
-                    );
-                    continue;
-                }
+        if self
+            .transaction_connections
+            .commit_if_leased(&lease_key, &hook_pipeline)
+            .await?
+        {
+            match &result {
+                Ok(_) => self.post_success_completion().await?,
+                Err(JobError::Nack { .. }) => self.post_nack_completion().await?,
+                Err(JobError::Fail(_)) => self.post_fail_completion().await?,
             }
         }
+        Ok(())
     }
 
     #[tracing::instrument(level = "debug", skip_all, fields(job_id = job.id, queue = self.queue_id()))]
@@ -1371,50 +1358,14 @@ impl<H: DurableExecution> MultilaneQueue<H> {
             hook_pipeline.srem(self.dedupe_set_name(), &job.id);
         }
 
-        // Execute with lease protection
-        loop {
-            let mut conn = self.redis.clone();
-
-            redis::cmd("WATCH")
-                .arg(&lease_key)
-                .query_async::<()>(&mut conn)
-                .await?;
-
-            let lease_exists: bool = conn.exists(&lease_key).await?;
-            if !lease_exists {
-                redis::cmd("UNWATCH").query_async::<()>(&mut conn).await?;
-                tracing::warn!(
-                    job_id = job.id,
-                    "Lease no longer exists, job was cancelled or timed out"
-                );
-                return Ok(());
-            }
-
-            let mut atomic_pipeline = hook_pipeline.clone();
-            atomic_pipeline.atomic();
-
-            match atomic_pipeline
-                .query_async::<Vec<redis::Value>>(&mut conn)
-                .await
-            {
-                Ok(_) => {
-                    self.post_fail_completion().await?;
-                    tracing::debug!(
-                        job_id = job.id,
-                        lane_id = lane_id,
-                        "Queue error job completion successful"
-                    );
-                    return Ok(());
-                }
-                Err(_) => {
-                    tracing::debug!(
-                        job_id = job.id,
-                        "WATCH failed during queue error completion, retrying"
-                    );
-                    continue;
-                }
-            }
+        if self
+            .transaction_connections
+            .commit_if_leased(&lease_key, &hook_pipeline)
+            .await?
+        {
+            self.post_fail_completion().await?;
         }
+        Ok(())
     }
 }
 
@@ -1441,3 +1392,7 @@ impl<H: DurableExecution> MultilanePushableJob<H> {
         self.queue.push_to_lane(&self.lane_id, self.options).await
     }
 }
+
+#[cfg(test)]
+#[path = "multilane_lease_tests.rs"]
+mod lease_tests;

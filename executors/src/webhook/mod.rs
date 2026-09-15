@@ -15,11 +15,36 @@ use twmq::{DurableExecution, FailHookData, NackHookData, Queue, SuccessHookData,
 
 use crate::webhook::envelope::{BareWebhookNotificationEnvelope, WebhookNotificationEnvelope};
 
+pub mod destination;
 pub mod envelope;
+
+pub use destination::WebhookDestinationPolicy;
 
 // --- Constants ---
 const SIGNATURE_HEADER_NAME: &str = "x-signature-sha256";
 const TIMESTAMP_HEADER_NAME: &str = "x-request-timestamp";
+const MAX_RESPONSE_BYTES: usize = 64 * 1024;
+
+async fn read_bounded_response(mut response: reqwest::Response) -> Result<String, reqwest::Error> {
+    let mut bytes = Vec::new();
+    while let Some(chunk) = response.chunk().await? {
+        let remaining = MAX_RESPONSE_BYTES - bytes.len();
+        bytes.extend_from_slice(&chunk[..chunk.len().min(remaining)]);
+        if bytes.len() == MAX_RESPONSE_BYTES {
+            break;
+        }
+    }
+    Ok(String::from_utf8_lossy(&bytes).into_owned())
+}
+
+fn error_body_preview(text: String) -> String {
+    let mut characters = text.chars();
+    let mut preview: String = characters.by_ref().take(512).collect();
+    if characters.next().is_some() {
+        preview.push_str("...");
+    }
+    preview
+}
 
 // --- Configuration ---
 #[derive(Clone, Debug)]
@@ -43,8 +68,25 @@ impl Default for WebhookRetryConfig {
 
 // --- Execution Context ---
 pub struct WebhookJobHandler {
-    pub http_client: reqwest::Client,
+    http_client: reqwest::Client,
+    destination_policy: WebhookDestinationPolicy,
     pub retry_config: Arc<WebhookRetryConfig>,
+}
+
+impl WebhookJobHandler {
+    pub fn new(
+        destination_policy: WebhookDestinationPolicy,
+        retry_config: Arc<WebhookRetryConfig>,
+    ) -> Result<Self, WebhookError> {
+        let http_client = destination::client_builder().build().map_err(|_| {
+            WebhookError::RequestConstruction("failed to initialize webhook HTTP client".into())
+        })?;
+        Ok(Self {
+            http_client,
+            destination_policy,
+            retry_config,
+        })
+    }
 }
 
 // --- Webhook Job Data Structures ---
@@ -71,6 +113,9 @@ pub struct WebhookJobOutput {
     content = "message"
 )]
 pub enum WebhookError {
+    #[error("Webhook destination rejected: {0}")]
+    DestinationRejected(String),
+
     #[error("Network error during webhook dispatch: {0}")]
     Network(String),
 
@@ -126,6 +171,10 @@ impl DurableExecution for WebhookJobHandler {
         job: &BorrowedJob<Self::JobData>,
     ) -> JobResult<Self::Output, Self::ErrorData> {
         let payload = &job.job.data;
+        let destination = self
+            .destination_policy
+            .validate(&payload.url)
+            .map_err(JobError::Fail)?;
         let mut request_headers = HeaderMap::new();
 
         // Set default Content-Type if body is present, can be overridden by payload.headers
@@ -144,6 +193,21 @@ impl DurableExecution for WebhookJobHandler {
                         "Invalid header name '{key}': {e}"
                     )))
                 })?;
+
+                if matches!(
+                    header_name.as_str(),
+                    "host"
+                        | "content-length"
+                        | "transfer-encoding"
+                        | "connection"
+                        | "upgrade"
+                        | "proxy-authorization"
+                        | "proxy-connection"
+                ) {
+                    return Err(JobError::Fail(WebhookError::RequestConstruction(format!(
+                        "webhook header '{header_name}' is not allowed"
+                    ))));
+                }
 
                 let header_value = HeaderValue::from_str(value).map_err(|e| {
                     JobError::Fail(WebhookError::RequestConstruction(format!(
@@ -225,15 +289,23 @@ impl DurableExecution for WebhookJobHandler {
             .map_err(|_| WebhookError::UnsupportedHttpMethod(http_method_str.clone()))
             .map_err_fail()?;
 
+        if !matches!(
+            method,
+            reqwest::Method::POST | reqwest::Method::PUT | reqwest::Method::PATCH
+        ) {
+            return Err(JobError::Fail(WebhookError::UnsupportedHttpMethod(
+                http_method_str,
+            )));
+        }
+
         let request_builder = self
             .http_client
-            .request(method, &payload.url)
+            .request(method, destination)
             .headers(request_headers)
             .body(payload.body.clone());
 
         tracing::debug!(
             job_id = job.job.id,
-            url = payload.url,
             method = http_method_str,
             attempt = job.job.attempts,
             "Sending webhook request"
@@ -242,11 +314,12 @@ impl DurableExecution for WebhookJobHandler {
         match request_builder.send().await {
             Ok(response) => {
                 let status = response.status();
-                let response_body_text_result = response.text().await;
+                let response_body_text_result = read_bounded_response(response).await;
 
                 let response_body_text = match response_body_text_result {
                     Ok(text) => Some(text),
                     Err(e) => {
+                        let e = e.without_url();
                         if status.is_success() {
                             let err = WebhookError::ResponseReadError(format!(
                                 "Failed to read response body: {e}"
@@ -271,13 +344,7 @@ impl DurableExecution for WebhookJobHandler {
                     })
                 } else {
                     let error_body_preview = response_body_text
-                        .map(|s| {
-                            if s.len() > 512 {
-                                format!("{}...", &s[..512])
-                            } else {
-                                s
-                            }
-                        })
+                        .map(error_body_preview)
                         .unwrap_or_else(|| "No body or failed to read body".to_string());
 
                     let webhook_error = WebhookError::Http {
@@ -329,6 +396,8 @@ impl DurableExecution for WebhookJobHandler {
                 }
             }
             Err(e) => {
+                // Request URLs may carry query-string credentials.
+                let e = e.without_url();
                 let webhook_error = if e.is_timeout() {
                     WebhookError::Timeout(e.to_string())
                 } else if e.is_connect() || e.is_request() {
@@ -390,7 +459,6 @@ impl DurableExecution for WebhookJobHandler {
     ) {
         tracing::info!(
             job_id = job.job.id,
-            url = job.job.data.url,
             status = d.result.status_code,
             "Webhook successfully processed (on_success hook)."
         );
@@ -405,7 +473,6 @@ impl DurableExecution for WebhookJobHandler {
     ) {
         tracing::warn!(
             job_id = job.job.id,
-            url = job.job.data.url,
             attempt = job.job.attempts,
             error = ?d.error,
             delay_ms = d.delay.map_or(0, |dur| dur.as_millis()),
@@ -422,11 +489,142 @@ impl DurableExecution for WebhookJobHandler {
     ) {
         tracing::error!(
             job_id = job.job.id,
-            url = job.job.data.url,
             attempt = job.job.attempts,
             error = ?d.error,
             "Webhook FAILED permanently (on_fail hook)."
         );
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+
+    fn job(url: &str) -> BorrowedJob<WebhookJobPayload> {
+        BorrowedJob::new(
+            twmq::job::Job {
+                id: "webhook-policy-test".into(),
+                data: WebhookJobPayload {
+                    url: url.into(),
+                    body: "{}".into(),
+                    headers: None,
+                    hmac_secret: None,
+                    http_method: None,
+                },
+                attempts: 1,
+                created_at: 0,
+                processed_at: None,
+                finished_at: None,
+            },
+            "lease".into(),
+        )
+    }
+
+    #[tokio::test]
+    async fn dispatch_enforces_policy_before_request_construction() {
+        let handler = WebhookJobHandler::new(
+            WebhookDestinationPolicy::default(),
+            Arc::new(WebhookRetryConfig::default()),
+        )
+        .unwrap();
+        assert!(matches!(
+            handler
+                .process(&job("https://hooks.example.com/event"))
+                .await,
+            Err(JobError::Fail(WebhookError::DestinationRejected(_)))
+        ));
+        let handler = WebhookJobHandler::new(
+            WebhookDestinationPolicy::from_csv("https://hooks.example.com").unwrap(),
+            Arc::new(WebhookRetryConfig::default()),
+        )
+        .unwrap();
+        for header in [
+            "Host",
+            "Content-Length",
+            "Transfer-Encoding",
+            "Connection",
+            "Upgrade",
+            "Proxy-Authorization",
+        ] {
+            let mut request = job("https://hooks.example.com/event");
+            request.job.data.headers = Some(
+                [(header.to_string(), "evil.test".to_string())]
+                    .into_iter()
+                    .collect(),
+            );
+            assert!(
+                matches!(
+                    handler.process(&request).await,
+                    Err(JobError::Fail(WebhookError::RequestConstruction(_)))
+                ),
+                "accepted {header}"
+            );
+        }
+        for method in ["CONNECT", "TRACE", "DELETE", "GET"] {
+            let mut request = job("https://hooks.example.com/event");
+            request.job.data.http_method = Some(method.into());
+            assert!(
+                matches!(
+                    handler.process(&request).await,
+                    Err(JobError::Fail(WebhookError::UnsupportedHttpMethod(_)))
+                ),
+                "accepted {method}"
+            );
+        }
+    }
+
+    #[test]
+    fn multibyte_error_preview_never_slices_inside_a_character() {
+        let input = format!("{}é🙂end", "a".repeat(511));
+        assert_eq!(
+            error_body_preview(input),
+            format!("{}é...", "a".repeat(511))
+        );
+        assert_eq!(error_body_preview("🙂".repeat(4)), "🙂".repeat(4));
+    }
+
+    #[tokio::test]
+    async fn response_reader_stops_at_limit_without_waiting_for_large_body_to_finish() {
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let (release, wait) = tokio::sync::oneshot::channel::<()>();
+        let server = tokio::spawn(async move {
+            let (mut socket, _) = listener.accept().await.unwrap();
+            let mut request = [0u8; 1024];
+            socket.read(&mut request).await.unwrap();
+            socket
+                .write_all(
+                    format!(
+                        "HTTP/1.1 500 Error\r\nContent-Length: {}\r\n\r\n",
+                        MAX_RESPONSE_BYTES * 100
+                    )
+                    .as_bytes(),
+                )
+                .await
+                .unwrap();
+            socket
+                .write_all(&vec![b'a'; MAX_RESPONSE_BYTES + 1024])
+                .await
+                .unwrap();
+            let _ = wait.await; // Deliberately withhold the rest of the response.
+        });
+        let response = destination::client_builder()
+            .https_only(false)
+            .build()
+            .unwrap()
+            .get(format!("http://{address}/"))
+            .send()
+            .await
+            .unwrap();
+        let body = tokio::time::timeout(Duration::from_secs(1), read_bounded_response(response))
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(body.len(), MAX_RESPONSE_BYTES);
+        assert!(body.bytes().all(|byte| byte == b'a'));
+        release.send(()).unwrap();
+        server.await.unwrap();
     }
 }
 

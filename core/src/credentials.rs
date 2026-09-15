@@ -1,4 +1,4 @@
-use alloy::primitives::ChainId;
+use alloy::primitives::{Address, ChainId};
 use alloy::signers::local::PrivateKeySigner;
 use alloy_signer_aws::AwsSigner;
 use aws_config::{BehaviorVersion, Region};
@@ -10,7 +10,6 @@ use std::hash::{Hash, Hasher};
 use std::ops::Deref;
 use thirdweb_core::auth::ThirdwebAuth;
 use thirdweb_core::iaw::AuthToken;
-use vault_types::enclave::auth::Auth as VaultAuth;
 
 use crate::error::EngineError;
 
@@ -21,6 +20,28 @@ impl SigningCredential {
     /// Create a random private key credential for testing
     pub fn random_local() -> Self {
         SigningCredential::PrivateKey(PrivateKeySigner::random())
+    }
+
+    /// Queue only the public address. Resolve the secret locally on the worker.
+    pub fn environment() -> Result<Self, EngineError> {
+        let signer = environment_signer()?;
+        Ok(Self::Environment {
+            address: signer.address(),
+        })
+    }
+
+    pub fn local_signer(&self) -> Result<PrivateKeySigner, EngineError> {
+        match self {
+            Self::PrivateKey(signer) => Ok(signer.clone()),
+            Self::Environment { address } => {
+                let signer = environment_signer()?;
+                validate_signer_address(signer.address(), *address)?;
+                Ok(signer)
+            }
+            _ => Err(EngineError::ValidationError {
+                message: "A local EVM signer is required".into(),
+            }),
+        }
     }
 
     /// Inject KMS cache into AWS KMS credentials (useful after deserialization)
@@ -34,9 +55,12 @@ impl SigningCredential {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub enum SigningCredential {
-    Vault(VaultAuth),
+    /// Reference to ENGINE_PRIVATE_KEY, pinned to its public address across queue retries.
+    Environment {
+        address: Address,
+    },
     Iaw {
         auth_token: AuthToken,
         thirdweb_auth: ThirdwebAuth,
@@ -48,7 +72,7 @@ pub enum SigningCredential {
     PrivateKey(PrivateKeySigner),
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct AwsKmsCredential {
     pub access_key_id: String,
     pub secret_access_key: String,
@@ -152,5 +176,50 @@ impl AwsKmsCredential {
         let client = self.get_cached_kms_client().await?;
         let signer = AwsSigner::new(client, self.key_id.clone(), chain_id).await?;
         Ok(signer)
+    }
+}
+
+fn environment_signer() -> Result<PrivateKeySigner, EngineError> {
+    let key = std::env::var("ENGINE_PRIVATE_KEY").map_err(|_| EngineError::ValidationError {
+        message: "ENGINE_PRIVATE_KEY is not configured".into(),
+    })?;
+    key.parse().map_err(|_| EngineError::ValidationError {
+        message: "ENGINE_PRIVATE_KEY must be a valid 32-byte secp256k1 key".into(),
+    })
+}
+
+pub fn validate_signer_address(actual: Address, requested: Address) -> Result<(), EngineError> {
+    if actual != requested {
+        return Err(EngineError::ValidationError {
+            message: "Signing key does not match the requested signer address".into(),
+        });
+    }
+    Ok(())
+}
+
+impl std::fmt::Debug for SigningCredential {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Environment { address } => f
+                .debug_struct("Environment")
+                .field("address", address)
+                .finish(),
+            Self::PrivateKey(signer) => f
+                .debug_struct("PrivateKey")
+                .field("address", &signer.address())
+                .finish(),
+            Self::AwsKms(creds) => f.debug_tuple("AwsKms").field(creds).finish(),
+            Self::Iaw { .. } => f.write_str("Iaw([REDACTED])"),
+        }
+    }
+}
+
+impl std::fmt::Debug for AwsKmsCredential {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("AwsKmsCredential")
+            .field("key_id", &self.key_id)
+            .field("region", &self.region)
+            .field("credentials", &"[REDACTED]")
+            .finish()
     }
 }

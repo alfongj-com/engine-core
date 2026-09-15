@@ -1,0 +1,41 @@
+{
+  "revision": "b6b7a0bbdc737b3a2b09611305b71b1bf6aba6e8",
+  "all_match": true,
+  "files": [
+    {
+      "path": "twmq/src/error.rs",
+      "matches_upstream": true,
+      "sha256": "6709d52c08a3de142e729300640ea9942f4199f0ea39f513c1abb70adde72170"
+    },
+    {
+      "path": "twmq/src/hooks.rs",
+      "matches_upstream": true,
+      "sha256": "de8a7f3ab7594a16db1fe005f743129372ca9c4a815218fde2b0ec634e22d95c"
+    },
+    {
+      "path": "twmq/src/job.rs",
+      "matches_upstream": true,
+      "sha256": "6e0886fa692afe1c54bd4cf2714093ffad21b31d944a4d2410458f1089901cbb"
+    },
+    {
+      "path": "twmq/src/lib.rs",
+      "matches_upstream": true,
+      "sha256": "66461ae8d62fdd3708cfaceed95c200271df8851997cac117adfc9ea3b115c4b"
+    },
+    {
+      "path": "twmq/src/multilane.rs",
+      "matches_upstream": true,
+      "sha256": "30e6a5f8e2e45e3d3bb22f9674e479f3eb847db5a7fc9db16be13fd3e326ea89"
+    },
+    {
+      "path": "twmq/src/queue.rs",
+      "matches_upstream": true,
+      "sha256": "34b6952a59820a78c5a4037f97f9cc8bec87055013371aea3f6750601886e0b3"
+    },
+    {
+      "path": "twmq/src/shutdown.rs",
+      "matches_upstream": true,
+      "sha256": "429dfe8d9d2323979e6f19be04789d10c151c10b28e7f7c81c280666f7d7683d"
+    }
+  ]
+}

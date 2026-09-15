@@ -118,6 +118,7 @@ where
     pub authorization_cache: EoaAuthorizationCache,
 
     pub redis: ConnectionManager,
+    pub redis_client: twmq::redis::Client,
     pub namespace: Option<String>,
 
     pub eoa_signer: Arc<EoaSigner>,
@@ -169,7 +170,7 @@ where
             data.chain_id,
             self.completed_transaction_ttl_seconds,
         )
-        .acquire_eoa_lock_aggressively(&worker_id, self.eoa_metrics.clone())
+        .acquire_eoa_lock_aggressively(&worker_id, self.eoa_metrics.clone(), &self.redis_client)
         .await
         .map_err(|e| Into::<EoaExecutorWorkerError>::into(e).handle())?;
 

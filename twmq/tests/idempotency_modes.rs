@@ -11,7 +11,9 @@ use twmq::{
     redis::aio::ConnectionManager,
 };
 
-const REDIS_URL: &str = "redis://127.0.0.1:6379/";
+fn redis_url() -> String {
+    std::env::var("TEST_REDIS_URL").expect("set TEST_REDIS_URL to a disposable Redis instance")
+}
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 struct TestJobData {
@@ -100,7 +102,7 @@ async fn test_permanent_idempotency_mode() {
     };
 
     let queue = Arc::new(
-        Queue::new(REDIS_URL, &queue_name, Some(queue_options), handler)
+        Queue::new(&redis_url(), &queue_name, Some(queue_options), handler)
             .await
             .expect("Failed to create queue"),
     );
@@ -187,7 +189,7 @@ async fn test_active_idempotency_mode() {
     };
 
     let queue = Arc::new(
-        Queue::new(REDIS_URL, &queue_name, Some(queue_options), handler)
+        Queue::new(&redis_url(), &queue_name, Some(queue_options), handler)
             .await
             .expect("Failed to create queue"),
     );

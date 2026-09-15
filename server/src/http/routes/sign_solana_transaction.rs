@@ -53,7 +53,7 @@ pub struct SignSolanaTransactionResponse {
         (status = 200, description = "Successfully signed Solana transaction", body = SuccessResponse<SignSolanaTransactionResponse>, content_type = "application/json"),
     ),
     params(
-        ("x-vault-access-token" = Option<String>, Header, description = "Vault access token"),
+
     )
 )]
 /// Sign Solana Transaction

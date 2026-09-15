@@ -102,7 +102,6 @@ pub struct ThirdwebConfig {
 pub struct ThirdwebUrls {
     pub rpc: String,
     pub bundler: String,
-    pub vault: String,
     pub paymaster: String,
     pub abi_service: String,
     pub iaw_service: String,

@@ -3,3 +3,9 @@
 .DS_Store
 coverage
 .env.test
+# Local credentials and load artifacts
+.env
+.env.*
+!.env.example
+__pycache__/
+*.pyc

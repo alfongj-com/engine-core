@@ -4,6 +4,7 @@ use axum::{
     response::{IntoResponse, Json},
 };
 use engine_aa_core::signer::SmartAccountSignerBuilder;
+use engine_core::signer::MessageFormat;
 use engine_core::{
     chain::ChainService,
     credentials::SigningCredential,
@@ -13,7 +14,6 @@ use engine_core::{
 use futures::future::join_all;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use vault_types::enclave::encrypted::eoa::MessageFormat;
 
 use crate::http::{
     error::ApiEngineError,
@@ -77,7 +77,7 @@ pub struct SignResultData {
         ("x-thirdweb-client-id" = Option<String>, Header, description = "Thirdweb client ID, passed along with the service key"),
         ("x-thirdweb-service-key" = Option<String>, Header, description = "Thirdweb service key, passed when using the client ID"),
         ("x-thirdweb-secret-key" = Option<String>, Header, description = "Thirdweb secret key, passed standalone"),
-        ("x-vault-access-token" = Option<String>, Header, description = "Vault access token"),
+
     )
 )]
 /// Sign Message

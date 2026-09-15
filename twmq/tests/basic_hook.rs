@@ -65,7 +65,9 @@ pub struct MainJobPayload {
 pub static MAIN_JOB_PROCESSED: AtomicBool = AtomicBool::new(false);
 pub static WEBHOOK_JOB_PROCESSED: AtomicBool = AtomicBool::new(false);
 
-const REDIS_URL: &str = "redis://127.0.0.1:6379/";
+fn redis_url() -> String {
+    std::env::var("TEST_REDIS_URL").expect("set TEST_REDIS_URL to a disposable Redis instance")
+}
 
 type WebhookQueue = Queue<WebhookJobHandler>;
 type MainJobQueue = Queue<MainJobHandler>;
@@ -187,7 +189,7 @@ async fn test_cross_queue_job_scheduling() {
     // Create webhook queue
     let webhook_queue = Arc::new(
         WebhookQueue::new(
-            REDIS_URL,
+            &redis_url(),
             &webhook_queue_name,
             Some(queue_options.clone()),
             webhook_handler,
@@ -203,7 +205,7 @@ async fn test_cross_queue_job_scheduling() {
     // Create main job queue
     let main_queue = Arc::new(
         MainJobQueue::new(
-            REDIS_URL,
+            &redis_url(),
             &main_queue_name,
             Some(queue_options),
             main_handler,

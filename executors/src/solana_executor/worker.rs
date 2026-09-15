@@ -13,11 +13,9 @@ use engine_solana_core::{
     transaction::{InstructionDataEncoding, SolanaTransaction},
 };
 use serde::{Deserialize, Serialize};
-use solana_client::{
-    nonblocking::rpc_client::RpcClient,
-    rpc_config::{RpcSendTransactionConfig, RpcTransactionConfig},
-};
 use solana_commitment_config::{CommitmentConfig, CommitmentLevel};
+use solana_rpc_client::nonblocking::rpc_client::RpcClient;
+use solana_rpc_client_api::config::{RpcSendTransactionConfig, RpcTransactionConfig};
 use solana_sdk::pubkey::Pubkey;
 use solana_transaction_status::{EncodedTransactionWithStatusMeta, UiTransactionEncoding};
 use spl_memo_interface::instruction::build_memo;
@@ -398,7 +396,7 @@ impl SolanaExecutorJobHandler {
     /// Helper to convert Solana RPC errors with context
     fn to_engine_solana_error(
         &self,
-        e: &solana_client::client_error::ClientError,
+        e: &solana_rpc_client_api::client_error::Error,
         chain_id: &str,
     ) -> EngineError {
         e.to_engine_solana_error(chain_id)

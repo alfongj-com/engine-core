@@ -5,7 +5,7 @@ use std::{
 };
 
 use serde::{Deserialize, Serialize};
-use twmq::redis::{AsyncCommands, Pipeline, aio::ConnectionManager};
+use twmq::redis::{AsyncCommands, Pipeline, aio::MultiplexedConnection};
 
 use crate::{
     TransactionCounts,
@@ -247,17 +247,18 @@ pub struct CleanupReport {
     /// Any nonces that have multiple confirmations (very rare, indicates re-org)
     pub per_nonce_violations: Vec<(u64, Vec<String>)>, // (nonce, confirmed_hashes)
 
-    /// Any nonces that have no confirmations (transactions we sent got replaced by a different one uknown to us)
+    /// Nonces with no known receipt; they remain unresolved, not proven replaced.
     pub nonces_without_receipts: Vec<(u64, Vec<String>)>, // (nonce, hashes)
 }
 
-/// This operation takes a list of confirmed transactions and the last confirmed nonce
+/// This operation takes receipts and RPC transaction counts (exclusive next nonces).
 ///
-/// It will fetch all submitted transactions with a nonce less than or equal to the last confirmed nonce.
+/// It fetches submitted transactions with nonce strictly below either transaction count.
 /// For each nonce:
 /// - it will go through all the hashes for that nonce
 /// - if the hash is in the confirmed transactions, it will be removed from submitted to success
-/// - if the hash is not in the confirmed transactions, it will be removed from submitted to pending
+/// - if a different intent has a receipt at the same nonce, it may be moved to pending
+/// - if no receipt proves what consumed the nonce, it stays submitted for reconciliation
 ///
 /// It will also deduplicate transactions by ID, so if any of the hashes for that ID are in the confirmed transactions,
 /// this hash will not be moved back to pending.
@@ -279,12 +280,12 @@ impl SafeRedisTransaction for CleanSubmittedTransactions<'_> {
 
     async fn validation(
         &self,
-        conn: &mut ConnectionManager,
+        conn: &mut MultiplexedConnection,
         store: &EoaExecutorStore,
     ) -> Result<Self::ValidationData, TransactionStoreError> {
         // Fetch transactions up to the latest confirmed nonce for replacements
         // This includes both transactions that should be confirmed and those that might be replaced
-        let max_nonce = std::cmp::max(
+        let max_count = std::cmp::max(
             self.transaction_counts.preconfirmed,
             self.transaction_counts.latest,
         );
@@ -292,7 +293,7 @@ impl SafeRedisTransaction for CleanSubmittedTransactions<'_> {
             .zrangebyscore_withscores(
                 self.keys.submitted_transactions_zset_name(),
                 0,
-                max_nonce as isize,
+                format!("({max_count}"),
             )
             .await?;
 
@@ -321,6 +322,14 @@ impl SafeRedisTransaction for CleanSubmittedTransactions<'_> {
             .map(|tx| (tx.transaction_id.as_str(), tx.clone()))
             .collect();
 
+        // Nonce progress alone cannot identify which transaction executed. RPC
+        // receipt lag/outages must not cause an intent to be sent at a new nonce.
+        let nonces_with_receipts: HashSet<u64> = submitted_txs
+            .iter()
+            .filter(|tx| confirmed_hashes.contains(tx.hash()))
+            .map(|tx| tx.nonce())
+            .collect();
+
         // Detect violations and get grouped data
         let (_, _, mut report) = detect_violations(&submitted_txs, &confirmed_hashes);
 
@@ -333,8 +342,8 @@ impl SafeRedisTransaction for CleanSubmittedTransactions<'_> {
             let tx_nonce = tx.nonce();
 
             // Only process transactions that are within range for either confirmation or replacement
-            let should_process = tx_nonce <= self.transaction_counts.preconfirmed
-                || tx_nonce <= self.transaction_counts.latest;
+            let should_process = tx_nonce < self.transaction_counts.preconfirmed
+                || tx_nonce < self.transaction_counts.latest;
 
             if !should_process {
                 continue;
@@ -411,7 +420,9 @@ impl SafeRedisTransaction for CleanSubmittedTransactions<'_> {
                         if let SubmittedTransactionHydrated::Real(tx) = tx {
                             // Only move to pending (replaced) if it's within the latest transaction count range
                             // This prevents false replacements due to flashblocks propagation delays
-                            if tx_nonce <= self.transaction_counts.latest {
+                            if tx_nonce < self.transaction_counts.latest
+                                && nonces_with_receipts.contains(&tx_nonce)
+                            {
                                 // zadd_multiple expects (score, member)
                                 replaced_transactions
                                     .push((tx.queued_at, tx.transaction_id.clone()));
@@ -451,7 +462,7 @@ impl SafeRedisTransaction for CleanSubmittedTransactions<'_> {
                                     tx_nonce = tx_nonce,
                                     latest_confirmed_nonce = self.transaction_counts.latest,
                                     preconfirmed_nonce = self.transaction_counts.preconfirmed,
-                                    "Keeping transaction in submitted state due to potential flashblocks propagation delay"
+                                    "Keeping transaction submitted until a receipt proves its outcome or replacement"
                                 );
                                 // Don't increment any counter - transaction stays in submitted state
                                 // Note: We still need to check if we should clean up this hash below
@@ -474,7 +485,9 @@ impl SafeRedisTransaction for CleanSubmittedTransactions<'_> {
                 // SCENARIO 2: Transaction ID was NOT confirmed - only clean up if within latest confirmed nonce range
                 _ => {
                     if let SubmittedTransactionHydrated::Real(_) = tx {
-                        if tx_nonce <= self.transaction_counts.latest {
+                        if tx_nonce < self.transaction_counts.latest
+                            && nonces_with_receipts.contains(&tx_nonce)
+                        {
                             self.remove_transaction_from_redis_submitted_zset(pipeline, tx);
                         }
                         // If beyond latest confirmed nonce, keep in submitted state (don't clean up)
@@ -574,7 +587,7 @@ fn detect_violations<'a>(
 }
 
 impl SafeRedisTransaction for CleanAndGetRecycledNonces<'_> {
-    type ValidationData = (u64, Vec<u64>, Option<u64>);
+    type ValidationData = (Option<u64>, Vec<u64>, Option<u64>);
     type OperationResult = Vec<u64>;
 
     fn name(&self) -> &str {
@@ -592,7 +605,7 @@ impl SafeRedisTransaction for CleanAndGetRecycledNonces<'_> {
 
     async fn validation(
         &self,
-        conn: &mut ConnectionManager,
+        conn: &mut MultiplexedConnection,
         _store: &EoaExecutorStore,
     ) -> Result<Self::ValidationData, TransactionStoreError> {
         // get the highest submitted nonce
@@ -603,7 +616,7 @@ impl SafeRedisTransaction for CleanAndGetRecycledNonces<'_> {
         let highest_submitted_nonce = highest_submitted.first().map(|tx| tx.1);
 
         let highest_submitted_nonce = match highest_submitted_nonce {
-            Some(nonce) => nonce,
+            Some(nonce) => Some(nonce),
             None => {
                 let cached_tx_count: Option<u64> = conn
                     .get(self.keys.last_transaction_count_key_name())
@@ -615,7 +628,7 @@ impl SafeRedisTransaction for CleanAndGetRecycledNonces<'_> {
                         chain_id: self.keys.chain_id,
                     });
                 };
-                count.saturating_sub(1)
+                count.checked_sub(1)
             }
         };
 
@@ -627,7 +640,7 @@ impl SafeRedisTransaction for CleanAndGetRecycledNonces<'_> {
         // these don't need to be recycled, they'll be used up by incrementing the nonce
         let recycled_nonces = recycled_nonces
             .into_iter()
-            .filter(|nonce| *nonce < highest_submitted_nonce)
+            .filter(|nonce| highest_submitted_nonce.is_some_and(|highest| *nonce < highest))
             .collect();
 
         let current_optimistic_tx_count: Option<u64> = conn
@@ -648,16 +661,17 @@ impl SafeRedisTransaction for CleanAndGetRecycledNonces<'_> {
     ) -> Self::OperationResult {
         pipeline.zrembyscore(
             self.keys.recycled_nonces_zset_name(),
-            highest_submitted_nonce,
+            highest_submitted_nonce.unwrap_or(0),
             "+inf",
         );
 
+        let next_nonce = highest_submitted_nonce.map_or(0, |nonce| nonce.saturating_add(1));
         if let Some(current_optimistic_tx_count) = current_optimistic_tx_count {
-            // if the current optimistic tx count is floating too high, we need to bring it down
-            if highest_submitted_nonce + 1 < current_optimistic_tx_count {
+            // No submitted/consumed nonce means the next nonce is zero.
+            if next_nonce < current_optimistic_tx_count {
                 pipeline.set(
                     self.keys.optimistic_transaction_count_key_name(),
-                    highest_submitted_nonce + 1,
+                    next_nonce,
                 );
             }
         }

@@ -1,6 +1,6 @@
 use alloy::{
     eips::eip7702::Authorization,
-    primitives::{Address, U256},
+    primitives::{Address, B256, U256},
 };
 use engine_core::{
     chain::{Chain, ChainService, RpcCredentials},
@@ -48,6 +48,8 @@ pub struct Eip7702SendJobData {
     #[serde(default)]
     pub webhook_options: Vec<WebhookOptions>,
     pub rpc_credentials: RpcCredentials,
+    /// Persisted WrappedCalls UID. The legacy JSON field name is retained.
+    /// Missing values must be reconciled rather than retried with a new UID.
     pub nonce: Option<U256>,
 }
 
@@ -181,6 +183,9 @@ where
         job: &BorrowedJob<Self::JobData>,
     ) -> JobResult<Self::Output, Self::ErrorData> {
         let job_data = &job.job.data;
+        let call_uid = job_data.nonce.ok_or_else(|| Eip7702SendError::InternalError {
+            message: "Job has no persisted replay UID. Reconcile its on-chain outcome before resubmitting; legacy jobs cannot be retried safely.".to_string(),
+        }).map_err_fail()?;
 
         let now_secs = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
@@ -253,7 +258,8 @@ where
                 account.session_key_transaction(target_address, &job_data.transactions)
             }
             None => account.owner_transaction(&job_data.transactions),
-        };
+        }
+        .with_uid(B256::from(call_uid.to_be_bytes::<32>()));
 
         // Get delegation contract from cache
         let delegation_contract = self
@@ -475,9 +481,6 @@ fn is_build_error_retryable(e: &EngineError) -> bool {
         EngineError::PaymasterError { kind, .. } | EngineError::BundlerError { kind, .. } => {
             is_retryable_rpc_error(kind)
         }
-
-        // Vault errors are never retryable (auth/encryption issues)
-        EngineError::VaultError { .. } => false,
 
         // All other errors are not retryable by default
         _ => false,

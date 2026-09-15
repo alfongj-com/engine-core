@@ -11,7 +11,6 @@ use engine_core::{
     error::EngineError,
 };
 use thirdweb_core::auth::ThirdwebAuth;
-use vault_types::enclave::auth::Auth;
 
 use crate::http::{error::ApiEngineError, server::EngineServerState};
 
@@ -20,7 +19,6 @@ const HEADER_THIRDWEB_SECRET_KEY: &str = "x-thirdweb-secret-key";
 const HEADER_THIRDWEB_CLIENT_ID: &str = "x-thirdweb-client-id";
 const HEADER_THIRDWEB_SERVICE_KEY: &str = "x-thirdweb-service-key";
 const HEADER_WALLET_ACCESS_TOKEN: &str = "x-wallet-access-token";
-const HEADER_VAULT_ACCESS_TOKEN: &str = "x-vault-access-token";
 const HEADER_AWS_KMS_ARN: &str = "x-aws-kms-arn";
 const HEADER_AWS_ACCESS_KEY_ID: &str = "x-aws-access-key-id";
 const HEADER_AWS_SECRET_ACCESS_KEY: &str = "x-aws-secret-access-key";
@@ -128,6 +126,12 @@ impl FromRequestParts<EngineServerState> for SigningCredentialsExtractor {
         parts: &mut Parts,
         state: &EngineServerState,
     ) -> Result<Self, Self::Rejection> {
+        if let Some(provided) = Self::get_header_value(parts, "x-engine-signing-token") {
+            let configured = std::env::var("ENGINE_SIGNING_TOKEN").unwrap_or_default();
+            verify_environment_token(&configured, provided)?;
+            return Ok(Self(SigningCredential::environment()?));
+        }
+
         // Try AWS KMS credentials first (with cache)
         if let Some(aws_kms) =
             Self::try_extract_aws_kms_with_cache(parts, state.kms_client_cache.clone())?
@@ -145,18 +149,9 @@ impl FromRequestParts<EngineServerState> for SigningCredentialsExtractor {
             }));
         }
 
-        // Try Vault credentials last
-        if let Some(vault_token) = Self::get_header_value(parts, HEADER_VAULT_ACCESS_TOKEN) {
-            return Ok(SigningCredentialsExtractor(SigningCredential::Vault(
-                Auth::AccessToken {
-                    access_token: vault_token.to_string(),
-                },
-            )));
-        }
-
         // No valid credentials found
         Err(ApiEngineError(EngineError::ValidationError {
-            message: "Missing valid authentication credentials. Provide either AWS KMS headers (x-aws-kms-arn, x-aws-kms-access-key-id, x-aws-secret-access-key), IAW credentials (x-wallet-access-token + x-thirdweb-client-id + x-thirdweb-service-key), or Vault credentials (x-vault-access-token)".to_string(),
+            message: "Missing valid authentication credentials. Provide x-engine-signing-token for the configured local signer, or AWS KMS headers (x-aws-kms-arn, x-aws-access-key-id, x-aws-secret-access-key), IAW credentials (x-wallet-access-token + x-thirdweb-client-id + x-thirdweb-service-key)".to_string(),
         }))
     }
 }
@@ -365,5 +360,44 @@ impl FromRequestParts<EngineServerState> for DiagnosticAuthExtractor {
         }
 
         Ok(DiagnosticAuthExtractor)
+    }
+}
+
+/// Authenticate the process-local signer without storing its token or key in Redis.
+fn verify_environment_token(configured: &str, provided: &str) -> Result<(), ApiEngineError> {
+    use hmac::{Hmac, Mac};
+    use sha2::Sha256;
+    let denied = || {
+        ApiEngineError(EngineError::ValidationError {
+            message: "Invalid or unconfigured environment signing token".into(),
+        })
+    };
+    if configured.len() < 32 {
+        return Err(denied());
+    }
+    let mut expected =
+        Hmac::<Sha256>::new_from_slice(configured.as_bytes()).map_err(|_| denied())?;
+    expected.update(b"engine-core/local-signing-auth/v1");
+    let mut candidate =
+        Hmac::<Sha256>::new_from_slice(provided.as_bytes()).map_err(|_| denied())?;
+    candidate.update(b"engine-core/local-signing-auth/v1");
+    candidate
+        .verify_slice(&expected.finalize().into_bytes())
+        .map_err(|_| denied())
+}
+
+#[cfg(test)]
+mod environment_auth_tests {
+    use super::verify_environment_token;
+    #[test]
+    fn environment_signing_requires_a_configured_matching_token() {
+        let token = "local-test-token-with-at-least-32-bytes";
+        assert!(verify_environment_token(token, token).is_ok());
+        for candidate in ["", "wrong", "local-test-token-with-at-least-32-byteX"] {
+            assert!(verify_environment_token(token, candidate).is_err());
+        }
+        for configured in ["", "short"] {
+            assert!(verify_environment_token(configured, configured).is_err());
+        }
     }
 }

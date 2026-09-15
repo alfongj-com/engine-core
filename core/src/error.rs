@@ -306,11 +306,6 @@ pub enum EngineError {
         kind: SolanaRpcErrorKind,
     },
 
-    #[schema(title = "Engine Vault KMS Error")]
-    #[error("Error interaction with vault: {message}")]
-    #[serde(rename_all = "camelCase")]
-    VaultError { message: String },
-
     #[schema(title = "Engine IAW Service Error")]
     #[error("Error interaction with IAW service: {error}")]
     #[serde(rename_all = "camelCase")]
@@ -496,24 +491,6 @@ impl From<AwsSignerError> for EngineError {
     }
 }
 
-impl From<vault_sdk::error::VaultError> for EngineError {
-    fn from(err: vault_sdk::error::VaultError) -> Self {
-        let message = match &err {
-            vault_sdk::error::VaultError::EnclaveError {
-                code,
-                message,
-                details,
-            } => match details {
-                Some(details) => format!("Enclave error: {code} - {message} - details: {details}"),
-                None => format!("Enclave error: {code} - {message}"),
-            },
-            _ => err.to_string(),
-        };
-
-        EngineError::VaultError { message }
-    }
-}
-
 impl From<InvalidHeaderValue> for EngineError {
     fn from(err: InvalidHeaderValue) -> Self {
         EngineError::ValidationError {
@@ -571,9 +548,9 @@ pub trait SolanaRpcErrorToEngineError {
 }
 
 // Implementation for Solana client errors
-impl SolanaRpcErrorToEngineError for solana_client::client_error::ClientError {
+impl SolanaRpcErrorToEngineError for solana_rpc_client_api::client_error::Error {
     fn to_engine_solana_error(&self, chain_id: &str) -> EngineError {
-        use solana_client::client_error::ClientErrorKind;
+        use solana_rpc_client_api::client_error::ErrorKind as ClientErrorKind;
 
         let kind = match self.kind() {
             ClientErrorKind::Io(err) => SolanaRpcErrorKind::Io {
@@ -590,7 +567,7 @@ impl SolanaRpcErrorToEngineError for solana_client::client_error::ClientError {
                 }
             }
             ClientErrorKind::RpcError(rpc_err) => {
-                use solana_client::rpc_request::{RpcError, RpcResponseErrorData};
+                use solana_rpc_client_api::request::{RpcError, RpcResponseErrorData};
                 match rpc_err {
                     RpcError::RpcResponseError {
                         code,

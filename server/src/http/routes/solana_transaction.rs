@@ -25,7 +25,7 @@ use crate::http::{
         (status = 202, description = "Solana transaction queued successfully", body = SuccessResponse<QueuedSolanaTransactionResponse>, content_type = "application/json"),
     ),
     params(
-        ("x-vault-access-token" = Option<String>, Header, description = "Vault access token"),
+
     )
 )]
 /// Send Solana Transaction

@@ -157,7 +157,10 @@ pub fn classify_send_error(
     context: SendContext,
 ) -> SendErrorClassification {
     if !error.is_error_resp() {
-        return SendErrorClassification::DeterministicFailure;
+        // A dropped connection, timeout, or malformed response does not tell us
+        // whether the node accepted the transaction. Preserve its nonce and signed
+        // bytes so recovery can reconcile/rebroadcast that exact transaction.
+        return SendErrorClassification::PossiblySent;
     }
 
     let error_str = error.to_string().to_lowercase();
@@ -264,8 +267,6 @@ pub fn is_retryable_preparation_error(error: &EoaExecutorWorkerError) -> bool {
         EoaExecutorWorkerError::TransactionSimulationFailed { .. } => false, // Deterministic
         EoaExecutorWorkerError::TransactionBuildFailed { .. } => false,      // Deterministic
         EoaExecutorWorkerError::SigningError { inner_error, .. } => match inner_error {
-            // if vault error, it's not retryable
-            EngineError::VaultError { .. } => false,
             // if iaw error, it's retryable only if it's a network error
             EngineError::IawError { error, .. } => matches!(error, IAWError::NetworkError { .. }),
             _ => false,
@@ -338,4 +339,25 @@ pub fn is_unsupported_eip1559_error(error: &RpcError<TransportErrorKind>) -> boo
     }
 
     false
+}
+
+#[cfg(test)]
+mod send_error_tests {
+    use super::*;
+
+    #[test]
+    fn ambiguous_transport_errors_preserve_the_submitted_transaction() {
+        let errors = [
+            TransportErrorKind::custom_str("connection closed after write"),
+            TransportErrorKind::http_error(502, "upstream unavailable".into()),
+        ];
+        for error in errors {
+            for context in [SendContext::InitialBroadcast, SendContext::Rebroadcast] {
+                assert!(matches!(
+                    classify_send_error(&error, context),
+                    SendErrorClassification::PossiblySent
+                ));
+            }
+        }
+    }
 }

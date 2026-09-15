@@ -10,6 +10,23 @@ Do not treat the baseline as ready for custody or unrestricted network exposure.
 
 This is a source audit, not a claim of complete security assurance. Findings below describe the baseline; later fixes and tests must be checked separately. No production keys, funded transactions, or third-party services were used to reproduce issues.
 
+## Follow-up implementation
+
+| Finding | Current change | Evidence |
+|---|---|---|
+| S1 | Admin dedupe removal and cancellation require the diagnostic password. | Actual HTTP + isolated Redis test in `server/tests/api_safety.rs`; missing/wrong credentials preserve state and valid credentials perform the requested action. |
+| S2 | Diagnostics use an explicit request allowlist, excluding signer/RPC/webhook credentials. | Secret-sentinel serialization test in `server/src/http/routes/admin/eoa_diagnostics.rs`. |
+| S3 | New jobs persist nonce/UID at admission; old jobs without replay identity stop before signing/broadcast. | HTTP admission/retry test and owner/session-key EIP-712 replay test. See [migration](replay-migration.md) before upgrading existing queues. |
+| S4; S12 webhook portion | Webhooks default to deny, require exact HTTPS origins, reject nonpublic DNS answers, disable redirects/proxies, and bound response reads/error previews. | Eight destination/dispatch/response tests passed. See [webhook egress](design/webhook-egress.md); production TLS/egress firewall behavior remains to qualify. |
+| S6, partial | Empty/default-auto requests and unsupported account contract creation return validation errors before writes. Explicit fee parsing preserves legacy/dynamic/7702 fields and rejects conflicts. | API validation regressions; request/storage round trips and actual worker signing produce the expected legacy wire envelope and exact gas price. Solana input validation remains separate work. |
+| S7 | ERC-6492 uses standard ABI tuple encoding and the required suffix. | Independent fixture bytes and decoder tests for empty/non-word-aligned payloads. |
+| S8; S13, partial | Local/KMS UserOperation signing binds chain/EntryPoint and selects EIP-191 only for reviewed Thirdweb factory/version pairs; the builder verifies the admin/salt-derived account address. Unknown profiles fail explicitly; IAW behavior is preserved. | Nine signing integration tests and the builder profile/address rejection test passed locally; the subprocess helper is invoked by its parent test. Actual deployed-account/KMS interoperability remains unqualified. See [signing profiles](design/userop-signing.md). |
+| S9 | Deployment tokens travel through send/error/confirmation; atomic owner checks protect release/cache updates, and keys follow execution namespace. | Redis lease-expiry test proves late completion cannot affect the new owner or another namespace; legacy serialized errors cannot unlock. See migration. |
+| EOA ambiguous send/receipt | Transport ambiguity preserves submission; missing/error/wrong-hash receipts do not prove replacement. | Mock HTTP RPC + Redis test requires same-nonce receipt evidence and canonical nonce progress before requeue, preserves unrelated unresolved nonces, and rejects nonce-zero preconfirmation as canonical proof. |
+| Metrics fallback | Reuses a lazy metrics instance instead of registering the same collectors on every observation. | The receipt/Redis positive-confirmation regression reproduced `AlreadyReg` before the fix and passes afterward. |
+
+These checks passed locally on 2026-09-15. S5, S10–S11, and the remaining portions of S6/S12/S13 are not resolved by these changes. Stable replay identity prevents fresh-nonce/UID duplication; it does not establish chain finality or recover every ambiguous provider outcome.
+
 ## Architecture and trust boundaries
 
 1. Axum extracts RPC and signer credentials and constructs transaction requests. There is no general principal/tenant model at this boundary.
@@ -66,7 +83,7 @@ Severity reflects plausible impact; exposure prerequisites are explicit. File li
 
 ### S6 · Medium · Caller-controlled inputs panic or silently change transaction semantics
 
-**Evidence:** `server/src/execution_router/mod.rs` routes default/explicit `auto` to `todo!()` and indexes `transactions[0]` for empty EOA batches. `solana-core/src/transaction.rs:234` indexes an unvalidated deserialized account list. `core/src/transaction.rs:44–58` uses an untagged enum whose first variant has only optional fields; a legacy `{gasPrice: ...}` object can deserialize as empty EIP-7702 data and discard the requested fee.
+**Evidence:** `server/src/execution_router/mod.rs` routes default/explicit `auto` to `todo!()` and indexes `transactions[0]` for empty EOA batches. `solana-core/src/transaction.rs:234` indexes an unvalidated deserialized account list. `core/src/transaction.rs:44–58` uses an untagged enum whose first variant has only optional fields; a legacy `{gasPrice: ...}` object can deserialize as empty EIP-7702 data and discard the requested fee. A second regression reproduced `u128 is not supported` inside Serde's flattened deserializer; the flattened `Option` suppressed that error and lost fee data. The replacement parser handles JSON integers explicitly and propagates invalid-field errors.
 
 **Failure:** accepted JSON aborts request tasks; a legacy fee selection is lost. Also, smart-account and delegated-account encoders replace `to: None` with the zero address (`aa-core/src/smart_account/mod.rs:38,52`; `eip7702-core/src/transaction.rs:130,172`), which does not perform contract creation and may burn value.
 
@@ -119,6 +136,14 @@ Severity reflects plausible impact; exposure prerequisites are explicit. File li
 **Failure:** a slow provider holds worker slots, high fan-out overwhelms RPC pools, or a webhook response exhausts memory/panics a worker. Connection reuse exists within one chain object, but not across independently rebuilt objects.
 
 **Required test:** slow/never-ending peers terminate within budgets; oversized and multibyte responses remain bounded and valid; batch fan-out respects a concurrency limit. Benchmark end-to-end request reuse before introducing caches keyed by credentials.
+
+### S13 · Medium · Local/KMS UserOperation signing is not qualified against account validation
+
+**Baseline evidence:** `core/src/userop.rs` signed the raw UserOperation hash for KMS/private credentials; the new environment path initially inherited that policy. The documented [Thirdweb Account validator](https://portal.thirdweb.com/tokens/build/base-contracts/erc-4337/account) first applies the EIP-191 signed-message prefix, then recovers the signer. The initial local signature test proved raw-hash recovery and EntryPoint binding, without proving acceptance by a deployed account implementation. The follow-up now uses independent fixtures for both reviewed contract policies and restricts local/KMS factory/account selection; full contract execution is still outstanding.
+
+**Failure:** an otherwise valid UserOperation is rejected by an account that expects a prefixed or account-specific signature. A global change to prefix every hash would also be wrong for custom accounts with another signature format. This remains a release blocker for claiming tested ERC-4337 support with external keys.
+
+**Required test:** select and pin the supported account/factory versions, implement their explicit signature policies, and run the actual `validateUserOp` path through the configured EntryPoint on a local chain. Include negative cross-account/EntryPoint/chain cases. Do not infer account compatibility from ECDSA recovery alone.
 
 ## Other correctness and maintainability observations
 

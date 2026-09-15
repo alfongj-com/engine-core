@@ -23,6 +23,13 @@ use tracing_subscriber::{filter::EnvFilter, layer::SubscriberExt, util::Subscrib
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let config = config::get_config();
+    if std::env::var_os("ENGINE_PRIVATE_KEY").is_some() {
+        anyhow::ensure!(
+            std::env::var("ENGINE_SIGNING_TOKEN").is_ok_and(|token| token.len() >= 32),
+            "ENGINE_SIGNING_TOKEN must contain at least 32 bytes when ENGINE_PRIVATE_KEY is configured"
+        );
+        engine_core::credentials::SigningCredential::environment()?;
+    }
 
     let subscriber = tracing_subscriber::registry()
         .with(EnvFilter::try_from_default_env().unwrap_or_else(|_| {
@@ -38,12 +45,6 @@ async fn main() -> anyhow::Result<()> {
             .init(),
         config::LogFormat::Pretty => subscriber.with(tracing_subscriber::fmt::layer()).init(),
     }
-
-    let vault_client = vault_sdk::VaultClient::builder(config.thirdweb.urls.vault)
-        .build()
-        .await?;
-
-    tracing::info!("Vault client initialized");
 
     let chains = Arc::new(ThirdwebChainService {
         secret_key: config.thirdweb.secret.clone(),
@@ -65,11 +66,10 @@ async fn main() -> anyhow::Result<()> {
     tracing::info!("KMS client cache initialized");
 
     let signer = Arc::new(UserOpSigner {
-        vault_client: vault_client.clone(),
         iaw_client: iaw_client.clone(),
     });
-    let eoa_signer = Arc::new(EoaSigner::new(vault_client.clone(), iaw_client.clone()));
-    let solana_signer = Arc::new(SolanaSigner::new(vault_client.clone(), iaw_client));
+    let eoa_signer = Arc::new(EoaSigner::new(iaw_client.clone()));
+    let solana_signer = Arc::new(SolanaSigner::new(iaw_client));
     let redis_client = twmq::redis::Client::open(config.redis.url.as_str())?;
 
     let authorization_cache = EoaAuthorizationCache::new(
@@ -128,7 +128,6 @@ async fn main() -> anyhow::Result<()> {
         eip7702_confirm_queue: queue_manager.eip7702_confirm_queue.clone(),
         solana_executor_queue: queue_manager.solana_executor_queue.clone(),
         transaction_registry: queue_manager.transaction_registry.clone(),
-        vault_client: Arc::new(vault_client.clone()),
         chains: chains.clone(),
     };
 
@@ -148,7 +147,6 @@ async fn main() -> anyhow::Result<()> {
         solana_signer: solana_signer.clone(),
         solana_rpc_cache: solana_rpc_cache.clone(),
         abi_service: Arc::new(abi_service),
-        vault_client: Arc::new(vault_client),
         chains,
         execution_router: Arc::new(execution_router),
         queue_manager: Arc::new(queue_manager),

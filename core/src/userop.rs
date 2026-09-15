@@ -1,76 +1,79 @@
 use alloy::{
     hex::FromHex,
-    primitives::{Address, Bytes, ChainId},
+    primitives::{Address, B256, Bytes, ChainId, eip191_hash_message},
     signers::Signer,
 };
 use thirdweb_core::iaw::IAWClient;
-use vault_sdk::VaultClient;
-use vault_types::{
-    enclave::encrypted::eoa::StructuredMessageInput,
-    userop::{UserOperationV06Input, UserOperationV07Input},
-};
 
 use crate::{
+    constants::{DEFAULT_FACTORY_ADDRESS_V0_6, DEFAULT_FACTORY_ADDRESS_V0_7},
     credentials::SigningCredential,
     error::{EngineError, SerialisableAwsSdkError, SerialisableAwsSignerError},
+    execution_options::aa::EntrypointVersion,
 };
 
 // Re-export for convenience
 pub use engine_aa_types::VersionedUserOp;
 
+/// Reviewed AccountCore signature policies; this is not a caller-selected raw
+/// signing switch. The HTTP builder also binds the account to its factory/admin/salt.
+/// See docs/design/userop-signing.md for source provenance and qualification limits.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum UserOpSigningProfile {
+    ThirdwebV06,
+    ThirdwebV07,
+}
+
+impl UserOpSigningProfile {
+    pub fn for_factory(
+        factory_address: Address,
+        version: EntrypointVersion,
+    ) -> Result<Self, EngineError> {
+        match (factory_address, version) {
+            (DEFAULT_FACTORY_ADDRESS_V0_6, EntrypointVersion::V0_6) => Ok(Self::ThirdwebV06),
+            (DEFAULT_FACTORY_ADDRESS_V0_7, EntrypointVersion::V0_7) => Ok(Self::ThirdwebV07),
+            _ => Err(EngineError::ValidationError {
+                message:
+                    "Local/KMS UserOperation signing requires a reviewed factory/version profile"
+                        .into(),
+            }),
+        }
+    }
+}
+
 #[derive(Clone)]
 pub struct UserOpSigner {
-    pub vault_client: VaultClient,
     pub iaw_client: IAWClient,
 }
 
 pub struct UserOpSignerParams {
     pub credentials: SigningCredential,
     pub entrypoint: Address,
+    pub factory_address: Address,
     pub userop: VersionedUserOp,
     pub signer_address: Address,
     pub chain_id: ChainId,
 }
 
-fn userop_to_vault_input(userop: &VersionedUserOp, entrypoint: Address) -> StructuredMessageInput {
-    match userop {
-        VersionedUserOp::V0_6(userop) => {
-            StructuredMessageInput::UserOperationV06Input(UserOperationV06Input {
-                call_data: userop.call_data.clone(),
-                init_code: userop.init_code.clone(),
-                nonce: userop.nonce,
-                pre_verification_gas: userop.pre_verification_gas,
-                max_fee_per_gas: userop.max_fee_per_gas,
-                verification_gas_limit: userop.verification_gas_limit,
-                sender: userop.sender,
-                paymaster_and_data: userop.paymaster_and_data.clone(),
-                signature: userop.signature.clone(),
-                call_gas_limit: userop.call_gas_limit,
-                max_priority_fee_per_gas: userop.max_priority_fee_per_gas,
-                entrypoint,
-            })
-        }
-        VersionedUserOp::V0_7(userop) => {
-            StructuredMessageInput::UserOperationV07Input(UserOperationV07Input {
-                call_data: userop.call_data.clone(),
-                nonce: userop.nonce,
-                pre_verification_gas: userop.pre_verification_gas,
-                max_fee_per_gas: userop.max_fee_per_gas,
-                verification_gas_limit: userop.verification_gas_limit,
-                sender: userop.sender,
-                paymaster_data: userop.paymaster_data.clone().unwrap_or_default(),
-                factory: userop.factory.unwrap_or_default(),
-                factory_data: userop.factory_data.clone().unwrap_or_default(),
-                paymaster_post_op_gas_limit: userop.paymaster_post_op_gas_limit.unwrap_or_default(),
-                paymaster_verification_gas_limit: userop
-                    .paymaster_verification_gas_limit
-                    .unwrap_or_default(),
-                signature: userop.signature.clone(),
-                call_gas_limit: userop.call_gas_limit,
-                max_priority_fee_per_gas: userop.max_priority_fee_per_gas,
-                paymaster: userop.paymaster.unwrap_or_default(),
-                entrypoint,
-            })
+impl UserOpSignerParams {
+    fn local_signing_digest(&self) -> Result<B256, EngineError> {
+        let version = match self.userop {
+            VersionedUserOp::V0_6(_) => EntrypointVersion::V0_6,
+            VersionedUserOp::V0_7(_) => EntrypointVersion::V0_7,
+        };
+        let profile = UserOpSigningProfile::for_factory(self.factory_address, version)?;
+        let userop_hash = self
+            .userop
+            .hash_with_custom_entrypoint(self.chain_id, self.entrypoint)
+            .map_err(|e| EngineError::ValidationError {
+                message: format!("Failed to hash userop: {e}"),
+            })?;
+        match profile {
+            // Both reviewed versions call toEthSignedMessageHash(bytes32)
+            // before recover. Prefix the 32 raw bytes, not their hex text.
+            UserOpSigningProfile::ThirdwebV06 | UserOpSigningProfile::ThirdwebV07 => {
+                Ok(eip191_hash_message(userop_hash.as_slice()))
+            }
         }
     }
 }
@@ -78,27 +81,6 @@ fn userop_to_vault_input(userop: &VersionedUserOp, entrypoint: Address) -> Struc
 impl UserOpSigner {
     pub async fn sign(&self, params: UserOpSignerParams) -> Result<Bytes, EngineError> {
         match &params.credentials {
-            SigningCredential::Vault(auth_method) => {
-                let vault_result = self
-                    .vault_client
-                    .sign_structured_message(
-                        auth_method.clone(),
-                        params.signer_address,
-                        userop_to_vault_input(&params.userop, params.entrypoint),
-                        Some(params.chain_id),
-                    )
-                    .await
-                    .map_err(|e| {
-                        tracing::error!("Error signing userop: {:?}", e);
-                        e
-                    })?;
-
-                Ok(Bytes::from_hex(vault_result.signature).map_err(|_| {
-                    EngineError::VaultError {
-                        message: "Bad signature received from vault".to_string(),
-                    }
-                })?)
-            }
             SigningCredential::Iaw {
                 auth_token,
                 thirdweb_auth,
@@ -125,14 +107,14 @@ impl UserOpSigner {
                 })?)
             }
             SigningCredential::AwsKms(creds) => {
+                // Reject unknown policy before contacting KMS or requesting a signature.
+                let digest = params.local_signing_digest()?;
                 let signer = creds.get_signer(Some(params.chain_id)).await?;
-                let userophash = params.userop.hash(params.chain_id).map_err(|e| {
-                    EngineError::ValidationError {
-                        message: format!("Failed to hash userop: {e}"),
-                    }
-                })?;
-
-                let signature = signer.sign_hash(&userophash).await.map_err(|e| {
+                crate::credentials::validate_signer_address(
+                    signer.address(),
+                    params.signer_address,
+                )?;
+                let signature = signer.sign_hash(&digest).await.map_err(|e| {
                     EngineError::AwsKmsSignerError {
                         error: SerialisableAwsSignerError::Sign {
                             aws_sdk_error: SerialisableAwsSdkError::Other {
@@ -144,18 +126,20 @@ impl UserOpSigner {
 
                 Ok(Bytes::copy_from_slice(&signature.as_bytes()))
             }
-            SigningCredential::PrivateKey(signer) => {
-                let userophash = params.userop.hash(params.chain_id).map_err(|e| {
-                    EngineError::ValidationError {
-                        message: format!("Failed to hash userop: {e}"),
-                    }
-                })?;
-
-                let signature = signer.sign_hash(&userophash).await.map_err(|e| {
-                    EngineError::ValidationError {
-                        message: format!("Failed to sign userop: {e}"),
-                    }
-                })?;
+            SigningCredential::PrivateKey(_) | SigningCredential::Environment { .. } => {
+                let digest = params.local_signing_digest()?;
+                let signer = params.credentials.local_signer()?;
+                crate::credentials::validate_signer_address(
+                    signer.address(),
+                    params.signer_address,
+                )?;
+                let signature =
+                    signer
+                        .sign_hash(&digest)
+                        .await
+                        .map_err(|e| EngineError::ValidationError {
+                            message: format!("Failed to sign userop: {e}"),
+                        })?;
 
                 Ok(Bytes::copy_from_slice(&signature.as_bytes()))
             }
