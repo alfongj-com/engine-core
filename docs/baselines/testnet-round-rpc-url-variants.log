@@ -1,0 +1,11 @@
+   Compiling engine-core v0.1.0 (/Users/alfongj/Code/engine-core/core)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.17s
+     Running unittests src/lib.rs (target/debug/deps/engine_core-aba2f669ae919b47)
+
+running 4 tests
+test rpc_clients::transport::tests::error_redaction_protects_raw_and_decoded_userinfo_and_query_values ... ok
+test rpc_clients::transport::tests::url_redaction_preserves_success_payloads_and_revert_bytes ... ok
+test rpc_clients::transport::tests::error_redaction_protects_encoded_and_decoded_path_credentials ... ok
+test rpc_clients::transport::tests::error_redaction_protects_bearer_tokens_and_credential_subdomains ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 6 filtered out; finished in 0.25s

@@ -1,6 +1,6 @@
 # RPC providers and test budget
 
-Date: September 17, 2026. Code reviewed: `037b688`. Prices are public USD rates, using monthly billing where applicable. This is a cost model and proposed experiment, not a measured provider benchmark.
+Date: September 17, 2026. Updated for the configured-provider and Solana recovery changes in this fork. Prices are public USD rates, using monthly billing where applicable. This document separates estimated transaction demand from published provider quotas. Executed measurements are recorded in the verification report.
 
 ## Recommendation
 
@@ -21,15 +21,15 @@ With automatic fees and gas limits, a successful transaction normally makes one 
 - `eth_sendRawTransaction` — submit.
 - `eth_getTransactionReceipt` — retrieve execution result.
 
-Each active wallet also calls `eth_getTransactionCount` once per processing cycle; Base calls it twice. Calls are separate HTTP requests. Concurrent execution does not combine them into a JSON-RPC batch.
+Each active wallet also calls `eth_getTransactionCount` once per processing cycle. An explicitly enabled sequencer preconfirmation capability adds a second call; Base now defaults to one like the other chains. Calls are separate HTTP requests. Concurrent execution does not combine them into a JSON-RPC batch.
 
 For `T` transactions/second, `W` active wallets and a measured cycle time of `P` seconds:
 
-**RPC calls/second ≈ `4T + W/P`; Base ≈ `4T + 2W/P`.**
+**RPC calls/second ≈ `4T + W/P`.** With verified preconfirmation explicitly enabled, use `4T + 2W/P`.
 
 The requested 200 ms queue delay becomes one integer second in TWMQ. Use approximately one cycle/second for this initial model, then measure it. Receipts are normally requested only after the observed nonce advances; they are not polled for every outstanding transaction each cycle.
 
-| Transactions/second | Calls/second, 10 wallets | Base calls/second | Calls/hour, ordinary EVM | dRPC/hour |
+| Transactions/second | Calls/second, 10 wallets | With preconfirmation enabled | Calls/hour, ordinary EVM | dRPC/hour |
 | ---: | ---: | ---: | ---: | ---: |
 | 10 | 50 | 60 | 180,000 | $1.08 |
 | 50 | 210 | 220 | 756,000 | $4.54 |
@@ -37,20 +37,23 @@ The requested 200 ms queue delay becomes one integer second in TWMQ. Use approxi
 
 Assumptions: warm caches, `P=1`, one successful receipt lookup, no retries, ordinary EIP-1559 support. Supplying gas and fees reduces `4T` to `2T`. Cold wallets add code/balance reads; null receipts, replacements, crashes and transport retries add calls. Fee estimation is per transaction, not cached per block.
 
-**Wallet capacity also matters.** The server allows 50 outstanding nonces per wallet. At 100 transactions/second and an illustrative 12-second inclusion delay, ten wallets are insufficient. Thirty wallets provide 1,500 slots. Expected occupancy is about 1,250, including half a second of average nonce-detection delay; the estimate becomes roughly 430 RPC calls/second (460 on Base). Record the actual inclusion delay and wallet count. A faster RPC cannot remove this limit or the chain's own capacity limit.
+**Wallet capacity also matters.** The server allows 50 outstanding nonces per wallet. At 100 transactions/second and an illustrative 12-second inclusion delay, ten wallets are insufficient. Thirty wallets provide 1,500 slots. Expected occupancy is about 1,250, including half a second of average nonce-detection delay; the estimate becomes roughly 430 RPC calls/second (460 with preconfirmation enabled). Record the actual inclusion delay and wallet count. A faster RPC cannot remove this limit or the chain's own capacity limit.
 
 Source locations: [fee/gas preparation](../../executors/src/eoa/worker/transaction.rs), [submission](../../executors/src/eoa/worker/send.rs), [receipts](../../executors/src/eoa/worker/confirm.rs), [nonce handling](../../executors/src/lib.rs), [queue timing](../../twmq/src/lib.rs), [server limits](../../server/src/queue/manager.rs). The pinned Alloy provider implements the fee-history call.
 
 ### Solana
 
-After restoring signing, the existing execution path needs:
+For instruction-built transactions, the restored signer and recovery path need:
 
-**Calls/transaction = `3 + F + S + V`.**
+**Calls/transaction = `3 + F + S + H + R`.**
 
 - `3`: `getLatestBlockhash`, `sendTransaction`, successful `getTransaction`.
 - `F`: one `getRecentPrioritizationFees` for automatic fees; zero for manual/omitted fees.
-- `S`: `getSignatureStatuses` polls, currently one signature per request.
-- `V`: additional `isBlockhashValid` calls on pending polls after 30 seconds.
+- `S`: historical `getSignatureStatuses` polls, currently one signature per request.
+- `H`: finalized `getBlockHeight` calls while the signature is absent (or `isBlockhashValid` for serialized inputs). A visible status waiting for finality needs no height lookup.
+- `R`: repeat broadcasts of the same bytes after uncertain submission, capped at 20 total sends per attempt and spaced by at least two seconds.
+
+Serialized input uses `isBlockhashValid` instead of the initial `getLatestBlockhash` and preserves its own compute-budget instructions; it does not estimate or override priority fees.
 
 Its requested 200 ms retry uses the same integer-second queue scheduling. Expect roughly one status poll per second under light load, with phase and RPC delay affecting the actual count. Default commitment is **finalized**, so use the wait for finality, not first inclusion.
 
@@ -60,7 +63,7 @@ Its requested 200 ms retry uses the same integer-second queue scheduling. Expect
 | 15 seconds | 19–20 | 200 / 1,000 / 2,000, using 20 |
 | 30 seconds | 34–35 | 350 / 1,750 / 3,500, using 35 |
 
-These are scenarios, not observed Solana timing. Beyond 30 seconds, each further pending poll generally adds both status and blockhash-validity requests. SDK retries can add more. Preflight is part of submission; this path makes no separate client `simulateTransaction` call.
+These are scenarios, not observed Solana timing. The table assumes the signature becomes visible promptly, with no extra height checks or rebroadcasts. Absent statuses add those calls; expired attempts with unresolved outcomes pause instead of generating a new signature. The bounded HTTP sender does not add hidden retries. Preflight is part of submission; this path makes no separate client `simulateTransaction` call.
 
 Source: [Solana worker](../../executors/src/solana_executor/worker.rs), [default commitment](../../core/src/execution_options/solana.rs). Status batching can query up to 256 signatures per RPC call; the current worker does not use it. Preserve a baseline before optimizing. [Solana RPC specification](https://solana.com/docs/rpc/http/getsignaturestatuses).
 
@@ -97,22 +100,24 @@ Alchemy, Chainstack and QuickNode document all five initial networks. QuickNode 
 
 Helius documents Devnet. Infura lists all four EVM testnets, but Solana access is restricted to selected customers. Ankr documents Solana Devnet; confirm the exact EVM endpoints at setup. [Helius FAQ](https://www.helius.dev/docs/faqs), [Infura endpoints](https://docs.infura.io/get-started/endpoints/), [Ankr Solana](https://www.ankr.com/docs/rpc-service/chains/chains-list/s-t/).
 
-## 3. First-round budget
+## 3. Authorized test budget
 
-Proposal: one chain at a time, ten minutes each at 10, 50 and 100 transactions/second, after a successful low-rate check. These are offered-load targets; we do not yet know which the chain, account setup and engine can sustain.
+Alfonso supplied an existing dRPC key with $50 in credit. This round uses a **$12 maximum** at the published method price, enforced by a loopback gateway allowing only the five testnets and selected ordinary methods. The key stays outside Git and out of Engine's configuration.
 
-- Four EVM networks: **1.626M RPC calls**, approximately **$9.76** at dRPC. Based on ten wallets, with Base's extra nonce polling. More wallets and delayed receipts increase this.
-- Solana: **0.672M / 1.920M / 3.360M calls** for the 2 / 15 / 30-second scenarios above: **$4.03 / $11.52 / $20.16**.
-- Combined: roughly **$14 / $21 / $30** before retries, provider probes, funding transactions, and final draining. Propose **$50 total RPC usage**, with a request counter that reserves budget to finish tracking already-submitted transactions. Stop new submissions before the cap; do not abandon pending work.
+The gateway counts each method in a batch, including failed requests. It persists reservations before forwarding and preserves the ceiling across restarts. Two million calls is the absolute limit. Its estimates do not replace the provider's invoice or account balance, and do not include another application's use of the same key. The actual counter and reserved upper bound are recorded with the results.
 
-No paid account or deposit was created. These amounts describe consumed service; the minimum starting balance, taxes and any subscriptions are separate. Faucet balances must cover testnet fees. Do not extrapolate this short budget to continuous operation: 100 EVM transactions/s in the ten-wallet model consumes about **1.063 billion calls per 30 days**, approximately **$6,376 at dRPC's flat rate**.
+Use short ramps, not the earlier ten-minute-per-stage proposal. Stop before reaching the ceiling and leave capacity to reconcile anything already submitted. A read-only capacity probe does not need funded wallets; transaction submission does.
 
-## 4. Work required before public load tests
+For scale, 100 EVM transactions/s in the ten-wallet model consumes about **1.063 billion calls per 30 days**, approximately **$6,376 at dRPC's flat rate**. The cheapest short experiment need not be the cheapest continuous deployment.
 
-1. **Provider configuration and counters.** EVM URLs are currently constructed for Thirdweb, and write routes require Thirdweb credentials. Add explicit endpoint configuration and authentication, pooled clients, and per-method counts/latency/errors. Solana already accepts `APP__SOLANA__DEVNET__HTTP_URL`; its [client cache](../../executors/src/solana_executor/rpc_cache.rs) currently logs the full URL, so remove secret-bearing URL logging before adding provider keys.
-2. **Solana signer and recovery.** The [signer](../../core/src/signer.rs) currently rejects Solana signing. Add an Ed25519 backend with secret references, then test actual signed transactions on a local validator. Persist signed bytes through uncertain sends and crashes; fix expiry and terminal-state handling before public tests. Devnet is selectable; the separately named Testnet currently needs additional enum/configuration support.
-3. **Calibrate demand.** Use a small run to replace assumed poll cadence, wallet count and confirmation delay with observed values. Keep inclusion, confirmation and finality timings separate. Benchmark ordinary transfers first, then representative contract calls. Bundlers, paymasters, ERC-4337 and EIP-7702 need their own method/cost model.
-4. **Check endpoint capacity.** Test the actual method mix and submission path, recording 429s, timeouts, latency and account credit usage. Target at least twice the measured demand: approximately **1,000 RPC/s for 100 EVM transactions/s**, and **4,000 RPC/s for the illustrative Solana 15-second case**. A block-number-only read test does not establish write capacity. Respect purchased limits; if capacity is not verified, mark that run provider-limited.
-5. **Run and compare.** Begin at 1 transaction/s. Increase only while queue depth, latency and chain progress remain healthy. Spread work across enough independently funded accounts. Record admitted, submitted, included, finalized and failed transactions; verify unique on-chain effects after drain. Compare with local measurements to distinguish engine, RPC, account-contention and chain limits. Fix what the data shows, then repeat the same workload.
+## 4. Qualification sequence
 
-Published quotas establish only whether a plan could fit. **We cannot yet say any provider is fast enough:** no authenticated provider load test has run. This document identifies the cheapest candidate and the measurements needed to decide.
+1. **Local correctness.** Configured EVM clients, isolated credentials, Solana signing and crash recovery must pass local HTTP/Redis/validator tests. [Implementation and limits](rpc-and-solana-recovery.md).
+2. **Live provider checks.** Verify chain identities through Engine and test the actual read-method mix, including gas/fee preparation and real receipts. Record offered versus completed rate, latency, 429s, upstream errors and local saturation separately. Reusing recent receipts can benefit from provider caches; report this.
+3. **Funded low-rate submissions.** Start at one transaction/s on each network. Observe confirmation delay, wallet occupancy, method counts and fees. Separate inclusion from finality. A successful signature or simulation is not an executed transaction.
+4. **Short throughput ramps.** Increase only while queue depth and chain progress remain healthy. Provide about twice the observed RPC demand: the initial EVM model calls for approximately 1,000 RPC/s at 100 transactions/s; the illustrative Solana 15-second case calls for 4,000. If that capacity is not measured, label the experiment provider-limited or unqualified.
+5. **Compare and improve.** Reconcile unique effects after drain. Compare local and public results, then fix the measured bottleneck and rerun the same workload. Solana polling currently uses one signature per call; batching is a likely cost reduction, but needs separate correctness tests.
+
+The local environment signer currently provides one EVM identity. Higher-rate tests that require many independent funded wallets need a reviewed key-reference selection mechanism first. Smart accounts, bundlers, paymasters, ERC-4337 and EIP-7702 require separate qualification and pricing.
+
+Published quotas only establish whether a plan could fit. See [verification](../verification.md) and [the handoff](../../TO_ALFONSO.md) for what actually ran and the remaining funding or capacity limits.

@@ -1,0 +1,49 @@
+{
+  "started_at": "2026-09-17T06:17:57Z",
+  "scope": "actual Engine HTTP reads and local Solana signing; no broadcasts or throughput claim",
+  "provider": "dRPC via bounded loopback gateway",
+  "evm": [
+    {
+      "network": "Ethereum Sepolia",
+      "chain_id": 11155111,
+      "observed_chain_id": 11155111,
+      "http_status": 200,
+      "elapsed_ms": 274.79
+    },
+    {
+      "network": "Arbitrum Sepolia",
+      "chain_id": 421614,
+      "observed_chain_id": 421614,
+      "http_status": 200,
+      "elapsed_ms": 56.85
+    },
+    {
+      "network": "OP Sepolia",
+      "chain_id": 11155420,
+      "observed_chain_id": 11155420,
+      "http_status": 200,
+      "elapsed_ms": 69.99
+    },
+    {
+      "network": "Base Sepolia",
+      "chain_id": 84532,
+      "observed_chain_id": 84532,
+      "http_status": 200,
+      "elapsed_ms": 71.28
+    }
+  ],
+  "log_directory": "/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/engine-testnet-read-yxh6bbyr",
+  "unauthorized_reads_rejected_without_rpc": 3,
+  "solana": {
+    "network": "Solana Devnet",
+    "public_key": "BymPLiErFxJBV47sc31B7VnMoePFnACshrMx3VxkjC69",
+    "local_signing_http_status": 200,
+    "simulation_error": "AccountNotFound",
+    "simulation_slot": 499678900,
+    "execution_proven": false,
+    "note": "AccountNotFound means faucet funding is still required; signed transactions were not broadcast."
+  },
+  "outcome": "pass",
+  "gateway_calls": 6,
+  "estimated_usage_usd": 3.6e-05
+}

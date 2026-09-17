@@ -7,6 +7,7 @@ Rust transaction infrastructure forked from [thirdweb-dev/engine-core](https://g
 ## Start here
 
 - [Chain compatibility design](docs/design/chain-compatibility.md): Ethereum, Arbitrum, OP Stack/Base, finality, fees, sequencing and capabilities.
+- [Configured RPCs and Solana recovery](docs/design/rpc-and-solana-recovery.md): setup, authentication, retry rules and operational limits.
 - [RPC test plan and prices](docs/design/rpc-test-plan.md): EVM testnets, Solana Devnet, request estimates, provider limits and first-round budget.
 - [UserOperation signing profiles](docs/design/userop-signing.md): supported default accounts, rejection rules and remaining qualification.
 - [Test and benchmark design](docs/design/testing-and-benchmarks.md): safety invariants, failure injection, local versus network evidence.
@@ -23,7 +24,7 @@ cargo build --locked --bin thirdweb-engine
 cargo test --locked -p engine-integration-tests
 ```
 
-The private Thirdweb Vault SDK and its CI SSH requirement are removed. AWS KMS and IAW remain supported code paths; external-service interoperability is not established by local tests. Solana signing needs a new Ed25519 backend and currently returns a clear unsupported error.
+The private Thirdweb Vault SDK and its CI SSH requirement are removed. AWS KMS and IAW remain legacy code paths; configured-provider submission currently selects the local environment signer. Live KMS/IAW interoperability is unqualified. Solana signing uses a configured Ed25519 key file; see [setup and recovery rules](docs/design/rpc-and-solana-recovery.md).
 
 ## Local EVM signer
 
@@ -39,7 +40,7 @@ APP__SERVER__DIAGNOSTIC_ACCESS_PASSWORD="$ENGINE_DIAGNOSTIC_PASSWORD" \
 cargo run --locked --bin thirdweb-engine
 ```
 
-The existing RPC extractor still requires a Thirdweb credential header on transaction requests. For local chain 31337 only, use `x-thirdweb-secret-key: local-test`; it is not forwarded as a real service credential. Remote RPC/bundler routing still uses the Thirdweb chain service. Removing Vault does not remove those separate integrations.
+Configure `APP__EVM_RPC__ENDPOINTS__31337__URL=http://127.0.0.1:8545` to use the operator token alone. Each public EVM chain accepts its own endpoint and headers using the same setting. Provider clients reuse connections and refuse redirects. Unconfigured chains retain the legacy Thirdweb routing; bundlers and paymasters are separate integrations. For the legacy local adapter only, `x-thirdweb-secret-key: local-test` remains accepted.
 
 AWS KMS request headers remain `x-aws-kms-arn`, `x-aws-access-key-id`, and `x-aws-secret-access-key`. The inherited KMS flow serializes credentials into queue state; replacing it with workload identity and key references is a release blocker. Prefer the environment reference for local experiments.
 

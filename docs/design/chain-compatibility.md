@@ -15,7 +15,7 @@ Goals: preserve transaction intent through crashes and RPC uncertainty; distingu
 | Area | Upstream implementation | Qualification gap |
 | --- | --- | --- |
 | Confirmation | `executors/src/eoa/worker/confirm.rs` processes available receipts, advances a cached latest nonce, and explicitly does not revisit already confirmed transactions after nonce regression. | No durable finality/reorg reconciliation contract. A receipt is evidence of execution in a particular block, not permanent success. |
-| Preconfirmation | `executors/src/lib.rs` maps `pending` to preconfirmation solely for Base IDs 8453/84532. | Endpoint semantics cannot be inferred from chain ID. |
+| Preconfirmation | The fork defaults to canonical `latest`; an explicit endpoint capability can enable sequencer preconfirmation. | Endpoint semantics cannot be inferred from chain ID. |
 | Sending | `executors/src/eoa/worker/mod.rs` defaults to 100 inflight; transaction preparation/send is concurrent. | Future-nonce limits and admission behavior vary, particularly on Nitro and delegated EOAs. |
 | Fees | `worker/transaction.rs` estimates fees/gas, adds a 20% gas buffer, multiplies replacement fees, and includes an Etherlink special case. | Arithmetic bounds, user fee limits, L1/operator costs, replacement rules, and fork limits need explicit tests. |
 | Infrastructure | `core/src/chain.rs` constructs Thirdweb URLs; 7702 uses `tw_getDelegationContract`. | Standard RPC availability does not imply bundler, paymaster, or proprietary method availability. |
@@ -62,7 +62,7 @@ ERC-4337 depends on the account implementation, EntryPoint, bundler and optional
 
 Unknown EVM networks remain unqualified until their fee model, transaction types, finality signal, admission limits, and signer route pass the same gates. “EVM compatible” is insufficient evidence. ZK rollups, chains with native account abstraction, Etherlink, and alternative DA configurations need separate profiles.
 
-Solana requires a separate lifecycle: recent-blockhash expiry, commitment level, signature status, compute budget and account contention. Record `lastValidBlockHeight`; prove expiry before rebuilding with a new blockhash, which changes the signature. Keep preflight and confirmation commitments coherent. Durable nonce transactions have different rules. [Solana confirmation and expiration](https://solana.com/developers/cookbook/transactions/confirmation). The existing Solana code has not been certified by this EVM review.
+Solana requires a separate lifecycle: recent-blockhash expiry, commitment level, signature status, compute budget and account contention. Record `lastValidBlockHeight`; prove expiry before rebuilding with a new blockhash, which changes the signature. Keep preflight and confirmation commitments coherent. Durable nonce transactions have different rules. [Solana confirmation and expiration](https://solana.com/developers/cookbook/transactions/confirmation). The fork now implements local Ed25519 signing and persisted-byte recovery; [its design](rpc-and-solana-recovery.md) states the supported inputs, tests and remaining limits. Public transaction throughput has not yet been established.
 
 ## Proposed decisions
 

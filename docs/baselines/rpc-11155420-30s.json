@@ -1,0 +1,193 @@
+{
+  "version": 1,
+  "startedAt": "2026-09-17T06:19:41.785Z",
+  "finishedAt": "2026-09-17T06:20:12.145Z",
+  "scope": "Read-only RPC responsiveness; neither transaction submission capacity nor chain inclusion throughput.",
+  "limitations": [
+    "Small recent sender/hash/signature sample can benefit from provider caching.",
+    "Stages run once in fixed order; this is a short screening probe, not a sustained capacity guarantee.",
+    "Process CPU measures the probe only; gateway/Redis/provider resource use is excluded.",
+    "Budget delta includes any concurrent users of this gateway.",
+    "One RPC method per HTTP request; no retries or batching."
+  ],
+  "chain": "11155420",
+  "network": "optimism-sepolia",
+  "config": {
+    "gateway": "loopback budget gateway",
+    "chain": "11155420",
+    "stages": [
+      {
+        "rate": 1000,
+        "count": 30000
+      }
+    ],
+    "planned": 30000,
+    "concurrency": 1024,
+    "timeoutMs": 20000,
+    "reserve": 10000,
+    "maxLagMs": 100,
+    "pauseMs": 1000
+  },
+  "discovery": {
+    "counts": {
+      "eth_getBlockByNumber": 1,
+      "eth_getTransactionReceipt": 1,
+      "eth_getBalance": 1
+    },
+    "samples": [
+      {
+        "method": "eth_getBlockByNumber",
+        "kind": "success",
+        "status": 200,
+        "ms": 54.67
+      },
+      {
+        "method": "eth_getTransactionReceipt",
+        "kind": "success",
+        "status": 200,
+        "ms": 45.439
+      },
+      {
+        "method": "eth_getBalance",
+        "kind": "success",
+        "status": 200,
+        "ms": 165.339
+      }
+    ],
+    "transactionSampleSize": 1,
+    "estimateScenario": "zero-value transfer to empty address from recently funded sender (balance >= 0.001 ETH)",
+    "recipe": "fee history, transfer gas estimate, recent sender latest nonce, recent receipt (equal weights)"
+  },
+  "mixMethods": [
+    "eth_feeHistory",
+    "eth_estimateGas",
+    "eth_getTransactionCount",
+    "eth_getTransactionReceipt"
+  ],
+  "mixSha256": "bce5bd6c56979846f4338c2c2a6207bcc3f45329972aaa1bb74da377f7fd2f18",
+  "budgetBefore": {
+    "observed": 127768,
+    "reserved": 130000,
+    "remainingCalls": 1870260,
+    "ceiling": 2000000
+  },
+  "budgetAfter": {
+    "observed": 157771,
+    "reserved": 160000,
+    "remainingCalls": 1840257,
+    "ceiling": 2000000
+  },
+  "observedCampaignCallDelta": 30003,
+  "stages": [
+    {
+      "targetRps": 1000,
+      "scheduled": 30000,
+      "dispatched": 30000,
+      "localConcurrencyDrops": 0,
+      "localSchedulerDrops": 0,
+      "notScheduled": 0,
+      "stoppedReason": null,
+      "methods": {
+        "eth_feeHistory": 7500,
+        "eth_estimateGas": 7500,
+        "eth_getTransactionCount": 7500,
+        "eth_getTransactionReceipt": 7500
+      },
+      "methodResults": {
+        "eth_feeHistory": {
+          "outcomes": {
+            "success": 7500
+          },
+          "latencyMs": {
+            "count": 7500,
+            "p50": 51.634,
+            "p95": 74.51,
+            "p99": 136.247,
+            "max": 619.821
+          }
+        },
+        "eth_estimateGas": {
+          "outcomes": {
+            "success": 7500
+          },
+          "latencyMs": {
+            "count": 7500,
+            "p50": 51.175,
+            "p95": 74.032,
+            "p99": 133.828,
+            "max": 555.549
+          }
+        },
+        "eth_getTransactionReceipt": {
+          "outcomes": {
+            "success": 7500
+          },
+          "latencyMs": {
+            "count": 7500,
+            "p50": 50.921,
+            "p95": 73.287,
+            "p99": 114.25,
+            "max": 520.165
+          }
+        },
+        "eth_getTransactionCount": {
+          "outcomes": {
+            "success": 7500
+          },
+          "latencyMs": {
+            "count": 7500,
+            "p50": 51.774,
+            "p95": 75.46,
+            "p99": 133.508,
+            "max": 497.667
+          }
+        }
+      },
+      "outcomes": {
+        "success": 30000
+      },
+      "httpStatuses": {
+        "200": 30000
+      },
+      "rpcCodes": {},
+      "maxInflight": 120,
+      "targetDurationMs": 30000,
+      "admissionDurationMs": 29999.074,
+      "drainDurationMs": 50.37,
+      "elapsedMs": 30049.444,
+      "observedDispatchRps": 1000,
+      "successfulResponseRpsIncludingDrain": 998.355,
+      "latencyMs": {
+        "count": 30000,
+        "p50": 51.345,
+        "p95": 74.415,
+        "p99": 134.588,
+        "max": 619.821
+      },
+      "successLatencyMs": {
+        "count": 30000,
+        "p50": 51.345,
+        "p95": 74.415,
+        "p99": 134.588,
+        "max": 619.821
+      },
+      "dispatchLagMs": {
+        "count": 30000,
+        "p50": 0.593,
+        "p95": 1.262,
+        "p99": 1.357,
+        "max": 25.743
+      },
+      "processCpuMs": {
+        "user": 6439.71,
+        "system": 782.933
+      },
+      "eventLoopUtilization": 0.16847570369682122,
+      "eventLoopDelayMs": {
+        "p99": 11.132927,
+        "max": 35.553279
+      },
+      "interpretation": "No observed local admission limit; upstream errors and latency still require separate interpretation."
+    }
+  ]
+}

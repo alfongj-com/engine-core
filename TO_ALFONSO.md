@@ -2,37 +2,40 @@
 
 Updated September 17, 2026.
 
-## Where we are
+## Done
 
-The [fork](https://github.com/alfongj-com/engine-core/tree/production-hardening) builds without Vault. The EVM path passed local tests, including a crash/restart with 24 transfers, and all three Linux CI workflows passed. [PR #1](https://github.com/alfongj-com/engine-core/pull/1) contains the changes; [verification](docs/verification.md) contains the evidence.
+The [fork](https://github.com/alfongj-com/engine-core/tree/production-hardening) builds without Thirdweb Vault. [Draft PR #1](https://github.com/alfongj-com/engine-core/pull/1) contains the changes.
 
-**Public-chain performance has not been measured.** The queue benchmark reached about 26,600 jobs/second; that does not establish blockchain throughput. Solana execution code exists, but removing Vault removed its only working signer. Replacing that signer is part of the next work.
+- Added configurable EVM RPCs, connection reuse, authentication, credential redaction and response limits.
+- Restored Solana signing with a separate local key. Queued local credentials contain public identities only.
+- Fixed Solana crash recovery: persist signed bytes before sending, resend the same transaction after an uncertain response, and preserve evidence when the outcome is unknown. Duplicate request protection survives queue cleanup.
+- Added tests for these failure cases. Actual local nodes confirmed **24 EVM transfers after an Engine crash**, **24 after an Engine + Redis crash**, and **12 Solana transfers after lost send responses and an Engine crash**. All had **zero duplicate effects**. The Redis test used durable AOF writes; it does not establish failover or power-loss safety.
+- Verified actual Engine reads on Ethereum Sepolia, Arbitrum Sepolia, OP Sepolia and Base Sepolia. Solana signing works; its public simulation reports the unfunded account.
 
-## Recommended test plan
+[Verification](docs/verification.md) records the tests and their limits. [RPC results](docs/baselines/rpc-results.md) records provider measurements and cost; [provider comparison](docs/design/rpc-test-plan.md) explains pricing and expected request demand.
 
-Test **Ethereum Sepolia, Arbitrum Sepolia, OP Sepolia, Base Sepolia, and Solana Devnet**, one at a time. Devnet is Solana's network for testing applications; its separately named Testnet is mainly for validator testing. Start with ordinary wallet transfers, then contract calls. Smart accounts need separate tests and bundler pricing.
+## What the RPC results mean
 
-Try **dRPC paid** first: its published price is **$6 per million ordinary RPC calls**, with all five networks listed and no published paid-tier rate cap. It is the cheapest candidate for our short load tests among the plans compared. We still need to measure its actual speed.
+All five networks passed a 30-second read test at 1,000 requests/second: 150,000 successful calls with no errors or local drops. Solana slowed at 2,000 and 4,000 requests/second and filled the client's concurrency limit. Those higher rates remain unqualified. Read capacity does not prove submission capacity or Engine transaction throughput.
 
-| Workload | Estimated RPC demand | dRPC usage cost |
-| --- | ---: | ---: |
-| 100 EVM transactions/second | Roughly 410–460 calls/second | About $9–10/hour |
-| 100 Solana transactions/second; assumed 15-second wait for finality | Roughly 2,000 calls/second before improving polling | About $43/hour |
+Estimated dRPC usage is **$2.21** (conservative reservation bound: **$2.23**). The paid gateway is stopped. Its **$12 campaign ceiling** persists across restarts. The provider's bill remains authoritative.
 
-These are estimates before retries, not benchmark results. The [RPC comparison](docs/design/rpc-test-plan.md) explains the assumptions, prices, quotas, and alternatives.
+## One thing I need from you
 
-Ten-minute runs at 10, 50, and 100 transactions/second on each network would cost roughly **$14–30 total in RPC usage** under the documented scenarios. I suggest a **$50 total RPC spending limit** for the first round, including retries. Initial deposits, taxes, and test-wallet funding are separate. No service has been purchased.
+**Fund the fresh test wallets from faucets.** Browser sign-in was blocked by the locked Mac; accessible faucets failed or required sign-in. No public transaction was broadcast.
+
+| Wallet | Networks |
+| --- | --- |
+| `0x1AE5c03782552FA600eEe3d3ceFe42019a25AD17` | Ethereum Sepolia, Arbitrum Sepolia, OP Sepolia, Base Sepolia |
+| `BymPLiErFxJBV47sc31B7VnMoePFnACshrMx3VxkjC69` | Solana Devnet |
+
+Start with faucet-sized amounts; no real funds are needed. Keys are stored outside the repository in `~/.config/engine-core`, with owner-only permissions. Rotate the shared dRPC key when this campaign is finished.
 
 ## Next steps
 
-1. **Connect other providers.** Add per-chain EVM RPC settings, reuse connections, count requests by method, and remove RPC keys from logs. Solana already has an endpoint setting.
-2. **Restore Solana signing and test recovery locally.** Keep keys out of Redis. Test crashes, expired blockhashes, uncertain submissions, and duplicate requests.
-3. **Check the provider's speed.** Verify the actual RPC methods, submission limits, errors, and latency. Aim for twice the expected request capacity so throttling does not distort the engine benchmark.
-4. **Run the five networks.** Start at one transaction/second and increase in short steps only while the chain and provider keep up. Report successful transactions, missing or duplicate effects, confirmation times, RPC errors, and cost.
-5. **Fix the measured bottleneck and repeat.** Solana status batching is an obvious candidate. Then finish finality/reorg recovery, test Redis failures, and connect AWS KMS before discussing production.
+1. Run funded transactions at one per second on each network; reconcile every effect and measure actual RPC calls and confirmation delay.
+2. Increase rates in short steps. The single EVM signer has 50 outstanding nonce slots, so higher throughput may need multiple funded wallets and a reviewed signer-selection mechanism.
+3. Reduce Solana polling cost, then repeat the same measurements. Current polling uses one signature per call.
+4. Finish finality/reorg and Redis failover tests, qualify deployed smart-account profiles, integrate AWS KMS, and add an operator recovery endpoint for uncertain Solana outcomes.
 
-## What I need from you
-
-**Nothing to continue the local work.** Public tests will eventually need an RPC account/key and approval of its exact spending limit. I will use fresh test-only wallets, try the faucets, and identify any funding shortfall.
-
-Before release, we also need to resolve the upstream repository's missing license. Remaining issues and retained-job migration instructions are in the [security audit](docs/audit-security.md), [queue audit](docs/audit-queue.md), and [migration guide](docs/replay-migration.md).
+This is **not ready for a production release**. The [security audit](docs/audit-security.md) tracks remaining issues. Follow the [migration guide](docs/replay-migration.md) before upgrading existing queues. The upstream repository's missing license also needs resolution before commercial use.
