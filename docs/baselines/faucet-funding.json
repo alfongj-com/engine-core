@@ -1,0 +1,500 @@
+{
+  "recorded_at": "2026-09-17T14:42:29.463999Z",
+  "scope": "Public faucet funding only; no Engine public submission test in this round",
+  "paid_rpc_calls": 0,
+  "mining_stopped": true,
+  "reports": {
+    "ethereum_sepolia": {
+      "network": "Ethereum Sepolia",
+      "chain_id": 11155111,
+      "at": "2026-09-17T14:36:51.616001Z",
+      "address": "0x1AE5c03782552FA600eEe3d3ceFe42019a25AD17",
+      "faucet": "https://openfaucet.org/",
+      "amount_eth": "0.01",
+      "before_balance_wei": "0",
+      "after_balance_wei": "10000000000000000",
+      "transaction": "0xced45bce948382aba9d2111dc1f8b0a70b01faa46a713a98eb5e5c003e2bd366",
+      "transaction_url": "https://sepolia.etherscan.io/tx/0xced45bce948382aba9d2111dc1f8b0a70b01faa46a713a98eb5e5c003e2bd366",
+      "outcome": "funded",
+      "rpc": "https://ethereum-sepolia-rpc.publicnode.com",
+      "verification": [
+        {
+          "method": "eth_chainId",
+          "response": {
+            "jsonrpc": "2.0",
+            "result": "0xaa36a7",
+            "id": 1
+          }
+        },
+        {
+          "method": "eth_getTransactionByHash",
+          "response": {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "result": {
+              "blockHash": "0x625ffb46eaa460df9c835809be1c81496e36de8e10b24d21d3e4cd46951ca4a9",
+              "blockNumber": "0xb2e632",
+              "blockTimestamp": "0x6aabfab8",
+              "from": "0x6752365ce8c2330fe7422b6322823bcda2b74f67",
+              "gas": "0x5208",
+              "gasPrice": "0x3ce65cee",
+              "maxFeePerGas": "0x4913cada",
+              "maxPriorityFeePerGas": "0xf4240",
+              "hash": "0xced45bce948382aba9d2111dc1f8b0a70b01faa46a713a98eb5e5c003e2bd366",
+              "input": "0x",
+              "nonce": "0x1c80",
+              "to": "0x1ae5c03782552fa600eee3d3cefe42019a25ad17",
+              "transactionIndex": "0x76",
+              "value": "0x2386f26fc10000",
+              "type": "0x2",
+              "accessList": [],
+              "chainId": "0xaa36a7",
+              "v": "0x0",
+              "r": "0xe461dc239fd346eed37959a2ca48aaf6627e6e76ff3772aa8dd8ea5fcdfd03a",
+              "s": "0x55763244c63093818c051f198b3c2993ca3a62de69a5c4dfaa8d87355a70fcbf",
+              "yParity": "0x0"
+            }
+          }
+        },
+        {
+          "method": "eth_getTransactionReceipt",
+          "response": {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "result": {
+              "type": "0x2",
+              "status": "0x1",
+              "cumulativeGasUsed": "0xa90652",
+              "logs": [],
+              "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+              "transactionHash": "0xced45bce948382aba9d2111dc1f8b0a70b01faa46a713a98eb5e5c003e2bd366",
+              "transactionIndex": "0x76",
+              "blockHash": "0x625ffb46eaa460df9c835809be1c81496e36de8e10b24d21d3e4cd46951ca4a9",
+              "blockNumber": "0xb2e632",
+              "gasUsed": "0x5208",
+              "effectiveGasPrice": "0x3ce65cee",
+              "from": "0x6752365ce8c2330fe7422b6322823bcda2b74f67",
+              "to": "0x1ae5c03782552fa600eee3d3cefe42019a25ad17",
+              "contractAddress": null
+            }
+          }
+        },
+        {
+          "method": "eth_getBalance",
+          "response": {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "result": "0x2386f26fc10000"
+          }
+        }
+      ],
+      "other_attempts": [
+        {
+          "url": "https://cloud.google.com/application/web3/faucet/ethereum/sepolia",
+          "result": "Existing signed-in session inaccessible because Mac is locked"
+        },
+        {
+          "url": "https://grabteeth.xyz/",
+          "result": "Requires an address that deployed a contract before November15,2022; fresh wallet ineligible"
+        },
+        {
+          "url": "https://sepolia-faucet.pk910.de/",
+          "result": "Faucet reports out of funds"
+        },
+        {
+          "url": "https://faucet.quicknode.com/ethereum/sepolia",
+          "result": "Submitted public address; rejected for missing mainnet ETH balance"
+        }
+      ],
+      "paid_rpc_calls": 0,
+      "notes": "Normal browser proof of work with one worker; five proofs; mining stopped at first minimum claim. Only public address submitted."
+    },
+    "arbitrum_sepolia": {
+      "network": "Arbitrum Sepolia",
+      "chainId": 421614,
+      "address": "0x1AE5c03782552FA600eEe3d3ceFe42019a25AD17",
+      "updatedAt": "2026-09-17T14:36:42.594149+00:00",
+      "sources": [
+        "https://docs.arbitrum.io/for-devs/dev-tools-and-resources/chain-info#faucet-list",
+        "https://arbitrum.faucet.dev/"
+      ],
+      "baseline": {
+        "rpc": "https://sepolia-rollup.arbitrum.io/rpc",
+        "method": "eth_getBalance",
+        "tag": "latest",
+        "balanceWei": "0"
+      },
+      "attempts": [
+        {
+          "url": "https://openfaucet.org/arbitrum-sepolia",
+          "action": "Entered public address, started normal proof-of-work flow with default one worker",
+          "status": "success",
+          "proofs": 5,
+          "displayedAccruedEth": "0.0100",
+          "claimMinimumEth": "0.01",
+          "claimed": true,
+          "claimedEth": "0.01",
+          "transactionHash": "0xb90317418413da03234cf851ba08937a5a59e2d1cae648bf1895257aab7b5a21"
+        },
+        {
+          "url": "https://faucet.quicknode.com/arbitrum/sepolia",
+          "action": "Entered public address and clicked Continue once",
+          "status": "rejected",
+          "reason": "Invalid ETH mainnet balance. Please note, you will need a small mainnet balance on this wallet in order to use the faucet.",
+          "note": "Page FAQ says no mainnet balance required, but actual form rejected it."
+        },
+        {
+          "url": "https://www.alchemy.com/faucets/arbitrum-sepolia",
+          "action": "Read provider eligibility requirements",
+          "status": "ineligible_not_submitted",
+          "reason": "Requires 0.001 ETH and sufficient activity on Ethereum Mainnet; wallet is fresh."
+        },
+        {
+          "url": "https://ethfaucet.com/networks/arbitrum/arbitrum-sepolia",
+          "action": "Read public claim requirements",
+          "status": "identity_required_not_submitted",
+          "reason": "BringID score/identity required."
+        },
+        {
+          "url": "https://blastapi.io/faucets/arbitrum-sepolia",
+          "action": "Opened public page",
+          "status": "deprecated",
+          "reason": "Blast products no longer available, redirected guidance to Alchemy."
+        },
+        {
+          "url": "https://bwarelabs.com/faucets/arbitrum-sepolia",
+          "action": "Opened public page",
+          "status": "unavailable",
+          "reason": "HTTP 530"
+        },
+        {
+          "url": "https://learnweb3.io/faucets/arbitrum_sepolia/",
+          "action": "Opened public page",
+          "status": "unavailable",
+          "reason": "HTTP 503"
+        }
+      ],
+      "transactions": [
+        {
+          "hash": "0xb90317418413da03234cf851ba08937a5a59e2d1cae648bf1895257aab7b5a21",
+          "explorer": "https://sepolia.arbiscan.io/tx/0xb90317418413da03234cf851ba08937a5a59e2d1cae648bf1895257aab7b5a21",
+          "receipt": {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "result": {
+              "blockHash": "0xb1cf3dfc211263833f9b57c64430538f879194de439768030de2da3da545a20c",
+              "blockNumber": "0x12783bf5",
+              "contractAddress": null,
+              "cumulativeGasUsed": "0x4f8d4",
+              "effectiveGasPrice": "0xed2fba0",
+              "from": "0x6752365ce8c2330fe7422b6322823bcda2b74f67",
+              "gasUsed": "0x525d",
+              "gasUsedForL1": "0x55",
+              "l1BlockNumber": "0xb2e631",
+              "logs": [],
+              "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+              "status": "0x1",
+              "timeboosted": false,
+              "to": "0x1ae5c03782552fa600eee3d3cefe42019a25ad17",
+              "transactionHash": "0xb90317418413da03234cf851ba08937a5a59e2d1cae648bf1895257aab7b5a21",
+              "transactionIndex": "0x3",
+              "type": "0x2"
+            }
+          }
+        }
+      ],
+      "finalBalance": {
+        "rpc": "https://sepolia-rollup.arbitrum.io/rpc",
+        "tag": "latest",
+        "raw": {
+          "jsonrpc": "2.0",
+          "id": 1,
+          "result": "0x2386f26fc10000"
+        },
+        "balanceWei": "10000000000000000",
+        "balanceEth": "0.01"
+      },
+      "actions": {
+        "browserSession": "arb-faucet-retry",
+        "miningWorkers": 1,
+        "paidRpcCalls": 0,
+        "mainnetTransactions": 0,
+        "accountsCreated": 0,
+        "messagesOrPosts": 0,
+        "captchaBypass": false,
+        "browserClosed": true
+      },
+      "screenshot": "/tmp/engine-arbitrum-faucet-success.png"
+    },
+    "solana_devnet": {
+      "started_at": "2026-09-17T14:29:43.095744+00:00",
+      "network": "solana-devnet",
+      "address": "BymPLiErFxJBV47sc31B7VnMoePFnACshrMx3VxkjC69",
+      "attempts": [
+        {
+          "url": "https://api.devnet.solana.com",
+          "method": "requestAirdrop",
+          "requested_lamports": 1000000000,
+          "http_status": 200,
+          "response": {
+            "jsonrpc": "2.0",
+            "error": {
+              "code": -32603,
+              "message": "Internal error"
+            },
+            "id": 1
+          }
+        },
+        {
+          "url": "https://faucet.quicknode.com/solana/devnet",
+          "action": "Entered public address and clicked Continue",
+          "outcome": "rejected",
+          "reason": "UI requires a small mainnet SOL balance; FAQ says no minimum mainnet balance. No further attempt.",
+          "evidence": "/tmp/engine-solana-quicknode-faucet.txt"
+        },
+        {
+          "url": "https://faucet.chainstack.com/solana-devnet-faucet",
+          "action": "Inspected published eligibility",
+          "outcome": "ineligible",
+          "reason": "Requires Chainstack API key, 0.8 mainnet SOL and holding history; no account created or mainnet funding."
+        },
+        {
+          "url": "https://faucet.solana.com/",
+          "action": "Read official agent instructions",
+          "outcome": "used supported programmatic RPC alternative",
+          "reason": "Web faucet directs AI agents to CLI/RPC or proof-of-work alternatives."
+        },
+        {
+          "url": "https://www.pinestake.com/en/faucet",
+          "action": "Selected Devnet, entered public address, selected minimum1SOL",
+          "outcome": "not submitted",
+          "reason": "Faucet showed only0.61SOL balance, below minimum1SOL; GitHub sign-in promoted."
+        },
+        {
+          "url": "https://www.devnetfaucet.org/",
+          "action": "Inspected eligibility",
+          "outcome": "requires GitHub",
+          "reason": "Airdrop with GitHub action; no account created."
+        },
+        {
+          "url": "https://github.com/jarry-xiao/proof-of-work-faucet",
+          "action": "Reviewed official-linked CLI source before mining",
+          "outcome": "cannot bootstrap zero balance",
+          "reason": "CLI checks balance<5000lamports and requests ordinary RPC airdrop; claim transaction uses wallet payer. Public airdrop failed and balance0, so did not install/mine."
+        },
+        {
+          "url": "https://openfaucet.org/",
+          "action": "Normal UI Solana Devnet proof-of-work mining, one worker, public address only",
+          "started_at": "2026-09-17T14:33:00Z",
+          "outcome": "funded",
+          "minimum_claim_sol": 0.01,
+          "constraints": "No signup, mainnet funding, rate-limit workarounds, captcha bypass or private-key submission.",
+          "proofs": 5,
+          "claimed_sol": 0.01,
+          "signature": "3eX6Wepq77dL1vbu7SKq66dLU3RN4pwjfxbvqQk8tgDvDq5dNXiatdPurcV7zcDqVcnV3VL56KEmDj1Z5W4bNc82",
+          "explorer_url": "https://explorer.solana.com/tx/3eX6Wepq77dL1vbu7SKq66dLU3RN4pwjfxbvqQk8tgDvDq5dNXiatdPurcV7zcDqVcnV3VL56KEmDj1Z5W4bNc82?cluster=devnet",
+          "screenshot": "/tmp/engine-solana-faucet-success.png",
+          "mining_stopped": true
+        }
+      ],
+      "initial_balance_lamports": 0,
+      "updated_at": "2026-09-17T14:35:07.682840+00:00",
+      "verification": {
+        "url": "https://api.devnet.solana.com",
+        "checked_at": "2026-09-17T14:37:27.971077+00:00",
+        "balance": {
+          "jsonrpc": "2.0",
+          "result": {
+            "context": {
+              "apiVersion": "4.3.0-rc.0",
+              "slot": 499860013
+            },
+            "value": 10000000
+          },
+          "id": 1
+        },
+        "signatures": {
+          "jsonrpc": "2.0",
+          "result": [
+            {
+              "blockTime": 1789655832,
+              "confirmationStatus": "finalized",
+              "err": null,
+              "memo": null,
+              "signature": "3eX6Wepq77dL1vbu7SKq66dLU3RN4pwjfxbvqQk8tgDvDq5dNXiatdPurcV7zcDqVcnV3VL56KEmDj1Z5W4bNc82",
+              "slot": 499859924,
+              "transactionIndex": 10
+            }
+          ],
+          "id": 1
+        },
+        "finalized_transaction": {
+          "signature": "3eX6Wepq77dL1vbu7SKq66dLU3RN4pwjfxbvqQk8tgDvDq5dNXiatdPurcV7zcDqVcnV3VL56KEmDj1Z5W4bNc82",
+          "slot": 499859924,
+          "error": null,
+          "recipient_pre_lamports": 0,
+          "recipient_post_lamports": 10000000,
+          "received_lamports": 10000000,
+          "transaction_fee_lamports": 5000,
+          "block_time": 1789655832
+        }
+      },
+      "outcome": "funded",
+      "completed_at": "2026-09-17T14:38:14.229605+00:00",
+      "funded_sol": 0.01,
+      "paid_rpc_calls": 0,
+      "private_keys_sent": false,
+      "mainnet_spending": false
+    },
+    "op_base_sepolia": {
+      "address": "0x1AE5c03782552FA600eEe3d3ceFe42019a25AD17",
+      "started_at": "2026-09-17T14:33:21.255381+00:00",
+      "sources": [
+        "https://docs.optimism.io/app-developers/tools-sdks/faucets",
+        "https://docs.base.org/get-started/get-funds"
+      ],
+      "initial_balances": {
+        "optimism_sepolia": {
+          "rpc": "https://sepolia.optimism.io",
+          "wei": "0",
+          "hex": "0x0"
+        },
+        "base_sepolia": {
+          "rpc": "https://sepolia.base.org",
+          "wei": "0",
+          "hex": "0x0"
+        }
+      },
+      "attempts": [
+        {
+          "url": "https://console.optimism.io/faucet",
+          "networks": [
+            "optimism_sepolia",
+            "base_sepolia"
+          ],
+          "result": "blocked_sign_in",
+          "detail": "Both network checkboxes disabled until sign-in; sign-in dialog requires email. No account created.",
+          "transaction_hash": null
+        },
+        {
+          "url": "https://faucet.triangleplatform.com/optimism/sepolia",
+          "networks": [
+            "optimism_sepolia"
+          ],
+          "result": "service_suspended",
+          "detail": "Live page says This service has been suspended.",
+          "transaction_hash": null
+        },
+        {
+          "url": "https://www.ethereum-ecosystem.com/faucets/base-sepolia",
+          "networks": [
+            "base_sepolia"
+          ],
+          "result": "deployment_paused",
+          "detail": "Live page says This deployment is temporarily paused.",
+          "transaction_hash": null
+        },
+        {
+          "url": "https://faucet.quicknode.com/optimism/sepolia",
+          "networks": [
+            "optimism_sepolia"
+          ],
+          "result": "rejected_mainnet_balance",
+          "detail": "Submitted public address; UI rejected with Invalid ETH mainnet balance. No mainnet funds sent or rate-limit bypass.",
+          "transaction_hash": null
+        },
+        {
+          "url": "https://openfaucet.org/optimism-sepolia",
+          "networks": [
+            "optimism_sepolia"
+          ],
+          "result": "claimed_verified",
+          "detail": "One browser worker, claimed minimum 5 proofs / 0.01 ETH; mining stopped.",
+          "transaction_hash": "0x916b4626f0743ea2a0dfca2056669813818ded36cb98791f07502b2c2c4aa19d",
+          "amount_eth": "0.01",
+          "receipt": {
+            "blobGasUsed": "0x9c40",
+            "blockHash": "0xf27801222d430a05a330cf403d8210941c67d765bd81bdcf2c1b2ced8cd77c42",
+            "blockNumber": "0x2ea901e",
+            "contractAddress": null,
+            "cumulativeGasUsed": "0x1c3e9",
+            "daFootprintGasScalar": "0x190",
+            "effectiveGasPrice": "0xf433a",
+            "from": "0x6752365ce8c2330fe7422b6322823bcda2b74f67",
+            "gasUsed": "0x5208",
+            "l1BaseFeeScalar": "0x1db0",
+            "l1BlobBaseFee": "0x38ab939",
+            "l1BlobBaseFeeScalar": "0xd2730",
+            "l1Fee": "0x4389386d7",
+            "l1GasPrice": "0x3fc160d1",
+            "l1GasUsed": "0x640",
+            "logs": [],
+            "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+            "status": "0x1",
+            "to": "0x1ae5c03782552fa600eee3d3cefe42019a25ad17",
+            "transactionHash": "0x916b4626f0743ea2a0dfca2056669813818ded36cb98791f07502b2c2c4aa19d",
+            "transactionIndex": "0x2",
+            "type": "0x2"
+          }
+        },
+        {
+          "url": "https://openfaucet.org/base-sepolia",
+          "networks": [
+            "base_sepolia"
+          ],
+          "result": "claimed_verified",
+          "detail": "First eligible claim; one extra proof completed while stopping mining, confirmation amount 0.012 ETH. Worker stopped and tab closed.",
+          "transaction_hash": "0x6b453794f8b77bd08dc139413bc8d056aec201aa0632be78c4d2dace07613cc9",
+          "amount_eth": "0.012",
+          "receipt": {
+            "blobGasUsed": "0xae38",
+            "blockHash": "0x0cbca7b94ecea5215805b39d95b0780c63c6f47bb94822dd02e48c2f60101867",
+            "blockNumber": "0x2cc4e5a",
+            "contractAddress": null,
+            "cumulativeGasUsed": "0x73a61",
+            "daFootprintGasScalar": "0x1be",
+            "effectiveGasPrice": "0x5b8d80",
+            "from": "0x6752365ce8c2330fe7422b6322823bcda2b74f67",
+            "gasUsed": "0x5208",
+            "l1BaseFeeScalar": "0x44d",
+            "l1BlobBaseFee": "0x39bd5d5",
+            "l1BlobBaseFeeScalar": "0xa118b",
+            "l1Fee": "0x156381282",
+            "l1GasPrice": "0x3b178f3e",
+            "l1GasUsed": "0x640",
+            "logs": [],
+            "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+            "status": "0x1",
+            "to": "0x1ae5c03782552fa600eee3d3cefe42019a25ad17",
+            "transactionHash": "0x6b453794f8b77bd08dc139413bc8d056aec201aa0632be78c4d2dace07613cc9",
+            "transactionIndex": "0x3",
+            "type": "0x2"
+          }
+        }
+      ],
+      "final_balances": {
+        "base_sepolia": {
+          "rpc": "https://sepolia.base.org",
+          "wei": "12000000000000000",
+          "hex": "0x2aa1efb94e0000",
+          "eth": "0.012",
+          "checked_at": "2026-09-17T14:40:30.540759+00:00"
+        },
+        "optimism_sepolia": {
+          "rpc": "https://sepolia.optimism.io",
+          "wei": "10000000000000000",
+          "hex": "0x2386f26fc10000",
+          "eth": "0.01",
+          "checked_at": "2026-09-17T14:41:25.558521+00:00"
+        }
+      },
+      "completed_at": "2026-09-17T14:41:25.558656+00:00",
+      "constraints_observed": [
+        "Only public address submitted",
+        "No account creation, captcha solving, rate-limit bypass, social messages, mainnet funds, or purchases",
+        "One browser worker per network, stopped on first eligible claim",
+        "No Google faucet claims"
+      ]
+    }
+  }
+}

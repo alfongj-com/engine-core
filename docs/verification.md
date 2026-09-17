@@ -6,7 +6,7 @@ Updated: **2026-09-17**. Upstream baseline: `b6b7a0bbdc737b3a2b09611305b71b1bf6a
 
 macOS arm64, Apple M4 (10 cores), 16 GiB RAM; Rust 1.98.1; Redis 7.4.2 built from official source; Anvil 1.8.1 from the official release with verified SHA-256; Agave local validator 4.2.2. Service tests use disposable loopback instances. Recovery scripts generate temporary local keys outside the repository.
 
-Public dRPC endpoints were used for **reads and simulation** on Ethereum Sepolia, Arbitrum Sepolia, OP Sepolia, Base Sepolia and Solana Devnet. No public transaction was broadcast or publicly funded. Successful transfers below ran only on Anvil or the isolated Solana validator. AWS KMS and IAW were not exercised live.
+Public dRPC endpoints were used for **reads and simulation** on Ethereum Sepolia, Arbitrum Sepolia, OP Sepolia, Base Sepolia and Solana Devnet. At the time of those gates, the wallets were unfunded and no Engine transaction was broadcast publicly. Subsequent [faucet funding](testnet-funding.md) succeeded on all five networks; that round verifies balances and faucet receipts only. Successful transfers below ran only on Anvil or the isolated Solana validator. AWS KMS and IAW were not exercised live.
 
 ## Current local gates — 2026-09-17
 
@@ -80,5 +80,5 @@ Use the explicit `solana_admission::tests` filter: an unfiltered server `--ignor
 - EOA Redis SIGKILL/AOF recovery covers one local crash window, not host power loss, replication failover, every state transition, reorgs or external nonce use. Solana's validator scenario restarts Engine with Redis kept alive; it does not test Solana recovery across Redis loss.
 - Expired Solana signatures with absent or stale historical status remain **outcome unknown**. Their signed bytes/admission identity are retained; automatic re-signing is disabled. Cancellation/orphan recovery still needs operator reconciliation, and completed admission retention is finite/configurable.
 - Local signature checks cannot prove deployed wallet/EntryPoint compatibility. ERC-4337 and EIP-7702 require qualification against pinned account implementations, EntryPoint, bundler and chain. [Account-specific scope](design/userop-signing.md).
-- No public write/funding, live KMS/IAW, public transaction throughput, 24-hour soak, production webhook delivery or Docker build is claimed. Solana signing here uses a local Ed25519 key file.
+- No Engine public submission test, live KMS/IAW, public transaction throughput, 24-hour soak, production webhook delivery or Docker build is claimed. Public faucet funding is recorded separately. Solana signing here uses a local Ed25519 key file.
 - Compiler/Clippy warnings remain visible in the logs. A successful gate is not a warning-free build or a blanket production-readiness claim.
