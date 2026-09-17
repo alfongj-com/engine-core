@@ -227,6 +227,9 @@ impl AccountSigner for EoaSigner {
         credentials: &SigningCredential,
     ) -> Result<String, EngineError> {
         match credentials {
+            SigningCredential::SolanaEnvironment { .. } => Err(EngineError::ValidationError {
+                message: "Solana credentials cannot sign EVM payloads".into(),
+            }),
             SigningCredential::Iaw {
                 auth_token,
                 thirdweb_auth,
@@ -316,6 +319,9 @@ impl AccountSigner for EoaSigner {
         credentials: &SigningCredential,
     ) -> Result<String, EngineError> {
         match &credentials {
+            SigningCredential::SolanaEnvironment { .. } => Err(EngineError::ValidationError {
+                message: "Solana credentials cannot sign EVM payloads".into(),
+            }),
             SigningCredential::Iaw {
                 auth_token,
                 thirdweb_auth,
@@ -382,6 +388,9 @@ impl AccountSigner for EoaSigner {
         credentials: &SigningCredential,
     ) -> Result<String, EngineError> {
         match credentials {
+            SigningCredential::SolanaEnvironment { .. } => Err(EngineError::ValidationError {
+                message: "Solana credentials cannot sign EVM payloads".into(),
+            }),
             SigningCredential::Iaw {
                 auth_token,
                 thirdweb_auth,
@@ -457,6 +466,9 @@ impl AccountSigner for EoaSigner {
             nonce,
         };
         match credentials {
+            SigningCredential::SolanaEnvironment { .. } => Err(EngineError::ValidationError {
+                message: "Solana credentials cannot sign EVM payloads".into(),
+            }),
             SigningCredential::Iaw {
                 auth_token,
                 thirdweb_auth,
@@ -544,15 +556,44 @@ impl SolanaSigner {
         Self { iaw_client }
     }
 
-    /// No Solana signing backend is configured after removal of the proprietary signer.
+    /// Sign only the configured payer's slot. Preserve the message and valid
+    /// co-signatures; a partially signed transaction must supply every other signer.
     pub async fn sign_transaction(
         &self,
-        _transaction: solana_sdk::transaction::VersionedTransaction,
-        _from: solana_sdk::pubkey::Pubkey,
-        _credentials: &SigningCredential,
+        mut transaction: solana_sdk::transaction::VersionedTransaction,
+        from: solana_sdk::pubkey::Pubkey,
+        credentials: &SigningCredential,
     ) -> Result<solana_sdk::transaction::VersionedTransaction, EngineError> {
-        Err(EngineError::ValidationError {
-            message: "Solana signing requires an Ed25519 backend; none is configured".to_string(),
-        })
+        use solana_sdk::{signature::Signature, signer::Signer};
+        let invalid = |message: &str| EngineError::ValidationError {
+            message: message.into(),
+        };
+        transaction
+            .sanitize()
+            .map_err(|_| invalid("Malformed Solana transaction or signature count"))?;
+        let required = usize::from(transaction.message.header().num_required_signatures);
+        let keys = transaction.message.static_account_keys();
+        if required == 0 || keys.first() != Some(&from) {
+            return Err(invalid("Solana fee payer must match the requested signer"));
+        }
+        let keypair = credentials.solana_keypair()?;
+        if keypair.pubkey() != from {
+            return Err(invalid(
+                "Configured Solana key does not match the requested signer",
+            ));
+        }
+        let message = transaction.message.serialize();
+        for (index, signature) in transaction.signatures.iter().enumerate() {
+            if index == 0 && *signature == Signature::default() {
+                continue;
+            }
+            if !signature.verify(keys[index].as_ref(), &message) {
+                return Err(invalid("Missing or invalid required Solana signature"));
+            }
+        }
+        if transaction.signatures[0] == Signature::default() {
+            transaction.signatures[0] = keypair.sign_message(&message);
+        }
+        Ok(transaction)
     }
 }

@@ -172,7 +172,10 @@ impl<C: Chain> EoaExecutorWorker<C> {
             .send_tx_envelope(tx.into())
             .await
             .map_err(|e| EoaExecutorWorkerError::TransactionSendError {
-                message: format!("Failed to send no-op transaction: {e:?}"),
+                message: format!(
+                    "Failed to send no-op transaction: {}",
+                    engine_core::error::rpc_error_diagnostic(&e)
+                ),
                 inner_error: e.to_engine_error(&self.chain),
             })
             .map(|pending| SubmittedNoopTransaction {
@@ -231,7 +234,10 @@ impl<C: Chain> EoaExecutorWorker<C> {
                                 Ok(tx.with_gas_price(gas_price))
                             }
                             Err(legacy_error) => Err(EoaExecutorWorkerError::RpcError {
-                                message: format!("Failed to get legacy gas price: {legacy_error}"),
+                                message: format!(
+                                    "Failed to get legacy gas price: {}",
+                                    engine_core::error::rpc_error_diagnostic(&legacy_error)
+                                ),
                                 inner_error: legacy_error.to_engine_error(&self.chain),
                             }),
                         }
@@ -243,7 +249,10 @@ impl<C: Chain> EoaExecutorWorker<C> {
                 } else {
                     // Other EIP-1559 error
                     Err(EoaExecutorWorkerError::RpcError {
-                        message: format!("Failed to estimate EIP-1559 fees: {eip1559_error}"),
+                        message: format!(
+                            "Failed to estimate EIP-1559 fees: {}",
+                            engine_core::error::rpc_error_diagnostic(&eip1559_error)
+                        ),
                         inner_error: eip1559_error.to_engine_error(&self.chain),
                     })
                 }
@@ -298,7 +307,7 @@ impl<C: Chain> EoaExecutorWorker<C> {
                 Err(e) => {
                     tracing::warn!(
                         account = ?account_address,
-                        error = ?e,
+                        error = %engine_core::error::rpc_error_diagnostic(&e),
                         "Failed to check delegation status, keeping all authorizations"
                     );
                 }

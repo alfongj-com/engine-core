@@ -151,7 +151,7 @@ pub enum SendContext {
     InitialBroadcast,
 }
 
-#[tracing::instrument(skip_all, fields(error = ?error, context = ?context))]
+#[tracing::instrument(skip_all, fields(context = ?context))]
 pub fn classify_send_error(
     error: &RpcError<TransportErrorKind>,
     context: SendContext,
@@ -305,7 +305,10 @@ impl SubmissionResult {
                         // Transaction failed, should be retried
                         let engine_error = rpc_error.to_engine_error(chain);
                         let error = EoaExecutorWorkerError::TransactionSendError {
-                            message: format!("Transaction send failed: {rpc_error}"),
+                            message: format!(
+                                "Transaction send failed: {}",
+                                engine_core::error::rpc_error_diagnostic(rpc_error)
+                            ),
                             inner_error: engine_error,
                         };
                         SubmissionResult {
@@ -316,7 +319,10 @@ impl SubmissionResult {
                     SendErrorClassification::DeterministicFailureNonRetryable => SubmissionResult {
                         result: SubmissionResultType::Fail(
                             EoaExecutorWorkerError::TransactionSendError {
-                                message: format!("Transaction send failed: {rpc_error}"),
+                                message: format!(
+                                    "Transaction send failed: {}",
+                                    engine_core::error::rpc_error_diagnostic(rpc_error)
+                                ),
                                 inner_error: rpc_error.to_engine_error(chain),
                             },
                         ),

@@ -46,13 +46,10 @@ async fn main() -> anyhow::Result<()> {
         config::LogFormat::Pretty => subscriber.with(tracing_subscriber::fmt::layer()).init(),
     }
 
-    let chains = Arc::new(ThirdwebChainService {
-        secret_key: config.thirdweb.secret.clone(),
-        client_id: config.thirdweb.client_id.clone(),
-        bundler_base_url: config.thirdweb.urls.bundler,
-        paymaster_base_url: config.thirdweb.urls.paymaster,
-        rpc_base_url: config.thirdweb.urls.rpc,
-    });
+    let chains = Arc::new(ThirdwebChainService::new(
+        &config.thirdweb,
+        &config.evm_rpc,
+    )?);
 
     let iaw_client = IAWClient::new(&config.thirdweb.urls.iaw_service)?;
     tracing::info!("IAW client initialized");

@@ -125,6 +125,14 @@ async fn sign_single_message(
                 .await
         }
         SigningOptions::ERC4337(smart_account_options) => {
+            if state.chains.is_configured(smart_account_options.chain_id)
+                && !matches!(signing_credential, SigningCredential::Environment { .. })
+            {
+                return BatchResultItem::failure(EngineError::ValidationError {
+                    message: "Configured RPC access requires the authenticated environment signer"
+                        .into(),
+                });
+            }
             // Smart account signing via builder
             match state.chains.get_chain(smart_account_options.chain_id) {
                 Ok(chain) => {

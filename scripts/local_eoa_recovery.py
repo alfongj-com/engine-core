@@ -6,6 +6,7 @@ public test key 1, funded only in the disposable local node. Never contacts a pu
 """
 import argparse
 import concurrent.futures
+import contextlib
 import json
 import os
 from pathlib import Path
@@ -27,14 +28,22 @@ def port():
         sock.bind(("127.0.0.1", 0))
         return sock.getsockname()[1]
 
+def ports(count):
+    # Hold reservations together so the OS cannot return the same free port twice.
+    with contextlib.ExitStack() as stack:
+        sockets = [stack.enter_context(socket.socket()) for _ in range(count)]
+        for sock in sockets:
+            sock.bind(("127.0.0.1", 0))
+        return [sock.getsockname()[1] for sock in sockets]
+
 def request(url, data=None, headers=None):
     body = None if data is None else json.dumps(data).encode()
     req = urllib.request.Request(url, data=body, headers={"Content-Type": "application/json", **(headers or {})})
     with urllib.request.urlopen(req, timeout=5) as response:
         return response.status, json.load(response)
 
-def rpc(method, params):
-    _, result = request("http://127.0.0.1:8545", {"jsonrpc": "2.0", "id": 1, "method": method, "params": params})
+def rpc(url, method, params):
+    _, result = request(url, {"jsonrpc": "2.0", "id": 1, "method": method, "params": params})
     if "error" in result:
         raise AssertionError(f"{method}: {result['error']}")
     return result["result"]
@@ -64,13 +73,12 @@ def stop(proc, crash=False):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--transactions", type=int, default=24)
+    parser.add_argument("--redis-crash", action="store_true", help="Also SIGKILL Redis and replay its appendfsync=always AOF before restarting Engine")
     parser.add_argument("--report", type=Path)
     args = parser.parse_args()
     assert 1 <= args.transactions <= 40
-    # The inherited local-chain adapter uses a fixed URL. Refuse to touch an existing node.
-    with socket.socket() as sock:
-        sock.bind(("127.0.0.1", 8545))
-    redis_port, server_port = port(), port()
+    redis_port, server_port, anvil_port = ports(3)
+    rpc_url = f"http://127.0.0.1:{anvil_port}"
     run_id = uuid.uuid4().hex
     logs = Path(tempfile.mkdtemp(prefix="engine-eoa-recovery-"))
     token, diagnostic = uuid.uuid4().hex + uuid.uuid4().hex, uuid.uuid4().hex
@@ -80,12 +88,13 @@ def main():
         "ENGINE_SIGNING_TOKEN": token, "APP__REDIS__URL": f"redis://127.0.0.1:{redis_port}/",
         "APP__SERVER__HOST": "127.0.0.1", "APP__SERVER__PORT": str(server_port),
         "APP__SERVER__DIAGNOSTIC_ACCESS_PASSWORD": diagnostic,
+        "APP__EVM_RPC__ENDPOINTS__31337__URL": rpc_url,
         "APP__QUEUE__EXECUTION_NAMESPACE": run_id, "APP__QUEUE__LOCAL_CONCURRENCY": "4",
         "APP__QUEUE__POLLING_INTERVAL_MS": "20", "APP__QUEUE__LEASE_DURATION_SECONDS": "2",
     })
     for name in ["WEBHOOK_WORKERS", "EXTERNAL_BUNDLER_SEND_WORKERS", "USEROP_CONFIRM_WORKERS", "EOA_EXECUTOR_WORKERS", "SOLANA_EXECUTOR_WORKERS"]:
         env[f"APP__QUEUE__{name}"] = "1"
-    headers = {"x-engine-signing-token": token, "x-thirdweb-secret-key": "local-test"}
+    headers = {"x-engine-signing-token": token}
     base = f"http://127.0.0.1:{server_port}"
     children, streams = [], []
     def spawn(command, name, cwd=None, child_env=None):
@@ -98,14 +107,21 @@ def main():
         proc = spawn([str(ROOT / "target/debug/thirdweb-engine")], name, ROOT / "server", env)
         until(lambda: request(base + "/health")[0] == 200)
         return proc
-    report = {"scenario": "local EOA HTTP admission, crash with pending transactions, restart, mine, duplicate admission", "transactions": args.transactions, "log_directory": str(logs)}
+    redis_dir = logs / "redis"
+    redis_dir.mkdir(mode=0o700)
+    def start_redis(name):
+        return spawn([os.environ.get("REDIS_SERVER_BIN", "redis-server"), "--bind", "127.0.0.1", "--port", str(redis_port),
+            "--dir", str(redis_dir), "--save", "", "--appendonly", "yes" if args.redis_crash else "no",
+            "--appendfsync", "always"], name)
+    report = {"scenario": "local EOA HTTP admission, crash with pending transactions, restart, mine, duplicate admission", "transactions": args.transactions, "log_directory": str(logs),
+              "configured_rpc": True, "redis_crash": args.redis_crash}
     started = time.monotonic()
     try:
-        spawn([os.environ.get("REDIS_SERVER_BIN", "redis-server"), "--bind", "127.0.0.1", "--port", str(redis_port), "--save", "", "--appendonly", "no"], "redis.log")
-        spawn([os.environ.get("ANVIL_BIN", "anvil"), "--host", "127.0.0.1", "--port", "8545", "--chain-id", "31337", "--no-mining", "--silent"], "anvil.log")
-        until(lambda: rpc("eth_chainId", []) == "0x7a69")
-        rpc("anvil_setBalance", [FROM, hex(10**21)])
-        initial_balance = int(rpc("eth_getBalance", [TO, "latest"]), 16)
+        redis_process = start_redis("redis-before.log")
+        spawn([os.environ.get("ANVIL_BIN", "anvil"), "--host", "127.0.0.1", "--port", str(anvil_port), "--chain-id", "31337", "--no-mining", "--silent"], "anvil.log")
+        until(lambda: rpc(rpc_url, "eth_chainId", []) == "0x7a69")
+        rpc(rpc_url, "anvil_setBalance", [FROM, hex(10**21)])
+        initial_balance = int(rpc(rpc_url, "eth_getBalance", [TO, "latest"]), 16)
         process = engine("engine-before.log")
         payloads = [{"executionOptions": {"chainId": 31337, "type": "EOA", "from": FROM, "idempotencyKey": f"{run_id}-{i}"},
             "params": [{"to": TO, "value": "0x1", "data": "0x", "gasLimit": 21000}]} for i in range(args.transactions)]
@@ -127,12 +143,15 @@ def main():
             return body
         with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
             list(pool.map(send, payloads))
-        until(lambda: int(rpc("eth_getTransactionCount", [FROM, "pending"]), 16) == args.transactions)
-        assert int(rpc("eth_getTransactionCount", [FROM, "latest"]), 16) == 0
+        until(lambda: int(rpc(rpc_url, "eth_getTransactionCount", [FROM, "pending"]), 16) == args.transactions)
+        assert int(rpc(rpc_url, "eth_getTransactionCount", [FROM, "latest"]), 16) == 0
         stop(process, crash=True)
+        if args.redis_crash:
+            stop(redis_process, crash=True)
+            redis_process = start_redis("redis-after.log")
         process = engine("engine-after.log")
-        rpc("evm_mine", [])
-        until(lambda: int(rpc("eth_getBalance", [TO, "latest"]), 16) == initial_balance + args.transactions)
+        rpc(rpc_url, "evm_mine", [])
+        until(lambda: int(rpc(rpc_url, "eth_getBalance", [TO, "latest"]), 16) == initial_balance + args.transactions)
         def confirmations():
             found = 0
             for payload in payloads:
@@ -147,12 +166,13 @@ def main():
         with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
             list(pool.map(send, payloads))
         time.sleep(2)
-        rpc("evm_mine", [])
-        balance = int(rpc("eth_getBalance", [TO, "latest"]), 16)
+        rpc(rpc_url, "evm_mine", [])
+        balance = int(rpc(rpc_url, "eth_getBalance", [TO, "latest"]), 16)
         assert balance == initial_balance + args.transactions, f"Duplicate effects: recipient gained {balance - initial_balance} wei for {args.transactions} one-wei intents"
-        assert int(rpc("eth_getTransactionCount", [FROM, "pending"]), 16) == args.transactions
+        assert int(rpc(rpc_url, "eth_getTransactionCount", [FROM, "pending"]), 16) == args.transactions
         report.update({"outcome": "pass", "unique_chain_effects": args.transactions, "duplicate_chain_effects": 0, "unauthorized_requests_rejected": 2,
-            "elapsed_seconds": round(time.monotonic() - started, 3), "redis_persistence": "disabled; process-restart test, not Redis power-loss test"})
+            "elapsed_seconds": round(time.monotonic() - started, 3),
+            "redis_persistence": "appendonly=yes, appendfsync=always; Redis SIGKILL and AOF replay, not host power loss or failover" if args.redis_crash else "disabled; Engine process-restart test, not Redis power-loss test"})
     except Exception as error:
         report.update({"outcome": "fail", "error": str(error)})
         raise

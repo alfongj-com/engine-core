@@ -3,12 +3,13 @@ pub mod config;
 pub mod execution_router;
 pub mod http;
 pub mod queue;
+mod solana_admission;
 
 // Re-export commonly used types for integration tests and external usage
 pub use chains::ThirdwebChainService;
 pub use config::{
-    EngineConfig, MonitoringConfig, QueueConfig, RedisConfig, ServerConfig, SolanRpcConfigData,
-    SolanaConfig, ThirdwebConfig, ThirdwebUrls,
+    EngineConfig, EvmRpcConfig, MonitoringConfig, QueueConfig, RedisConfig, ServerConfig,
+    SolanRpcConfigData, SolanaConfig, ThirdwebConfig, ThirdwebUrls,
 };
 pub use execution_router::ExecutionRouter;
 pub use http::server::{EngineServer, EngineServerState};

@@ -4,15 +4,17 @@ use axum::{
     response::{IntoResponse, Json},
 };
 use base64::{Engine, engine::general_purpose::STANDARD as Base64Engine};
-use bincode::config::standard as bincode_standard;
-use engine_core::error::EngineError;
-use engine_solana_core::transaction::SolanaTransaction;
+use engine_core::{error::EngineError, execution_options::solana::SolanaPriorityFee};
+use engine_solana_core::transaction::{
+    SolanaTransaction, SolanaTransactionInput, encode_transaction_wire,
+};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use solana_sdk::signer::Signer;
 
 use crate::http::{
     error::ApiEngineError,
-    extractors::{EngineJson, SigningCredentialsExtractor},
+    extractors::{EngineJson, SolanaSigningCredentialsExtractor},
     server::EngineServerState,
     types::SuccessResponse,
 };
@@ -61,7 +63,7 @@ pub struct SignSolanaTransactionResponse {
 /// Sign a Solana transaction without broadcasting it
 pub async fn sign_solana_transaction(
     State(state): State<EngineServerState>,
-    SigningCredentialsExtractor(signing_credential): SigningCredentialsExtractor,
+    SolanaSigningCredentialsExtractor(signing_credential): SolanaSigningCredentialsExtractor,
     EngineJson(request): EngineJson<SignSolanaTransactionRequest>,
 ) -> Result<impl IntoResponse, ApiEngineError> {
     let chain_id = request.execution_options.chain_id;
@@ -73,21 +75,54 @@ pub async fn sign_solana_transaction(
         "Processing Solana transaction signing request"
     );
 
-    // Get RPC client from cache (same as executor)
-    let rpc_client = state.solana_rpc_cache.get_or_create(chain_id).await;
+    if signing_credential
+        .solana_keypair()
+        .map_err(ApiEngineError)?
+        .pubkey()
+        != signer_address
+    {
+        return Err(ApiEngineError(EngineError::ValidationError {
+            message: "Configured Solana key does not match the requested signer".into(),
+        }));
+    }
 
-    // Get recent blockhash
-    let recent_blockhash = rpc_client.get_latest_blockhash().await.map_err(|e| {
-        ApiEngineError(EngineError::ValidationError {
-            message: format!("Failed to get recent blockhash: {}", e),
-        })
-    })?;
-
-    // Build the transaction
+    let serialized = matches!(&request.input, SolanaTransactionInput::Serialized(_));
+    if serialized
+        && (request.execution_options.compute_unit_limit.is_some()
+            || request.execution_options.priority_fee.is_some())
+    {
+        return Err(ApiEngineError(EngineError::ValidationError {
+            message: "Serialized Solana transactions must contain their own compute budget; signing preserves the supplied message".into(),
+        }));
+    }
+    let compute_unit_price = match request.execution_options.priority_fee {
+        None => None,
+        Some(SolanaPriorityFee::Manual { micro_lamports_per_unit }) => Some(micro_lamports_per_unit),
+        Some(_) => return Err(ApiEngineError(EngineError::ValidationError {
+            message: "Sign-only Solana requests support an explicit manual priority fee; automatic estimation is available through transaction submission".into(),
+        })),
+    };
+    // A serialized transaction already carries its blockhash and signatures. No
+    // RPC call or message rewrite is needed to complete the payer's signature.
+    let recent_blockhash = if serialized {
+        solana_sdk::hash::Hash::default()
+    } else {
+        state
+            .solana_rpc_cache
+            .get_or_create(chain_id)
+            .await
+            .get_latest_blockhash()
+            .await
+            .map_err(|_| {
+                ApiEngineError(EngineError::ValidationError {
+                    message: "Failed to get recent Solana blockhash".into(),
+                })
+            })?
+    };
     let solana_tx = SolanaTransaction {
         input: request.input,
         compute_unit_limit: request.execution_options.compute_unit_limit,
-        compute_unit_price: None, // Will be set if priority fee is configured
+        compute_unit_price,
     };
 
     // Convert to versioned transaction
@@ -110,12 +145,11 @@ pub async fn sign_solana_transaction(
     let signature = signed_tx.signatures[0];
 
     // Serialize the signed transaction to base64
-    let signed_tx_bytes =
-        bincode::serde::encode_to_vec(&signed_tx, bincode_standard()).map_err(|e| {
-            ApiEngineError(EngineError::ValidationError {
-                message: format!("Failed to serialize signed transaction: {}", e),
-            })
-        })?;
+    let signed_tx_bytes = encode_transaction_wire(&signed_tx).map_err(|e| {
+        ApiEngineError(EngineError::ValidationError {
+            message: format!("Failed to serialize signed transaction: {}", e),
+        })
+    })?;
     let signed_tx_base64 = Base64Engine.encode(&signed_tx_bytes);
 
     let response = SignSolanaTransactionResponse {

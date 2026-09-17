@@ -8,18 +8,31 @@ use alloy::{
     },
 };
 use serde::{Deserialize, Serialize};
+use std::{collections::BTreeMap, fmt, time::Duration};
 use thirdweb_core::auth::ThirdwebAuth;
 
 use crate::error::EngineError;
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub enum RpcCredentials {
+    /// Use an operator-configured EVM endpoint; carries no provider credential.
+    Configured,
     Thirdweb(ThirdwebAuth),
+}
+
+impl fmt::Debug for RpcCredentials {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Configured => f.write_str("Configured"),
+            Self::Thirdweb(_) => f.write_str("Thirdweb([redacted])"),
+        }
+    }
 }
 
 impl RpcCredentials {
     pub fn to_header_map(&self) -> Result<HeaderMap, EngineError> {
         let header_map = match self {
+            RpcCredentials::Configured => HeaderMap::new(),
             RpcCredentials::Thirdweb(creds) => creds.to_header_map()?,
         };
 
@@ -27,8 +40,76 @@ impl RpcCredentials {
     }
 }
 
+/// Operator-owned endpoint configuration, never stored with a transaction.
+#[derive(Clone, Default, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct RpcEndpointConfig {
+    pub url: String,
+    #[serde(default)]
+    pub headers: BTreeMap<String, String>,
+    /// Only enable when the endpoint guarantees `pending` means sequencer
+    /// preconfirmation, rather than ordinary mempool acceptance.
+    #[serde(default)]
+    pub use_pending_for_preconfirmation: bool,
+}
+
+impl fmt::Debug for RpcEndpointConfig {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("RpcEndpointConfig")
+            .field("url", &"[redacted]")
+            .field("headers", &"[redacted]")
+            .finish()
+    }
+}
+
+impl RpcEndpointConfig {
+    pub fn validate(&self) -> Result<(Url, HeaderMap), EngineError> {
+        let fail = |message: &str| EngineError::RpcConfigError {
+            message: message.into(),
+        };
+        let url = Url::parse(&self.url).map_err(|_| fail("Invalid configured EVM RPC URL"))?;
+        if !matches!(url.scheme(), "http" | "https")
+            || url.host_str().is_none()
+            || !url.username().is_empty()
+            || url.password().is_some()
+            || url.fragment().is_some()
+        {
+            return Err(fail(
+                "EVM RPC URL must use HTTP(S), without userinfo or a fragment",
+            ));
+        }
+        let mut headers = HeaderMap::new();
+        for (name, value) in &self.headers {
+            let name =
+                alloy::transports::http::reqwest::header::HeaderName::from_bytes(name.as_bytes())
+                    .map_err(|_| fail("Invalid configured EVM RPC header name"))?;
+            if matches!(
+                name.as_str(),
+                "host"
+                    | "content-length"
+                    | "transfer-encoding"
+                    | "connection"
+                    | "proxy-authorization"
+                    | "proxy-connection"
+            ) {
+                return Err(fail(
+                    "Configured EVM RPC header controls HTTP routing or framing",
+                ));
+            }
+            let mut value = HeaderValue::from_str(value)
+                .map_err(|_| fail("Invalid configured EVM RPC header value"))?;
+            value.set_sensitive(true);
+            headers.insert(name, value);
+        }
+        Ok((url, headers))
+    }
+}
+
 pub trait Chain: Send + Sync {
     fn chain_id(&self) -> u64;
+    fn use_pending_for_preconfirmation(&self) -> bool {
+        false
+    }
     fn rpc_url(&self) -> Url;
     fn bundler_url(&self) -> Url;
     fn paymaster_url(&self) -> Url;
@@ -57,6 +138,7 @@ pub struct ThirdwebChain {
     transport_builder: SharedClientTransportBuilder,
 
     chain_id: u64,
+    use_pending_for_preconfirmation: bool,
     rpc_url: Url,
     bundler_url: Url,
     paymaster_url: Url,
@@ -71,6 +153,10 @@ pub struct ThirdwebChain {
 }
 
 impl Chain for ThirdwebChain {
+    fn use_pending_for_preconfirmation(&self) -> bool {
+        self.use_pending_for_preconfirmation
+    }
+
     fn chain_id(&self) -> u64 {
         self.chain_id
     }
@@ -126,6 +212,22 @@ impl Chain for ThirdwebChain {
 
 impl ThirdwebChainConfig<'_> {
     pub fn to_chain(&self) -> Result<ThirdwebChain, EngineError> {
+        self.to_chain_with_rpc(None, Duration::from_secs(30), Duration::from_secs(5))
+    }
+
+    /// Explicit endpoints replace only the standard EVM RPC transport. Bundler
+    /// and paymaster credentials remain scoped to their own request transports.
+    pub fn to_chain_with_rpc(
+        &self,
+        endpoint: Option<&RpcEndpointConfig>,
+        request_timeout: Duration,
+        connect_timeout: Duration,
+    ) -> Result<ThirdwebChain, EngineError> {
+        if request_timeout.is_zero() || connect_timeout.is_zero() {
+            return Err(EngineError::RpcConfigError {
+                message: "RPC timeouts must be positive".into(),
+            });
+        }
         // Special handling for chain ID 31337 (local anvil)
         let (rpc_url, bundler_url, paymaster_url) = if self.chain_id == 31337 {
             // For local anvil, use localhost URLs
@@ -173,6 +275,11 @@ impl ThirdwebChainConfig<'_> {
             (rpc_url, bundler_url, paymaster_url)
         };
 
+        let (rpc_url, rpc_headers) = match endpoint {
+            Some(endpoint) => endpoint.validate()?,
+            None => (rpc_url, HeaderMap::new()),
+        };
+
         let mut sensitive_headers = HeaderMap::new();
 
         // Only add auth headers for non-local chains
@@ -194,12 +301,15 @@ impl ThirdwebChainConfig<'_> {
             );
         }
 
-        let reqwest_client =
-            HttpClientBuilder::new()
-                .build()
-                .map_err(|e| EngineError::RpcConfigError {
-                    message: format!("Failed to build HTTP client: {e}"),
-                })?;
+        let reqwest_client = HttpClientBuilder::new()
+            .timeout(request_timeout)
+            .connect_timeout(connect_timeout)
+            .redirect(alloy::transports::http::reqwest::redirect::Policy::none())
+            .pool_idle_timeout(Duration::from_secs(90))
+            .build()
+            .map_err(|e| EngineError::RpcConfigError {
+                message: format!("Failed to build HTTP client: {e}"),
+            })?;
 
         let transport_builder = SharedClientTransportBuilder::new(reqwest_client.clone());
 
@@ -229,9 +339,11 @@ impl ThirdwebChainConfig<'_> {
             RpcClient::builder().transport(sensitive_paymaster_transport, false);
 
         Ok(ThirdwebChain {
-            transport_builder,
+            transport_builder: transport_builder.clone(),
 
             chain_id: self.chain_id,
+            use_pending_for_preconfirmation: endpoint
+                .is_some_and(|endpoint| endpoint.use_pending_for_preconfirmation),
             rpc_url: rpc_url.clone(),
 
             bundler_client: BundlerClient {
@@ -251,7 +363,10 @@ impl ThirdwebChainConfig<'_> {
 
             provider: ProviderBuilder::new()
                 .disable_recommended_fillers()
-                .connect_http(rpc_url),
+                .connect_client(
+                    RpcClient::builder()
+                        .transport(transport_builder.with_headers(rpc_url, rpc_headers), false),
+                ),
 
             bundler_url,
             paymaster_url,

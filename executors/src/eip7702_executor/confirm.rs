@@ -245,13 +245,13 @@ where
                 tracing::error!(
                     bundler_transaction_id = job_data.bundler_transaction_id,
                     sender_details = ?job_data.sender_details,
-                    error = ?e,
+                    error = %engine_core::error::rpc_error_diagnostic(&e),
                     "Failed to get transaction hash from bundler"
                 );
 
                 if e.is_error_resp() {
                     Eip7702ConfirmationError::TransactionHashError {
-                        message: e.to_string(),
+                        message: engine_core::error::rpc_error_diagnostic(&e),
                     }
                     .fail()
                 } else {
@@ -262,7 +262,7 @@ where
                         "Retrying transaction hash fetch after bundler error"
                     );
                     Eip7702ConfirmationError::TransactionHashError {
-                        message: e.to_string(),
+                        message: engine_core::error::rpc_error_diagnostic(&e),
                     }
                     .nack(Some(transaction_hash_delay), RequeuePosition::Last)
                 }
@@ -306,7 +306,10 @@ where
             .map_err(|e| {
                 // If transaction not found, nack and retry
                 Eip7702ConfirmationError::ConfirmationError {
-                    message: format!("Failed to get transaction receipt: {e}"),
+                    message: format!(
+                        "Failed to get transaction receipt: {}",
+                        engine_core::error::rpc_error_diagnostic(&e)
+                    ),
                     inner_error: Some(e.to_engine_error(&chain)),
                 }
                 .nack(Some(Duration::from_secs(1)), RequeuePosition::Last)

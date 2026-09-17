@@ -12,9 +12,9 @@ use alloy::{
     rpc::json_rpc::{RpcRecv, RpcSend},
 };
 
-/// Extension trait for RpcWithBlock to automatically select block tag based on flashblocks support
+/// Extension trait for RpcWithBlock to select the block tag from an explicit endpoint capability
 pub trait FlashblocksSupport {
-    fn with_flashblocks_support(self, chain_id: u64) -> Self;
+    fn with_flashblocks_support(self, use_pending_for_preconfirmation: bool) -> Self;
 }
 
 impl<Params, Resp, Output, Map> FlashblocksSupport
@@ -24,34 +24,31 @@ where
     Resp: RpcRecv,
     Map: Fn(Resp) -> Output + Clone,
 {
-    fn with_flashblocks_support(self, chain_id: u64) -> Self {
-        match chain_id {
-            8453 | 84532 => self.pending(), // Base Mainnet | Base Sepolia
-            _ => self,
+    fn with_flashblocks_support(self, use_pending_for_preconfirmation: bool) -> Self {
+        if use_pending_for_preconfirmation {
+            self.pending()
+        } else {
+            self
         }
     }
 }
 
-/// Result of fetching transaction counts with flashblocks awareness
+/// Result of fetching transaction counts with explicit endpoint preconfirmation support
 #[derive(Debug, Clone)]
 pub struct TransactionCounts {
     /// Latest confirmed transaction count (always from "latest" block)
     pub latest: u64,
-    /// Preconfirmed transaction count (from "pending" block for flashblocks chains, same as latest for others)
+    /// Preconfirmed count: "pending" only for an explicitly enabled endpoint; otherwise latest.
     pub preconfirmed: u64,
 }
 
-/// Extension trait for Provider to fetch transaction counts with flashblocks awareness
+/// Extension trait for Provider to fetch transaction counts with explicit endpoint preconfirmation support
 pub trait FlashblocksTransactionCount {
     fn get_transaction_counts_with_flashblocks_support(
         &self,
         address: alloy::primitives::Address,
-        chain_id: u64,
+        use_pending_for_preconfirmation: bool,
     ) -> impl Future<Output = Result<TransactionCounts, alloy::transports::TransportError>> + Send;
-}
-
-fn is_flashblocks_chain(chain_id: u64) -> bool {
-    matches!(chain_id, 8453 | 84532)
 }
 
 impl<T> FlashblocksTransactionCount for T
@@ -61,10 +58,10 @@ where
     async fn get_transaction_counts_with_flashblocks_support(
         &self,
         address: alloy::primitives::Address,
-        chain_id: u64,
+        use_pending_for_preconfirmation: bool,
     ) -> Result<TransactionCounts, alloy::transports::TransportError> {
-        if is_flashblocks_chain(chain_id) {
-            // For flashblocks chains, fetch both latest and pending in parallel
+        if use_pending_for_preconfirmation {
+            // For explicitly configured preconfirmation endpoints, fetch both latest and pending in parallel
             let (latest_result, preconfirmed_result) = tokio::try_join!(
                 self.get_transaction_count(address),
                 self.get_transaction_count(address).pending()
@@ -74,7 +71,7 @@ where
                 preconfirmed: preconfirmed_result,
             })
         } else {
-            // For non-flashblocks chains, fetch once and use same value for both
+            // For standard endpoints, fetch once and use same value for both
             let count = self.get_transaction_count(address).await?;
             Ok(TransactionCounts {
                 latest: count,

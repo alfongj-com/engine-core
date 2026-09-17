@@ -105,6 +105,7 @@ pub async fn write_contract(
 ) -> Result<impl IntoResponse, ApiEngineError> {
     let auth: Option<ThirdwebAuth> = match &rpc_credentials {
         engine_core::chain::RpcCredentials::Thirdweb(auth) => Some(auth.clone()),
+        engine_core::chain::RpcCredentials::Configured => None,
     };
 
     let chain_id: ChainId = request.execution_options.chain_id();

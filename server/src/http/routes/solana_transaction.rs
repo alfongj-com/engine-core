@@ -10,7 +10,7 @@ use engine_core::execution_options::solana::{
 
 use crate::http::{
     error::ApiEngineError,
-    extractors::{EngineJson, SigningCredentialsExtractor},
+    extractors::{EngineJson, SolanaSigningCredentialsExtractor},
     server::EngineServerState,
     types::SuccessResponse,
 };
@@ -34,7 +34,7 @@ use crate::http::{
 #[debug_handler]
 pub async fn send_solana_transaction(
     State(state): State<EngineServerState>,
-    SigningCredentialsExtractor(signing_credential): SigningCredentialsExtractor,
+    SolanaSigningCredentialsExtractor(signing_credential): SolanaSigningCredentialsExtractor,
     EngineJson(request): EngineJson<SendSolanaTransactionRequest>,
 ) -> Result<impl IntoResponse, ApiEngineError> {
     let transaction_id = request.idempotency_key.clone();

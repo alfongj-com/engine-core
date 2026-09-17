@@ -81,6 +81,9 @@ impl UserOpSignerParams {
 impl UserOpSigner {
     pub async fn sign(&self, params: UserOpSignerParams) -> Result<Bytes, EngineError> {
         match &params.credentials {
+            SigningCredential::SolanaEnvironment { .. } => Err(EngineError::ValidationError {
+                message: "Solana credentials cannot sign UserOperations".into(),
+            }),
             SigningCredential::Iaw {
                 auth_token,
                 thirdweb_auth,

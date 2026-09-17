@@ -22,3 +22,6 @@ utoipa = { workspace = true, features = [
   "axum_extras",
   "preserve_order",
 ] }
+
+[dev-dependencies]
+bincode_legacy = { package = "bincode", version = "1.3.3" }

@@ -1,4 +1,5 @@
-use std::env;
+use engine_core::chain::RpcEndpointConfig;
+use std::{collections::BTreeMap, env};
 
 use config::{Config, File};
 use serde::Deserialize;
@@ -7,9 +8,30 @@ use serde::Deserialize;
 pub struct EngineConfig {
     pub server: ServerConfig,
     pub thirdweb: ThirdwebConfig,
+    #[serde(default)]
+    pub evm_rpc: EvmRpcConfig,
     pub queue: QueueConfig,
     pub redis: RedisConfig,
     pub solana: SolanaConfig,
+}
+
+/// Only EVM RPC endpoints are overridden; bundler/paymaster configuration is separate.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+pub struct EvmRpcConfig {
+    pub endpoints: BTreeMap<String, RpcEndpointConfig>,
+    pub request_timeout_ms: u64,
+    pub connect_timeout_ms: u64,
+}
+
+impl Default for EvmRpcConfig {
+    fn default() -> Self {
+        Self {
+            endpoints: BTreeMap::new(),
+            request_timeout_ms: 30_000,
+            connect_timeout_ms: 5_000,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -27,10 +49,19 @@ fn default_local_rpc_config() -> SolanRpcConfigData {
     }
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Clone, Deserialize)]
 pub struct SolanRpcConfigData {
     pub http_url: String,
     pub ws_url: String,
+}
+
+impl std::fmt::Debug for SolanRpcConfigData {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SolanRpcConfigData")
+            .field("http_url", &"[redacted]")
+            .field("ws_url", &"[redacted]")
+            .finish()
+    }
 }
 
 #[derive(Debug, Clone, Deserialize)]

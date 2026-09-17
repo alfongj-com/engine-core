@@ -63,6 +63,20 @@ where
             )));
         }
 
+        // Configured provider access uses the same authenticated operator token.
+        // Do not require the EVM key here: the signing extractor validates its own backend.
+        if !parts.headers.contains_key(HEADER_THIRDWEB_CLIENT_ID)
+            && !parts.headers.contains_key(HEADER_THIRDWEB_SERVICE_KEY)
+            && let Some(provided) =
+                SigningCredentialsExtractor::get_header_value(parts, "x-engine-signing-token")
+        {
+            verify_environment_token(
+                &std::env::var("ENGINE_SIGNING_TOKEN").unwrap_or_default(),
+                provided,
+            )?;
+            return Ok(Self(RpcCredentials::Configured));
+        }
+
         // if not, try client id and service key
         let client_id = parts
             .headers
@@ -153,6 +167,25 @@ impl FromRequestParts<EngineServerState> for SigningCredentialsExtractor {
         Err(ApiEngineError(EngineError::ValidationError {
             message: "Missing valid authentication credentials. Provide x-engine-signing-token for the configured local signer, or AWS KMS headers (x-aws-kms-arn, x-aws-access-key-id, x-aws-secret-access-key), IAW credentials (x-wallet-access-token + x-thirdweb-client-id + x-thirdweb-service-key)".to_string(),
         }))
+    }
+}
+
+/// The Solana API intentionally does not reuse EVM key selection.
+#[derive(OperationIo)]
+pub struct SolanaSigningCredentialsExtractor(pub SigningCredential);
+
+impl<S: Send + Sync> FromRequestParts<S> for SolanaSigningCredentialsExtractor {
+    type Rejection = ApiEngineError;
+
+    async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
+        let provided =
+            SigningCredentialsExtractor::get_header_value(parts, "x-engine-signing-token")
+                .unwrap_or_default();
+        verify_environment_token(
+            &std::env::var("ENGINE_SIGNING_TOKEN").unwrap_or_default(),
+            provided,
+        )?;
+        Ok(Self(SigningCredential::solana_environment()?))
     }
 }
 
@@ -269,16 +302,16 @@ impl RpcCredentialsExtractor {
     pub fn into_thirdweb_auth(self) -> Option<ThirdwebAuth> {
         match self.0 {
             RpcCredentials::Thirdweb(auth) => Some(auth),
-            // _ => None,
+            RpcCredentials::Configured => None,
         }
     }
 }
 
 impl OptionalRpcCredentialsExtractor {
     pub fn into_thirdweb_auth(self) -> Option<ThirdwebAuth> {
-        self.0.map(|creds| match creds {
-            RpcCredentials::Thirdweb(auth) => auth,
-            // _ => None,
+        self.0.and_then(|creds| match creds {
+            RpcCredentials::Thirdweb(auth) => Some(auth),
+            RpcCredentials::Configured => None,
         })
     }
 }

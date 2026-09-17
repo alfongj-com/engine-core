@@ -226,7 +226,7 @@ where
             .await
             .map_err(|e| UserOpConfirmationError::ReceiptQueryFailed {
                 user_op_hash: job_data.user_op_hash.clone(),
-                message: e.to_string(),
+                message: engine_core::error::rpc_error_diagnostic(&e),
                 inner_error: Some(e.to_engine_bundler_error(&chain)),
             })
             .map_err_nack(Some(self.confirmation_retry_delay), RequeuePosition::Last)?;

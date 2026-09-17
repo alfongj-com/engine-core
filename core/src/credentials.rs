@@ -44,6 +44,28 @@ impl SigningCredential {
         }
     }
 
+    /// Persist only the configured Solana public identity, never the key file or bytes.
+    pub fn solana_environment() -> Result<Self, EngineError> {
+        use solana_sdk::signer::Signer;
+        Ok(Self::SolanaEnvironment {
+            public_key: environment_solana_keypair()?.pubkey(),
+        })
+    }
+
+    pub fn solana_keypair(&self) -> Result<solana_sdk::signature::Keypair, EngineError> {
+        use solana_sdk::signer::Signer;
+        let Self::SolanaEnvironment { public_key } = self else {
+            return Err(EngineError::ValidationError {
+                message: "A configured Solana signer is required".into(),
+            });
+        };
+        let keypair = environment_solana_keypair()?;
+        if keypair.pubkey() != *public_key {
+            return Err(EngineError::ValidationError { message: "Configured Solana signing key changed since admission; reconcile queued jobs before rotating keys".into() });
+        }
+        Ok(keypair)
+    }
+
     /// Inject KMS cache into AWS KMS credentials (useful after deserialization)
     pub fn with_aws_kms_cache(self, kms_client_cache: &KmsClientCache) -> Self {
         match self {
@@ -57,6 +79,10 @@ impl SigningCredential {
 
 #[derive(Clone, Serialize, Deserialize)]
 pub enum SigningCredential {
+    /// Public identity of ENGINE_SOLANA_KEYPAIR_FILE, resolved by each worker.
+    SolanaEnvironment {
+        public_key: solana_sdk::pubkey::Pubkey,
+    },
     /// Reference to ENGINE_PRIVATE_KEY, pinned to its public address across queue retries.
     Environment {
         address: Address,
@@ -200,6 +226,10 @@ pub fn validate_signer_address(actual: Address, requested: Address) -> Result<()
 impl std::fmt::Debug for SigningCredential {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::SolanaEnvironment { public_key } => f
+                .debug_struct("SolanaEnvironment")
+                .field("public_key", public_key)
+                .finish(),
             Self::Environment { address } => f
                 .debug_struct("Environment")
                 .field("address", address)
@@ -222,4 +252,23 @@ impl std::fmt::Debug for AwsKmsCredential {
             .field("credentials", &"[REDACTED]")
             .finish()
     }
+}
+
+/// Read a Solana CLI keypair file with bounded input and non-secret error messages.
+fn environment_solana_keypair() -> Result<solana_sdk::signature::Keypair, EngineError> {
+    use std::io::Read;
+    let invalid = || {
+        EngineError::ValidationError { message: "ENGINE_SOLANA_KEYPAIR_FILE must refer to a readable Solana CLI JSON keypair containing 64 valid bytes".into() }
+    };
+    let path = std::env::var_os("ENGINE_SOLANA_KEYPAIR_FILE").ok_or_else(invalid)?;
+    let file = std::fs::File::open(path).map_err(|_| invalid())?;
+    let mut encoded = Vec::new();
+    file.take(4097)
+        .read_to_end(&mut encoded)
+        .map_err(|_| invalid())?;
+    if encoded.len() > 4096 {
+        return Err(invalid());
+    }
+    let bytes: Vec<u8> = serde_json::from_slice(&encoded).map_err(|_| invalid())?;
+    solana_sdk::signature::Keypair::try_from(bytes.as_slice()).map_err(|_| invalid())
 }

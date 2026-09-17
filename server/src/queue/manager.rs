@@ -58,6 +58,11 @@ impl QueueManager {
         authorization_cache: EoaAuthorizationCache,
         kms_client_cache: KmsClientCache,
     ) -> Result<Self, EngineError> {
+        if queue_config.completed_transaction_ttl_seconds == 0 {
+            return Err(EngineError::ValidationError {
+                message: "completed_transaction_ttl_seconds must be positive".into(),
+            });
+        }
         // Create transaction registry
         let transaction_registry = Arc::new(TransactionRegistry::new(
             redis_client.get_connection_manager().await?,
@@ -287,7 +292,8 @@ impl QueueManager {
         let solana_storage = SolanaTransactionStorage::new(
             redis_client.get_connection_manager().await?,
             queue_config.execution_namespace.clone(),
-        );
+        )
+        .with_completed_transaction_ttl_seconds(queue_config.completed_transaction_ttl_seconds);
         let solana_executor_handler = SolanaExecutorJobHandler {
             solana_signer,
             rpc_cache: solana_rpc_cache,

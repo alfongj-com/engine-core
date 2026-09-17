@@ -57,6 +57,25 @@ impl ExecutionRouter {
         signing_credential: engine_core::credentials::SigningCredential,
     ) -> Result<Vec<QueuedTransaction>, EngineError> {
         validate_execution_request(&execution_request)?;
+        if self
+            .chains
+            .is_configured(execution_request.execution_options.base.chain_id)
+            && !matches!(rpc_credentials, RpcCredentials::Configured)
+        {
+            return Err(EngineError::ValidationError { message: "Configured RPC access requires x-engine-signing-token without Thirdweb RPC headers".into() });
+        }
+        if matches!(rpc_credentials, RpcCredentials::Configured)
+            && (!self
+                .chains
+                .is_configured(execution_request.execution_options.base.chain_id)
+                || !matches!(
+                    execution_request.execution_options.specific,
+                    SpecificExecutionOptions::EOA(_)
+                ))
+        {
+            return Err(EngineError::ValidationError { message: "Configured RPC credentials require an explicitly configured chain and EOA execution".into() });
+        }
+
         match execution_request.execution_options.specific {
             SpecificExecutionOptions::ERC4337(ref erc4337_execution_options) => {
 
@@ -378,9 +397,43 @@ impl ExecutionRouter {
             QueuedSolanaTransactionResponse, SolanaTransactionOptions,
         };
 
+        if request.execution_options.max_blockhash_retries != 0 {
+            return Err(EngineError::ValidationError { message: "Automatic Solana resubmission with a new blockhash is unsupported: maxBlockhashRetries must be 0; ambiguous expired transactions require operator reconciliation".into() });
+        }
         let transaction_id = request.idempotency_key.clone();
         let chain_id = request.execution_options.chain_id;
         let signer_address = request.execution_options.signer_address;
+        match &signing_credential {
+            SigningCredential::SolanaEnvironment { public_key }
+                if *public_key == signer_address => {}
+            _ => {
+                return Err(EngineError::ValidationError {
+                    message: "Configured Solana signer does not match the requested payer".into(),
+                });
+            }
+        }
+
+        if matches!(
+            &request.input,
+            engine_solana_core::transaction::SolanaTransactionInput::Serialized(_)
+        ) {
+            if request.execution_options.compute_unit_limit.is_some()
+                || request.execution_options.priority_fee.is_some()
+            {
+                return Err(EngineError::ValidationError { message: "Serialized Solana transactions must contain their own compute budget; submission preserves the supplied message".into() });
+            }
+            // Reject malformed wire/payer before durable admission. Cryptographic
+            // signature validation is performed by the signer before broadcast.
+            engine_solana_core::transaction::SolanaTransaction {
+                input: request.input.clone(),
+                compute_unit_limit: None,
+                compute_unit_price: None,
+            }
+            .to_versioned_transaction(signer_address, solana_sdk::hash::Hash::default())
+            .map_err(|error| EngineError::ValidationError {
+                message: error.to_string(),
+            })?;
+        }
 
         let transaction = SolanaTransactionOptions {
             input: request.input,
@@ -394,24 +447,14 @@ impl ExecutionRouter {
             webhook_options: request.webhook_options,
         };
 
-        // Register transaction in registry first
-        self.transaction_registry
-            .set_transaction_queue(&transaction_id, "solana_executor")
-            .await
-            .map_err(|e| EngineError::InternalError {
-                message: format!("Failed to register transaction: {e}"),
-            })?;
-
-        // Create job with transaction ID as the job ID for idempotency
-        self.solana_executor_queue
-            .clone()
-            .job(job_data)
-            .with_id(&transaction_id)
-            .push()
-            .await
-            .map_err(|e| EngineError::InternalError {
-                message: format!("Failed to queue Solana transaction: {e}"),
-            })?;
+        crate::solana_admission::admit(
+            &self.redis,
+            &self.solana_executor_queue,
+            &self.transaction_registry,
+            &self.solana_executor_queue.handler.storage,
+            &job_data,
+        )
+        .await?;
 
         tracing::debug!(
             transaction_id = %transaction_id,

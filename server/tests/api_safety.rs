@@ -74,6 +74,13 @@ async fn start_redis() -> (DisposableRedis, twmq::redis::Client) {
 }
 
 async fn state(client: twmq::redis::Client) -> EngineServerState {
+    state_with_rpc(client, thirdweb_engine::EvmRpcConfig::default()).await
+}
+
+async fn state_with_rpc(
+    client: twmq::redis::Client,
+    evm_rpc: thirdweb_engine::EvmRpcConfig,
+) -> EngineServerState {
     let config = QueueConfig {
         webhook_workers: 1,
         external_bundler_send_workers: 1,
@@ -89,13 +96,23 @@ async fn state(client: twmq::redis::Client) -> EngineServerState {
     };
     // Port 1 has no test RPC service. An accidental network dependency must fail.
     let rpc_url = "http://127.0.0.1:1";
-    let chains = Arc::new(ThirdwebChainService {
-        client_id: "test".into(),
-        secret_key: "test".into(),
-        rpc_base_url: "invalid".into(),
-        bundler_base_url: "invalid".into(),
-        paymaster_base_url: "invalid".into(),
-    });
+    let chains = Arc::new(
+        ThirdwebChainService::new(
+            &thirdweb_engine::ThirdwebConfig {
+                client_id: "test".into(),
+                secret: "test".into(),
+                urls: thirdweb_engine::ThirdwebUrls {
+                    rpc: "invalid".into(),
+                    bundler: "invalid".into(),
+                    paymaster: "invalid".into(),
+                    abi_service: rpc_url.into(),
+                    iaw_service: rpc_url.into(),
+                },
+            },
+            &evm_rpc,
+        )
+        .unwrap(),
+    );
     let iaw = IAWClient::new(rpc_url).unwrap();
     let userop_signer = Arc::new(UserOpSigner {
         iaw_client: iaw.clone(),
@@ -386,4 +403,176 @@ async fn public_routes_reject_unauthorized_mutations_and_invalid_execution() {
         Err(JobError::Fail(_))
     ));
     server.shutdown().await.unwrap();
+}
+
+#[test]
+#[ignore = "requires redis-server; isolated credentials and actual loopback HTTP"]
+fn configured_signer_routes_authenticate_and_queue_only_public_identity() {
+    use solana_sdk::{signature::Keypair, signer::Signer};
+    const TEST: &str = "configured_signer_routes_authenticate_and_queue_only_public_identity";
+    const CHILD: &str = "ENGINE_CONFIGURED_SIGNER_TEST_CHILD";
+    if std::env::var_os(CHILD).is_none() {
+        use std::io::Write;
+        let path = std::env::temp_dir().join(format!(
+            "engine-http-solana-{}-{}.json",
+            std::process::id(),
+            rand::random::<u64>()
+        ));
+        let mut options = std::fs::OpenOptions::new();
+        options.write(true).create_new(true);
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::OpenOptionsExt;
+            options.mode(0o600);
+        }
+        options
+            .open(&path)
+            .unwrap()
+            .write_all(&serde_json::to_vec(&Keypair::new().to_bytes().to_vec()).unwrap())
+            .unwrap();
+        let evm_key = alloy::signers::local::PrivateKeySigner::random();
+        let output = Command::new(std::env::current_exe().unwrap())
+            .args(["--exact", TEST, "--ignored", "--nocapture"])
+            .env(CHILD, "1")
+            .env("ENGINE_SOLANA_KEYPAIR_FILE", &path)
+            .env("ENGINE_PRIVATE_KEY", format!("{:#x}", evm_key.to_bytes()))
+            .env(
+                "ENGINE_SIGNING_TOKEN",
+                "isolated-test-operator-token-with-32-bytes",
+            )
+            .output()
+            .unwrap();
+        std::fs::remove_file(path).unwrap();
+        assert!(
+            output.status.success(),
+            "{}\n{}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+        return;
+    }
+    tokio::runtime::Runtime::new().unwrap().block_on(async {
+        use base64::{Engine, engine::general_purpose::STANDARD};
+        use engine_solana_core::transaction::{decode_transaction_wire, encode_transaction_wire};
+        use solana_sdk::{hash::Hash, message::{Message, VersionedMessage}, signature::Signature, transaction::VersionedTransaction};
+        let (_redis, client) = start_redis().await;
+        let config = thirdweb_engine::EvmRpcConfig { endpoints: [("31337".into(), engine_core::chain::RpcEndpointConfig { url: "http://127.0.0.1:1".into(), ..Default::default() })].into(), ..Default::default() };
+        let state = state_with_rpc(client.clone(), config).await;
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let url = format!("http://{}", listener.local_addr().unwrap());
+        let mut server = EngineServer::new(state.clone()).await;
+        server.start(listener).unwrap();
+        let http = reqwest::Client::builder().timeout(Duration::from_secs(5)).build().unwrap();
+        let solana_credentials = SigningCredential::solana_environment().unwrap();
+        let payer = solana_credentials.solana_keypair().unwrap().pubkey();
+        let unsigned = VersionedTransaction { signatures: vec![Signature::default()], message: VersionedMessage::Legacy(Message::new_with_blockhash(&[], Some(&payer), &Hash::new_unique())) };
+        let body = json!({"transaction": STANDARD.encode(encode_transaction_wire(&unsigned).unwrap()), "executionOptions": {"signerAddress": payer.to_string(), "chainId":"solana:local"}});
+        for route in ["/v1/solana/sign/transaction", "/v1/solana/transaction"] {
+            for token in [None, Some("wrong-token")] {
+                let mut request = http.post(format!("{url}{route}")).json(&body);
+                if let Some(token) = token { request = request.header("x-engine-signing-token", token); }
+                assert!(request.send().await.unwrap().status().is_client_error());
+            }
+        }
+        let response = http.post(format!("{url}/v1/solana/sign/transaction"))
+            .header("x-engine-signing-token", "isolated-test-operator-token-with-32-bytes").json(&body).send().await.unwrap();
+        let status = response.status();
+        let response: serde_json::Value = response.json().await.unwrap();
+        assert_eq!(status, reqwest::StatusCode::OK, "serialized signing must work with the RPC unavailable: {response}");
+        let signed = decode_transaction_wire(&STANDARD.decode(response["result"]["signedTransaction"].as_str().unwrap()).unwrap()).unwrap();
+        assert_eq!(signed.message.serialize(), unsigned.message.serialize());
+        assert!(signed.signatures[0].verify(payer.as_ref(), &signed.message.serialize()));
+        assert_eq!(signed.signatures[0].to_string(), response["result"]["signature"]);
+        let mut queued = body.clone(); queued["idempotencyKey"] = json!("solana-authenticated");
+        let response = http.post(format!("{url}/v1/solana/transaction"))
+            .header("x-engine-signing-token", "isolated-test-operator-token-with-32-bytes").json(&queued).send().await.unwrap();
+        assert_eq!(response.status(), reqwest::StatusCode::ACCEPTED);
+        let retries = futures::future::join_all((0..16).map(|_| {
+            http.post(format!("{url}/v1/solana/transaction"))
+                .header("x-engine-signing-token", "isolated-test-operator-token-with-32-bytes")
+                .json(&queued).send()
+        })).await;
+        assert!(retries.into_iter().all(|response| response.unwrap().status() == reqwest::StatusCode::ACCEPTED));
+        assert_eq!(state.queue_manager.solana_executor_queue.count(JobStatus::Pending).await.unwrap(), 1);
+        let mut changed_intent = queued.clone();
+        changed_intent["executionOptions"]["commitment"] = json!("confirmed");
+        let response = http.post(format!("{url}/v1/solana/transaction"))
+            .header("x-engine-signing-token", "isolated-test-operator-token-with-32-bytes")
+            .json(&changed_intent).send().await.unwrap();
+        assert_eq!(response.status(), reqwest::StatusCode::BAD_REQUEST);
+        assert!(response.text().await.unwrap().contains("different request"));
+        let persisted = state.queue_manager.solana_executor_queue.get_job("solana-authenticated").await.unwrap().unwrap();
+        assert!(matches!(persisted.data.signing_credential, SigningCredential::SolanaEnvironment { public_key } if public_key == payer));
+        let persisted = serde_json::to_string(&persisted.data).unwrap();
+        assert!(!persisted.contains("isolated-test-operator-token-with-32-bytes"));
+        assert!(!persisted.contains(&std::env::var("ENGINE_SOLANA_KEYPAIR_FILE").unwrap()));
+        for field in ["signerAddress", "computeUnitLimit"] {
+            let mut invalid = body.clone();
+            invalid["idempotencyKey"] = json!("invalid-solana");
+            invalid["executionOptions"][field] = if field == "signerAddress" { json!(Keypair::new().pubkey().to_string()) } else { json!(1000) };
+            for route in ["/v1/solana/sign/transaction", "/v1/solana/transaction"] {
+                let response = http.post(format!("{url}{route}")).header("x-engine-signing-token", "isolated-test-operator-token-with-32-bytes").json(&invalid).send().await.unwrap();
+                assert_eq!(response.status(), reqwest::StatusCode::BAD_REQUEST);
+            }
+        }
+        assert!(state.queue_manager.solana_executor_queue.get_job("invalid-solana").await.unwrap().is_none());
+        let mut retry_request = queued.clone();
+        retry_request["idempotencyKey"] = json!("unsupported-solana-retry");
+        retry_request["executionOptions"]["maxBlockhashRetries"] = json!(1);
+        let response = http.post(format!("{url}/v1/solana/transaction"))
+            .header("x-engine-signing-token", "isolated-test-operator-token-with-32-bytes")
+            .json(&retry_request).send().await.unwrap();
+        assert_eq!(response.status(), reqwest::StatusCode::BAD_REQUEST);
+        assert!(response.text().await.unwrap().contains("maxBlockhashRetries must be 0"));
+        assert!(state.queue_manager.solana_executor_queue.get_job("unsupported-solana-retry").await.unwrap().is_none());
+        let evm_credentials = SigningCredential::environment().unwrap();
+        let evm_address = evm_credentials.local_signer().unwrap().address();
+        let evm_body = json!({"executionOptions":{"type":"EOA", "chainId":31337, "from":evm_address, "idempotencyKey":"configured-eoa"}, "params":[{"to":evm_address,"value":"0"}]});
+        for token in [None, Some("wrong-token")] {
+            let mut request = http.post(format!("{url}/v1/write/transaction")).json(&evm_body);
+            if let Some(token) = token { request = request.header("x-engine-signing-token", token); }
+            assert!(request.send().await.unwrap().status().is_client_error());
+        }
+        // Caller-supplied Thirdweb headers cannot select the operator's paid RPC.
+        let response = http.post(format!("{url}/v1/write/transaction"))
+            .header("x-thirdweb-client-id", "fake").header("x-thirdweb-service-key", "fake").header("x-wallet-access-token", "fake")
+            .json(&evm_body).send().await.unwrap();
+        assert_eq!(response.status(), reqwest::StatusCode::BAD_REQUEST);
+        let response = http.post(format!("{url}/v1/write/transaction"))
+            .header("x-engine-signing-token", "isolated-test-operator-token-with-32-bytes").json(&evm_body).send().await.unwrap();
+        assert_eq!(response.status(), reqwest::StatusCode::ACCEPTED);
+        let store = engine_executors::eoa::EoaExecutorStore::new(client.get_connection_manager().await.unwrap(), Some("api_safety".into()), evm_address, 31337, 3600);
+        let stored = store.get_transaction_data("configured-eoa").await.unwrap().unwrap();
+        let stored_json = serde_json::to_string(&stored).unwrap();
+        assert!(stored_json.contains("Configured"));
+        assert!(!stored_json.contains("isolated-test-operator-token-with-32-bytes"));
+        assert!(!stored_json.contains(&std::env::var("ENGINE_PRIVATE_KEY").unwrap()));
+        for token in [None, Some("wrong-token")] {
+            let mut request = http.post(format!("{url}/v1/read/contract"))
+                .json(&json!({"readOptions":{"chainId":31337}, "params":[]}));
+            if let Some(token) = token { request = request.header("x-engine-signing-token", token); }
+            let response = request.send().await.unwrap();
+            assert_eq!(response.status(), reqwest::StatusCode::BAD_REQUEST);
+            assert!(response.text().await.unwrap().contains("Configured RPC access requires"));
+        }
+        // Smart-account signing can query a factory before remote wallet auth.
+        // Reject fake IAW credentials before they can spend the configured RPC quota.
+        for (route, params) in [
+            ("/v1/sign/message", json!([{"message":"test", "format":"text"}])),
+            ("/v1/sign/typed-data", json!([{"types":{"EIP712Domain":[],"Test":[{"name":"value","type":"uint256"}]},"primaryType":"Test","domain":{},"message":{"value":"1"}}])),
+        ] {
+            let response = http.post(format!("{url}{route}"))
+                .header("x-thirdweb-client-id", "fake").header("x-thirdweb-service-key", "fake").header("x-wallet-access-token", "fake")
+                .json(&json!({"signingOptions":{"type":"ERC4337","chainId":31337,"signerAddress":evm_address}, "params":params}))
+                .send().await.unwrap();
+            assert_eq!(response.status(), reqwest::StatusCode::OK);
+            let response = response.text().await.unwrap();
+            assert!(response.contains("Configured RPC access requires"), "{route}: {response}");
+        }
+        let mut wrong_chain = evm_body.clone(); wrong_chain["executionOptions"]["chainId"] = json!(1);
+        let response = http.post(format!("{url}/v1/write/transaction"))
+            .header("x-engine-signing-token", "isolated-test-operator-token-with-32-bytes").json(&wrong_chain).send().await.unwrap();
+        assert_eq!(response.status(), reqwest::StatusCode::BAD_REQUEST);
+        server.shutdown().await.unwrap();
+    });
 }

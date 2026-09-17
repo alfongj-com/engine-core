@@ -59,7 +59,7 @@ async fn fetch_confirmed_transaction_receipts(
                 }
                 Ok(None) => None,
                 Err(error) => {
-                    tracing::warn!(transaction_hash = tx.transaction_hash, %error, "Receipt query failed; keeping outcome unresolved");
+                    tracing::warn!(transaction_hash = tx.transaction_hash, error = %engine_core::error::rpc_error_diagnostic(&error), "Receipt query failed; keeping outcome unresolved");
                     None
                 }
             }
@@ -84,7 +84,10 @@ impl<C: Chain> EoaExecutorWorker<C> {
         let transaction_counts = self
             .chain
             .provider()
-            .get_transaction_counts_with_flashblocks_support(self.eoa, self.chain.chain_id())
+            .get_transaction_counts_with_flashblocks_support(
+                self.eoa,
+                self.chain.use_pending_for_preconfirmation(),
+            )
             .await
             .map_err(|e| {
                 let engine_error = e.to_engine_error(&self.chain);
@@ -412,7 +415,7 @@ impl<C: Chain> EoaExecutorWorker<C> {
                         .provider()
                         .get_transaction_counts_with_flashblocks_support(
                             self.eoa,
-                            self.chain.chain_id(),
+                            self.chain.use_pending_for_preconfirmation(),
                         )
                         .await
                     {
@@ -422,7 +425,7 @@ impl<C: Chain> EoaExecutorWorker<C> {
                                 transaction_id = ?newest_transaction_data.transaction_id,
                                 nonce = expected_nonce,
                                 error = ?e,
-                                rpc_check_error = ?rpc_error,
+                                rpc_check_error = %engine_core::error::rpc_error_diagnostic(&rpc_error),
                                 "Failed to build typed transaction for gas bump and also failed to check nonce"
                             );
                             return Err(e);
@@ -517,7 +520,7 @@ impl<C: Chain> EoaExecutorWorker<C> {
                     tracing::warn!(
                         transaction_id = ?newest_transaction_data.transaction_id,
                         nonce = expected_nonce,
-                        error = ?e,
+                        error = %engine_core::error::rpc_error_diagnostic(&e),
                         "Failed to send gas bumped transaction"
                     );
                     // Don't fail the worker, just log the error

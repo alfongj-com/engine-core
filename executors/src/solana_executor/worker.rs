@@ -10,12 +10,19 @@ use engine_core::{
 };
 use engine_solana_core::{
     SolanaInstructionData,
-    transaction::{InstructionDataEncoding, SolanaTransaction},
+    transaction::{
+        InstructionDataEncoding, SolanaTransaction, SolanaTransactionInput,
+        decode_transaction_wire, encode_transaction_wire,
+    },
 };
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 use solana_commitment_config::{CommitmentConfig, CommitmentLevel};
 use solana_rpc_client::nonblocking::rpc_client::RpcClient;
-use solana_rpc_client_api::config::{RpcSendTransactionConfig, RpcTransactionConfig};
+use solana_rpc_client_api::{
+    config::{RpcSendTransactionConfig, RpcTransactionConfig},
+    request::RpcRequest,
+};
 use solana_sdk::pubkey::Pubkey;
 use solana_transaction_status::{EncodedTransactionWithStatusMeta, UiTransactionEncoding};
 use spl_memo_interface::instruction::build_memo;
@@ -43,6 +50,10 @@ use crate::{
 const CONFIRMATION_RETRY_DELAY: Duration = Duration::from_millis(200);
 const NETWORK_ERROR_RETRY_DELAY: Duration = Duration::from_secs(2);
 const MAX_SEND_ATTEMPTS_WITHOUT_TRANSACTION: u32 = 500;
+const MAX_RECONCILIATION_CHECKS: u32 = 500;
+const MAX_BROADCASTS_PER_ATTEMPT: u32 = 20;
+const RECOVERY_PARK_DELAY: Duration = Duration::from_secs(3600);
+const PROCESS_TIMEOUT: Duration = Duration::from_secs(90); // shorter than the 120s storage lock
 
 // ========== JOB DATA ==========
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -144,6 +155,10 @@ pub enum SolanaExecutorError {
 
     #[error("Internal error: {message}")]
     InternalError { message: String },
+
+    #[error("Transaction outcome unresolved; recovery evidence retained: {reason}")]
+    #[serde(rename_all = "camelCase")]
+    RecoveryRequired { signature: String, reason: String },
 
     #[error("Transaction cancelled by user")]
     UserCancelled,
@@ -247,7 +262,10 @@ impl DurableExecution for SolanaExecutorJobHandler {
                         .nack(Some(CONFIRMATION_RETRY_DELAY), RequeuePosition::Last)
                 }
                 LockError::RedisError(msg) => {
-                    SolanaExecutorError::InternalError { message: msg }.fail()
+                    // An unavailable store says nothing about a prior broadcast's outcome.
+                    // Requeue before creating an RPC client or touching the chain.
+                    SolanaExecutorError::InternalError { message: msg }
+                        .nack(Some(NETWORK_ERROR_RETRY_DELAY), RequeuePosition::Last)
                 }
             })?;
 
@@ -258,9 +276,19 @@ impl DurableExecution for SolanaExecutorJobHandler {
             .get_or_create(data.transaction.execution_options.chain_id)
             .await;
 
-        let result = self
-            .execute_transaction(&rpc_client, data, &lock, job.job.attempts)
-            .await;
+        let result = tokio::time::timeout(
+            PROCESS_TIMEOUT,
+            self.execute_transaction(&rpc_client, data, &lock, job.job.attempts),
+        )
+        .await
+        .unwrap_or_else(|_| {
+            Err(SolanaExecutorError::InternalError {
+                message:
+                    "Solana processing deadline exceeded; any persisted attempt will be reconciled"
+                        .into(),
+            }
+            .nack(Some(NETWORK_ERROR_RETRY_DELAY), RequeuePosition::Last))
+        });
 
         if let Err(e) = lock.release().await {
             warn!(transaction_id = %transaction_id, error = ?e, "Failed to release lock");
@@ -283,7 +311,19 @@ impl DurableExecution for SolanaExecutorJobHandler {
             "Transaction confirmed"
         );
 
-        let _ = self.storage.delete_attempt(transaction_id).await;
+        if let Ok(fingerprint) =
+            crate::solana_executor::storage::solana_admission_fingerprint(&job.job.data)
+        {
+            self.storage.add_terminal_admission_command(
+                tx.pipeline(),
+                transaction_id,
+                &fingerprint,
+                "completed",
+                false,
+            );
+        }
+        self.storage
+            .add_delete_attempt_command(tx.pipeline(), transaction_id);
         self.transaction_registry
             .add_remove_command(tx.pipeline(), transaction_id);
 
@@ -309,7 +349,42 @@ impl DurableExecution for SolanaExecutorJobHandler {
             "Transaction permanently failed"
         );
 
-        let _ = self.storage.delete_attempt(transaction_id).await;
+        // Cancellation and infrastructure failures do not establish the on-chain outcome.
+        // Keep their signed attempt available for explicit reconciliation.
+        if let Ok(fingerprint) =
+            crate::solana_executor::storage::solana_admission_fingerprint(&job.job.data)
+        {
+            match fail_data.error {
+                SolanaExecutorError::TransactionFailed { .. } => {
+                    self.storage.add_terminal_admission_command(
+                        tx.pipeline(),
+                        transaction_id,
+                        &fingerprint,
+                        "failed",
+                        false,
+                    )
+                }
+                SolanaExecutorError::TransactionBuildFailed { .. }
+                | SolanaExecutorError::SigningFailed { .. }
+                | SolanaExecutorError::MaxRetriesExceeded { .. } => {
+                    self.storage.add_terminal_admission_command(
+                        tx.pipeline(),
+                        transaction_id,
+                        &fingerprint,
+                        "failed",
+                        true,
+                    )
+                }
+                _ => {}
+            }
+        }
+        if matches!(
+            fail_data.error,
+            SolanaExecutorError::TransactionFailed { .. }
+        ) {
+            self.storage
+                .add_delete_attempt_command(tx.pipeline(), transaction_id);
+        }
         self.transaction_registry
             .add_remove_command(tx.pipeline(), transaction_id);
 
@@ -372,6 +447,9 @@ impl DurableExecution for SolanaExecutorJobHandler {
 
             // Don't send webhook for NotYetConfirmed - silent retry
             SolanaExecutorError::NotYetConfirmed { .. } => {}
+            SolanaExecutorError::RecoveryRequired { .. } => {
+                warn!(transaction_id = %transaction_id, "Solana recovery paused; operator reconciliation required");
+            }
 
             // For all other errors (network errors, RPC errors, etc.), send nack webhook
             _ => {
@@ -417,7 +495,6 @@ impl SolanaExecutorJobHandler {
             .map_err(|e| {
                 warn!(
                     chain_id = %chain_id,
-                    error = %e,
                     "Failed to get priority fees"
                 );
                 let engine_error = self.to_engine_solana_error(&e, chain_id);
@@ -492,13 +569,8 @@ impl SolanaExecutorJobHandler {
         }
     }
 
-    /// Main execution flow:
-    /// 1. Fetch last attempt from storage
-    /// 2. If attempt exists, check if confirmed
-    /// 3. If confirmed, return success
-    /// 4. If not confirmed, check if blockhash valid
-    /// 5. If blockhash invalid or no attempt exists, send new transaction
-    /// 6. Retry until limit
+    /// Reconcile durable signed bytes before considering a new signature. A receipt
+    /// cache miss or elapsed wall time never permits rebuilding a transaction.
     async fn execute_transaction(
         &self,
         rpc_client: &RpcClient,
@@ -517,272 +589,109 @@ impl SolanaExecutorJobHandler {
         let commitment = CommitmentConfig {
             commitment: commitment_level,
         };
-        let max_retries = job_data.transaction.execution_options.max_blockhash_retries;
-
-        // Verify we still hold the lock
         self.verify_lock(lock, transaction_id).await?;
-
-        // Step 1: Fetch last attempt from storage
         let stored_attempt = self
             .storage
             .get_attempt(transaction_id, lock)
             .await
             .map_err(|e| self.handle_redis_error(e, transaction_id))?;
 
-        if let Some(attempt) = &stored_attempt {
-            // Step 2: Attempt exists, check confirmation status
-            let signature = attempt.signature;
-            let submission_attempt_number = attempt.submission_attempt_number;
-
-            // Step 3: Check if transaction is confirmed
-            match rpc_client
-                .get_signature_status_with_commitment(&signature, commitment)
-                .await
-            {
-                Ok(Some(Ok(()))) => {
-                    // Transaction confirmed! Fetch full transaction details
-                    info!(
-                        transaction_id = %transaction_id,
-                        signature = %signature,
-                        submission_attempt_number = submission_attempt_number,
-                        "Transaction confirmed, fetching details"
-                    );
-
-                    let transaction_details = rpc_client
-                        .get_transaction_with_config(
-                            &signature,
-                            RpcTransactionConfig {
-                                encoding: Some(UiTransactionEncoding::Json),
-                                commitment: Some(commitment),
-                                max_supported_transaction_version: Some(0),
-                            },
-                        )
-                        .await
-                        .map_err(|e| {
-                            error!(
-                                transaction_id = %transaction_id,
-                                signature = %signature,
-                                error = %e,
-                                "Failed to fetch transaction details"
-                            );
-                            let engine_error =
-                                self.to_engine_solana_error(&e, chain_id_str.as_str());
-                            SolanaExecutorError::RpcError {
-                                inner_error: engine_error,
-                            }
-                            .nack(Some(NETWORK_ERROR_RETRY_DELAY), RequeuePosition::Last)
-                        })?;
-
-                    return Ok(SolanaExecutorResult {
-                        transaction_id: transaction_id.clone(),
-                        signature: signature.to_string(),
-                        signer_address: signer_address.to_string(),
-                        chain_id: chain_id_str.as_str().to_string(),
-                        submission_attempt_number,
-                        slot: transaction_details.slot,
-                        block_time: transaction_details.block_time,
-                        transaction: transaction_details.transaction,
-                    });
-                }
-                Ok(Some(Err(tx_error))) => {
-                    // Transaction failed on-chain - permanent failure
-                    error!(
-                        transaction_id = %transaction_id,
-                        signature = %signature,
-                        error = ?tx_error,
-                        submission_attempt_number = submission_attempt_number,
-                        "Transaction failed on-chain (permanent failure)"
-                    );
-                    let _ = self.storage.delete_attempt(transaction_id).await;
-                    return Err(SolanaExecutorError::TransactionFailed {
-                        reason: format!("{:?}", tx_error),
-                    }
-                    .fail());
-                }
-                Ok(None) => {
-                    // Step 4: Not confirmed yet, check if blockhash is still valid
-                    let time_since_sent =
-                        crate::metrics::current_timestamp_ms().saturating_sub(attempt.sent_at);
-                    let min_wait_before_resubmit_ms = 30_000; // Wait at least 30 seconds before resubmitting
-
-                    if time_since_sent < min_wait_before_resubmit_ms {
-                        // Haven't waited long enough - keep checking
-                        return Err(SolanaExecutorError::NotYetConfirmed {
-                            signature: signature.to_string(),
-                        }
-                        .nack(Some(CONFIRMATION_RETRY_DELAY), RequeuePosition::Last));
-                    }
-
-                    // Check blockhash validity
-                    match rpc_client
-                        .is_blockhash_valid(
-                            &attempt.blockhash,
-                            CommitmentConfig {
-                                commitment: CommitmentLevel::Finalized,
-                            },
-                        )
-                        .await
-                    {
-                        Ok(true) => {
-                            // Blockhash still valid, not confirmed yet - retry
-                            return Err(SolanaExecutorError::NotYetConfirmed {
-                                signature: signature.to_string(),
-                            }
-                            .nack(Some(CONFIRMATION_RETRY_DELAY), RequeuePosition::Last));
-                        }
-                        Ok(false) => {
-                            // Blockhash expired
-
-                            // For serialized transactions with existing signatures, we cannot retry with a new blockhash
-                            // because the signatures will become invalid. Check if there are any non-default signatures.
-                            if let engine_solana_core::transaction::SolanaTransactionInput::Serialized (t) = &job_data.transaction.input {
-                                // Deserialize the base64 transaction to check for signatures
-                                if let Ok(tx_bytes) = base64::engine::general_purpose::STANDARD.decode(&t.transaction)
-                                    && let Ok((versioned_tx, _)) = bincode::serde::decode_from_slice::<solana_sdk::transaction::VersionedTransaction, _>(
-                                        &tx_bytes,
-                                        bincode::config::standard()
-                                    ) {
-                                        // Check if any signatures are non-default (not all zeros)
-                                        let has_signatures = versioned_tx.signatures.iter().any(|sig| {
-                                            sig.as_ref() != [0u8; 64]
-                                        });
-                                        if has_signatures {
-                                            error!(
-                                                transaction_id = %transaction_id,
-                                                signature = %signature,
-                                                "Blockhash expired for serialized transaction with existing signatures - cannot retry without invalidating them"
-                                            );
-                                            let _ = self.storage.delete_attempt(transaction_id).await;
-                                            return Err(SolanaExecutorError::TransactionFailed {
-                                                reason: "Blockhash expired for serialized transaction with existing signatures. Retrying with a new blockhash would invalidate them.".to_string(),
-                                            }
-                                            .fail());
-                                        }
-                                        // If no signatures, we can retry - will be signed during execution
-                                    }
-                            }
-
-                            // For instruction-based transactions or serialized without signatures, we can retry with a new blockhash
-                            warn!(
-                                transaction_id = %transaction_id,
-                                signature = %signature,
-                                submission_attempt_number = submission_attempt_number,
-                                "Blockhash expired, resubmitting"
-                            );
-
-                            // Check if we've exceeded max retries
-                            if submission_attempt_number > max_retries {
-                                error!(
-                                    transaction_id = %transaction_id,
-                                    submission_attempt_number = submission_attempt_number,
-                                    max_retries = max_retries,
-                                    "Max retries exceeded"
-                                );
-                                let _ = self.storage.delete_attempt(transaction_id).await;
-                                return Err(SolanaExecutorError::MaxRetriesExceeded {
-                                    max_retries,
-                                }
-                                .fail());
-                            }
-
-                            // Delete old attempt and resubmit
-                            self.storage
-                                .delete_attempt(transaction_id)
-                                .await
-                                .map_err(|e| {
-                                    error!(
-                                        transaction_id = %transaction_id,
-                                        error = %e,
-                                        "Failed to delete old attempt"
-                                    );
-                                    SolanaExecutorError::InternalError {
-                                        message: format!("Failed to delete old attempt: {e}"),
-                                    }
-                                    .fail()
-                                })?;
-                        }
-                        Err(e) => {
-                            // RPC error checking blockhash
-                            warn!(
-                                transaction_id = %transaction_id,
-                                error = %e,
-                                "RPC error checking blockhash"
-                            );
-                            let engine_error =
-                                self.to_engine_solana_error(&e, chain_id_str.as_str());
-                            return Err(SolanaExecutorError::RpcError {
-                                inner_error: engine_error,
-                            }
-                            .nack(Some(NETWORK_ERROR_RETRY_DELAY), RequeuePosition::Last));
-                        }
-                    }
-                }
-                Err(e) => {
-                    // RPC error getting signature status
-                    warn!(
-                        transaction_id = %transaction_id,
-                        error = %e,
-                        "RPC error getting signature status"
-                    );
-                    let engine_error = self.to_engine_solana_error(&e, chain_id_str.as_str());
-                    return Err(SolanaExecutorError::RpcError {
-                        inner_error: engine_error,
-                    }
-                    .nack(Some(NETWORK_ERROR_RETRY_DELAY), RequeuePosition::Last));
-                }
+        if let Some(mut attempt) = stored_attempt.clone() {
+            if attempt.reconciliation_checks >= MAX_RECONCILIATION_CHECKS {
+                return Err(Self::park(
+                    &attempt,
+                    "reconciliation budget exhausted; resume explicitly",
+                ));
             }
-        }
+            attempt.reconciliation_checks += 1;
+            self.storage
+                .update_attempt(transaction_id, &attempt, lock)
+                .await
+                .map_err(|e| self.handle_redis_error(e, transaction_id))?;
 
-        // Step 5: No attempt exists or blockhash expired - send new transaction
-        let submission_attempt_number = stored_attempt
-            .as_ref()
-            .map(|a| a.submission_attempt_number + 1)
-            .unwrap_or(1);
+            // History lookup also finds landed transactions after the recent cache rotates.
+            if let Some(result) = self
+                .reconcile_status(rpc_client, job_data, &attempt, commitment)
+                .await?
+            {
+                return result;
+            }
 
-        // Check job attempt limits
-        if stored_attempt.is_none() && job_attempt_number > MAX_SEND_ATTEMPTS_WITHOUT_TRANSACTION {
-            error!(
-                transaction_id = %transaction_id,
-                job_attempt_number = job_attempt_number,
-                "Max send attempts exceeded"
-            );
+            // Legacy records have no reproducible signed bytes and historically stored the
+            // wrong hash for serialized inputs. They may be confirmed, never rebuilt.
+            if attempt.signed_transaction.is_none() {
+                return Err(Self::park(&attempt, "legacy attempt lacks signed bytes"));
+            }
+            let expired = if let Some(last_valid_height) = attempt.blockhash_last_valid_height {
+                rpc_client
+                    .get_block_height_with_commitment(CommitmentConfig::finalized())
+                    .await
+                    .map_err(|e| self.rpc_error(&e, chain_id_str.as_str()))?
+                    > last_valid_height
+            } else {
+                // Serialized inputs have no trustworthy lastValidBlockHeight. A false
+                // finalized validity result can also mean a newer/noncanonical hash.
+                // Preserve evidence and stop rather than inventing an expiry bound.
+                let valid = rpc_client
+                    .is_blockhash_valid(&attempt.blockhash, commitment)
+                    .await
+                    .map_err(|e| self.rpc_error(&e, chain_id_str.as_str()))?;
+                if !valid {
+                    if let Some(result) = self
+                        .reconcile_status(rpc_client, job_data, &attempt, commitment)
+                        .await?
+                    {
+                        return result;
+                    }
+                    return Err(Self::park(
+                        &attempt,
+                        "serialized blockhash no longer valid; expiry height unknown",
+                    ));
+                }
+                false
+            };
+            if !expired {
+                return self
+                    .broadcast_attempt(rpc_client, job_data, attempt, lock, commitment_level)
+                    .await;
+            }
+
+            // Ordering matters: a transaction can land between the first status query
+            // and the expiry check. Query history again AFTER finalized expiry.
+            if let Some(result) = self
+                .reconcile_status(rpc_client, job_data, &attempt, commitment)
+                .await?
+            {
+                return result;
+            }
+            // A historical null is not proof of non-execution: a load-balanced RPC
+            // can answer from a lagging or pruned history node. Even after finalized
+            // expiry, refreshing a signature could execute an already-landed intent
+            // twice. Preserve evidence for operator reconciliation instead.
+            return Err(Self::park(
+                &attempt,
+                "blockhash expired but execution outcome is unknown; automatic re-signing disabled",
+            ));
+        } else if job_attempt_number > MAX_SEND_ATTEMPTS_WITHOUT_TRANSACTION {
             return Err(SolanaExecutorError::MaxRetriesExceeded {
                 max_retries: MAX_SEND_ATTEMPTS_WITHOUT_TRANSACTION,
             }
             .fail());
         }
 
-        if submission_attempt_number > max_retries + 1 {
-            error!(
-                transaction_id = %transaction_id,
-                submission_attempt_number = submission_attempt_number,
-                max_retries = max_retries,
-                "Max resubmission retries exceeded"
-            );
-            return Err(SolanaExecutorError::MaxRetriesExceeded { max_retries }.fail());
-        }
-
-        info!(
-            transaction_id = %transaction_id,
-            submission_attempt_number = submission_attempt_number,
-            "Sending transaction"
-        );
-
-        let (recent_blockhash, last_valid_height) = rpc_client
-            .get_latest_blockhash_with_commitment(commitment)
-            .await
-            .map_err(|e| {
-                error!(
-                    transaction_id = %transaction_id,
-                    error = %e,
-                    "Failed to get blockhash"
-                );
-                let engine_error = self.to_engine_solana_error(&e, chain_id_str.as_str());
-                SolanaExecutorError::RpcError {
-                    inner_error: engine_error,
-                }
-                .nack(Some(NETWORK_ERROR_RETRY_DELAY), RequeuePosition::Last)
-            })?;
+        let submission_attempt_number = 1;
+        // Serialized transactions preserve their caller-provided hash. Fetching a new
+        // blockhash here and recording it would associate unrelated validity metadata.
+        let (recent_blockhash, last_valid_height) = match &job_data.transaction.input {
+            SolanaTransactionInput::Instructions(_) => {
+                let (hash, height) = rpc_client
+                    .get_latest_blockhash_with_commitment(commitment)
+                    .await
+                    .map_err(|e| self.rpc_error(&e, chain_id_str.as_str()))?;
+                (hash, Some(height))
+            }
+            SolanaTransactionInput::Serialized(_) => (solana_sdk::hash::Hash::default(), None),
+        };
 
         // Build transaction - handle execution options differently for instructions vs serialized
         let versioned_tx = match &job_data.transaction.input {
@@ -863,6 +772,32 @@ impl SolanaExecutorJobHandler {
             }
         };
 
+        let actual_blockhash = *versioned_tx.message.recent_blockhash();
+        if matches!(
+            job_data.transaction.input,
+            SolanaTransactionInput::Serialized(_)
+        ) {
+            if versioned_tx.uses_durable_nonce() {
+                return Err(SolanaExecutorError::TransactionBuildFailed {
+                    inner_error: "Durable nonce transactions require a separate recovery policy"
+                        .into(),
+                }
+                .fail());
+            }
+            if !rpc_client
+                .is_blockhash_valid(&actual_blockhash, commitment)
+                .await
+                .map_err(|e| self.rpc_error(&e, chain_id_str.as_str()))?
+            {
+                return Err(SolanaExecutorError::TransactionBuildFailed {
+                    inner_error:
+                        "Serialized transaction blockhash is not valid at the requested commitment"
+                            .into(),
+                }
+                .fail());
+            }
+        }
+
         let signed_tx = self
             .solana_signer
             .sign_transaction(versioned_tx, signer_address, &job_data.signing_credential)
@@ -876,83 +811,232 @@ impl SolanaExecutorJobHandler {
                 SolanaExecutorError::SigningFailed { inner_error: e }.fail()
             })?;
 
-        let signature = signed_tx.signatures[0];
-
-        // Store attempt BEFORE sending to prevent duplicates
+        let signature = *signed_tx.signatures.first().ok_or_else(|| {
+            SolanaExecutorError::TransactionBuildFailed {
+                inner_error: "Signed transaction has no signature".into(),
+            }
+            .fail()
+        })?;
+        let bytes = encode_transaction_wire(&signed_tx).map_err(|e| {
+            SolanaExecutorError::TransactionBuildFailed {
+                inner_error: e.to_string(),
+            }
+            .fail()
+        })?;
         let attempt = SolanaTransactionAttempt::new(
             signature,
-            recent_blockhash,
+            actual_blockhash,
             last_valid_height,
             submission_attempt_number,
+            base64::engine::general_purpose::STANDARD.encode(bytes),
         );
-
-        let stored = self
+        if !self
             .storage
             .store_attempt_if_not_exists(transaction_id, &attempt, lock)
             .await
-            .map_err(|e| self.handle_redis_error(e, transaction_id))?;
+            .map_err(|e| self.handle_redis_error(e, transaction_id))?
+        {
+            return Err(SolanaExecutorError::LockLost
+                .nack(Some(CONFIRMATION_RETRY_DELAY), RequeuePosition::Last));
+        }
+        self.broadcast_attempt(rpc_client, job_data, attempt, lock, commitment_level)
+            .await
+    }
 
-        if !stored {
-            warn!(
-                transaction_id = %transaction_id,
-                "Attempt already stored (race condition)"
-            );
+    fn park(attempt: &SolanaTransactionAttempt, reason: &str) -> JobError<SolanaExecutorError> {
+        SolanaExecutorError::RecoveryRequired {
+            signature: attempt.signature.to_string(),
+            reason: reason.into(),
+        }
+        .nack(Some(RECOVERY_PARK_DELAY), RequeuePosition::Last)
+    }
+
+    fn rpc_error(
+        &self,
+        error: &solana_rpc_client_api::client_error::Error,
+        chain: &str,
+    ) -> JobError<SolanaExecutorError> {
+        SolanaExecutorError::RpcError {
+            inner_error: self.to_engine_solana_error(error, chain),
+        }
+        .nack(Some(NETWORK_ERROR_RETRY_DELAY), RequeuePosition::Last)
+    }
+
+    /// Some means a status is known, including a not-yet-final status. Never rebuild
+    /// while any execution is visible, even if it has not reached requested commitment.
+    async fn reconcile_status(
+        &self,
+        rpc_client: &RpcClient,
+        job_data: &SolanaExecutorJobData,
+        attempt: &SolanaTransactionAttempt,
+        commitment: CommitmentConfig,
+    ) -> JobResult<Option<JobResult<SolanaExecutorResult, SolanaExecutorError>>, SolanaExecutorError>
+    {
+        let statuses = rpc_client
+            .get_signature_statuses_with_history(&[attempt.signature])
+            .await
+            .map_err(|e| {
+                self.rpc_error(&e, job_data.transaction.execution_options.chain_id.as_str())
+            })?;
+        if statuses.value.len() != 1 {
             return Err(SolanaExecutorError::InternalError {
-                message: "Attempt already stored".to_string(),
+                message: "RPC returned wrong status count".into(),
+            }
+            .nack(Some(NETWORK_ERROR_RETRY_DELAY), RequeuePosition::Last));
+        }
+        let Some(status) = &statuses.value[0] else {
+            return Ok(None);
+        };
+        if status.err != status.status.clone().err() {
+            return Err(SolanaExecutorError::InternalError {
+                message: "RPC returned inconsistent transaction status".into(),
+            }
+            .nack(Some(NETWORK_ERROR_RETRY_DELAY), RequeuePosition::Last));
+        }
+        if !status.satisfies_commitment(commitment) {
+            return Ok(Some(Err(SolanaExecutorError::NotYetConfirmed {
+                signature: attempt.signature.to_string(),
+            }
+            .nack(Some(CONFIRMATION_RETRY_DELAY), RequeuePosition::Last))));
+        }
+        if let Some(error) = &status.err {
+            return Ok(Some(Err(SolanaExecutorError::TransactionFailed {
+                reason: format!("{error:?}"),
+            }
+            .fail())));
+        }
+        let details = rpc_client
+            .get_transaction_with_config(
+                &attempt.signature,
+                RpcTransactionConfig {
+                    encoding: Some(UiTransactionEncoding::Json),
+                    commitment: Some(commitment),
+                    max_supported_transaction_version: Some(0),
+                },
+            )
+            .await
+            .map_err(|e| {
+                self.rpc_error(&e, job_data.transaction.execution_options.chain_id.as_str())
+            })?;
+        // A provider returning inconsistent receipt state must not turn a failed
+        // execution into success, or bind a result from a different slot.
+        let expected_signature = attempt.signature.to_string();
+        let signature_matches = matches!(
+            &details.transaction.transaction,
+            solana_transaction_status::EncodedTransaction::Json(transaction)
+                if transaction.signatures.first() == Some(&expected_signature)
+        );
+        if !signature_matches
+            || details.slot != status.slot
+            || details
+                .transaction
+                .meta
+                .as_ref()
+                .is_none_or(|meta| meta.err.is_some())
+        {
+            return Err(SolanaExecutorError::InternalError {
+                message: "Inconsistent transaction receipt; retry reconciliation".into(),
+            }
+            .nack(Some(NETWORK_ERROR_RETRY_DELAY), RequeuePosition::Last));
+        }
+        Ok(Some(Ok(SolanaExecutorResult {
+            transaction_id: job_data.transaction_id.clone(),
+            signature: attempt.signature.to_string(),
+            signer_address: job_data
+                .transaction
+                .execution_options
+                .signer_address
+                .to_string(),
+            chain_id: job_data
+                .transaction
+                .execution_options
+                .chain_id
+                .as_str()
+                .into(),
+            submission_attempt_number: attempt.submission_attempt_number,
+            slot: details.slot,
+            block_time: details.block_time,
+            transaction: details.transaction,
+        })))
+    }
+
+    async fn broadcast_attempt(
+        &self,
+        rpc_client: &RpcClient,
+        job_data: &SolanaExecutorJobData,
+        mut attempt: SolanaTransactionAttempt,
+        lock: &TransactionLock,
+        commitment: CommitmentLevel,
+    ) -> JobResult<SolanaExecutorResult, SolanaExecutorError> {
+        let now = crate::metrics::current_timestamp_ms();
+        if attempt.broadcast_attempts >= MAX_BROADCASTS_PER_ATTEMPT
+            || (attempt.last_broadcast_at != 0
+                && now.saturating_sub(attempt.last_broadcast_at) < 2000)
+        {
+            return Err(SolanaExecutorError::NotYetConfirmed {
+                signature: attempt.signature.to_string(),
             }
             .nack(Some(CONFIRMATION_RETRY_DELAY), RequeuePosition::Last));
         }
-
-        // Send transaction to RPC
+        let wire = attempt
+            .signed_transaction
+            .as_ref()
+            .ok_or_else(|| Self::park(&attempt, "missing signed bytes"))?;
+        let bytes = base64::engine::general_purpose::STANDARD
+            .decode(wire)
+            .map_err(|_| Self::park(&attempt, "invalid persisted wire encoding"))?;
+        let decoded = decode_transaction_wire(&bytes)
+            .map_err(|_| Self::park(&attempt, "invalid persisted transaction"))?;
+        if decoded.signatures.first() != Some(&attempt.signature)
+            || decoded.message.recent_blockhash() != &attempt.blockhash
+            || decoded.verify_and_hash_message().is_err()
+        {
+            return Err(Self::park(
+                &attempt,
+                "persisted transaction identity does not match its attempt",
+            ));
+        }
+        let wire = wire.clone();
+        // Count before I/O: a crash can consume a send allowance, never make it unbounded.
+        attempt.broadcast_attempts += 1;
+        attempt.last_broadcast_at = now;
+        self.storage
+            .update_attempt(&job_data.transaction_id, &attempt, lock)
+            .await
+            .map_err(|e| self.handle_redis_error(e, &job_data.transaction_id))?;
+        self.verify_lock(lock, &job_data.transaction_id).await?;
         let config = RpcSendTransactionConfig {
             skip_preflight: false,
-            preflight_commitment: Some(commitment_level),
+            preflight_commitment: Some(commitment),
+            encoding: Some(UiTransactionEncoding::Base64),
+            max_retries: Some(0),
             ..Default::default()
         };
-
-        match rpc_client
-            .send_transaction_with_config(&signed_tx, config)
-            .await
-        {
-            Ok(_) => {
-                info!(
-                    transaction_id = %transaction_id,
-                    signature = %signature,
-                    submission_attempt_number = submission_attempt_number,
-                    "Transaction sent to RPC"
-                );
-                // Return TransactionSent "error" which will trigger a send success webhook
+        let sent: Result<String, _> = rpc_client
+            .send(RpcRequest::SendTransaction, json!([wire, config]))
+            .await;
+        match sent {
+            Ok(signature) if signature == attempt.signature.to_string() => {
                 Err(SolanaExecutorError::TransactionSent {
-                    signature: signature.to_string(),
-                    submission_attempt_number,
+                    signature,
+                    submission_attempt_number: attempt.submission_attempt_number,
                 }
                 .nack(Some(CONFIRMATION_RETRY_DELAY), RequeuePosition::Last))
             }
-            Err(e) => {
-                error!(
-                    transaction_id = %transaction_id,
-                    signature = %signature,
-                    error = %e,
-                    "Failed to send transaction"
-                );
-                let engine_error = self.to_engine_solana_error(&e, chain_id_str.as_str());
-
-                let is_retryable = is_send_error_retryable(&engine_error);
-                if is_retryable {
-                    // Network error or temporary issue - retry
-                    Err(SolanaExecutorError::SendFailed {
-                        inner_error: engine_error,
-                    }
-                    .nack(Some(NETWORK_ERROR_RETRY_DELAY), RequeuePosition::Last))
-                } else {
-                    // Permanent error - fail
-                    let _ = self.storage.delete_attempt(transaction_id).await;
-                    Err(SolanaExecutorError::SendFailed {
-                        inner_error: engine_error,
-                    }
-                    .fail())
-                }
+            Ok(_) => Err(SolanaExecutorError::InternalError {
+                message: "RPC returned a different signature; reconcile persisted transaction"
+                    .into(),
             }
+            .nack(Some(NETWORK_ERROR_RETRY_DELAY), RequeuePosition::Last)),
+            // Even AlreadyProcessed/preflight errors can follow an accepted send whose
+            // response was lost. Only status and expiry establish a terminal outcome.
+            Err(e) => Err(SolanaExecutorError::SendFailed {
+                inner_error: self.to_engine_solana_error(
+                    &e,
+                    job_data.transaction.execution_options.chain_id.as_str(),
+                ),
+            }
+            .nack(Some(NETWORK_ERROR_RETRY_DELAY), RequeuePosition::Last)),
         }
     }
 
@@ -971,7 +1055,7 @@ impl SolanaExecutorJobHandler {
             Err(e) => Err(SolanaExecutorError::InternalError {
                 message: format!("Failed to check lock: {e}"),
             }
-            .fail()),
+            .nack(Some(NETWORK_ERROR_RETRY_DELAY), RequeuePosition::Last)),
         }
     }
 
@@ -988,61 +1072,11 @@ impl SolanaExecutorJobHandler {
             SolanaExecutorError::InternalError {
                 message: format!("Redis error: {error}"),
             }
-            .fail()
+            .nack(Some(NETWORK_ERROR_RETRY_DELAY), RequeuePosition::Last)
         }
     }
 }
 
-/// Determines if a Solana send error should be retried
-/// Network errors and temporary issues should be retried
-/// Bad transactions (invalid signature, insufficient funds, etc.) should not be retried
-fn is_send_error_retryable(error: &EngineError) -> bool {
-    use engine_core::error::{SolanaRpcErrorKind, SolanaRpcResponseErrorData};
-
-    match error {
-        EngineError::SolanaRpcError { kind, .. } => match kind {
-            // Network/IO errors are always retryable
-            SolanaRpcErrorKind::Io { .. } => true,
-            SolanaRpcErrorKind::Reqwest { .. } => true,
-
-            // RPC errors need more inspection
-            SolanaRpcErrorKind::RpcError { data, message, .. } => {
-                // Check if it's a preflight failure
-                if let SolanaRpcResponseErrorData::SendTransactionPreflightFailure { .. } = data {
-                    return false;
-                }
-
-                // Check message for permanent errors
-                let msg_lower = message.to_lowercase();
-                if msg_lower.contains("invalid signature")
-                    || msg_lower.contains("signature verification failed")
-                    || msg_lower.contains("insufficient funds")
-                    || msg_lower.contains("account not found")
-                    || msg_lower.contains("transaction already processed")
-                    || msg_lower.contains("invalid account")
-                {
-                    return false;
-                }
-
-                true
-            }
-
-            // Transaction errors are permanent
-            SolanaRpcErrorKind::TransactionError { .. } => false,
-
-            // Signing errors are permanent
-            SolanaRpcErrorKind::SigningError { .. } => false,
-
-            // JSON/parse errors might be temporary
-            SolanaRpcErrorKind::SerdeJson { .. } => true,
-
-            // Custom errors - check message
-            SolanaRpcErrorKind::Custom { message } => !message.to_lowercase().contains("invalid"),
-
-            // Unknown errors - be conservative and retry
-            SolanaRpcErrorKind::Unknown { .. } => true,
-        },
-        // Other engine errors - be conservative and retry
-        _ => true,
-    }
-}
+#[cfg(test)]
+#[path = "recovery_tests.rs"]
+mod recovery_tests;
