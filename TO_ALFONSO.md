@@ -12,7 +12,7 @@ The [fork](https://github.com/alfongj-com/engine-core/tree/production-hardening)
 - Added tests for these failure cases. Actual local nodes confirmed **24 EVM transfers after an Engine crash**, **24 after an Engine + Redis crash**, and **12 Solana transfers after lost send responses and an Engine crash**. All had **zero duplicate effects**. The Redis test used durable AOF writes; it does not establish failover or power-loss safety.
 - Verified actual Engine reads on Ethereum Sepolia, Arbitrum Sepolia, OP Sepolia and Base Sepolia. Solana signing works; its public simulation reports the unfunded account.
 
-[Verification](docs/verification.md) records the tests and their limits. [RPC results](docs/baselines/rpc-results.md) records provider measurements and cost; [provider comparison](docs/design/rpc-test-plan.md) explains pricing and expected request demand.
+**All three Linux CI workflows passed** on the final source commit. [Verification](docs/verification.md) records the tests and their limits. [RPC results](docs/baselines/rpc-results.md) records provider measurements and cost; [provider comparison](docs/design/rpc-test-plan.md) explains pricing and expected request demand.
 
 ## What the RPC results mean
 

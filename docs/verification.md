@@ -48,7 +48,9 @@ These records remain useful regression and performance evidence; they do not sub
 
 ## Hosted verification
 
-The **earlier** source commit `648ef088cb95168e12d5e7643ae825c8791ed7b5` passed three Linux workflows: [Rust correctness](https://github.com/alfongj-com/engine-core/actions/runs/34943655662), [queue tests](https://github.com/alfongj-com/engine-core/actions/runs/34943655977), and [queue coverage](https://github.com/alfongj-com/engine-core/actions/runs/34943655828). [Run metadata](baselines/ci-results.json) retains the exact commit and outcomes. These results do **not** qualify the newer Solana/RPC changes; this update records local verification only.
+Current source commit **`3aad56d21b479f5b62bd18bd60030d3f22ffcd9c` passed all three Linux workflows**: [Rust correctness](https://github.com/alfongj-com/engine-core/actions/runs/35189854266), [queue tests](https://github.com/alfongj-com/engine-core/actions/runs/35189854267), and [queue coverage](https://github.com/alfongj-com/engine-core/actions/runs/35189854352). The full workflow includes real Redis/HTTP faults, EOA process and Redis AOF recovery, the actual Solana validator scenario, and the dependency audit. [Final run metadata](baselines/testnet-round-ci-results.json) records every step and the exact source. Subsequent commits contain documentation/evidence only.
+
+The **earlier** source commit `648ef088cb95168e12d5e7643ae825c8791ed7b5` passed three Linux workflows: [Rust correctness](https://github.com/alfongj-com/engine-core/actions/runs/34943655662), [queue tests](https://github.com/alfongj-com/engine-core/actions/runs/34943655977), and [queue coverage](https://github.com/alfongj-com/engine-core/actions/runs/34943655828). [Run metadata](baselines/ci-results.json) retains the exact commit and outcomes. These historical results retain their earlier scope; the current source is qualified by the new runs above.
 
 ## Reproduce the current local gates
 
