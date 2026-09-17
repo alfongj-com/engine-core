@@ -2978,6 +2978,7 @@ dependencies = [
  "engine-aa-types",
  "engine-solana-core",
  "moka",
+ "percent-encoding",
  "schemars 0.8.22",
  "serde",
  "serde_json",

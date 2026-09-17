@@ -76,7 +76,11 @@ function makeCaller(config) {
       const body=await readJson(response);
       if(!body||body.jsonrpc!=='2.0'||body.id!==requestId||Object.hasOwn(body,'result')===Object.hasOwn(body,'error'))
         return{kind:'invalid_rpc_response',status,origin:safeOrigin,ms:performance.now()-start};
-      if(body.error)return{kind:'rpc_error',status,origin:safeOrigin,code:Number.isSafeInteger(body.error.code)?body.error.code:null,ms:performance.now()-start};
+      if(Object.hasOwn(body,'error')) {
+        if(!body.error||typeof body.error!=='object'||Array.isArray(body.error)||!Number.isSafeInteger(body.error.code)||typeof body.error.message!=='string')
+          return{kind:'invalid_rpc_response',status,origin:safeOrigin,ms:performance.now()-start};
+        return{kind:'rpc_error',status,origin:safeOrigin,code:body.error.code,ms:performance.now()-start};
+      }
       return {kind:body.result===null?'success_null':'success',status,origin:safeOrigin,result:body.result,ms:performance.now()-start};
     }catch{return {kind:'client_transport_error',status:0,origin:'client',ms:performance.now()-start};}
   };

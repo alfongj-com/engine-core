@@ -18,6 +18,17 @@ pub fn diagnostic_url(url: &reqwest::Url) -> String {
     format!("{}://[redacted]", url.scheme())
 }
 
+fn push_url_secret_variants(secrets: &mut Vec<String>, value: &str) {
+    secrets.push(value.to_owned());
+    // Path/userinfo percent decoding preserves '+'. Query form decoding is
+    // collected separately because it also interprets '+' as a space.
+    secrets.push(
+        percent_encoding::percent_decode_str(value)
+            .decode_utf8_lossy()
+            .into_owned(),
+    );
+}
+
 /// Shared HTTP connection pool with request-scoped headers. Credentials are never
 /// installed as client defaults, so one service cannot inherit another's headers.
 #[derive(Clone)]
@@ -79,17 +90,22 @@ impl HeaderInjectingTransport {
                     .map(|label| (*label).to_owned()),
             );
         }
-        secrets.extend(
-            self.url
-                .path_segments()
-                .into_iter()
-                .flatten()
-                .map(str::to_owned),
-        );
+        for segment in self.url.path_segments().into_iter().flatten() {
+            // URL path segments remain percent-encoded, while providers may
+            // echo their decoded routing/key value.
+            push_url_secret_variants(&mut secrets, segment);
+        }
+        if let Some(query) = self.url.query() {
+            for pair in query.split('&') {
+                if let Some((_, value)) = pair.split_once('=') {
+                    push_url_secret_variants(&mut secrets, value);
+                }
+            }
+        }
         secrets.extend(self.url.query_pairs().map(|(_, value)| value.into_owned()));
-        secrets.push(self.url.username().to_owned());
+        push_url_secret_variants(&mut secrets, self.url.username());
         if let Some(password) = self.url.password() {
-            secrets.push(password.to_owned());
+            push_url_secret_variants(&mut secrets, password);
         }
         for value in self.custom_headers.values() {
             if let Ok(value) = value.to_str() {
@@ -285,5 +301,120 @@ mod tests {
             local.redact("nonce too low: expected 10"),
             "nonce too low: expected 10"
         );
+    }
+
+    #[test]
+    fn error_redaction_protects_encoded_and_decoded_path_credentials() {
+        let transport = HeaderInjectingTransport::new(
+            reqwest::Client::new(),
+            "https://rpc.example/api%2Fsecret/key%20with+plus/%E2%98%83"
+                .parse()
+                .unwrap(),
+            reqwest::header::HeaderMap::new(),
+        );
+        let mut response: Response = serde_json::from_value(serde_json::json!({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "error": {
+                "code": -32000,
+                "message": "nonce too low: api/secret api%2Fsecret key with+plus key%20with+plus ☃ %E2%98%83",
+                "data": {"api/secret": ["key with+plus", {"nested": "☃"}]}
+            }
+        })).unwrap();
+
+        transport.redact_response(&mut response);
+
+        let ResponsePayload::Failure(error) = response.payload else {
+            panic!("expected RPC error");
+        };
+        assert_eq!(error.code, -32000);
+        assert_eq!(
+            error.message,
+            "nonce too low: [redacted] [redacted] [redacted] [redacted] [redacted] [redacted]"
+        );
+        let data: serde_json::Value = serde_json::from_str(error.data.unwrap().get()).unwrap();
+        assert_eq!(
+            data,
+            serde_json::json!({"[redacted]": ["[redacted]", {"nested": "[redacted]"}]})
+        );
+    }
+
+    #[test]
+    fn error_redaction_protects_raw_and_decoded_userinfo_and_query_values() {
+        let transport = HeaderInjectingTransport::new(
+            reqwest::Client::new(),
+            "https://operator%40engine:pass%2Fword+plus@rpc.example/?key=opaque%2Fquery%2Bpart+with%20space"
+                .parse()
+                .unwrap(),
+            reqwest::header::HeaderMap::new(),
+        );
+        let credentials = [
+            "operator%40engine",
+            "operator@engine",
+            "pass%2Fword+plus",
+            "pass/word+plus",
+            "opaque%2Fquery%2Bpart+with%20space",
+            "opaque/query+part+with space",
+            "opaque/query+part with space",
+        ];
+        let mut response: Response = serde_json::from_value(serde_json::json!({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "error": {
+                "code": -32000,
+                "message": format!("authentication failed: {}", credentials.join(" | ")),
+                "data": {"opaque%2Fquery%2Bpart+with%20space": {"operator@engine": "pass/word+plus"}}
+            }
+        })).unwrap();
+
+        transport.redact_response(&mut response);
+
+        let ResponsePayload::Failure(error) = response.payload else {
+            panic!("expected RPC error");
+        };
+        assert_eq!(error.code, -32000);
+        assert_eq!(
+            error.message,
+            format!("authentication failed: {}", ["[redacted]"; 7].join(" | "))
+        );
+        let data: serde_json::Value = serde_json::from_str(error.data.unwrap().get()).unwrap();
+        assert_eq!(
+            data,
+            serde_json::json!({"[redacted]": {"[redacted]": "[redacted]"}})
+        );
+    }
+
+    #[test]
+    fn url_redaction_preserves_success_payloads_and_revert_bytes() {
+        let transport = HeaderInjectingTransport::new(
+            reqwest::Client::new(),
+            "https://operator%40engine:pass%2Fword+plus@rpc.example/api%2Fsecret?key=opaque%2Fquery"
+                .parse()
+                .unwrap(),
+            reqwest::header::HeaderMap::new(),
+        );
+        // Successful results can legitimately contain arbitrary strings. Only
+        // RPC error diagnostics are redacted, never successful contract output.
+        let mut success: Response = serde_json::from_str(
+            r#"{"jsonrpc":"2.0","id":1,"result":{"value":"api/secret","encoded":"api%2Fsecret","userinfo":"operator@engine pass/word+plus","query":"opaque/query opaque%2Fquery"}}"#,
+        )
+        .unwrap();
+        let original_success = serde_json::to_string(&success).unwrap();
+        transport.redact_response(&mut success);
+        assert_eq!(serde_json::to_string(&success).unwrap(), original_success);
+
+        // Solidity Panic(uint256), code 0x11: callers need these exact bytes to
+        // classify the revert rather than a changed or discarded error payload.
+        let revert_bytes =
+            "0x4e487b710000000000000000000000000000000000000000000000000000000000000011";
+        let mut reverted: Response = serde_json::from_value(serde_json::json!({
+            "jsonrpc": "2.0",
+            "id": 2,
+            "error": {"code": 3, "message": "execution reverted", "data": revert_bytes}
+        }))
+        .unwrap();
+        let original_revert = serde_json::to_string(&reverted).unwrap();
+        transport.redact_response(&mut reverted);
+        assert_eq!(serde_json::to_string(&reverted).unwrap(), original_revert);
     }
 }

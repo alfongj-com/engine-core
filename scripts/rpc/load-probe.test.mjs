@@ -78,7 +78,7 @@ test('an exhausted shared campaign stops later slots and later stages without re
   let received=0;let f;
   f=await fixture(async(_network,payload)=>{received++;if(received===1)assert.equal(f.budget.take(19),true);return rpc(payload,'0x1');},{ceiling:20});
   try{
-    const report=await runProbe({...f.config,stages:[{rate:100,count:5},{rate:100,count:5}]},{mix:basicMix});
+    const report=await runProbe({...f.config,concurrency:1,stages:[{rate:100,count:5},{rate:100,count:5}]},{mix:basicMix});
     assert.equal(received,1);assert.equal(report.stages.length,1);
     assert.equal(report.stages[0].stoppedReason,'budget_exhausted');
     assert.equal(report.stages[0].outcomes.budget_exhausted,1);
@@ -114,5 +114,17 @@ test('Solana recipe probes known recent signatures and distinguishes null transa
     assert.equal(report.stages[0].outcomes.success_null,2);
     assert.equal(seen.find(call=>call.method==='getSignatureStatuses').params[0][0],signature);
     assert.ok(!JSON.stringify(report).includes(signature));
+  }finally{await f.close();}
+});
+
+test('malformed error envelopes never count as successful RPC responses',async()=>{
+  const malformed=[null,false,0,'bad error',[],{code:'-32000',message:'bad type'},{code:-32000}];
+  const f=await fixture(async(_network,payload)=>new Response(JSON.stringify({jsonrpc:'2.0',id:payload.id,error:malformed[payload.id-1]})));
+  try{
+    const report=await runProbe({...f.config,stages:[{rate:100,count:malformed.length}]},{mix:basicMix});
+    assert.deepEqual(report.stages[0].outcomes,{invalid_rpc_response:malformed.length});
+    assert.equal(report.stages[0].successLatencyMs.count,0);
+    assert.equal(report.stages[0].successfulResponseRpsIncludingDrain,0);
+    assert.equal(report.observedCampaignCallDelta,malformed.length);
   }finally{await f.close();}
 });
