@@ -2,7 +2,7 @@ name: Rust correctness gates
 on:
   pull_request:
   push:
-    branches: [main, production-hardening]
+    branches: [main]
   workflow_dispatch:
 concurrency:
   group: rust-correctness-${{ github.event.pull_request.head.ref || github.ref_name }}
