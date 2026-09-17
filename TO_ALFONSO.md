@@ -1,37 +1,38 @@
 # To Alfonso
 
-## What is ready
+Updated September 17, 2026.
 
-The fork is [alfongj-com/engine-core](https://github.com/alfongj-com/engine-core/tree/production-hardening), branch `production-hardening`. [Draft PR #1](https://github.com/alfongj-com/engine-core/pull/1) is ready for review. The original audit/design was committed before implementation. Upstream `main` is preserved.
+## Where we are
 
-- Removed the private Vault SDK. The workspace builds with a pinned Rust toolchain. A local EVM signer reads an environment key; queued jobs contain its public address only and reject identity-changing key rotation.
-- Fixed reproduced queue lease/Redis transaction races, unsafe nonce transitions, duplicate EOA re-admission, ambiguous receipt recovery, deployment lock ownership, legacy fee parsing, exposed admin mutations, secret diagnostics, webhook SSRF, AA replay identity, and default-account UserOperation signing. See the [audits](docs/audit-security.md) and [migration instructions](docs/replay-migration.md).
-- Added regression tests that expose real failures: six of seven initial queue tests fail against upstream; eleven of thirteen EOA mutation checks fail when the old bugs are restored. Signing tests recover identities and decode signed transactions; Redis tests inspect committed state and competing owners.
-- Wrote concise [chain](docs/design/chain-compatibility.md), [testing](docs/design/testing-and-benchmarks.md), and [webhook](docs/design/webhook-egress.md) designs with primary-source references.
+The [fork](https://github.com/alfongj-com/engine-core/tree/production-hardening) builds without Vault. The EVM path passed local tests, including a crash/restart with 24 transfers, and all three Linux CI workflows passed. [PR #1](https://github.com/alfongj-com/engine-core/pull/1) contains the changes; [verification](docs/verification.md) contains the evidence.
 
-## Measured results
+**Public-chain performance has not been measured.** The queue benchmark reached about 26,600 jobs/second; that does not establish blockchain throughput. Solana execution code exists, but removing Vault removed its only working signer. Replacing that signer is part of the next work.
 
-| Experiment | Result | Limit |
-| --- | --- | --- |
-| Queue, 40k offered jobs/s | **9,992 → 26,627 completed jobs/s**; p99 **8.92 → 1.50 s** | Three-second saturation screen on one M4; includes drain. Not sustainable production capacity. |
-| Queue, 20k offered jobs/s | **9,966 → 19,973 completed jobs/s**; p99 **2.98 s → 13 ms** | Same source-comparison dependencies and workload. |
-| Accounting across 42 runs | **1,305,000 unique completions**, no missing results, admission drops or duplicate committed effects | Redis persistence disabled; does not establish power-loss durability or blockchain TPS. |
-| Local EOA crash/restart | 24 pending transfers recovered; 24 unique on-chain effects after duplicate admission | Disposable Anvil + Redis + actual HTTP server; no public-chain spending. |
-| Dependency audit | **26 → 0 known-vulnerability findings** | One unsoundness advisory and four unmaintained-package warnings remain, with reachability notes. |
+## Recommended test plan
 
-Details and reproducible evidence: [queue results](docs/baselines/queue-results.md), [local recovery](docs/baselines/local-eoa-recovery.json), [dependency review](docs/baselines/dependency-security.md), [verification](docs/verification.md).
+Test **Ethereum Sepolia, Arbitrum Sepolia, OP Sepolia, Base Sepolia, and Solana Devnet**, one at a time. Devnet is Solana's network for testing applications; its separately named Testnet is mainly for validator testing. Start with ordinary wallet transfers, then contract calls. Smart accounts need separate tests and bundler pricing.
 
-**Hosted verification:** all three Linux workflows passed on source commit `648ef08`: full Rust correctness (including crash recovery and dependency audit), queue tests, and queue coverage. [Results](docs/baselines/ci-results.json).
+Try **dRPC paid** first: its published price is **$6 per million ordinary RPC calls**, with all five networks listed and no published paid-tier rate cap. It is the cheapest candidate for our short load tests among the plans compared. We still need to measure its actual speed.
 
-## Four things I need from you
+| Workload | Estimated RPC demand | dRPC usage cost |
+| --- | ---: | ---: |
+| 100 EVM transactions/second | Roughly 410–460 calls/second | About $9–10/hour |
+| 100 Solana transactions/second; assumed 15-second wait for finality | Roughly 2,000 calls/second before improving polling | About $43/hour |
 
-1. **First production scope:** exact chain IDs, which need EOA / ERC-4337 / EIP-7702, and the representative transaction mix. Suggested first gate: ordinary EOA transfers and contract calls on one testnet per Ethereum, Arbitrum and OP family.
-2. **Qualification access and spending:** chosen RPC/bundler providers, testnet credentials/funds, and explicit canary limits. Supply secrets through your secret manager, not this document.
-3. **Deployment and signer identity:** target runtime, AWS KMS key/role versus environment signing, and single-tenant versus multi-tenant use. Existing KMS/IAW paths still persist credentials; workload-identity/key-reference integration needs that decision and live validation.
-4. **Acceptance contract:** required throughput/p99, whether completion means inclusion/safe/finalized, tolerated Redis data loss, and recovery/spend limits. These define the soak, failover and chain qualification gates.
+These are estimates before retries, not benchmark results. The [RPC comparison](docs/design/rpc-test-plan.md) explains the assumptions, prices, quotas, and alternatives.
 
-## Before production
+Ten-minute runs at 10, 50, and 100 transactions/second on each network would cost roughly **$14–30 total in RPC usage** under the documented scenarios. I suggest a **$50 total RPC spending limit** for the first round, including retries. Initial deposits, taxes, and test-wallet funding are separate. No service has been purchased.
 
-This is a substantially hardened fork, **not an all-chain production certification**. Remaining release work includes reorg/finality reconciliation, tenant-scoped intent identities across executors, bounded fee/retry policy, Redis persistence/failover testing, sustained load, and live KMS/RPC/bundler/account-contract qualification. Environment signing is one configured EVM identity; Solana needs an Ed25519 signer and its own recovery review. Remote routing still uses Thirdweb RPC/bundler services.
+## Next steps
 
-Webhooks now default to disabled until allowed HTTPS origins are configured. Migrate retained jobs using the linked instructions. Upstream has no detected license file or GitHub license metadata; resolve the intended usage/distribution rights before release.
+1. **Connect other providers.** Add per-chain EVM RPC settings, reuse connections, count requests by method, and remove RPC keys from logs. Solana already has an endpoint setting.
+2. **Restore Solana signing and test recovery locally.** Keep keys out of Redis. Test crashes, expired blockhashes, uncertain submissions, and duplicate requests.
+3. **Check the provider's speed.** Verify the actual RPC methods, submission limits, errors, and latency. Aim for twice the expected request capacity so throttling does not distort the engine benchmark.
+4. **Run the five networks.** Start at one transaction/second and increase in short steps only while the chain and provider keep up. Report successful transactions, missing or duplicate effects, confirmation times, RPC errors, and cost.
+5. **Fix the measured bottleneck and repeat.** Solana status batching is an obvious candidate. Then finish finality/reorg recovery, test Redis failures, and connect AWS KMS before discussing production.
+
+## What I need from you
+
+**Nothing to continue the local work.** Public tests will eventually need an RPC account/key and approval of its exact spending limit. I will use fresh test-only wallets, try the faucets, and identify any funding shortfall.
+
+Before release, we also need to resolve the upstream repository's missing license. Remaining issues and retained-job migration instructions are in the [security audit](docs/audit-security.md), [queue audit](docs/audit-queue.md), and [migration guide](docs/replay-migration.md).

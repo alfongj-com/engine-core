@@ -7,6 +7,7 @@ Rust transaction infrastructure forked from [thirdweb-dev/engine-core](https://g
 ## Start here
 
 - [Chain compatibility design](docs/design/chain-compatibility.md): Ethereum, Arbitrum, OP Stack/Base, finality, fees, sequencing and capabilities.
+- [RPC test plan and prices](docs/design/rpc-test-plan.md): EVM testnets, Solana Devnet, request estimates, provider limits and first-round budget.
 - [UserOperation signing profiles](docs/design/userop-signing.md): supported default accounts, rejection rules and remaining qualification.
 - [Test and benchmark design](docs/design/testing-and-benchmarks.md): safety invariants, failure injection, local versus network evidence.
 - [Queue and EOA audit](docs/audit-queue.md) and [security audit](docs/audit-security.md): initial findings and scope.

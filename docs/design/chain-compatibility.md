@@ -2,6 +2,8 @@
 
 Status: proposed design; source review completed 2026-09-15. Code observations refer to upstream `b6b7a0bbdc737b3a2b09611305b71b1bf6aba6e8`, before the fork's changes. This document defines qualification work; it does not certify any production chain.
 
+Update, 2026-09-17: the first public test plan includes Ethereum Sepolia, Arbitrum Sepolia, OP Sepolia, Base Sepolia, and Solana Devnet. See the [RPC test plan](rpc-test-plan.md) for current code limitations, provider prices, request estimates, and the proposed budget.
+
 ## Context and goals
 
 Engine pipelines signed transactions through Redis and reports receipts. Its useful unit of serialization is `(chain, sender)`. Throughput depends on the node's admission policy, signer latency, available funds, and chain capacity as well as the queue.
