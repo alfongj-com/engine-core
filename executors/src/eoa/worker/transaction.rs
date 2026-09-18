@@ -10,7 +10,8 @@ const ETHERLINK_GAS_PER_AUTHORIZATION: u64 = 500_000;
 
 use alloy::{
     consensus::{
-        SignableTransaction, Signed, TxEip4844Variant, TxEip4844WithSidecar, TypedTransaction,
+        SignableTransaction, Signed, Transaction, TxEip4844Variant, TxEip4844WithSidecar,
+        TypedTransaction,
     },
     eips::eip7702::SignedAuthorization,
     network::{TransactionBuilder, TransactionBuilder7702},
@@ -45,6 +46,63 @@ use crate::eoa::{
 // Retry constants for preparation phase
 const MAX_PREPARATION_RETRIES: u32 = 3;
 const PREPARATION_RETRY_DELAY_MS: u64 = 100;
+
+/// Explicit caller fees remain ceilings during recovery. An unchanged fee pair
+/// is not a replacement and must not cause another signature/broadcast attempt.
+fn bump_transaction_fees(
+    mut tx: TypedTransaction,
+    multiplier: u32,
+    requested: Option<&TransactionTypeData>,
+) -> Option<TypedTransaction> {
+    if multiplier <= 100 {
+        return None;
+    }
+    let (fee_cap, priority_cap) = match requested {
+        Some(TransactionTypeData::Legacy(data)) => (data.gas_price, None),
+        Some(TransactionTypeData::Eip1559(data)) => {
+            (data.max_fee_per_gas, data.max_priority_fee_per_gas)
+        }
+        Some(TransactionTypeData::Eip7702(data)) => {
+            (data.max_fee_per_gas, data.max_priority_fee_per_gas)
+        }
+        None => (None, None),
+    };
+    let old_fees = (tx.max_fee_per_gas(), tx.max_priority_fee_per_gas());
+    let increase = |value: u128, cap: Option<u128>| {
+        // Divide first without losing the remainder: multiplying u128 fee data
+        // directly can wrap in release builds or panic in debug builds.
+        let multiplier = u128::from(multiplier);
+        let bumped = (value / 100)
+            .saturating_mul(multiplier)
+            .saturating_add((value % 100) * multiplier / 100);
+        bumped.min(cap.unwrap_or(u128::MAX))
+    };
+    let dynamic = |fee: &mut u128, priority: &mut u128| {
+        *fee = increase(*fee, fee_cap);
+        *priority = increase(*priority, priority_cap).min(*fee);
+    };
+    match &mut tx {
+        TypedTransaction::Legacy(tx) => tx.gas_price = increase(tx.gas_price, fee_cap),
+        TypedTransaction::Eip2930(tx) => tx.gas_price = increase(tx.gas_price, fee_cap),
+        TypedTransaction::Eip1559(tx) => {
+            dynamic(&mut tx.max_fee_per_gas, &mut tx.max_priority_fee_per_gas)
+        }
+        TypedTransaction::Eip7702(tx) => {
+            dynamic(&mut tx.max_fee_per_gas, &mut tx.max_priority_fee_per_gas)
+        }
+        TypedTransaction::Eip4844(tx) => match tx {
+            TxEip4844Variant::TxEip4844(tx)
+            | TxEip4844Variant::TxEip4844WithSidecar(TxEip4844WithSidecar { tx, .. }) => {
+                dynamic(&mut tx.max_fee_per_gas, &mut tx.max_priority_fee_per_gas)
+            }
+        },
+    }
+    (old_fees != (tx.max_fee_per_gas(), tx.max_priority_fee_per_gas())).then_some(tx)
+}
+
+#[cfg(test)]
+#[path = "fee_tests.rs"]
+mod fee_tests;
 
 impl<C: Chain> EoaExecutorWorker<C> {
     pub async fn build_and_sign_single_transaction_with_retries(
@@ -224,6 +282,11 @@ impl<C: Chain> EoaExecutorWorker<C> {
             Err(eip1559_error) => {
                 // Check if this is an "unsupported feature" error
                 if is_unsupported_eip1559_error(&eip1559_error) {
+                    if tx.max_fee_per_gas.is_some() || tx.max_priority_fee_per_gas.is_some() {
+                        return Err(EoaExecutorWorkerError::TransactionBuildFailed {
+                            message: "Cannot estimate explicit EIP-1559 fees on this chain; refusing legacy fallback that would discard caller fee limits".to_string(),
+                        });
+                    }
                     tracing::debug!("EIP-1559 not supported, falling back to legacy gas price");
 
                     // Fall back to legacy gas price only if no gas price is set
@@ -522,39 +585,14 @@ impl<C: Chain> EoaExecutorWorker<C> {
 
     pub fn apply_gas_bump_to_typed_transaction(
         &self,
-        mut typed_tx: TypedTransaction,
+        typed_tx: TypedTransaction,
         bump_multiplier: u32, // e.g., 120 for 20% increase
-    ) -> TypedTransaction {
-        match &mut typed_tx {
-            TypedTransaction::Eip1559(tx) => {
-                tx.max_fee_per_gas = tx.max_fee_per_gas * bump_multiplier as u128 / 100;
-                tx.max_priority_fee_per_gas =
-                    tx.max_priority_fee_per_gas * bump_multiplier as u128 / 100;
-            }
-            TypedTransaction::Legacy(tx) => {
-                tx.gas_price = tx.gas_price * bump_multiplier as u128 / 100;
-            }
-            TypedTransaction::Eip2930(tx) => {
-                tx.gas_price = tx.gas_price * bump_multiplier as u128 / 100;
-            }
-            TypedTransaction::Eip7702(tx) => {
-                tx.max_fee_per_gas = tx.max_fee_per_gas * bump_multiplier as u128 / 100;
-                tx.max_priority_fee_per_gas =
-                    tx.max_priority_fee_per_gas * bump_multiplier as u128 / 100;
-            }
-            TypedTransaction::Eip4844(tx) => match tx {
-                TxEip4844Variant::TxEip4844(tx) => {
-                    tx.max_fee_per_gas = tx.max_fee_per_gas * bump_multiplier as u128 / 100;
-                    tx.max_priority_fee_per_gas =
-                        tx.max_priority_fee_per_gas * bump_multiplier as u128 / 100;
-                }
-                TxEip4844Variant::TxEip4844WithSidecar(TxEip4844WithSidecar { tx, .. }) => {
-                    tx.max_fee_per_gas = tx.max_fee_per_gas * bump_multiplier as u128 / 100;
-                    tx.max_priority_fee_per_gas =
-                        tx.max_priority_fee_per_gas * bump_multiplier as u128 / 100;
-                }
-            },
-        }
-        typed_tx
+        request: &EoaTransactionRequest,
+    ) -> Option<TypedTransaction> {
+        bump_transaction_fees(
+            typed_tx,
+            bump_multiplier,
+            request.transaction_type_data.as_ref(),
+        )
     }
 }

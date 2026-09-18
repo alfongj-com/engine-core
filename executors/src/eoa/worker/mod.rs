@@ -60,7 +60,7 @@ pub struct EoaExecutorWorkerResult {
     /// Number of transactions we confirmed
     pub confirmed_transactions: u32,
 
-    /// Number of transactions we failed due to deterministic errors
+    /// Number of mined transactions whose execution reverted in this cycle
     pub failed_transactions: u32,
 
     /// Number of transactions we sent
@@ -359,7 +359,8 @@ impl<C: Chain> EoaExecutorWorker<C> {
             worker_id = self.store.worker_id(),
             duration_seconds = duration,
             confirmed = confirmations_report.moved_to_success,
-            failed = confirmations_report.moved_to_pending,
+            failed = confirmations_report.moved_to_failed,
+            replaced = confirmations_report.moved_to_pending,
             "JOB_LIFECYCLE - Confirm flow completed"
         );
 
@@ -396,7 +397,7 @@ impl<C: Chain> EoaExecutorWorker<C> {
         tracing::info!(
             recovered = recovered,
             confirmed = confirmations_report.moved_to_success,
-            temp_failed = confirmations_report.moved_to_pending,
+            failed = confirmations_report.moved_to_failed,
             replacements = confirmations_report.moved_to_pending,
             currently_submitted = counts.submitted_transactions,
             currently_pending = counts.pending_transactions,
@@ -408,7 +409,7 @@ impl<C: Chain> EoaExecutorWorker<C> {
         Ok(EoaExecutorWorkerResult {
             recovered_transactions: recovered,
             confirmed_transactions: confirmations_report.moved_to_success as u32,
-            failed_transactions: confirmations_report.moved_to_pending as u32,
+            failed_transactions: confirmations_report.moved_to_failed as u32,
             sent_transactions: sent,
             replaced_transactions: confirmations_report.moved_to_pending as u32,
             submitted_transactions: counts.submitted_transactions as u32,

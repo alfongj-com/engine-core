@@ -160,42 +160,8 @@ impl<C: Chain> EoaExecutorWorker<C> {
                             bumped_nonce = transaction_counts.preconfirmed,
                             preconfirmed_nonce = transaction_counts.preconfirmed,
                             latest_nonce = transaction_counts.latest,
-                            "Failed to attempt gas bump for stalled nonce. Attempting no-op transaction as fallback"
+                            "Gas bump failed; preserving submitted intent for reconciliation"
                         );
-
-                        // Try sending a no-op transaction as fallback
-                        match self
-                            .send_noop_transaction(transaction_counts.preconfirmed)
-                            .await
-                        {
-                            Ok(noop_tx) => {
-                                // Process the no-op transaction
-                                if let Err(e) =
-                                    self.store.process_noop_transactions(&[noop_tx]).await
-                                {
-                                    tracing::error!(
-                                        error = ?e,
-                                        bumped_nonce = transaction_counts.preconfirmed,
-                                        preconfirmed_nonce = transaction_counts.preconfirmed,
-                                        latest_nonce = transaction_counts.latest,
-                                        "Failed to process fallback no-op transaction for stalled nonce, but sending transactions was successful"
-                                    );
-                                }
-                            }
-                            Err(e) => {
-                                tracing::error!(
-                                    error = ?e,
-                                    bumped_nonce = transaction_counts.preconfirmed,
-                                    preconfirmed_nonce = transaction_counts.preconfirmed,
-                                    latest_nonce = transaction_counts.latest,
-                                    "Failed to send fallback no-op transaction for stalled nonce. Scheduling auto-reset if EOA is stuck"
-                                );
-
-                                if let Err(e) = self.store.schedule_manual_reset().await {
-                                    tracing::error!(error = ?e, "Failed to schedule auto-reset");
-                                }
-                            }
-                        }
                     }
                 }
             }
@@ -471,7 +437,18 @@ impl<C: Chain> EoaExecutorWorker<C> {
                     return Err(e);
                 }
             };
-            let bumped_typed_tx = self.apply_gas_bump_to_typed_transaction(typed_tx, 120); // 20% increase
+            let Some(bumped_typed_tx) = self.apply_gas_bump_to_typed_transaction(
+                typed_tx,
+                120,
+                &newest_transaction_data.user_request,
+            ) else {
+                tracing::info!(
+                    transaction_id = ?newest_transaction_data.transaction_id,
+                    nonce = expected_nonce,
+                    "Caller fee ceiling leaves no permitted increase; preserving submitted intent"
+                );
+                return Ok(false);
+            };
             let bumped_tx = match self
                 .sign_transaction(
                     bumped_typed_tx,
@@ -531,14 +508,11 @@ impl<C: Chain> EoaExecutorWorker<C> {
                 }
             }
         } else {
-            tracing::debug!(
+            tracing::warn!(
                 nonce = expected_nonce,
-                "Successfully retrieved all transactions for this nonce, but failed to find newest transaction for gas bump, sending noop"
+                "Stalled nonce has no original request; preserving recovery evidence for reconciliation"
             );
-
-            let noop_tx = self.send_noop_transaction(expected_nonce).await?;
-            self.store.process_noop_transactions(&[noop_tx]).await?;
-            Ok(true)
+            Ok(false)
         }
     }
 }

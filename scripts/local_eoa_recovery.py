@@ -74,6 +74,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--transactions", type=int, default=24)
     parser.add_argument("--redis-crash", action="store_true", help="Also SIGKILL Redis and replay its appendfsync=always AOF before restarting Engine")
+    parser.add_argument("--revert", action="store_true", help="Use a reverting local contract; prove terminal failure and no duplicate retry")
     parser.add_argument("--report", type=Path)
     args = parser.parse_args()
     assert 1 <= args.transactions <= 40
@@ -114,17 +115,21 @@ def main():
             "--dir", str(redis_dir), "--save", "", "--appendonly", "yes" if args.redis_crash else "no",
             "--appendfsync", "always"], name)
     report = {"scenario": "local EOA HTTP admission, crash with pending transactions, restart, mine, duplicate admission", "transactions": args.transactions, "log_directory": str(logs),
-              "configured_rpc": True, "redis_crash": args.redis_crash}
+              "configured_rpc": True, "redis_crash": args.redis_crash, "reverted_execution": args.revert}
     started = time.monotonic()
     try:
         redis_process = start_redis("redis-before.log")
         spawn([os.environ.get("ANVIL_BIN", "anvil"), "--host", "127.0.0.1", "--port", str(anvil_port), "--chain-id", "31337", "--no-mining", "--silent"], "anvil.log")
         until(lambda: rpc(rpc_url, "eth_chainId", []) == "0x7a69")
         rpc(rpc_url, "anvil_setBalance", [FROM, hex(10**21)])
+        if args.revert:
+            # PUSH1 0, PUSH1 0, REVERT. Real EVM execution consumes the nonce and
+            # gas but rolls back the value transfer.
+            rpc(rpc_url, "anvil_setCode", [TO, "0x60006000fd"])
         initial_balance = int(rpc(rpc_url, "eth_getBalance", [TO, "latest"]), 16)
         process = engine("engine-before.log")
         payloads = [{"executionOptions": {"chainId": 31337, "type": "EOA", "from": FROM, "idempotencyKey": f"{run_id}-{i}"},
-            "params": [{"to": TO, "value": "0x1", "data": "0x", "gasLimit": 21000}]} for i in range(args.transactions)]
+            "params": [{"to": TO, "value": "0x1", "data": "0x", "gasLimit": 40000 if args.revert else 21000}]} for i in range(args.transactions)]
         # A valid signing payload with missing/wrong authentication must never reach the queue.
         for index, invalid_headers in enumerate([
             {"x-thirdweb-secret-key": "local-test"},
@@ -151,7 +156,9 @@ def main():
             redis_process = start_redis("redis-after.log")
         process = engine("engine-after.log")
         rpc(rpc_url, "evm_mine", [])
-        until(lambda: int(rpc(rpc_url, "eth_getBalance", [TO, "latest"]), 16) == initial_balance + args.transactions)
+        expected_transfer = 0 if args.revert else args.transactions
+        until(lambda: int(rpc(rpc_url, "eth_getTransactionCount", [FROM, "latest"]), 16) == args.transactions)
+        assert int(rpc(rpc_url, "eth_getBalance", [TO, "latest"]), 16) == initial_balance + expected_transfer
         def confirmations():
             found = 0
             for payload in payloads:
@@ -159,7 +166,10 @@ def main():
                 _, body = request(base + f"/admin/executors/eoa/{FROM}:31337/transaction/{txid}", headers={"x-diagnostic-access-password": diagnostic})
                 data = body.get("result", {}).get("transactionData")
                 if data and data.get("receipt"):
-                    assert data["receipt"]["status"] == "0x1", data["receipt"]
+                    assert data["receipt"]["status"] == ("0x0" if args.revert else "0x1"), data["receipt"]
+                    status = subprocess.check_output([os.environ.get("REDIS_CLI_BIN", "redis-cli"), "-p", str(redis_port),
+                        "--raw", "HGET", f"{run_id}:eoa_executor:tx_data:{txid}", "status"], text=True).strip()
+                    assert status == ("failed" if args.revert else "confirmed"), status
                     found += 1
             return found == args.transactions
         until(confirmations)
@@ -168,9 +178,11 @@ def main():
         time.sleep(2)
         rpc(rpc_url, "evm_mine", [])
         balance = int(rpc(rpc_url, "eth_getBalance", [TO, "latest"]), 16)
-        assert balance == initial_balance + args.transactions, f"Duplicate effects: recipient gained {balance - initial_balance} wei for {args.transactions} one-wei intents"
+        assert balance == initial_balance + expected_transfer, f"Recipient gained {balance - initial_balance} wei; expected {expected_transfer}"
         assert int(rpc(rpc_url, "eth_getTransactionCount", [FROM, "pending"]), 16) == args.transactions
         report.update({"outcome": "pass", "unique_chain_effects": args.transactions, "duplicate_chain_effects": 0, "unauthorized_requests_rejected": 2,
+            "successful_transfers": 0 if args.revert else args.transactions, "reverted_transactions": args.transactions if args.revert else 0,
+            "recipient_value_received_wei": expected_transfer, "terminal_status": "failed" if args.revert else "confirmed",
             "elapsed_seconds": round(time.monotonic() - started, 3),
             "redis_persistence": "appendonly=yes, appendfsync=always; Redis SIGKILL and AOF replay, not host power loss or failover" if args.redis_crash else "disabled; Engine process-restart test, not Redis power-loss test"})
     except Exception as error:

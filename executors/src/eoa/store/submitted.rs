@@ -239,6 +239,7 @@ pub struct CleanupReport {
     pub unique_transaction_ids: usize,
     pub noop_count: usize,
     pub moved_to_success: usize,
+    pub moved_to_failed: usize,
     pub moved_to_pending: usize,
 
     /// Any transaction ID values that have multiple nonces in the submitted state
@@ -256,7 +257,7 @@ pub struct CleanupReport {
 /// It fetches submitted transactions with nonce strictly below either transaction count.
 /// For each nonce:
 /// - it will go through all the hashes for that nonce
-/// - if the hash is in the confirmed transactions, it will be removed from submitted to success
+/// - a receipt ends the intent as success or failure according to its execution status
 /// - if a different intent has a receipt at the same nonce, it may be moved to pending
 /// - if no receipt proves what consumed the nonce, it stays submitted for reconciliation
 ///
@@ -359,10 +360,23 @@ impl SafeRedisTransaction for CleanSubmittedTransactions<'_> {
                         report.noop_count += 1;
                     }
 
-                    // SCENARIO 1: Transaction ID was confirmed - do confirmed business logic
+                    // A mined revert consumes the nonce just like success. It is
+                    // terminal for this intent and must never recycle or retry it.
                     (id, Some(confirmed_tx)) => {
                         let data_key_name = self.keys.transaction_data_key_name(id);
-                        pipeline.hset(&data_key_name, "status", "confirmed");
+                        let succeeded = confirmed_tx.receipt.status();
+                        pipeline.hset(
+                            &data_key_name,
+                            "status",
+                            if succeeded { "confirmed" } else { "failed" },
+                        );
+                        if !succeeded {
+                            pipeline.hset(
+                                &data_key_name,
+                                "failure_reason",
+                                "Transaction reverted on-chain",
+                            );
+                        }
                         pipeline.hset(&data_key_name, "completed_at", now);
                         pipeline.hset(
                             &data_key_name,
@@ -376,7 +390,7 @@ impl SafeRedisTransaction for CleanSubmittedTransactions<'_> {
                         pipeline.expire(self.keys.transaction_attempts_list_name(id), ttl_seconds);
 
                         if let SubmittedTransactionHydrated::Real(tx) = tx {
-                            // Record metrics: transaction queued to mined for confirmed transactions
+                            // This measures time to inclusion for either execution outcome.
                             let confirmed_timestamp = current_timestamp_ms();
                             let queued_to_mined_duration =
                                 calculate_duration_seconds(tx.queued_at, confirmed_timestamp);
@@ -392,18 +406,25 @@ impl SafeRedisTransaction for CleanSubmittedTransactions<'_> {
                                     address: tx.user_request.from,
                                 };
 
-                                let success_envelope =
-                                    event.transaction_confirmed_envelope(confirmed_tx.clone());
-
                                 let mut tx_context = self
                                     .webhook_queue
                                     .transaction_context_from_pipeline(pipeline);
-                                if let Err(e) = queue_webhook_envelopes(
-                                    success_envelope,
-                                    tx.user_request.webhook_options.clone(),
-                                    &mut tx_context,
-                                    self.webhook_queue.clone(),
-                                ) {
+                                let queued = if succeeded {
+                                    queue_webhook_envelopes(
+                                        event.transaction_confirmed_envelope(confirmed_tx.clone()),
+                                        tx.user_request.webhook_options.clone(),
+                                        &mut tx_context,
+                                        self.webhook_queue.clone(),
+                                    )
+                                } else {
+                                    queue_webhook_envelopes(
+                                        event.transaction_reverted_envelope(confirmed_tx.clone()),
+                                        tx.user_request.webhook_options.clone(),
+                                        &mut tx_context,
+                                        self.webhook_queue.clone(),
+                                    )
+                                };
+                                if let Err(e) = queued {
                                     tracing::error!(
                                         "Failed to queue webhook for confirmed transaction: {}",
                                         e
@@ -412,7 +433,11 @@ impl SafeRedisTransaction for CleanSubmittedTransactions<'_> {
                             }
                         }
 
-                        report.moved_to_success += 1;
+                        if succeeded {
+                            report.moved_to_success += 1;
+                        } else {
+                            report.moved_to_failed += 1;
+                        }
                     }
 
                     // SCENARIO 2: Transaction ID was NOT confirmed - check if we should replace it

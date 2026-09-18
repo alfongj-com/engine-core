@@ -69,11 +69,17 @@ impl Fixture {
     async fn cleanup(self) {
         // The random namespace is owned exclusively by this fixture.
         let mut conn = self.shared;
-        let keys: Vec<String> = twmq::redis::cmd("KEYS")
+        let mut keys: Vec<String> = twmq::redis::cmd("KEYS")
             .arg(format!("{}:*", self.namespace))
             .query_async(&mut conn)
             .await
             .unwrap();
+        let webhook_keys: Vec<String> = twmq::redis::cmd("KEYS")
+            .arg(format!("twmq:{}:*", self.namespace))
+            .query_async(&mut conn)
+            .await
+            .unwrap();
+        keys.extend(webhook_keys);
         if !keys.is_empty() {
             let _: usize = conn.del(keys).await.unwrap();
         }
@@ -740,4 +746,235 @@ async fn concurrent_conflicting_admissions_choose_one_immutable_request() {
     ));
     assert_eq!(store.get_pending_transactions_count().await.unwrap(), 1);
     fixture.cleanup().await;
+}
+
+async fn mined_receipt_is_terminal(succeeded: bool) {
+    use crate::eoa::store::{SubmissionResultType, SubmittedTransaction};
+    use engine_core::execution_options::WebhookOptions;
+    use serde_json::{Value, json};
+
+    let fixture = Fixture::new().await;
+    let owner = fixture.owner().await;
+    let webhooks = fixture.webhook_queue().await;
+    let id = "mined-intent";
+    let mut request = serializable_request(id);
+    request.webhook_options.push(WebhookOptions {
+        // Enqueue only: no webhook worker or external HTTP connection is started.
+        url: "https://example.com/test-webhook".into(),
+        secret: None,
+        user_metadata: Some("retained metadata".into()),
+    });
+    owner.add_transaction(request.clone()).await.unwrap();
+    let mut observer = fixture.shared.clone();
+    let _: () = observer
+        .set(owner.optimistic_transaction_count_key_name(), 0)
+        .await
+        .unwrap();
+    let original = borrowed(id, 0);
+    assert_eq!(
+        owner
+            .atomic_move_pending_to_borrowed_with_incremented_nonces(std::slice::from_ref(
+                &original
+            ))
+            .await
+            .unwrap(),
+        1
+    );
+    let submitted = SubmittedTransaction {
+        data: original.clone().into(),
+        user_request: request.clone(),
+    };
+    owner
+        .process_borrowed_transactions(
+            vec![SubmissionResult {
+                transaction: submitted.clone(),
+                result: SubmissionResultType::Success,
+            }],
+            webhooks.clone(),
+        )
+        .await
+        .unwrap();
+    // Keep a competing signed attempt at the same nonce. The older hash wins,
+    // and both attempts must leave submitted state without retrying the intent.
+    let bump = borrowed(id, 0);
+    owner
+        .add_gas_bump_attempt(&bump.clone().into(), bump.signed_transaction.clone())
+        .await
+        .unwrap();
+    assert_eq!(owner.get_submitted_transactions_count().await.unwrap(), 2);
+    let attempts_before = owner.get_transaction_attempts(id).await.unwrap();
+    assert_eq!(attempts_before.len(), 1);
+
+    let receipt_json = json!({
+        "transactionHash": original.hash,
+        "transactionIndex": "0x0",
+        "blockNumber": "0xa",
+        "blockHash": alloy::primitives::B256::repeat_byte(9),
+        "from": Address::ZERO,
+        "to": Address::ZERO,
+        "cumulativeGasUsed": "0x5208",
+        "gasUsed": "0x5208",
+        "effectiveGasPrice": "0x1",
+        "contractAddress": null,
+        "logs": [],
+        "logsBloom": format!("0x{}", "00".repeat(256)),
+        "status": if succeeded { "0x1" } else { "0x0" },
+        "type": "0x2"
+    });
+    let confirmed = ConfirmedTransaction {
+        transaction_id: id.into(),
+        transaction_hash: original.hash.clone(),
+        receipt: serde_json::from_value(receipt_json.clone()).unwrap(),
+        receipt_serialized: receipt_json.to_string(),
+    };
+    let counts = crate::TransactionCounts {
+        latest: 1,
+        preconfirmed: 1,
+    };
+    let report = owner
+        .clean_submitted_transactions(
+            std::slice::from_ref(&confirmed),
+            counts.clone(),
+            webhooks.clone(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(report.moved_to_success, usize::from(succeeded));
+    assert_eq!(report.moved_to_failed, usize::from(!succeeded));
+    assert_eq!(report.moved_to_pending, 0);
+    assert_eq!(report.unique_transaction_ids, 1);
+
+    let data_key = owner.transaction_data_key_name(id);
+    let terminal_state: std::collections::HashMap<String, String> =
+        observer.hgetall(&data_key).await.unwrap();
+    assert_eq!(
+        terminal_state["status"],
+        if succeeded { "confirmed" } else { "failed" }
+    );
+    if !succeeded {
+        assert_eq!(
+            terminal_state["failure_reason"],
+            "Transaction reverted on-chain"
+        );
+    }
+    assert!(terminal_state["completed_at"].parse::<u64>().unwrap() > 0);
+    assert_eq!(
+        serde_json::from_str::<Value>(&terminal_state["receipt"]).unwrap(),
+        receipt_json
+    );
+    assert!(observer.ttl::<_, i64>(&data_key).await.unwrap() > 0);
+    assert!(
+        observer
+            .ttl::<_, i64>(owner.transaction_attempts_list_name(id))
+            .await
+            .unwrap()
+            > 0
+    );
+
+    let webhook_ids: Vec<String> = observer
+        .lrange(webhooks.pending_list_name(), 0, -1)
+        .await
+        .unwrap();
+    assert_eq!(webhook_ids.len(), 2, "one send and one terminal event");
+    let mut confirmation_events = Vec::new();
+    for job_id in &webhook_ids {
+        let job = webhooks.get_job(job_id).await.unwrap().unwrap();
+        let envelope: Value = serde_json::from_str(&job.data.body).unwrap();
+        if envelope["stageName"] == "confirm" {
+            confirmation_events.push(envelope);
+        }
+    }
+    assert_eq!(confirmation_events.len(), 1);
+    let envelope = &confirmation_events[0];
+    assert_eq!(envelope["executorName"], "eoa");
+    assert_eq!(envelope["transactionId"], id);
+    assert_eq!(envelope["userMetadata"], "retained metadata");
+    let result = if succeeded {
+        assert_eq!(envelope["eventType"], "SUCCESS");
+        &envelope["payload"]["result"]
+    } else {
+        assert_eq!(envelope["eventType"], "FAILURE");
+        assert_eq!(
+            envelope["payload"]["error"]["errorCode"],
+            "TRANSACTION_REVERTED"
+        );
+        assert!(envelope["payload"].get("result").is_none());
+        &envelope["payload"]["error"]
+    };
+    assert_eq!(result["transactionHash"], original.hash);
+    assert_eq!(result["transactionId"], id);
+    assert_eq!(result["eoaAddress"], json!(Address::ZERO));
+    assert_eq!(result["receipt"]["status"], receipt_json["status"]);
+    assert_eq!(result["receipt"]["blockHash"], receipt_json["blockHash"]);
+
+    // A replay of the receipt or the original API intent cannot emit another
+    // webhook, alter history, or expose another signed attempt to a send worker.
+    let repeat = owner
+        .clean_submitted_transactions(&[confirmed], counts, webhooks.clone())
+        .await
+        .unwrap();
+    assert_eq!(
+        repeat.moved_to_success + repeat.moved_to_failed + repeat.moved_to_pending,
+        0
+    );
+    for admitted in
+        futures::future::join_all((0..8).map(|_| owner.add_transaction(request.clone()))).await
+    {
+        admitted.unwrap();
+    }
+    let mut conflicting = request;
+    conflicting.value = U256::from(1);
+    assert!(matches!(
+        owner.add_transaction(conflicting).await,
+        Err(TransactionStoreError::TransactionConflict { .. })
+    ));
+    assert_eq!(
+        observer
+            .hgetall::<_, std::collections::HashMap<String, String>>(&data_key)
+            .await
+            .unwrap(),
+        terminal_state
+    );
+    assert_eq!(
+        observer
+            .lrange::<_, Vec<String>>(webhooks.pending_list_name(), 0, -1)
+            .await
+            .unwrap(),
+        webhook_ids
+    );
+    let retained = owner.get_transaction_data(id).await.unwrap().unwrap();
+    assert_eq!(
+        serde_json::to_value(&retained.attempts).unwrap(),
+        serde_json::to_value(attempts_before).unwrap()
+    );
+    assert_eq!(
+        retained.receipt.unwrap().transaction_hash,
+        original.signed_transaction.hash().to_owned()
+    );
+    assert_eq!(owner.get_pending_transactions_count().await.unwrap(), 0);
+    assert_eq!(owner.get_borrowed_transactions_count().await.unwrap(), 0);
+    assert_eq!(owner.get_submitted_transactions_count().await.unwrap(), 0);
+    assert_eq!(owner.get_recycled_nonces_count().await.unwrap(), 0);
+    assert_eq!(owner.get_optimistic_transaction_count().await.unwrap(), 1);
+    // Even a stale previously-read intent cannot be borrowed for nonce 1.
+    assert!(matches!(
+        owner
+            .atomic_move_pending_to_borrowed_with_incremented_nonces(&[borrowed(id, 1)])
+            .await,
+        Err(TransactionStoreError::TransactionNotInPendingQueue { .. })
+    ));
+    assert_eq!(owner.get_optimistic_transaction_count().await.unwrap(), 1);
+    fixture.cleanup().await;
+}
+
+#[tokio::test]
+#[ignore = "requires disposable Redis in TEST_REDIS_URL"]
+async fn reverted_receipt_fails_once_without_retrying_or_recycling_nonce() {
+    mined_receipt_is_terminal(false).await;
+}
+
+#[tokio::test]
+#[ignore = "requires disposable Redis in TEST_REDIS_URL"]
+async fn successful_receipt_still_confirms_once_and_retains_history() {
+    mined_receipt_is_terminal(true).await;
 }
