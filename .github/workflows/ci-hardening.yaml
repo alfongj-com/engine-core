@@ -36,6 +36,8 @@ jobs:
           node-version: '22'
       - name: RPC spending guard and load generator tests
         run: node --test scripts/rpc/budget-gateway.test.mjs scripts/rpc/load-probe.test.mjs
+      - name: Public transaction harness guards (offline)
+        run: python3 -m unittest discover -s scripts -p 'test_testnet_*.py' -v
       - name: Install pinned Rust toolchain
         run: rustup show
       - uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684
@@ -71,6 +73,8 @@ jobs:
           ANVIL_BIN=/tmp/engine-foundry/anvil python3 scripts/local_eoa_recovery.py --report /tmp/local-eoa-recovery.json
       - name: Redis AOF crash recovery
         run: ANVIL_BIN=/tmp/engine-foundry/anvil python3 scripts/local_eoa_recovery.py --redis-crash --report /tmp/local-eoa-redis-crash.json
+      - name: Reverted execution and Redis crash recovery
+        run: ANVIL_BIN=/tmp/engine-foundry/anvil python3 scripts/local_eoa_recovery.py --transactions 8 --redis-crash --revert --report /tmp/local-eoa-reverted-recovery.json
       - name: Install pinned local Solana validator
         run: |
           curl -fL --retry 3 https://github.com/anza-xyz/agave/releases/download/v4.2.2/solana-release-x86_64-unknown-linux-gnu.tar.bz2 -o /tmp/solana.tar.bz2
