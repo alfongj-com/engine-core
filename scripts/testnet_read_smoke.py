@@ -104,8 +104,10 @@ def main():
         report["solana"] = {"network": "Solana Devnet", "public_key": public_key,
             "local_signing_http_status": status, "simulation_error": value["err"],
             "simulation_slot": simulation["result"]["context"]["slot"],
-            "execution_proven": value["err"] is None,
-            "note": "AccountNotFound means faucet funding is still required; signed transactions were not broadcast."}
+            "simulation_succeeded": value["err"] is None,
+            "transactions_broadcast": 0,
+            "execution_proven": False,
+            "note": "Simulation does not prove on-chain execution. AccountNotFound means faucet funding is still required; signed transactions were not broadcast."}
         report["outcome"] = "pass"
     except Exception as error:
         report.update({"outcome": "fail", "error": str(error)})

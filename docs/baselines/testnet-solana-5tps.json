@@ -1,0 +1,229 @@
+{
+  "outcome": "pass",
+  "network": "solana-devnet",
+  "payer": "BymPLiErFxJBV47sc31B7VnMoePFnACshrMx3VxkjC69",
+  "recipient": "3YsiQkuivqVLQSQxFWAJ3LdMdQgQ6sfs5hpg8bvnzch9",
+  "transactions": 20,
+  "unique_finalized_effects": 20,
+  "duplicate_effects": 0,
+  "duplicate_replay_extra_broadcasts": 0,
+  "transferred_lamports": 650259,
+  "fees_lamports": 100000,
+  "payer_final_lamports": 7849243,
+  "recipient_final_lamports": 650259,
+  "receipts": [
+    {
+      "intent": "public-solana-c421812b3c9340d498e965a8d53aa075-0",
+      "signature": "2HRGmPAGybp4xiQZXAmkVy7kPkMtRDq8yLtFBTt1jKvMP7PHnPBn51kxmvLRHs8Vbu1nPDYALajgtC5A6sA4Ctru",
+      "slot": 500098091,
+      "amount_lamports": 650240,
+      "fee_lamports": 5000,
+      "admission_to_finalized_observed_seconds": 6.363
+    },
+    {
+      "intent": "public-solana-c421812b3c9340d498e965a8d53aa075-1",
+      "signature": "3m485BxmwjbW585MxK3DhzVnw4uc4PGrpVEQgkTZhX43qWYLyeSEHN5ASmUvcMfZmsiJGLXgFCSVqMWt8moKVdn3",
+      "slot": 500098133,
+      "amount_lamports": 1,
+      "fee_lamports": 5000,
+      "admission_to_finalized_observed_seconds": 8.851
+    },
+    {
+      "intent": "public-solana-c421812b3c9340d498e965a8d53aa075-2",
+      "signature": "UCNMhiNQGyj8KVHtDHo3pmmsqPobCvP9Z6F6h5xm2X4v5htGnwi8boh9wPtQictrsUcbguiVJVrqVH236eFbVRV",
+      "slot": 500098140,
+      "amount_lamports": 1,
+      "fee_lamports": 5000,
+      "admission_to_finalized_observed_seconds": 9.732
+    },
+    {
+      "intent": "public-solana-c421812b3c9340d498e965a8d53aa075-3",
+      "signature": "3CrHbQAAaeGS4CGJFsiPri1DdhpsrBg8C1kPyW1saZwcxEV2NaNyR4q3Wp7TJ7Rv6xhrb1u5yysnAP6d6PKMjRRp",
+      "slot": 500098140,
+      "amount_lamports": 1,
+      "fee_lamports": 5000,
+      "admission_to_finalized_observed_seconds": 9.173
+    },
+    {
+      "intent": "public-solana-c421812b3c9340d498e965a8d53aa075-4",
+      "signature": "3KueikBqBiG5YsDjLo9K8RqSvYx7LFX65kuQFPBvvt8fPmvhw62TEyqszLXrQ7u3AhMosR34tHxo95q4Ea26zfcn",
+      "slot": 500098141,
+      "amount_lamports": 1,
+      "fee_lamports": 5000,
+      "admission_to_finalized_observed_seconds": 9.69
+    },
+    {
+      "intent": "public-solana-c421812b3c9340d498e965a8d53aa075-5",
+      "signature": "3CKq2poLmim9cgpzmxRXEU2qdw3G4KpYRERBA2aUjnQCLyTKP4d5TDED8VJsYx7D7a6LuNKbY4xjepmgEUdSLfZc",
+      "slot": 500098143,
+      "amount_lamports": 1,
+      "fee_lamports": 5000,
+      "admission_to_finalized_observed_seconds": 10.203
+    },
+    {
+      "intent": "public-solana-c421812b3c9340d498e965a8d53aa075-6",
+      "signature": "5xeyZHebivRDAesgNQTB5QfGoeCVbmM5Uaj1X2Ffs1yfEgjkx4F2GGftz9foQoWpHv8ruB16kbtGiY8kN9EdAzSJ",
+      "slot": 500098145,
+      "amount_lamports": 1,
+      "fee_lamports": 5000,
+      "admission_to_finalized_observed_seconds": 10.156
+    },
+    {
+      "intent": "public-solana-c421812b3c9340d498e965a8d53aa075-7",
+      "signature": "4AYrJ9z8MLYNxuGLUwiGYmkaL7EcwrsUFpdEvzjVnZbtxsREo3f1eJvtdpudKHJcEFbcKKaESKJCuHhZ7cGmJPLM",
+      "slot": 500098146,
+      "amount_lamports": 1,
+      "fee_lamports": 5000,
+      "admission_to_finalized_observed_seconds": 10.14
+    },
+    {
+      "intent": "public-solana-c421812b3c9340d498e965a8d53aa075-8",
+      "signature": "jkU3n6o2DcTJdgAvAUFX9xRBMzSzA7GLhBdybrzS1YUE5UY4Q7RU8EudVzpRP2ZEVaybbwP72mhANWTKBbLYLGo",
+      "slot": 500098148,
+      "amount_lamports": 1,
+      "fee_lamports": 5000,
+      "admission_to_finalized_observed_seconds": 11.194
+    },
+    {
+      "intent": "public-solana-c421812b3c9340d498e965a8d53aa075-9",
+      "signature": "2ohPtzuAVm3xaw2fnwrJF1amuhafWUu5Ub4ibRf89C2yybTLaoXDEzyyW9Qicb3W3VuEDBJCrRS32zzme5f8aaVz",
+      "slot": 500098149,
+      "amount_lamports": 1,
+      "fee_lamports": 5000,
+      "admission_to_finalized_observed_seconds": 12.077
+    },
+    {
+      "intent": "public-solana-c421812b3c9340d498e965a8d53aa075-10",
+      "signature": "3DVWEg6hZwFJr4xLMukuXA1uYDiRf8TcpLxtyUEcYqVNGSve6FYyqJ9bsTmM74x3EvxjRhFb2GkQAfqyMKUBTV9y",
+      "slot": 500098151,
+      "amount_lamports": 1,
+      "fee_lamports": 5000,
+      "admission_to_finalized_observed_seconds": 10.696
+    },
+    {
+      "intent": "public-solana-c421812b3c9340d498e965a8d53aa075-11",
+      "signature": "4TUZLqyJbKnB2Ci2TSfkQNSqTGEjKqKpiiCwW6TFmSqWPoZtdEtPJXTm7cgaPVNNrgAMw2GY6tiR5bvaYjSprFkM",
+      "slot": 500098153,
+      "amount_lamports": 1,
+      "fee_lamports": 5000,
+      "admission_to_finalized_observed_seconds": 10.611
+    },
+    {
+      "intent": "public-solana-c421812b3c9340d498e965a8d53aa075-12",
+      "signature": "WaoA5a1kfAoEzPaurzVgS2DE9BS8xAjceQ5FPLbBhrWpbAXi9XurcPuFCwJYZtSB3LaxK2LZRsjREE6eAtwtmyo",
+      "slot": 500098154,
+      "amount_lamports": 1,
+      "fee_lamports": 5000,
+      "admission_to_finalized_observed_seconds": 10.4
+    },
+    {
+      "intent": "public-solana-c421812b3c9340d498e965a8d53aa075-13",
+      "signature": "27cSj4VnXiBQWiQ7nVtRyToN97msvxkUrm3DfTvphTRyopREQn3q3sDtDU9UTTo6xLmDQu1TSao4ub9ZEWKSM58j",
+      "slot": 500098163,
+      "amount_lamports": 1,
+      "fee_lamports": 5000,
+      "admission_to_finalized_observed_seconds": 10.717
+    },
+    {
+      "intent": "public-solana-c421812b3c9340d498e965a8d53aa075-14",
+      "signature": "2sf6fXgJu99DRYCBLqoLZ2bJyRwdZsYdrxJ1bcu3Z2BCN2rhXkHAL8XQKYS7FWyFZiQoTQNC6nPBuSwmWSX9tufa",
+      "slot": 500098168,
+      "amount_lamports": 1,
+      "fee_lamports": 5000,
+      "admission_to_finalized_observed_seconds": 10.536
+    },
+    {
+      "intent": "public-solana-c421812b3c9340d498e965a8d53aa075-15",
+      "signature": "21AUpn3QHMwC2y5cvniRNie3dbHjV5CDixrc8WM21rLP4oNwxKoRC5fwPAR7UHm32iY81nQyW4MsQSjZmPtBM6Yj",
+      "slot": 500098170,
+      "amount_lamports": 1,
+      "fee_lamports": 5000,
+      "admission_to_finalized_observed_seconds": 10.885
+    },
+    {
+      "intent": "public-solana-c421812b3c9340d498e965a8d53aa075-16",
+      "signature": "pBhwee21RGWeuKKxvPYwdawwpntDPRbd6bjotzqaQ2Ct9DAk3zQui1w43sQ9S23PPviEJY1KuxLxTVcodVfWipr",
+      "slot": 500098172,
+      "amount_lamports": 1,
+      "fee_lamports": 5000,
+      "admission_to_finalized_observed_seconds": 11.231
+    },
+    {
+      "intent": "public-solana-c421812b3c9340d498e965a8d53aa075-17",
+      "signature": "Etu9V6ph1YYcxAyqgHi5m5oKPtJffQox8g2UBdGRGPz8cTrYvntsr8xzr6SCjf9jSeRS7BXmDmKqSS8yjFdYGRk",
+      "slot": 500098173,
+      "amount_lamports": 1,
+      "fee_lamports": 5000,
+      "admission_to_finalized_observed_seconds": 11.53
+    },
+    {
+      "intent": "public-solana-c421812b3c9340d498e965a8d53aa075-18",
+      "signature": "3DYRYuYkteFdMuUs7b1DzUM94YL6nhDsr6xfiagw1riN1EDWB6rAiW4GWj2ThYEzg8MosXCZzK6upXzhpJpJ5tJr",
+      "slot": 500098175,
+      "amount_lamports": 1,
+      "fee_lamports": 5000,
+      "admission_to_finalized_observed_seconds": 11.365
+    },
+    {
+      "intent": "public-solana-c421812b3c9340d498e965a8d53aa075-19",
+      "signature": "63KqQbGhySm5m9c6xqxNChP1oev3eQ4zu75qcizw9jVN3apGpeQ4htfjXvAgmPbr7SfQ19A6CXTYQddjkTfHjQxA",
+      "slot": 500098178,
+      "amount_lamports": 1,
+      "fee_lamports": 5000,
+      "admission_to_finalized_observed_seconds": 11.167
+    }
+  ],
+  "crash_mode": false,
+  "discarded_send_responses": 0,
+  "wire_retransmissions": 0,
+  "crash_recovered_intents": 0,
+  "crash_scope": "Engine SIGKILL after response loss; rent bootstrap already finalized; Redis remains running",
+  "rpc_reserved": 150,
+  "rpc_methods": {
+    "getGenesisHash": 1,
+    "getBalance": 4,
+    "getLatestBlockhash": 20,
+    "getFeeForMessage": 20,
+    "sendTransaction": 20,
+    "getSignatureStatuses": 44,
+    "getTransaction": 40,
+    "getSignaturesForAddress": 1
+  },
+  "provenance": {
+    "source_commit": "6f24e89e7b5c93c65dae0efdc6d3b54649bdef57",
+    "engine_binary_sha256": "6407a6c3b108d040da1c92a0405f71155d7de59841edb4ae8955fde3a2941cd0",
+    "harness_sha256": "a7afa00d2a7d85c3b5091614a84592b01f507dc20ab0e153084569952565045d"
+  },
+  "elapsed_seconds": 48.465,
+  "requested_post_bootstrap_admissions_per_second": 5.0,
+  "paced_admissions": 19,
+  "paced_admission_elapsed_seconds": 3.594,
+  "observed_admission_spacing_per_second": 5.009,
+  "bootstrap_admission_to_finalized_observed_seconds": 6.363,
+  "admission_profile": "First rent-bearing transfer finalized before remaining paced transfers; duplicate replays follow completion",
+  "latency_scope": "HTTP admission start to local observation of Engine finalized result; polling and recovery time included",
+  "redis_persistence": "appendonly yes; appendfsync always; Redis not deliberately crashed",
+  "run_directory": "/Users/alfongj/.config/engine-core/runs/solana-devnet-a85b07ce5fa24f59abb27be5a633cdb5",
+  "gateway_solana_method_deltas": {
+    "solana-devnet:getGenesisHash": 1,
+    "solana-devnet:getBalance": 4,
+    "solana-devnet:getLatestBlockhash": 20,
+    "solana-devnet:getFeeForMessage": 20,
+    "solana-devnet:sendTransaction": 20,
+    "solana-devnet:getSignatureStatuses": 44,
+    "solana-devnet:getBlockHeight": 0,
+    "solana-devnet:getTransaction": 40,
+    "solana-devnet:getSignaturesForAddress": 1
+  },
+  "gateway_delta_scope": "Solana network only; includes any concurrent Solana users of gateway",
+  "free_official_rpc_calls": 1,
+  "engine_local_concurrency": 20,
+  "worker_process_start_intervals_seconds": {
+    "samples": 44,
+    "min": 0.999,
+    "p50": 3.503,
+    "p95": 5.188,
+    "max": 5.297
+  },
+  "worker_interval_scope": "Derived from timestamped Engine process-start logs per intent within each process lifetime; includes HTTP/work duration and queue delay, not direct RPC dispatch spacing"
+}

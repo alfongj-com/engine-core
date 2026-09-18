@@ -1,0 +1,15 @@
+test_browser_origin_host_and_path_never_reach_gateway (test_testnet_evm_write.GuardTests) ... ok
+test_concurrent_attempts_reserve_before_any_response (test_testnet_evm_write.GuardTests) ... ok
+test_same_nonce_different_signature_rejects (test_testnet_evm_write.GuardTests) ... ok
+test_truncated_or_trailing_rlp_rejects (test_testnet_evm_write.GuardTests) ... ok
+test_wrong_intent_or_spending_limits_reject_before_reservation (test_testnet_evm_write.GuardTests) ... ok
+test_broadcast_is_recorded_before_forward_and_fresh_signature_refused (test_testnet_solana_write.GuardTests) ... ok
+test_browser_origin_wrong_host_or_path_never_forward (test_testnet_solana_write.GuardTests) ... ok
+test_manifest_cannot_expand_spending_on_resume (test_testnet_solana_write.GuardTests) ... ok
+test_unpersisted_or_overpriced_transaction_never_sent (test_testnet_solana_write.GuardTests) ... ok
+test_wire_business_effect_guards (test_testnet_solana_write.GuardTests) ... ok
+
+----------------------------------------------------------------------
+Ran 10 tests in 5.079s
+
+OK
