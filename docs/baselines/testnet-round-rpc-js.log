@@ -1,0 +1,112 @@
+TAP version 13
+# Subtest: crash/restart forfeits reserved calls instead of resetting the cap
+ok 1 - crash/restart forfeits reserved calls instead of resetting the cap
+  ---
+  duration_ms: 51.767125
+  type: 'test'
+  ...
+# Subtest: counts individual batch calls, rejects over-budget before upstream, redacts echoed key
+ok 2 - counts individual batch calls, rejects over-budget before upstream, redacts echoed key
+  ---
+  duration_ms: 57.380209
+  type: 'test'
+  ...
+# Subtest: corrupt durable counters and a ceiling above $12 fail closed
+ok 3 - corrupt durable counters and a ceiling above $12 fail closed
+  ---
+  duration_ms: 0.74575
+  type: 'test'
+  ...
+# Subtest: durability failure never dispatches and latches further traffic closed
+ok 4 - durability failure never dispatches and latches further traffic closed
+  ---
+  duration_ms: 20.393834
+  type: 'test'
+  ...
+# Subtest: shutdown drains already admitted work before returning final counters
+ok 5 - shutdown drains already admitted work before returning final counters
+  ---
+  duration_ms: 27.986084
+  type: 'test'
+  ...
+# Subtest: forced shutdown aborts hung upstream and still finalizes counters
+ok 6 - forced shutdown aborts hung upstream and still finalizes counters
+  ---
+  duration_ms: 31.648917
+  type: 'test'
+  ...
+# Subtest: escaped echoed keys, oversized responses, and non-loopback Host are contained
+ok 7 - escaped echoed keys, oversized responses, and non-loopback Host are contained
+  ---
+  duration_ms: 25.791292
+  type: 'test'
+  ...
+# Subtest: concurrent admissions cannot exceed the durable ceiling
+ok 8 - concurrent admissions cannot exceed the durable ceiling
+  ---
+  duration_ms: 63.815125
+  type: 'test'
+  ...
+# Subtest: only literal loopback routes, finite stages, explicit execution, and preserved evidence filenames
+ok 9 - only literal loopback routes, finite stages, explicit execution, and preserved evidence filenames
+  ---
+  duration_ms: 0.97325
+  type: 'test'
+  ...
+# Subtest: deterministic bounded request mix, no retries, and saved report excludes raw provider text
+ok 10 - deterministic bounded request mix, no retries, and saved report excludes raw provider text
+  ---
+  duration_ms: 134.555333
+  type: 'test'
+  ...
+# Subtest: local caller concurrency saturation drops scheduled work instead of unbounded queuing or retry
+ok 11 - local caller concurrency saturation drops scheduled work instead of unbounded queuing or retry
+  ---
+  duration_ms: 101.857542
+  type: 'test'
+  ...
+# Subtest: gateway local admission rejection is distinct from upstream throttling
+ok 12 - gateway local admission rejection is distinct from upstream throttling
+  ---
+  duration_ms: 74.119209
+  type: 'test'
+  ...
+# Subtest: budget precheck and write-method rejection make no paid dispatches
+ok 13 - budget precheck and write-method rejection make no paid dispatches
+  ---
+  duration_ms: 9.164375
+  type: 'test'
+  ...
+# Subtest: an exhausted shared campaign stops later slots and later stages without retry
+ok 14 - an exhausted shared campaign stops later slots and later stages without retry
+  ---
+  duration_ms: 40.629834
+  type: 'test'
+  ...
+# Subtest: EVM recipe discovers real recent hashes and funded senders with bounded reads
+ok 15 - EVM recipe discovers real recent hashes and funded senders with bounded reads
+  ---
+  duration_ms: 118.532334
+  type: 'test'
+  ...
+# Subtest: Solana recipe probes known recent signatures and distinguishes null transaction results
+ok 16 - Solana recipe probes known recent signatures and distinguishes null transaction results
+  ---
+  duration_ms: 113.229083
+  type: 'test'
+  ...
+# Subtest: malformed error envelopes never count as successful RPC responses
+ok 17 - malformed error envelopes never count as successful RPC responses
+  ---
+  duration_ms: 87.509834
+  type: 'test'
+  ...
+1..17
+# tests 17
+# suites 0
+# pass 17
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 762.72225

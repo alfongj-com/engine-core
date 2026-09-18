@@ -1,0 +1,89 @@
+{
+  "cases": [
+    {
+      "admissionsPerSecond": 2967.3315343885906,
+      "concurrency": 1,
+      "duplicateRetries": 100,
+      "durablePending": 1000,
+      "elapsedSeconds": 0.337003125,
+      "initialPending": 0,
+      "latencyMs": {
+        "max": 0.83375,
+        "p50": 0.320542,
+        "p95": 0.44825000000000004,
+        "p99": 0.635208
+      },
+      "matchingAdmissionFingerprints": 1000,
+      "newAdmissions": 1000,
+      "payloadBytes": 708,
+      "pendingAfterDuplicateRetries": 1000,
+      "uniquePending": 1000
+    },
+    {
+      "admissionsPerSecond": 3161.662100183246,
+      "concurrency": 1,
+      "duplicateRetries": 100,
+      "durablePending": 101000,
+      "elapsedSeconds": 0.316289334,
+      "initialPending": 100000,
+      "latencyMs": {
+        "max": 0.38175,
+        "p50": 0.311583,
+        "p95": 0.331625,
+        "p99": 0.358334
+      },
+      "matchingAdmissionFingerprints": 1000,
+      "newAdmissions": 1000,
+      "payloadBytes": 708,
+      "pendingAfterDuplicateRetries": 101000,
+      "uniquePending": 101000
+    },
+    {
+      "admissionsPerSecond": 4865.89985570432,
+      "concurrency": 32,
+      "duplicateRetries": 100,
+      "durablePending": 10000,
+      "elapsedSeconds": 2.055118333,
+      "initialPending": 0,
+      "latencyMs": {
+        "max": 6.914792,
+        "p50": 3.494,
+        "p95": 4.715709,
+        "p99": 6.5751669999999995
+      },
+      "matchingAdmissionFingerprints": 10000,
+      "newAdmissions": 10000,
+      "payloadBytes": 708,
+      "pendingAfterDuplicateRetries": 10000,
+      "uniquePending": 10000
+    },
+    {
+      "admissionsPerSecond": 4864.055722622358,
+      "concurrency": 32,
+      "duplicateRetries": 100,
+      "durablePending": 110000,
+      "elapsedSeconds": 2.0558975,
+      "initialPending": 100000,
+      "latencyMs": {
+        "max": 7.233416,
+        "p50": 3.4958329999999997,
+        "p95": 4.723959,
+        "p99": 6.589208
+      },
+      "matchingAdmissionFingerprints": 10000,
+      "newAdmissions": 10000,
+      "payloadBytes": 708,
+      "pendingAfterDuplicateRetries": 110000,
+      "uniquePending": 110000
+    }
+  ],
+  "limitations": [
+    "Single run per case; timings are an O(backlog) regression screen, not a sustainable capacity guarantee.",
+    "Synthetic one-lamport transfer intent, no webhooks.",
+    "Loopback Redis; persistence settings and machine load must be recorded by the operator."
+  ],
+  "profile": "debug",
+  "scope": "Actual initialized Solana admit() path plus canonical fingerprint/serialization and one Redis roundtrip; no worker, signing, RPC or transaction execution.",
+  "setup": "Fresh isolated namespaces; valid pending jobs seeded in batches after healthy schema initialization. Setup, assertions, duplicate retries and cleanup excluded from timings.",
+  "version": 1
+}

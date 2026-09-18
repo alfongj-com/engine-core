@@ -1,0 +1,18 @@
+{
+  "scenario": "local EOA HTTP admission, crash with pending transactions, restart, mine, duplicate admission",
+  "transactions": 24,
+  "log_directory": "/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/engine-eoa-recovery-hm5vh72d",
+  "configured_rpc": true,
+  "redis_crash": true,
+  "reverted_execution": false,
+  "outcome": "pass",
+  "unique_chain_effects": 24,
+  "duplicate_chain_effects": 0,
+  "unauthorized_requests_rejected": 2,
+  "successful_transfers": 24,
+  "reverted_transactions": 0,
+  "recipient_value_received_wei": 24,
+  "terminal_status": "confirmed",
+  "elapsed_seconds": 3.834,
+  "redis_persistence": "appendonly=yes, appendfsync=always; Redis SIGKILL and AOF replay, not host power loss or failover"
+}

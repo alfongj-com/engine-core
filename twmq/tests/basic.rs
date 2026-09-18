@@ -13,7 +13,9 @@ use std::time::Duration;
 use twmq::job::{JobOptions, JobStatus}; // Assuming JobStatus is in twmq::job
 use twmq::redis::aio::ConnectionManager; // For cleanup utility
 
-const REDIS_URL: &str = "redis://127.0.0.1:6379/";
+fn redis_url() -> String {
+    std::env::var("TEST_REDIS_URL").expect("set TEST_REDIS_URL to a disposable Redis instance")
+}
 
 // Helper to clean up Redis keys for a given queue name pattern
 async fn cleanup_redis_keys(conn_manager: &ConnectionManager, queue_name: &str) {
@@ -57,7 +59,7 @@ async fn test_queue_push_and_process_job() {
 
     let queue = Arc::new(
         Queue::<TestJobHandler>::new(
-            REDIS_URL,
+            &redis_url(),
             &queue_name,
             None, // Default QueueOptions
             basic_handler,

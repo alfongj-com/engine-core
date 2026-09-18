@@ -1,0 +1,35 @@
+warning: constant `MAX_INFLIGHT_PER_EOA` is never used
+  --> executors/src/eoa/worker/mod.rs:36:7
+   |
+36 | const MAX_INFLIGHT_PER_EOA: u64 = 100; // Default from spec
+   |       ^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: constant `MAX_RECYCLED_THRESHOLD` is never used
+  --> executors/src/eoa/worker/mod.rs:37:7
+   |
+37 | const MAX_RECYCLED_THRESHOLD: u64 = 50; // Circuit breaker from spec
+   |       ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: constant `TARGET_TRANSACTIONS_PER_EOA` is never used
+  --> executors/src/eoa/worker/mod.rs:38:7
+   |
+38 | const TARGET_TRANSACTIONS_PER_EOA: u64 = 10; // Fleet management from spec
+   |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: constant `MIN_TRANSACTIONS_PER_EOA` is never used
+  --> executors/src/eoa/worker/mod.rs:39:7
+   |
+39 | const MIN_TRANSACTIONS_PER_EOA: u64 = 1; // Fleet management from spec
+   |       ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: `engine-executors` (lib) generated 4 warnings
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.21s
+     Running tests/api_safety.rs (target/debug/deps/api_safety-271aeee5496b6318)
+
+running 2 tests
+test public_routes_reject_unauthorized_mutations_and_invalid_execution ... ok
+test configured_signer_routes_authenticate_and_queue_only_public_identity ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.19s

@@ -1,0 +1,258 @@
+   Compiling engine-core v0.1.0 (/Users/alfongj/Code/engine-core/core)
+   Compiling engine-eip7702-core v0.1.0 (/Users/alfongj/Code/engine-core/eip7702-core)
+   Compiling engine-aa-core v0.1.0 (/Users/alfongj/Code/engine-core/aa-core)
+   Compiling engine-integration-tests v0.1.0 (/Users/alfongj/Code/engine-core/integration-tests)
+   Compiling engine-executors v0.1.0 (/Users/alfongj/Code/engine-core/executors)
+warning: constant `MAX_INFLIGHT_PER_EOA` is never used
+  --> executors/src/eoa/worker/mod.rs:36:7
+   |
+36 | const MAX_INFLIGHT_PER_EOA: u64 = 100; // Default from spec
+   |       ^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: constant `MAX_RECYCLED_THRESHOLD` is never used
+  --> executors/src/eoa/worker/mod.rs:37:7
+   |
+37 | const MAX_RECYCLED_THRESHOLD: u64 = 50; // Circuit breaker from spec
+   |       ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: constant `TARGET_TRANSACTIONS_PER_EOA` is never used
+  --> executors/src/eoa/worker/mod.rs:38:7
+   |
+38 | const TARGET_TRANSACTIONS_PER_EOA: u64 = 10; // Fleet management from spec
+   |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: constant `MIN_TRANSACTIONS_PER_EOA` is never used
+  --> executors/src/eoa/worker/mod.rs:39:7
+   |
+39 | const MIN_TRANSACTIONS_PER_EOA: u64 = 1; // Fleet management from spec
+   |       ^^^^^^^^^^^^^^^^^^^^^^^^
+
+   Compiling thirdweb-engine v0.1.0 (/Users/alfongj/Code/engine-core/server)
+warning: `engine-executors` (lib) generated 4 warnings
+warning: `engine-executors` (lib test) generated 4 warnings (4 duplicates)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 18.25s
+     Running unittests src/lib.rs (target/debug/deps/engine_aa_core-916afa955854686a)
+
+running 5 tests
+test account_factory::default::tests::test_v06_address_prediction ... ok
+test account_factory::default::tests::test_v07_address_prediction ... ok
+test signer::tests::erc6492_matches_standard_abi_layout ... ok
+test signer::tests::erc6492_verifier_can_decode_empty_and_non_word_aligned_payloads ... ok
+test userop::builder::signing_profile_tests::reviewed_profiles_require_the_expected_account_admin_and_salt ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (target/debug/deps/engine_aa_types-b76d29d8710423ea)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (target/debug/deps/engine_core-52b2a431293db8fd)
+
+running 4 tests
+test execution_options::tests::test_webhook_options_user_metadata_validation ... ok
+test transaction::fee_parsing_tests::invalid_fee_fields_are_not_silently_discarded_by_flattened_option ... ok
+test transaction::fee_parsing_tests::legacy_and_dynamic_fees_survive_request_and_storage_roundtrip ... ok
+test transaction::fee_parsing_tests::signed_authorizations_select_eip7702_without_losing_fees ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (target/debug/deps/engine_eip7702_core-3660c80103f91ecc)
+
+running 1 test
+test transaction::replay_identity_tests::rebuilding_with_persisted_uid_preserves_signed_calls ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.28s
+
+     Running tests/integration_tests.rs (target/debug/deps/integration_tests-7078638bf3f09b53)
+
+running 1 test
+test test_eip7702_integration ... ignored, requires live Thirdweb bundler and Base Sepolia contract bytecode; see testing design
+
+test result: ok. 0 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (target/debug/deps/engine_executors-54aaefc49a5c5da3)
+
+running 40 tests
+test eip7702_executor::confirm::tests::transaction_hash_retry_delay_respects_bucket_boundaries ... ok
+test eoa::error_classifier::tests::test_already_known_mapping ... ok
+test eoa::error_classifier::tests::test_insufficient_funds_mapping ... ok
+test eoa::error_classifier::tests::test_nonce_too_low_mapping ... ok
+test eoa::store::atomic::tests::aborted_exec_revalidates_before_reporting_commit ... ignored, requires disposable Redis in TEST_REDIS_URL
+test eoa::store::atomic::tests::command_errors_are_not_retried_as_watch_conflicts ... ignored, requires disposable Redis in TEST_REDIS_URL
+test eoa::store::atomic::tests::concurrent_conflicting_admissions_choose_one_immutable_request ... ignored, requires disposable Redis in TEST_REDIS_URL
+test eoa::store::atomic::tests::conflicting_admission_cannot_overwrite_a_live_intent ... ignored, requires disposable Redis in TEST_REDIS_URL
+test eoa::store::atomic::tests::duplicate_intent_cannot_reserve_two_incremented_nonces ... ignored, requires disposable Redis in TEST_REDIS_URL
+test eoa::store::atomic::tests::incremented_batch_order_does_not_move_nonce_backward ... ignored, requires disposable Redis in TEST_REDIS_URL
+test eoa::store::atomic::tests::pending_failure_commits_status_removal_and_retention ... ignored, requires disposable Redis in TEST_REDIS_URL
+test eoa::store::atomic::tests::pending_failure_requires_current_pending_membership ... ignored, requires disposable Redis in TEST_REDIS_URL
+test eoa::store::atomic::tests::recycled_nonce_cannot_be_reserved_by_two_intents ... ignored, requires disposable Redis in TEST_REDIS_URL
+test eoa::store::atomic::tests::removed_pending_request_cannot_be_borrowed_from_a_stale_read ... ignored, requires disposable Redis in TEST_REDIS_URL
+test eoa::store::atomic::tests::repeated_admission_preserves_pending_inflight_and_completed_state ... ignored, requires disposable Redis in TEST_REDIS_URL
+test eoa::store::atomic::tests::shared_unwatch_cannot_disable_a_stale_owner_fence ... ignored, requires disposable Redis in TEST_REDIS_URL
+test eoa::store::atomic::tests::simple_lock_checked_write_rejects_takeover_before_exec ... ignored, requires disposable Redis in TEST_REDIS_URL
+test eoa::store::atomic::tests::stale_owner_cannot_fail_pending_batch ... ignored, requires disposable Redis in TEST_REDIS_URL
+test eoa::store::atomic::tests::stale_owner_cannot_fail_single_pending_request ... ignored, requires disposable Redis in TEST_REDIS_URL
+test eoa::store::atomic::tests::trailing_recycled_nonce_resets_to_chain_count_including_zero ... ignored, requires disposable Redis in TEST_REDIS_URL
+test eoa::worker::confirm::receipt_tests::legacy_fee_request_survives_storage_and_signed_wire_encoding ... ignored, requires disposable Redis in TEST_REDIS_URL; no RPC calls or live keys
+test eoa::worker::confirm::receipt_tests::receipt_outage_cannot_requeue_an_already_broadcast_intent ... ignored, requires disposable Redis in TEST_REDIS_URL
+test eoa::worker::confirm::receipt_tests::receipt_rpc_returns_only_matching_known_receipts ... ok
+test eoa::worker::error::send_error_tests::ambiguous_transport_errors_preserve_the_submitted_transaction ... ok
+test external_bundler::deployment::tests::queued_error_retains_lock_identity_and_legacy_error_cannot_unlock ... ok
+test external_bundler::deployment::tests::stale_completion_cannot_release_or_cache_for_a_new_owner ... ignored, requires disposable Redis in TEST_REDIS_URL
+test metrics::tests::test_calculate_duration_seconds ... ok
+test metrics::tests::test_calculate_duration_seconds_from_twmq ... ok
+test metrics::tests::test_custom_metrics_registry ... ok
+test metrics::tests::test_metrics_recording ... ok
+test solana_executor::storage::tests::test_attempt_parse_signature ... ok
+test solana_executor::storage::tests::test_attempt_serialization ... ok
+test webhook::destination::tests::default_denies_and_allowlist_compares_exact_normalized_origins ... ok
+test webhook::destination::tests::production_client_rejects_http_before_connecting ... ok
+test webhook::destination::tests::redirect_response_is_returned_without_contacting_second_destination ... ok
+test webhook::destination::tests::rejects_ambiguous_urls_and_invalid_operator_configuration ... ok
+test webhook::destination::tests::rejects_nonpublic_and_transition_addresses_including_mixed_dns_answers ... ok
+test webhook::tests::dispatch_enforces_policy_before_request_construction ... ok
+test webhook::tests::multibyte_error_preview_never_slices_inside_a_character ... ok
+test webhook::tests::response_reader_stops_at_limit_without_waiting_for_large_body_to_finish ... ok
+
+test result: ok. 21 passed; 0 failed; 19 ignored; 0 measured; 0 filtered out; finished in 0.35s
+
+     Running unittests src/lib.rs (target/debug/deps/engine_integration_tests-d474d62c43e70421)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/signing.rs (target/debug/deps/signing-7c3740c083f714af)
+
+running 10 tests
+test credential_debug_output_redacts_all_secret_material ... ok
+test environment_signing_survives_queue_roundtrip_and_rejects_rotation ... 
+running 1 test
+test environment_worker_child ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 9 filtered out; finished in 0.24s
+
+
+running 1 test
+test environment_worker_child ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 9 filtered out; finished in 0.05s
+
+
+running 1 test
+test environment_worker_child ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 9 filtered out; finished in 0.05s
+
+
+running 1 test
+test environment_worker_child ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 9 filtered out; finished in 0.05s
+
+ok
+test environment_worker_child ... ignored, invoked by parent with isolated environment
+test eoa_signing_rejects_mismatched_sender_for_every_operation ... ok
+test iaw_preserves_external_policy_and_request_envelope_for_unknown_factories ... ok
+test local_and_kms_userop_signers_reject_unknown_or_cross_version_profiles_before_signing ... ok
+test personal_sign_uses_message_bytes_and_eip191_domain ... ok
+test queued_environment_credentials_contain_only_a_public_address ... ok
+test transaction_signature_commits_to_nonce_chain_and_destination ... ok
+test userop_signature_matches_reviewed_contract_digest_and_binds_chain_and_entrypoint ... ok
+
+test result: ok. 9 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.49s
+
+     Running unittests src/lib.rs (target/debug/deps/engine_solana_core-e4374a277d94f483)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (target/debug/deps/thirdweb_core-0d843923000dc954)
+
+running 1 test
+test auth::tests::authentication_secrets_are_not_exposed_by_debug_or_header_errors ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (target/debug/deps/thirdweb_engine-26b158d6ad17e91c)
+
+running 4 tests
+test execution_router::request_validation_tests::contract_creation_requires_single_eoa_transaction ... ok
+test execution_router::request_validation_tests::empty_and_automatic_execution_are_rejected_before_execution ... ok
+test http::extractors::environment_auth_tests::environment_signing_requires_a_configured_matching_token ... ok
+test http::routes::admin::eoa_diagnostics::credential_redaction_tests::diagnostic_payload_excludes_all_authentication_material ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/main.rs (target/debug/deps/thirdweb_engine-37bd1cfff8b003b6)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/api_safety.rs (target/debug/deps/api_safety-4eff97da35f1e626)
+
+running 1 test
+test public_routes_reject_unauthorized_mutations_and_invalid_execution ... ignored, requires redis-server; starts its own disposable loopback process
+
+test result: ok. 0 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests engine_aa_core
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests engine_aa_types
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests engine_core
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests engine_eip7702_core
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests engine_executors
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests engine_integration_tests
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests engine_solana_core
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests thirdweb_core
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests thirdweb_engine
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

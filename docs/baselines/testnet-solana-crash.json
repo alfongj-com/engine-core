@@ -1,0 +1,150 @@
+{
+  "outcome": "pass",
+  "network": "solana-devnet",
+  "payer": "BymPLiErFxJBV47sc31B7VnMoePFnACshrMx3VxkjC69",
+  "recipient": "E1VjhZmMguSrVFWySD9bRSdSRyEo8duLEmwWstJbhnLm",
+  "transactions": 10,
+  "unique_finalized_effects": 10,
+  "duplicate_effects": 0,
+  "duplicate_replay_extra_broadcasts": 0,
+  "transferred_lamports": 650249,
+  "fees_lamports": 50000,
+  "payer_final_lamports": 8599502,
+  "recipient_final_lamports": 650249,
+  "receipts": [
+    {
+      "intent": "public-solana-8522c89c26dc4693ae5b237b23c544f2-0",
+      "signature": "3bazLZbCHGZyj1y7SvMLp3i2MN3KpzQaRFDW3aPRcEWyUNK5QbtkSpbBUeWAiJzrRhRtPq7wpwcUsnHSCwTiLPYg",
+      "slot": 500097335,
+      "amount_lamports": 650240,
+      "fee_lamports": 5000,
+      "admission_to_finalized_observed_seconds": 7.931
+    },
+    {
+      "intent": "public-solana-8522c89c26dc4693ae5b237b23c544f2-1",
+      "signature": "4nmiWZyiwVNFYmizi3GoYK5TcryJTe9ZTgNi8QUVhaXij2eiXxDJZcs72FEWp6tBxm7P1mRPVXveWY7AZQcw33LZ",
+      "slot": 500097387,
+      "amount_lamports": 1,
+      "fee_lamports": 5000,
+      "admission_to_finalized_observed_seconds": 17.777
+    },
+    {
+      "intent": "public-solana-8522c89c26dc4693ae5b237b23c544f2-2",
+      "signature": "44mTDzcbdxGyGLqsLzirfpznzww9DnYEw5MeF7UYRzrKt5JD9bG66RkTJjLAiJRJxNxYQaAgMX8bCZcDmGDnBKuU",
+      "slot": 500097394,
+      "amount_lamports": 1,
+      "fee_lamports": 5000,
+      "admission_to_finalized_observed_seconds": 16.741
+    },
+    {
+      "intent": "public-solana-8522c89c26dc4693ae5b237b23c544f2-3",
+      "signature": "5TFe1Q7JSz82q7ZBbmhgK2vrRPb3ZZgnd6Dn9ycS55XuoaVFcfWVxDVCFe4ne99jGNuNUBfcLP1553NgPesCB1B7",
+      "slot": 500097400,
+      "amount_lamports": 1,
+      "fee_lamports": 5000,
+      "admission_to_finalized_observed_seconds": 14.11
+    },
+    {
+      "intent": "public-solana-8522c89c26dc4693ae5b237b23c544f2-4",
+      "signature": "5g6C1EjUQUuSH2dd4kNPvrTWvP1AzrwWjAePWLaXefJYDNQjjWomuEvMiDn9XmRY2MEVM8PeJxVz4gY8J7V55aP8",
+      "slot": 500097406,
+      "amount_lamports": 1,
+      "fee_lamports": 5000,
+      "admission_to_finalized_observed_seconds": 13.075
+    },
+    {
+      "intent": "public-solana-8522c89c26dc4693ae5b237b23c544f2-5",
+      "signature": "4FmdJEGwbSDUay4L5ia7mHGiVgNgm8u1chottM3qjmqiwAhuemJpYEPtJ4BVsPqRuw95g9KtoqFsKBrx4A41WCUv",
+      "slot": 500097412,
+      "amount_lamports": 1,
+      "fee_lamports": 5000,
+      "admission_to_finalized_observed_seconds": 12.579
+    },
+    {
+      "intent": "public-solana-8522c89c26dc4693ae5b237b23c544f2-6",
+      "signature": "ewic9ejYRB4KiC5xZo4ZqReUitQvn3fMiMn7XmRJwuceMQj4cZms3oU2XfQSgKnsEzsR2i4ZCyBSg4z82TKKzvP",
+      "slot": 500097418,
+      "amount_lamports": 1,
+      "fee_lamports": 5000,
+      "admission_to_finalized_observed_seconds": 11.541
+    },
+    {
+      "intent": "public-solana-8522c89c26dc4693ae5b237b23c544f2-7",
+      "signature": "UeJQQdQiwQfooAJZeFT9FLkoxddqQ7yufdWgXg9iVihWQDr51bMzwdquA9nym1zvija8hiRAAFvvW2EJJ3K5mK2",
+      "slot": 500097426,
+      "amount_lamports": 1,
+      "fee_lamports": 5000,
+      "admission_to_finalized_observed_seconds": 11.031
+    },
+    {
+      "intent": "public-solana-8522c89c26dc4693ae5b237b23c544f2-8",
+      "signature": "47VUpRz4mFmQDD2zE4uiPsW2KbhCcLcAGqfEt5evrWaqDgpLZZyAHS54eM9AnrLgPM2DnwGHBv4uPjPip713Czmp",
+      "slot": 500097433,
+      "amount_lamports": 1,
+      "fee_lamports": 5000,
+      "admission_to_finalized_observed_seconds": 9.994
+    },
+    {
+      "intent": "public-solana-8522c89c26dc4693ae5b237b23c544f2-9",
+      "signature": "5RcwRwRS556ajH8dLydAjnnzZFuuq1dz3wniDiQA7dMXgN7A7j6JJD3zkobfb8aK1FrTFbTabAoLPrExUjR1ZHWz",
+      "slot": 500097439,
+      "amount_lamports": 1,
+      "fee_lamports": 5000,
+      "admission_to_finalized_observed_seconds": 8.964
+    }
+  ],
+  "crash_mode": true,
+  "discarded_send_responses": 24,
+  "wire_retransmissions": 36,
+  "rpc_reserved": 152,
+  "rpc_methods": {
+    "getGenesisHash": 1,
+    "getBalance": 4,
+    "getLatestBlockhash": 10,
+    "getFeeForMessage": 10,
+    "sendTransaction": 46,
+    "getSignatureStatuses": 16,
+    "getTransaction": 20,
+    "getBlockHeight": 44,
+    "getSignaturesForAddress": 1
+  },
+  "provenance": {
+    "source_commit": "6f24e89e7b5c93c65dae0efdc6d3b54649bdef57",
+    "engine_binary_sha256": "6407a6c3b108d040da1c92a0405f71155d7de59841edb4ae8955fde3a2941cd0",
+    "harness_sha256": "34f682ffe41d669573b8f6e3582e8491457025583ce950f527c2a3017784d232"
+  },
+  "elapsed_seconds": 40.976,
+  "requested_post_bootstrap_admissions_per_second": 1,
+  "admission_profile": "First rent-bearing transfer finalized before remaining paced transfers; duplicate replays follow completion",
+  "latency_scope": "HTTP admission start to local observation of Engine finalized result; polling and recovery time included",
+  "redis_persistence": "appendonly yes; appendfsync always; Redis not deliberately crashed",
+  "run_directory": "/Users/alfongj/.config/engine-core/runs/solana-devnet-3a0c730f4fa44677a6aafe5e1cfb2d5b",
+  "gateway_solana_method_deltas": {
+    "solana-devnet:getGenesisHash": 1,
+    "solana-devnet:getBalance": 4,
+    "solana-devnet:getLatestBlockhash": 10,
+    "solana-devnet:getFeeForMessage": 10,
+    "solana-devnet:sendTransaction": 46,
+    "solana-devnet:getSignatureStatuses": 16,
+    "solana-devnet:getBlockHeight": 44,
+    "solana-devnet:getTransaction": 20,
+    "solana-devnet:getSignaturesForAddress": 1
+  },
+  "gateway_delta_scope": "Solana network only; includes any concurrent Solana users of gateway",
+  "free_official_rpc_calls": 1,
+  "engine_local_concurrency": 10,
+  "paced_admissions": 9,
+  "paced_admission_elapsed_seconds": 8.282,
+  "observed_admission_spacing_per_second": 0.966,
+  "bootstrap_admission_to_finalized_observed_seconds": 7.931,
+  "crash_recovered_intents": 9,
+  "crash_scope": "Engine SIGKILL after response loss; rent bootstrap already finalized; Redis remains running",
+  "worker_process_start_intervals_seconds": {
+    "samples": 51,
+    "min": 0.998,
+    "p50": 2.073,
+    "p95": 2.745,
+    "max": 3.275
+  },
+  "worker_interval_scope": "Derived from timestamped Engine process-start logs per intent within each process lifetime; includes HTTP/work duration and queue delay, not direct RPC dispatch spacing"
+}

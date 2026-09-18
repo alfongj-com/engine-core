@@ -1,14 +1,17 @@
-use alloy::{primitives::B256, providers::Provider};
+use alloy::{
+    primitives::B256,
+    providers::{Provider, RootProvider},
+};
 use engine_core::{chain::Chain, error::AlloyRpcErrorToEngineError};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    FlashblocksTransactionCount, TransactionCounts,
+    FlashblocksTransactionCount,
     eoa::{
         EoaExecutorStore,
         store::{
-            CleanupReport, ConfirmedTransaction, ReplacedTransaction,
-            SubmittedTransactionDehydrated, TransactionStoreError,
+            CleanupReport, ConfirmedTransaction, SubmittedTransactionDehydrated,
+            TransactionStoreError,
         },
         worker::{
             EoaExecutorWorker,
@@ -28,6 +31,51 @@ pub struct ConfirmedTransactionWithRichReceipt {
     pub receipt: alloy::rpc::types::TransactionReceipt,
 }
 
+/// Missing or failed receipt reads are unknown outcomes. The store may only
+/// requeue a different intent when a known receipt proves same-nonce replacement.
+async fn fetch_confirmed_transaction_receipts(
+    provider: &RootProvider,
+    submitted_txs: Vec<SubmittedTransactionDehydrated>,
+) -> Vec<ConfirmedTransactionWithRichReceipt> {
+    let receipt_futures = submitted_txs.iter().filter_map(|tx| {
+        let hash = match tx.transaction_hash.parse::<B256>() {
+            Ok(hash) => hash,
+            Err(_) => {
+                tracing::warn!(transaction_hash = tx.transaction_hash, "Invalid stored hash; keeping outcome unresolved");
+                return None;
+            }
+        };
+        Some(async move {
+            match provider.get_transaction_receipt(hash).await {
+                Ok(Some(receipt)) if receipt.transaction_hash == hash => Some(ConfirmedTransactionWithRichReceipt {
+                    nonce: tx.nonce,
+                    transaction_hash: tx.transaction_hash.clone(),
+                    transaction_id: tx.transaction_id.clone(),
+                    receipt,
+                }),
+                Ok(Some(_)) => {
+                    tracing::warn!(transaction_hash = tx.transaction_hash, "RPC returned a receipt for a different hash; keeping outcome unresolved");
+                    None
+                }
+                Ok(None) => None,
+                Err(error) => {
+                    tracing::warn!(transaction_hash = tx.transaction_hash, error = %engine_core::error::rpc_error_diagnostic(&error), "Receipt query failed; keeping outcome unresolved");
+                    None
+                }
+            }
+        })
+    });
+    futures::future::join_all(receipt_futures)
+        .await
+        .into_iter()
+        .flatten()
+        .collect()
+}
+
+#[cfg(test)]
+#[path = "receipt_tests.rs"]
+mod receipt_tests;
+
 impl<C: Chain> EoaExecutorWorker<C> {
     // ========== CONFIRM FLOW ==========
     #[tracing::instrument(skip_all, fields(worker_id = self.store.worker_id))]
@@ -36,7 +84,10 @@ impl<C: Chain> EoaExecutorWorker<C> {
         let transaction_counts = self
             .chain
             .provider()
-            .get_transaction_counts_with_flashblocks_support(self.eoa, self.chain.chain_id())
+            .get_transaction_counts_with_flashblocks_support(
+                self.eoa,
+                self.chain.use_pending_for_preconfirmation(),
+            )
             .await
             .map_err(|e| {
                 let engine_error = e.to_engine_error(&self.chain);
@@ -109,42 +160,8 @@ impl<C: Chain> EoaExecutorWorker<C> {
                             bumped_nonce = transaction_counts.preconfirmed,
                             preconfirmed_nonce = transaction_counts.preconfirmed,
                             latest_nonce = transaction_counts.latest,
-                            "Failed to attempt gas bump for stalled nonce. Attempting no-op transaction as fallback"
+                            "Gas bump failed; preserving submitted intent for reconciliation"
                         );
-
-                        // Try sending a no-op transaction as fallback
-                        match self
-                            .send_noop_transaction(transaction_counts.preconfirmed)
-                            .await
-                        {
-                            Ok(noop_tx) => {
-                                // Process the no-op transaction
-                                if let Err(e) =
-                                    self.store.process_noop_transactions(&[noop_tx]).await
-                                {
-                                    tracing::error!(
-                                        error = ?e,
-                                        bumped_nonce = transaction_counts.preconfirmed,
-                                        preconfirmed_nonce = transaction_counts.preconfirmed,
-                                        latest_nonce = transaction_counts.latest,
-                                        "Failed to process fallback no-op transaction for stalled nonce, but sending transactions was successful"
-                                    );
-                                }
-                            }
-                            Err(e) => {
-                                tracing::error!(
-                                    error = ?e,
-                                    bumped_nonce = transaction_counts.preconfirmed,
-                                    preconfirmed_nonce = transaction_counts.preconfirmed,
-                                    latest_nonce = transaction_counts.latest,
-                                    "Failed to send fallback no-op transaction for stalled nonce. Scheduling auto-reset if EOA is stuck"
-                                );
-
-                                if let Err(e) = self.store.schedule_manual_reset().await {
-                                    tracing::error!(error = ?e, "Failed to schedule auto-reset");
-                                }
-                            }
-                        }
                     }
                 }
             }
@@ -214,8 +231,8 @@ impl<C: Chain> EoaExecutorWorker<C> {
         }
 
         // Fetch receipts and categorize transactions
-        let (confirmed_txs, _replaced_txs) =
-            self.fetch_confirmed_transaction_receipts(waiting_txs).await;
+        let confirmed_txs =
+            fetch_confirmed_transaction_receipts(self.chain.provider(), waiting_txs).await;
 
         // Process confirmed transactions
         let successes: Vec<ConfirmedTransaction> = confirmed_txs
@@ -254,10 +271,7 @@ impl<C: Chain> EoaExecutorWorker<C> {
             .store
             .clean_submitted_transactions(
                 &successes,
-                TransactionCounts {
-                    latest: transaction_counts.latest.saturating_sub(1), // Use latest for replacement detection
-                    preconfirmed: transaction_counts.preconfirmed.saturating_sub(1), // Use preconfirmed for confirmation
-                },
+                transaction_counts,
                 self.webhook_queue.clone(),
             )
             .await?;
@@ -280,61 +294,6 @@ impl<C: Chain> EoaExecutorWorker<C> {
         }
 
         Ok(report)
-    }
-
-    /// Fetch receipts for all submitted transactions and categorize them
-    async fn fetch_confirmed_transaction_receipts(
-        &self,
-        submitted_txs: Vec<SubmittedTransactionDehydrated>,
-    ) -> (
-        Vec<ConfirmedTransactionWithRichReceipt>,
-        Vec<ReplacedTransaction>,
-    ) {
-        // Fetch all receipts in parallel
-        let receipt_futures: Vec<_> = submitted_txs
-            .iter()
-            .filter_map(|tx| match tx.transaction_hash.parse::<B256>() {
-                Ok(hash_bytes) => Some(async move {
-                    let receipt = self
-                        .chain
-                        .provider()
-                        .get_transaction_receipt(hash_bytes)
-                        .await;
-                    (tx, receipt)
-                }),
-                Err(_) => {
-                    tracing::warn!("Invalid hash format: {}, skipping", tx.transaction_hash);
-                    None
-                }
-            })
-            .collect();
-
-        let receipt_results = futures::future::join_all(receipt_futures).await;
-
-        // Categorize transactions
-        let mut confirmed_txs = Vec::new();
-        let mut failed_txs = Vec::new();
-
-        for (tx, receipt_result) in receipt_results {
-            match receipt_result {
-                Ok(Some(receipt)) => {
-                    confirmed_txs.push(ConfirmedTransactionWithRichReceipt {
-                        nonce: tx.nonce,
-                        transaction_hash: tx.transaction_hash.clone(),
-                        transaction_id: tx.transaction_id.clone(),
-                        receipt,
-                    });
-                }
-                Ok(None) | Err(_) => {
-                    failed_txs.push(ReplacedTransaction {
-                        transaction_hash: tx.transaction_hash.clone(),
-                        transaction_id: tx.transaction_id.clone(),
-                    });
-                }
-            }
-        }
-
-        (confirmed_txs, failed_txs)
     }
 
     // ========== GAS BUMP METHODS ==========
@@ -422,7 +381,7 @@ impl<C: Chain> EoaExecutorWorker<C> {
                         .provider()
                         .get_transaction_counts_with_flashblocks_support(
                             self.eoa,
-                            self.chain.chain_id(),
+                            self.chain.use_pending_for_preconfirmation(),
                         )
                         .await
                     {
@@ -432,7 +391,7 @@ impl<C: Chain> EoaExecutorWorker<C> {
                                 transaction_id = ?newest_transaction_data.transaction_id,
                                 nonce = expected_nonce,
                                 error = ?e,
-                                rpc_check_error = ?rpc_error,
+                                rpc_check_error = %engine_core::error::rpc_error_diagnostic(&rpc_error),
                                 "Failed to build typed transaction for gas bump and also failed to check nonce"
                             );
                             return Err(e);
@@ -478,7 +437,18 @@ impl<C: Chain> EoaExecutorWorker<C> {
                     return Err(e);
                 }
             };
-            let bumped_typed_tx = self.apply_gas_bump_to_typed_transaction(typed_tx, 120); // 20% increase
+            let Some(bumped_typed_tx) = self.apply_gas_bump_to_typed_transaction(
+                typed_tx,
+                120,
+                &newest_transaction_data.user_request,
+            ) else {
+                tracing::info!(
+                    transaction_id = ?newest_transaction_data.transaction_id,
+                    nonce = expected_nonce,
+                    "Caller fee ceiling leaves no permitted increase; preserving submitted intent"
+                );
+                return Ok(false);
+            };
             let bumped_tx = match self
                 .sign_transaction(
                     bumped_typed_tx,
@@ -527,7 +497,7 @@ impl<C: Chain> EoaExecutorWorker<C> {
                     tracing::warn!(
                         transaction_id = ?newest_transaction_data.transaction_id,
                         nonce = expected_nonce,
-                        error = ?e,
+                        error = %engine_core::error::rpc_error_diagnostic(&e),
                         "Failed to send gas bumped transaction"
                     );
                     // Don't fail the worker, just log the error
@@ -538,14 +508,11 @@ impl<C: Chain> EoaExecutorWorker<C> {
                 }
             }
         } else {
-            tracing::debug!(
+            tracing::warn!(
                 nonce = expected_nonce,
-                "Successfully retrieved all transactions for this nonce, but failed to find newest transaction for gas bump, sending noop"
+                "Stalled nonce has no original request; preserving recovery evidence for reconciliation"
             );
-
-            let noop_tx = self.send_noop_transaction(expected_nonce).await?;
-            self.store.process_noop_transactions(&[noop_tx]).await?;
-            Ok(true)
+            Ok(false)
         }
     }
 }

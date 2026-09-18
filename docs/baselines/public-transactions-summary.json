@@ -1,0 +1,20 @@
+{
+  "unique_confirmed_transactions_by_network": {
+    "base-sepolia": 78,
+    "arbitrum-sepolia": 78,
+    "optimism-sepolia": 78,
+    "sepolia": 58,
+    "solana-devnet": 40
+  },
+  "unique_total": 332,
+  "fees_by_network_in_wei_except_solana_lamports": {
+    "base-sepolia": 10273788303004,
+    "arbitrum-sepolia": 384787572798000,
+    "optimism-sepolia": 3064442543632,
+    "sepolia": 1283658341091000,
+    "solana-devnet": 200000
+  },
+  "duplicate_effects": 0,
+  "public_mainnet_transactions": 0,
+  "source_scope": "Initial and final-source rounds; see each report for exact source and confirmation policy."
+}

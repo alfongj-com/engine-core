@@ -1,0 +1,19 @@
+{
+  "upstream_revision": "b6b7a0bbdc737b3a2b09611305b71b1bf6aba6e8",
+  "patch_file": "queue-hardening.patch",
+  "patch_sha256": "a2f374a5f3a3971f63b425bc9a5b565818d5d939d289ec782a8a099ba7ec4c99",
+  "cargo_lock_matches_baseline": true,
+  "harness_matches_baseline": true,
+  "queue_files": {
+    "twmq/src/error.rs": "6709d52c08a3de142e729300640ea9942f4199f0ea39f513c1abb70adde72170",
+    "twmq/src/hooks.rs": "de8a7f3ab7594a16db1fe005f743129372ca9c4a815218fde2b0ec634e22d95c",
+    "twmq/src/job.rs": "6e0886fa692afe1c54bd4cf2714093ffad21b31d944a4d2410458f1089901cbb",
+    "twmq/src/lease_tests.rs": "1502ecaa6b6680a366cebc48cc7380146db453d0828e882e11ab3e88e6f66606",
+    "twmq/src/lib.rs": "c500c34f4c21d106e8255382dc52adb78ba89b7134297e6248dbcd78b1a9f877",
+    "twmq/src/multilane.rs": "5242b14d729e0ef08bae58b286ba4b6b5469a80eb62b6de87db7c18bf786967f",
+    "twmq/src/multilane_lease_tests.rs": "1c4e73b31280c27d17d9563d0ef0f0af6006d266f24115d6444a4ec26600c499",
+    "twmq/src/queue.rs": "22b1bc977cbcdb899f874312ea83c079f7056fd0b5466557edee8c4bb95769b2",
+    "twmq/src/shutdown.rs": "429dfe8d9d2323979e6f19be04789d10c151c10b28e7f7c81c280666f7d7683d",
+    "twmq/src/transaction.rs": "a1cf0ab2152a85b9c20589501870179cd462ce0c7e280fed22eead17b1520484"
+  }
+}

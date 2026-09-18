@@ -18,7 +18,9 @@ use twmq::{
     redis::aio::ConnectionManager,
 };
 
-const REDIS_URL: &str = "redis://127.0.0.1:6379/";
+fn redis_url() -> String {
+    std::env::var("TEST_REDIS_URL").expect("set TEST_REDIS_URL to a disposable Redis instance")
+}
 
 // Helper to clean up Redis keys
 async fn cleanup_redis_keys(conn_manager: &ConnectionManager, queue_name: &str) {
@@ -131,13 +133,13 @@ async fn test_job_delay_basic() {
     };
 
     // Create Redis connection for the execution context
-    let redis_client = redis::Client::open(REDIS_URL).unwrap();
+    let redis_client = redis::Client::open(redis_url()).unwrap();
     let redis_conn = Arc::new(redis_client.get_connection_manager().await.unwrap());
 
     let handler = DelayTestJobHandler;
 
     let queue = Arc::new(
-        DelayTestQueue::new(REDIS_URL, &queue_name, Some(queue_options), handler)
+        DelayTestQueue::new(&redis_url(), &queue_name, Some(queue_options), handler)
             .await
             .expect("Failed to create delay test queue"),
     );
@@ -307,13 +309,13 @@ async fn test_delay_position_ordering() {
     };
 
     // Create Redis connection for the execution context
-    let redis_client = redis::Client::open(REDIS_URL).unwrap();
+    let redis_client = redis::Client::open(redis_url()).unwrap();
     let redis_conn = Arc::new(redis_client.get_connection_manager().await.unwrap());
 
     let handler = DelayTestJobHandler;
 
     let queue = Arc::new(
-        DelayTestQueue::new(REDIS_URL, &queue_name, Some(queue_options), handler)
+        DelayTestQueue::new(&redis_url(), &queue_name, Some(queue_options), handler)
             .await
             .expect("Failed to create delay order queue"),
     );

@@ -28,6 +28,18 @@ pub enum EoaConfirmationError {
     )]
     #[serde(rename_all = "camelCase")]
     TransactionReplaced { nonce: u64, hash: String },
+
+    #[error("Transaction reverted on-chain")]
+    TransactionReverted {
+        #[serde(flatten)]
+        transaction: EoaExecutorConfirmedTransaction,
+    },
+}
+
+/// A mined failure has a receipt, but no meaningful worker retry count.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EoaConfirmationFailureData {
+    pub error: EoaConfirmationError,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -153,6 +165,28 @@ impl EoaExecutorEvent {
                     eoa_address: self.address,
                     transaction_id: self.transaction_id.clone(),
                     transaction_hash: confirmed_transaction.transaction_hash,
+                },
+            },
+        }
+    }
+
+    pub fn transaction_reverted_envelope(
+        &self,
+        confirmed_transaction: ConfirmedTransaction,
+    ) -> BareWebhookNotificationEnvelope<EoaConfirmationFailureData> {
+        BareWebhookNotificationEnvelope {
+            transaction_id: self.transaction_id.clone(),
+            executor_name: EXECUTOR_NAME.to_string(),
+            stage_name: EoaExecutorStage::Confirmation.to_string(),
+            event_type: StageEvent::Failure,
+            payload: EoaConfirmationFailureData {
+                error: EoaConfirmationError::TransactionReverted {
+                    transaction: EoaExecutorConfirmedTransaction {
+                        receipt: confirmed_transaction.receipt,
+                        eoa_address: self.address,
+                        transaction_id: self.transaction_id.clone(),
+                        transaction_hash: confirmed_transaction.transaction_hash,
+                    },
                 },
             },
         }

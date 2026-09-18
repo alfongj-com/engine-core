@@ -1,0 +1,299 @@
+{
+  "version": 1,
+  "startedAt": "2026-09-17T06:17:58.634Z",
+  "finishedAt": "2026-09-17T06:18:21.450Z",
+  "scope": "Read-only RPC responsiveness; neither transaction submission capacity nor chain inclusion throughput.",
+  "limitations": [
+    "Small recent sender/hash/signature sample can benefit from provider caching.",
+    "Stages run once in fixed order; this is a short screening probe, not a sustained capacity guarantee.",
+    "Process CPU measures the probe only; gateway/Redis/provider resource use is excluded.",
+    "Budget delta includes any concurrent users of this gateway.",
+    "One RPC method per HTTP request; no retries or batching."
+  ],
+  "chain": "solana-devnet",
+  "network": "solana-devnet",
+  "config": {
+    "gateway": "loopback budget gateway",
+    "chain": "solana-devnet",
+    "stages": [
+      {
+        "rate": 2000,
+        "count": 10000
+      },
+      {
+        "rate": 4000,
+        "count": 20000
+      }
+    ],
+    "planned": 30000,
+    "concurrency": 1024,
+    "timeoutMs": 20000,
+    "reserve": 10000,
+    "maxLagMs": 100,
+    "pauseMs": 1000
+  },
+  "discovery": {
+    "counts": {
+      "getSignaturesForAddress": 1,
+      "getTransaction": 1
+    },
+    "samples": [
+      {
+        "method": "getSignaturesForAddress",
+        "kind": "success",
+        "status": 200,
+        "ms": 49.693
+      },
+      {
+        "method": "getTransaction",
+        "kind": "success",
+        "status": 200,
+        "ms": 48.571
+      }
+    ],
+    "signatureSampleSize": 8,
+    "recipe": "confirmed blockhash, priority fees, recent signature status, recent transaction (equal weights)"
+  },
+  "mixMethods": [
+    "getLatestBlockhash",
+    "getRecentPrioritizationFees",
+    "getSignatureStatuses",
+    "getTransaction"
+  ],
+  "mixSha256": "e835c094fd324655848ac7f57d3c88947f7c49cd869ec68f5e0b3eb6c2e1dadb",
+  "budgetBefore": {
+    "observed": 44034,
+    "reserved": 47000,
+    "remainingCalls": 1953994,
+    "ceiling": 2000000
+  },
+  "budgetAfter": {
+    "observed": 67761,
+    "reserved": 70000,
+    "remainingCalls": 1930267,
+    "ceiling": 2000000
+  },
+  "observedCampaignCallDelta": 23727,
+  "stages": [
+    {
+      "targetRps": 2000,
+      "scheduled": 10000,
+      "dispatched": 9354,
+      "localConcurrencyDrops": 646,
+      "localSchedulerDrops": 0,
+      "notScheduled": 0,
+      "stoppedReason": null,
+      "methods": {
+        "getLatestBlockhash": 2341,
+        "getRecentPrioritizationFees": 2343,
+        "getSignatureStatuses": 2336,
+        "getTransaction": 2334
+      },
+      "methodResults": {
+        "getLatestBlockhash": {
+          "outcomes": {
+            "success": 2341
+          },
+          "latencyMs": {
+            "count": 2341,
+            "p50": 48.305,
+            "p95": 1428.77,
+            "p99": 3048.822,
+            "max": 9277.96
+          }
+        },
+        "getSignatureStatuses": {
+          "outcomes": {
+            "success": 2336
+          },
+          "latencyMs": {
+            "count": 2336,
+            "p50": 51.951,
+            "p95": 1468.346,
+            "p99": 3055.351,
+            "max": 4547.964
+          }
+        },
+        "getRecentPrioritizationFees": {
+          "outcomes": {
+            "success": 2343
+          },
+          "latencyMs": {
+            "count": 2343,
+            "p50": 52.321,
+            "p95": 1486.277,
+            "p99": 4186.934,
+            "max": 8766.968
+          }
+        },
+        "getTransaction": {
+          "outcomes": {
+            "success": 2334
+          },
+          "latencyMs": {
+            "count": 2334,
+            "p50": 53.997,
+            "p95": 1718.564,
+            "p99": 4023.394,
+            "max": 8499.886
+          }
+        }
+      },
+      "outcomes": {
+        "success": 9354
+      },
+      "httpStatuses": {
+        "200": 9354
+      },
+      "rpcCodes": {},
+      "maxInflight": 1024,
+      "targetDurationMs": 5000,
+      "admissionDurationMs": 5000.932,
+      "drainDurationMs": 4309.658,
+      "elapsedMs": 9310.59,
+      "observedDispatchRps": 1870.451,
+      "successfulResponseRpsIncludingDrain": 1004.662,
+      "latencyMs": {
+        "count": 9354,
+        "p50": 51.09,
+        "p95": 1548.95,
+        "p99": 4076.652,
+        "max": 9277.96
+      },
+      "successLatencyMs": {
+        "count": 9354,
+        "p50": 51.09,
+        "p95": 1548.95,
+        "p99": 4076.652,
+        "max": 9277.96
+      },
+      "dispatchLagMs": {
+        "count": 9354,
+        "p50": 0.632,
+        "p95": 1.356,
+        "p99": 1.739,
+        "max": 4.449
+      },
+      "processCpuMs": {
+        "user": 1703.052,
+        "system": 198.024
+      },
+      "eventLoopUtilization": 0.13749827913102936,
+      "eventLoopDelayMs": {
+        "p99": 12.287999,
+        "max": 12.812287
+      },
+      "interpretation": "Local scheduling/concurrency limited this stage; it cannot establish an upstream limit."
+    },
+    {
+      "targetRps": 4000,
+      "scheduled": 20000,
+      "dispatched": 14371,
+      "localConcurrencyDrops": 5629,
+      "localSchedulerDrops": 0,
+      "notScheduled": 0,
+      "stoppedReason": null,
+      "methods": {
+        "getLatestBlockhash": 3609,
+        "getRecentPrioritizationFees": 3554,
+        "getSignatureStatuses": 3590,
+        "getTransaction": 3618
+      },
+      "methodResults": {
+        "getLatestBlockhash": {
+          "outcomes": {
+            "success": 3609
+          },
+          "latencyMs": {
+            "count": 3609,
+            "p50": 50.829,
+            "p95": 1476.463,
+            "p99": 7888.554,
+            "max": 10207.316
+          }
+        },
+        "getTransaction": {
+          "outcomes": {
+            "success": 3618
+          },
+          "latencyMs": {
+            "count": 3618,
+            "p50": 106.282,
+            "p95": 2050.964,
+            "p99": 7975.443,
+            "max": 9981.249
+          }
+        },
+        "getRecentPrioritizationFees": {
+          "outcomes": {
+            "success": 3554
+          },
+          "latencyMs": {
+            "count": 3554,
+            "p50": 59.317,
+            "p95": 1297.748,
+            "p99": 5908.101,
+            "max": 9306.266
+          }
+        },
+        "getSignatureStatuses": {
+          "outcomes": {
+            "success": 3590
+          },
+          "latencyMs": {
+            "count": 3590,
+            "p50": 71.37,
+            "p95": 1668.781,
+            "p99": 6042.295,
+            "max": 9717.92
+          }
+        }
+      },
+      "outcomes": {
+        "success": 14371
+      },
+      "httpStatuses": {
+        "200": 14371
+      },
+      "rpcCodes": {},
+      "maxInflight": 1024,
+      "targetDurationMs": 5000,
+      "admissionDurationMs": 5000.37,
+      "drainDurationMs": 7367.168,
+      "elapsedMs": 12367.538,
+      "observedDispatchRps": 2873.987,
+      "successfulResponseRpsIncludingDrain": 1161.994,
+      "latencyMs": {
+        "count": 14371,
+        "p50": 64.458,
+        "p95": 1761.462,
+        "p99": 6938.147,
+        "max": 10207.316
+      },
+      "successLatencyMs": {
+        "count": 14371,
+        "p50": 64.458,
+        "p95": 1761.462,
+        "p99": 6938.147,
+        "max": 10207.316
+      },
+      "dispatchLagMs": {
+        "count": 14371,
+        "p50": 0.67,
+        "p95": 1.536,
+        "p99": 1.963,
+        "max": 5.737
+      },
+      "processCpuMs": {
+        "user": 2035.495,
+        "system": 215.115
+      },
+      "eventLoopUtilization": 0.1296271170767316,
+      "eventLoopDelayMs": {
+        "p99": 12.386303,
+        "max": 12.910591
+      },
+      "interpretation": "Local scheduling/concurrency limited this stage; it cannot establish an upstream limit."
+    }
+  ]
+}

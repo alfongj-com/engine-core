@@ -1,0 +1,145 @@
+[
+  {
+    "gate": "format",
+    "command": [
+      "/Users/alfongj/.cargo/bin/cargo",
+      "fmt",
+      "--all",
+      "--check"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 0.21,
+    "log": "docs/baselines/testnet-round-format.log"
+  },
+  {
+    "gate": "workspace",
+    "command": [
+      "/Users/alfongj/.cargo/bin/cargo",
+      "test",
+      "--locked",
+      "--workspace",
+      "--",
+      "--test-threads=1"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 175.06,
+    "log": "docs/baselines/testnet-round-workspace.log"
+  },
+  {
+    "gate": "executor-redis",
+    "command": [
+      "/Users/alfongj/.cargo/bin/cargo",
+      "test",
+      "--locked",
+      "-p",
+      "engine-executors",
+      "--lib",
+      "--",
+      "--ignored",
+      "--test-threads=1"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 0.785,
+    "log": "docs/baselines/testnet-round-executor-redis.log"
+  },
+  {
+    "gate": "solana-admission",
+    "command": [
+      "/Users/alfongj/.cargo/bin/cargo",
+      "test",
+      "--locked",
+      "-p",
+      "thirdweb-engine",
+      "--lib",
+      "solana_admission::tests",
+      "--",
+      "--ignored"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 0.382,
+    "log": "docs/baselines/testnet-round-solana-admission.log"
+  },
+  {
+    "gate": "http",
+    "command": [
+      "/Users/alfongj/.cargo/bin/cargo",
+      "test",
+      "--locked",
+      "-p",
+      "thirdweb-engine",
+      "--test",
+      "api_safety",
+      "--",
+      "--ignored"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 0.441,
+    "log": "docs/baselines/testnet-round-http.log"
+  },
+  {
+    "gate": "queue-redis",
+    "command": [
+      "/Users/alfongj/.cargo/bin/cargo",
+      "test",
+      "--locked",
+      "-p",
+      "twmq",
+      "--lib",
+      "--",
+      "--ignored"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 0.368,
+    "log": "docs/baselines/testnet-round-queue-redis.log"
+  },
+  {
+    "gate": "clippy",
+    "command": [
+      "/Users/alfongj/.cargo/bin/cargo",
+      "clippy",
+      "--locked",
+      "--workspace",
+      "--all-targets"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 8.81,
+    "log": "docs/baselines/testnet-round-clippy.log"
+  },
+  {
+    "gate": "rpc-js",
+    "command": [
+      "/opt/homebrew/bin/node",
+      "--test",
+      "scripts/rpc/budget-gateway.test.mjs",
+      "scripts/rpc/load-probe.test.mjs"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 0.824,
+    "log": "docs/baselines/testnet-round-rpc-js.log"
+  },
+  {
+    "gate": "eoa-recovery",
+    "command": [
+      "/usr/bin/python3",
+      "scripts/local_eoa_recovery.py",
+      "--report",
+      "docs/baselines/local-eoa-recovery-testnet-round.json"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 2.796,
+    "log": "docs/baselines/testnet-round-eoa-recovery.log"
+  },
+  {
+    "gate": "eoa-redis-crash",
+    "command": [
+      "/usr/bin/python3",
+      "scripts/local_eoa_recovery.py",
+      "--redis-crash",
+      "--report",
+      "docs/baselines/local-eoa-redis-crash.json"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 3.021,
+    "log": "docs/baselines/testnet-round-eoa-redis-crash.log"
+  }
+]

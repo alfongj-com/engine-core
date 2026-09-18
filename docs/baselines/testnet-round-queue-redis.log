@@ -1,0 +1,20 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.12s
+     Running unittests src/lib.rs (target/debug/deps/twmq-395ea38072a245fa)
+
+running 14 tests
+test lease_tests::completion_error_does_not_replay_partially_executed_commands ... ok
+test lease_tests::cancelled_expired_job_is_not_reborrowed_in_the_same_batch ... ok
+test multilane::lease_tests::cancelled_expired_lane_job_is_not_reborrowed ... ok
+test lease_tests::cancellation_after_nack_removes_delayed_work ... ok
+test lease_tests::old_completion_cannot_ack_a_reborrowed_job_or_commit_hooks ... ok
+test lease_tests::concurrent_acknowledgements_commit_one_outcome_and_one_hook ... ok
+test multilane::lease_tests::concurrent_lane_acknowledgements_commit_once ... ok
+test lease_tests::immediate_refill_preserves_configured_concurrency ... ok
+test multilane::lease_tests::same_id_reuse_creates_a_new_lease_generation ... ok
+test multilane::lease_tests::immediate_lane_refill_preserves_configured_concurrency ... ok
+test lease_tests::empty_worker_does_not_spin_and_shutdown_does_not_wait_for_poll ... ok
+test multilane::lease_tests::empty_lane_worker_does_not_spin_and_shuts_down_promptly ... ok
+test lease_tests::completed_permits_refill_backlog_without_waiting_for_poll_timer ... ok
+test multilane::lease_tests::completed_lane_permits_refill_without_waiting_for_poll_timer ... ok
+
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s

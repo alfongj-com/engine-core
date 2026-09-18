@@ -66,7 +66,7 @@ pub struct HasHandler;
 enum RedisSource {
     Url(String),
     Client(Client),
-    ConnectionManager(ConnectionManager),
+    ConnectionManager(ConnectionManager, Client),
 }
 
 // Builder with typestate pattern
@@ -124,13 +124,15 @@ impl<H: DurableExecution, N, Hn> QueueBuilder<H, NoRedis, N, Hn> {
         }
     }
 
-    /// Set Redis connection from existing connection manager
+    /// Set an existing manager and its source client (same server, database and auth).
+    /// The client creates isolated connections for lease-protected transactions.
     pub fn redis_connection_manager(
         self,
         manager: ConnectionManager,
+        source_client: Client,
     ) -> QueueBuilder<H, HasRedis, N, Hn> {
         QueueBuilder {
-            redis_source: Some(RedisSource::ConnectionManager(manager)),
+            redis_source: Some(RedisSource::ConnectionManager(manager, source_client)),
             name: self.name,
             options: self.options,
             handler: self.handler,
@@ -190,17 +192,20 @@ impl<H: DurableExecution> QueueBuilder<H, HasRedis, HasName, HasHandler> {
         let name = self.name.unwrap();
         let handler = self.handler.unwrap();
 
-        let redis = match redis_source {
+        let (redis, client) = match redis_source {
             RedisSource::Url(url) => {
                 let client = Client::open(url)?;
-                client.get_connection_manager().await?
+                (client.get_connection_manager().await?, client)
             }
-            RedisSource::Client(client) => client.get_connection_manager().await?,
-            RedisSource::ConnectionManager(manager) => manager,
+            RedisSource::Client(client) => (client.get_connection_manager().await?, client),
+            RedisSource::ConnectionManager(manager, client) => (manager, client),
         };
 
         Ok(Queue {
             redis,
+            #[cfg(test)]
+            poll_count: std::sync::atomic::AtomicUsize::new(0),
+            transaction_connections: crate::transaction::TransactionConnections::new(client),
             name,
             options: self.options.unwrap_or_default(),
             handler: Arc::new(handler),

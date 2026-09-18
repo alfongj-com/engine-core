@@ -1,0 +1,235 @@
+{
+  "recordedAt": "2026-09-17T06:28:55.609517Z",
+  "budget": {
+    "version": 1,
+    "ceiling": 2000000,
+    "reserved": 371000,
+    "observed": 367791,
+    "startedAt": "2026-09-17T05:34:20.334Z"
+  },
+  "metrics": {
+    "startedAt": "2026-09-17T06:25:33.856Z",
+    "forwarded": 150015,
+    "rejected": 0,
+    "transportErrors": 0,
+    "persistenceErrors": 0,
+    "methods": {
+      "11155111:eth_getBlockByNumber": {
+        "count": 1,
+        "httpErrors": 0,
+        "rpcErrors": 0,
+        "totalMs": 387.70954200000006,
+        "maxMs": 387.70954200000006
+      },
+      "11155111:eth_getTransactionReceipt": {
+        "count": 7501,
+        "httpErrors": 0,
+        "rpcErrors": 0,
+        "totalMs": 474082.0684779998,
+        "maxMs": 866.2738339999999
+      },
+      "11155111:eth_getBalance": {
+        "count": 1,
+        "httpErrors": 0,
+        "rpcErrors": 0,
+        "totalMs": 65.70854200000008,
+        "maxMs": 65.70854200000008
+      },
+      "11155111:eth_feeHistory": {
+        "count": 7500,
+        "httpErrors": 0,
+        "rpcErrors": 0,
+        "totalMs": 476364.9161820008,
+        "maxMs": 946.6110000000001
+      },
+      "11155111:eth_getTransactionCount": {
+        "count": 7500,
+        "httpErrors": 0,
+        "rpcErrors": 0,
+        "totalMs": 467262.66650399903,
+        "maxMs": 951.8025829999999
+      },
+      "11155111:eth_estimateGas": {
+        "count": 7500,
+        "httpErrors": 0,
+        "rpcErrors": 0,
+        "totalMs": 472053.6340190002,
+        "maxMs": 1071.275042
+      },
+      "421614:eth_getBlockByNumber": {
+        "count": 1,
+        "httpErrors": 0,
+        "rpcErrors": 0,
+        "totalMs": 56.142250000000786,
+        "maxMs": 56.142250000000786
+      },
+      "421614:eth_getTransactionReceipt": {
+        "count": 7501,
+        "httpErrors": 0,
+        "rpcErrors": 0,
+        "totalMs": 411565.4713190001,
+        "maxMs": 552.6834170000002
+      },
+      "421614:eth_getBalance": {
+        "count": 2,
+        "httpErrors": 0,
+        "rpcErrors": 0,
+        "totalMs": 94.37920800000211,
+        "maxMs": 50.97529200000281
+      },
+      "421614:eth_feeHistory": {
+        "count": 7500,
+        "httpErrors": 0,
+        "rpcErrors": 0,
+        "totalMs": 399584.9763430011,
+        "maxMs": 588.8939579999933
+      },
+      "421614:eth_getTransactionCount": {
+        "count": 7500,
+        "httpErrors": 0,
+        "rpcErrors": 0,
+        "totalMs": 387085.88121599925,
+        "maxMs": 577.3575419999979
+      },
+      "421614:eth_estimateGas": {
+        "count": 7500,
+        "httpErrors": 0,
+        "rpcErrors": 0,
+        "totalMs": 419741.1277530005,
+        "maxMs": 542.9267919999984
+      },
+      "11155420:eth_getBlockByNumber": {
+        "count": 1,
+        "httpErrors": 0,
+        "rpcErrors": 0,
+        "totalMs": 41.07604100000026,
+        "maxMs": 41.07604100000026
+      },
+      "11155420:eth_getTransactionReceipt": {
+        "count": 7501,
+        "httpErrors": 0,
+        "rpcErrors": 0,
+        "totalMs": 408329.31868700054,
+        "maxMs": 638.2996249999997
+      },
+      "11155420:eth_getBalance": {
+        "count": 1,
+        "httpErrors": 0,
+        "rpcErrors": 0,
+        "totalMs": 45.175084000002244,
+        "maxMs": 45.175084000002244
+      },
+      "11155420:eth_feeHistory": {
+        "count": 7500,
+        "httpErrors": 0,
+        "rpcErrors": 0,
+        "totalMs": 412211.5122309992,
+        "maxMs": 636.4353750000009
+      },
+      "11155420:eth_estimateGas": {
+        "count": 7500,
+        "httpErrors": 0,
+        "rpcErrors": 0,
+        "totalMs": 408441.797944001,
+        "maxMs": 639.6870829999971
+      },
+      "11155420:eth_getTransactionCount": {
+        "count": 7500,
+        "httpErrors": 0,
+        "rpcErrors": 0,
+        "totalMs": 413091.7013699991,
+        "maxMs": 637.8724999999977
+      },
+      "84532:eth_getBlockByNumber": {
+        "count": 1,
+        "httpErrors": 0,
+        "rpcErrors": 0,
+        "totalMs": 45.909542000008514,
+        "maxMs": 45.909542000008514
+      },
+      "84532:eth_getTransactionReceipt": {
+        "count": 7501,
+        "httpErrors": 0,
+        "rpcErrors": 0,
+        "totalMs": 420266.65652200073,
+        "maxMs": 593.4211660000001
+      },
+      "84532:eth_getBalance": {
+        "count": 1,
+        "httpErrors": 0,
+        "rpcErrors": 0,
+        "totalMs": 42.57104100000288,
+        "maxMs": 42.57104100000288
+      },
+      "84532:eth_feeHistory": {
+        "count": 7500,
+        "httpErrors": 0,
+        "rpcErrors": 0,
+        "totalMs": 433217.48758299975,
+        "maxMs": 569.4699580000015
+      },
+      "84532:eth_getTransactionCount": {
+        "count": 7500,
+        "httpErrors": 0,
+        "rpcErrors": 0,
+        "totalMs": 431297.6686740003,
+        "maxMs": 573.2571250000037
+      },
+      "84532:eth_estimateGas": {
+        "count": 7500,
+        "httpErrors": 0,
+        "rpcErrors": 0,
+        "totalMs": 429483.9041300013,
+        "maxMs": 649.4018749999959
+      },
+      "solana-devnet:getSignaturesForAddress": {
+        "count": 1,
+        "httpErrors": 0,
+        "rpcErrors": 0,
+        "totalMs": 39.95683400001144,
+        "maxMs": 39.95683400001144
+      },
+      "solana-devnet:getTransaction": {
+        "count": 7501,
+        "httpErrors": 0,
+        "rpcErrors": 0,
+        "totalMs": 642271.1438390004,
+        "maxMs": 1473.4391249999753
+      },
+      "solana-devnet:getLatestBlockhash": {
+        "count": 7500,
+        "httpErrors": 0,
+        "rpcErrors": 0,
+        "totalMs": 611075.9668249976,
+        "maxMs": 1544.763666999992
+      },
+      "solana-devnet:getSignatureStatuses": {
+        "count": 7500,
+        "httpErrors": 0,
+        "rpcErrors": 0,
+        "totalMs": 748827.8724400024,
+        "maxMs": 2494.6568330000155
+      },
+      "solana-devnet:getRecentPrioritizationFees": {
+        "count": 7500,
+        "httpErrors": 0,
+        "rpcErrors": 0,
+        "totalMs": 633674.4151949991,
+        "maxMs": 1901.9914590000117
+      }
+    },
+    "budget": {
+      "version": 1,
+      "ceiling": 2000000,
+      "reserved": 371000,
+      "observed": 367791,
+      "startedAt": "2026-09-17T05:34:20.334Z",
+      "remainingCalls": 1629985,
+      "estimatedUsageUsd": 2.206746,
+      "conservativeReservedUsd": 2.226,
+      "ceilingUsd": 12
+    }
+  },
+  "gatewayStopped": true,
+  "pricing": "Conservative $6 per million allowed ordinary methods; invoice not queried"
+}

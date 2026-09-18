@@ -1,0 +1,388 @@
+{
+  "accounting": {
+    "accepted": 5000,
+    "active": 0,
+    "corrupt_results": [],
+    "delayed": 0,
+    "duplicate_committed_effects": 0,
+    "duplicate_success_entries": 0,
+    "expected_retries": 500,
+    "failed": 0,
+    "generator_dropped": 0,
+    "handler_attempts": 5500,
+    "healthy": true,
+    "missing_or_duplicate_effects": [],
+    "missing_results": [],
+    "observations_match_successes": true,
+    "offered": 5000,
+    "pending": 0,
+    "push_errors": 0,
+    "unexpected_terminal_ids": [],
+    "unique_success": 5000,
+    "unresolved_ids": []
+  },
+  "admission_errors": [],
+  "latency": {
+    "generator_lag": {
+      "max": 1877,
+      "p50": 784,
+      "p95": 1744,
+      "p99": 1831,
+      "samples": 5000,
+      "unit": "microseconds"
+    },
+    "offered_to_observed_completion": {
+      "max": 36578,
+      "p50": 14928,
+      "p95": 28265,
+      "p99": 33363,
+      "samples": 5000,
+      "unit": "microseconds"
+    },
+    "push_response": {
+      "max": 1796,
+      "p50": 409,
+      "p95": 984,
+      "p99": 1246,
+      "samples": 5000,
+      "unit": "microseconds"
+    },
+    "submit_to_observed_completion": {
+      "max": 35240,
+      "p50": 13957,
+      "p95": 27285,
+      "p99": 32445,
+      "samples": 5000,
+      "unit": "microseconds"
+    }
+  },
+  "queue_depth_samples": [
+    {
+      "active": 0,
+      "elapsed_us": 120,
+      "pending": 0,
+      "success": 0
+    },
+    {
+      "active": 10,
+      "elapsed_us": 100854,
+      "pending": 1,
+      "success": 90
+    },
+    {
+      "active": 0,
+      "elapsed_us": 202865,
+      "pending": 4,
+      "success": 199
+    },
+    {
+      "active": 0,
+      "elapsed_us": 304537,
+      "pending": 6,
+      "success": 298
+    },
+    {
+      "active": 0,
+      "elapsed_us": 405873,
+      "pending": 7,
+      "success": 399
+    },
+    {
+      "active": 0,
+      "elapsed_us": 507909,
+      "pending": 9,
+      "success": 499
+    },
+    {
+      "active": 12,
+      "elapsed_us": 613072,
+      "pending": 2,
+      "success": 599
+    },
+    {
+      "active": 0,
+      "elapsed_us": 716506,
+      "pending": 7,
+      "success": 709
+    },
+    {
+      "active": 10,
+      "elapsed_us": 820922,
+      "pending": 2,
+      "success": 809
+    },
+    {
+      "active": 12,
+      "elapsed_us": 922010,
+      "pending": 1,
+      "success": 909
+    },
+    {
+      "active": 3,
+      "elapsed_us": 1022940,
+      "pending": 3,
+      "success": 1017
+    },
+    {
+      "active": 0,
+      "elapsed_us": 1125389,
+      "pending": 6,
+      "success": 1119
+    },
+    {
+      "active": 0,
+      "elapsed_us": 1228064,
+      "pending": 9,
+      "success": 1219
+    },
+    {
+      "active": 0,
+      "elapsed_us": 1330034,
+      "pending": 11,
+      "success": 1319
+    },
+    {
+      "active": 0,
+      "elapsed_us": 1434025,
+      "pending": 4,
+      "success": 1430
+    },
+    {
+      "active": 0,
+      "elapsed_us": 1535796,
+      "pending": 7,
+      "success": 1529
+    },
+    {
+      "active": 11,
+      "elapsed_us": 1642800,
+      "pending": 3,
+      "success": 1629
+    },
+    {
+      "active": 0,
+      "elapsed_us": 1753929,
+      "pending": 6,
+      "success": 1748
+    },
+    {
+      "active": 0,
+      "elapsed_us": 1856158,
+      "pending": 7,
+      "success": 1849
+    },
+    {
+      "active": 0,
+      "elapsed_us": 1957835,
+      "pending": 10,
+      "success": 1948
+    },
+    {
+      "active": 12,
+      "elapsed_us": 2060903,
+      "pending": 0,
+      "success": 2049
+    },
+    {
+      "active": 0,
+      "elapsed_us": 2164484,
+      "pending": 5,
+      "success": 2159
+    },
+    {
+      "active": 0,
+      "elapsed_us": 2268862,
+      "pending": 10,
+      "success": 2259
+    },
+    {
+      "active": 11,
+      "elapsed_us": 2371774,
+      "pending": 1,
+      "success": 2359
+    },
+    {
+      "active": 0,
+      "elapsed_us": 2473013,
+      "pending": 3,
+      "success": 2470
+    },
+    {
+      "active": 0,
+      "elapsed_us": 2574931,
+      "pending": 6,
+      "success": 2569
+    },
+    {
+      "active": 0,
+      "elapsed_us": 2677020,
+      "pending": 8,
+      "success": 2669
+    },
+    {
+      "active": 0,
+      "elapsed_us": 2779793,
+      "pending": 10,
+      "success": 2769
+    },
+    {
+      "active": 11,
+      "elapsed_us": 2891395,
+      "pending": 1,
+      "success": 2879
+    },
+    {
+      "active": 0,
+      "elapsed_us": 2994570,
+      "pending": 5,
+      "success": 2989
+    },
+    {
+      "active": 0,
+      "elapsed_us": 3096400,
+      "pending": 7,
+      "success": 3089
+    },
+    {
+      "active": 0,
+      "elapsed_us": 3198265,
+      "pending": 8,
+      "success": 3190
+    },
+    {
+      "active": 10,
+      "elapsed_us": 3301006,
+      "pending": 2,
+      "success": 3289
+    },
+    {
+      "active": 0,
+      "elapsed_us": 3403810,
+      "pending": 4,
+      "success": 3400
+    },
+    {
+      "active": 0,
+      "elapsed_us": 3508632,
+      "pending": 9,
+      "success": 3499
+    },
+    {
+      "active": 12,
+      "elapsed_us": 3620982,
+      "pending": 0,
+      "success": 3609
+    },
+    {
+      "active": 0,
+      "elapsed_us": 3722928,
+      "pending": 4,
+      "success": 3719
+    },
+    {
+      "active": 0,
+      "elapsed_us": 3827026,
+      "pending": 8,
+      "success": 3819
+    },
+    {
+      "active": 0,
+      "elapsed_us": 3928136,
+      "pending": 9,
+      "success": 3919
+    },
+    {
+      "active": 10,
+      "elapsed_us": 4031018,
+      "pending": 2,
+      "success": 4019
+    },
+    {
+      "active": 4,
+      "elapsed_us": 4133453,
+      "pending": 4,
+      "success": 4125
+    },
+    {
+      "active": 0,
+      "elapsed_us": 4235512,
+      "pending": 7,
+      "success": 4228
+    },
+    {
+      "active": 11,
+      "elapsed_us": 4340644,
+      "pending": 1,
+      "success": 4329
+    },
+    {
+      "active": 11,
+      "elapsed_us": 4441739,
+      "pending": 2,
+      "success": 4429
+    },
+    {
+      "active": 10,
+      "elapsed_us": 4543310,
+      "pending": 3,
+      "success": 4530
+    },
+    {
+      "active": 0,
+      "elapsed_us": 4648150,
+      "pending": 9,
+      "success": 4639
+    },
+    {
+      "active": 11,
+      "elapsed_us": 4751601,
+      "pending": 1,
+      "success": 4739
+    },
+    {
+      "active": 0,
+      "elapsed_us": 4853089,
+      "pending": 4,
+      "success": 4849
+    },
+    {
+      "active": 0,
+      "elapsed_us": 4956722,
+      "pending": 7,
+      "success": 4949
+    }
+  ],
+  "schema_version": 1,
+  "scope": "queue-only; Redis-committed completion; persistence depends on Redis configuration",
+  "started_epoch_ms": 1789456524464,
+  "timing": {
+    "admission_per_second": 999.8632187116804,
+    "drained_us": 5025027,
+    "producer_finished_us": 5000684,
+    "unique_completion_per_second_including_drain": 995.0195292483006
+  },
+  "workload": {
+    "body_bytes": 256,
+    "completion_hook_writes": 2,
+    "idempotency": "Permanent",
+    "local_concurrency": 100,
+    "observation_interval_ms": 10,
+    "poll_interval_ms": 10,
+    "producer_concurrency": 128,
+    "rate_per_second": 1000,
+    "retained_successes": 5001,
+    "retry_every": 10,
+    "seconds": 5,
+    "tokio_threads": 4,
+    "worker_processes": 1
+  },
+  "raw_samples_file": "rate-1000-retry-10-run-3.raw.json.gz",
+  "raw_uncompressed_sha256": "fa966661343ea6df70b83917f9f465b896cc44a9361151626fc9e2530dc8acdd",
+  "max_sampled_backlog": 14,
+  "resources_summary": {
+    "max_process_rss_bytes": 18792448,
+    "process_user_cpu_seconds": 0.67,
+    "process_system_cpu_seconds": 0.66,
+    "note": "Process includes harness, full raw result assembly and output serialization; not queue-only memory/CPU"
+  }
+}

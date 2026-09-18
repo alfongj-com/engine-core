@@ -73,7 +73,10 @@ pub struct EoaTransactionRequest {
     pub signing_credential: SigningCredential,
     pub rpc_credentials: RpcCredentials,
 
-    #[serde(flatten)]
+    #[serde(
+        flatten,
+        deserialize_with = "engine_core::transaction::deserialize_transaction_type_data"
+    )]
     pub transaction_type_data: Option<TransactionTypeData>,
 }
 
@@ -418,9 +421,13 @@ impl EoaExecutorStore {
         self,
         worker_id: &str,
         eoa_metrics: crate::metrics::EoaMetrics,
+        redis_client: &twmq::redis::Client,
     ) -> Result<AtomicEoaExecutorStore, TransactionStoreError> {
         let lock_key = self.eoa_lock_key_name();
         let mut conn = self.redis.clone();
+
+        let transaction_connection =
+            tokio::sync::Mutex::new(redis_client.get_multiplexed_async_connection().await?);
 
         // First try normal acquisition
         let acquired: bool = conn.set_nx(&lock_key, worker_id).await?;
@@ -429,6 +436,7 @@ impl EoaExecutorStore {
                 store: self,
                 worker_id: worker_id.to_string(),
                 eoa_metrics,
+                transaction_connection,
             });
         }
         let conflict_worker_id = conn.get::<_, Option<String>>(&lock_key).await?;
@@ -447,6 +455,7 @@ impl EoaExecutorStore {
             store: self,
             worker_id: worker_id.to_string(),
             eoa_metrics,
+            transaction_connection,
         })
     }
 
@@ -832,33 +841,39 @@ impl EoaExecutorStore {
         transaction_request: EoaTransactionRequest,
     ) -> Result<(), TransactionStoreError> {
         let transaction_id = &transaction_request.transaction_id;
-
-        let tx_data_key = self.transaction_data_key_name(transaction_id);
-        let pending_key = self.pending_transactions_zset_name();
-
-        // Store transaction data as JSON in the user_request field of the hash
         let user_request_json = serde_json::to_string(&transaction_request)?;
         let now = chrono::Utc::now().timestamp_millis().max(0) as u64;
 
-        let mut conn = self.redis.clone();
+        // Admission is immutable for the lifetime of the retained request. A
+        // retry must never turn a borrowed/submitted/completed intent pending.
+        let outcome: i64 = twmq::redis::Script::new(r#"
+            local existing = redis.call('HGET', KEYS[1], 'user_request')
+            if existing then
+                if existing == ARGV[2] then return 0 end
+                return -1
+            end
+            -- A partial/corrupt record also needs reconciliation, not overwrite.
+            if redis.call('EXISTS', KEYS[1]) == 1 then return -1 end
+            redis.call('HSET', KEYS[1], 'user_request', ARGV[2], 'status', 'pending', 'created_at', ARGV[3])
+            redis.call('ZADD', KEYS[2], ARGV[3], ARGV[1])
+            return 1
+        "#)
+        .key(self.transaction_data_key_name(transaction_id))
+        .key(self.pending_transactions_zset_name())
+        .arg(transaction_id)
+        .arg(user_request_json)
+        .arg(now)
+        .invoke_async(&mut self.redis.clone())
+        .await?;
 
-        // Use a pipeline to atomically store data and add to pending queue
-        let mut pipeline = twmq::redis::pipe();
-
-        // Store transaction data
-        pipeline.hset(&tx_data_key, "user_request", &user_request_json);
-        pipeline.hset(&tx_data_key, "status", "pending");
-        pipeline.hset(&tx_data_key, "created_at", now);
-
-        // Add to pending queue
-        pipeline.zadd(&pending_key, transaction_id, now);
-
-        pipeline.query_async::<()>(&mut conn).await?;
-
+        if outcome == -1 {
+            return Err(TransactionStoreError::TransactionConflict {
+                transaction_id: transaction_id.clone(),
+            });
+        }
         Ok(())
     }
 
-    /// Schedule a manual reset for the EOA
     pub async fn schedule_manual_reset(&self) -> Result<(), TransactionStoreError> {
         let manual_reset_key = self.manual_reset_key_name();
         let mut conn = self.redis.clone();
@@ -1008,6 +1023,9 @@ pub enum TransactionStoreError {
 
     #[error("Transaction not found: {transaction_id}")]
     TransactionNotFound { transaction_id: String },
+
+    #[error("Transaction ID {transaction_id} already belongs to a different or incomplete request")]
+    TransactionConflict { transaction_id: String },
 
     #[error("Lost EOA lock: {eoa}:{chain_id} worker: {worker_id}")]
     LockLost {

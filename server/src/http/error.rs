@@ -68,7 +68,7 @@ impl ApiEngineError {
 
                 _ => StatusCode::INTERNAL_SERVER_ERROR,
             },
-            EngineError::VaultError { .. } => StatusCode::BAD_GATEWAY,
+
             EngineError::IawError { error } => match error {
                 thirdweb_core::iaw::IAWError::ApiError { .. } => StatusCode::INTERNAL_SERVER_ERROR,
                 thirdweb_core::iaw::IAWError::SerializationError { .. } => StatusCode::BAD_REQUEST,

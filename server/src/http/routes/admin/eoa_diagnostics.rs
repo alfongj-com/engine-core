@@ -1,16 +1,22 @@
 use std::sync::Arc;
 
-use alloy::{consensus::Transaction, primitives::Address};
+use alloy::{
+    consensus::Transaction,
+    network::AnyTransactionReceipt,
+    primitives::{Address, Bytes, U256},
+};
 use axum::{
     Router, debug_handler,
     extract::{Path, Query, State},
     http::StatusCode,
     response::{IntoResponse, Json},
 };
-use engine_core::{credentials::SigningCredential, error::EngineError};
+use engine_core::{
+    credentials::SigningCredential, error::EngineError, transaction::TransactionTypeData,
+};
 use engine_executors::eoa::{
     EoaExecutorWorkerJobData,
-    store::{EoaExecutorStore, EoaHealth, TransactionData},
+    store::{EoaExecutorStore, EoaHealth, TransactionAttempt, TransactionData},
 };
 use serde::{Deserialize, Serialize};
 use twmq::{Queue, redis::AsyncCommands};
@@ -42,8 +48,55 @@ pub struct EoaStateResponse {
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TransactionDetailResponse {
-    pub transaction_data: Option<TransactionData>,
+    pub transaction_data: Option<DiagnosticTransactionData>,
     pub attempts_count: u64,
+}
+
+/// Deliberately allowlisted diagnostics. Never serialize the stored user request:
+/// it also contains signer/RPC credentials and webhook authentication secrets.
+#[derive(Debug, Serialize)]
+pub struct DiagnosticTransactionData {
+    pub transaction_id: String,
+    pub user_request: DiagnosticTransactionRequest,
+    pub receipt: Option<AnyTransactionReceipt>,
+    pub attempts: Vec<TransactionAttempt>,
+    pub created_at: u64,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DiagnosticTransactionRequest {
+    pub transaction_id: String,
+    pub chain_id: u64,
+    pub from: Address,
+    pub to: Option<Address>,
+    pub value: U256,
+    pub data: Bytes,
+    pub gas_limit: Option<u64>,
+    #[serde(flatten)]
+    pub transaction_type_data: Option<TransactionTypeData>,
+}
+
+impl From<TransactionData> for DiagnosticTransactionData {
+    fn from(data: TransactionData) -> Self {
+        let request = data.user_request;
+        Self {
+            transaction_id: data.transaction_id,
+            user_request: DiagnosticTransactionRequest {
+                transaction_id: request.transaction_id,
+                chain_id: request.chain_id,
+                from: request.from,
+                to: request.to,
+                value: request.value,
+                data: request.data,
+                gas_limit: request.gas_limit,
+                transaction_type_data: request.transaction_type_data,
+            },
+            receipt: data.receipt,
+            attempts: data.attempts,
+            created_at: data.created_at,
+        }
+    }
 }
 
 #[derive(Debug, Serialize)]
@@ -236,7 +289,7 @@ pub async fn get_transaction_detail(
         })?;
 
     let response = TransactionDetailResponse {
-        transaction_data,
+        transaction_data: transaction_data.map(DiagnosticTransactionData::from),
         attempts_count,
     };
 
@@ -591,4 +644,69 @@ pub fn eoa_diagnostics_router() -> Router<EngineServerState> {
             "/admin/executors/eoa/{eoa_chain}/reset",
             axum::routing::post(schedule_manual_reset),
         )
+}
+
+#[cfg(test)]
+mod credential_redaction_tests {
+    use super::*;
+    use engine_core::{
+        chain::RpcCredentials, credentials::AwsKmsCredential, execution_options::WebhookOptions,
+    };
+    use engine_executors::eoa::EoaTransactionRequest;
+    use thirdweb_core::auth::ThirdwebAuth;
+
+    #[test]
+    fn diagnostic_payload_excludes_all_authentication_material() {
+        let credentials = [
+            SigningCredential::AwsKms(AwsKmsCredential {
+                access_key_id: "secret-sentinel-access".into(),
+                secret_access_key: "secret-sentinel-kms".into(),
+                key_id: "secret-sentinel-key-id".into(),
+                region: "us-east-1".into(),
+                kms_client_cache: None,
+            }),
+            SigningCredential::Iaw {
+                auth_token: "secret-sentinel-wallet".into(),
+                thirdweb_auth: ThirdwebAuth::SecretKey("secret-sentinel-iaw".into()),
+            },
+        ];
+        for credential in credentials {
+            let data = TransactionData {
+                transaction_id: "inspectable-transaction".into(),
+                user_request: EoaTransactionRequest {
+                    transaction_id: "inspectable-transaction".into(),
+                    chain_id: 31337,
+                    from: Address::ZERO,
+                    to: Some(Address::ZERO),
+                    value: U256::from(7),
+                    data: Bytes::from_static(&[0x12, 0x34]),
+                    gas_limit: Some(21000),
+                    signing_credential: credential,
+                    rpc_credentials: RpcCredentials::Thirdweb(ThirdwebAuth::SecretKey(
+                        "secret-sentinel-rpc".into(),
+                    )),
+                    webhook_options: vec![WebhookOptions {
+                        url: "https://secret-sentinel-url.invalid".into(),
+                        secret: Some("secret-sentinel-webhook".into()),
+                        user_metadata: Some("secret-sentinel-metadata".into()),
+                    }],
+                    transaction_type_data: None,
+                },
+                receipt: None,
+                attempts: vec![],
+                created_at: 12345,
+            };
+            let response = TransactionDetailResponse {
+                transaction_data: Some(data.into()),
+                attempts_count: 0,
+            };
+            let serialized = serde_json::to_string(&response).unwrap();
+            assert!(!serialized.contains("secret-sentinel"));
+            assert!(!serialized.contains("Credential"));
+            let json: serde_json::Value = serde_json::from_str(&serialized).unwrap();
+            assert_eq!(json["transactionData"]["user_request"]["chainId"], 31337);
+            assert_eq!(json["transactionData"]["user_request"]["data"], "0x1234");
+            assert_eq!(json["transactionData"]["created_at"], 12345);
+        }
+    }
 }

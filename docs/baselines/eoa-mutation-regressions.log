@@ -1,0 +1,173 @@
+warning: unused import: `engine_solana_core::SolanaInstructionData`
+ --> core/src/execution_options/solana.rs:1:5
+  |
+1 | use engine_solana_core::SolanaInstructionData;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: `engine-core` (lib) generated 1 warning (run `cargo fix --lib -p engine-core` to apply 1 suggestion)
+   Compiling engine-executors v0.1.0 (/Users/alfongj/Code/engine-core/executors)
+warning: unreachable pattern
+   --> executors/src/eoa/store/atomic.rs:253:17
+    |
+252 |                 Ok(_) => return Ok(T::from(result)),
+    |                 ----- matches all the relevant values
+253 |                 Ok(None) => {
+    |                 ^^^^^^^^ no value can reach this
+    |
+    = note: `#[warn(unreachable_patterns)]` (part of `#[warn(unused)]`) on by default
+
+warning: unreachable pattern
+   --> executors/src/eoa/store/atomic.rs:373:25
+    |
+372 |                         Ok(_) => return Ok(result),
+    |                         ----- matches all the relevant values
+373 |                         Ok(None) => {
+    |                         ^^^^^^^^ no value can reach this
+
+warning: struct `FailPendingTransactions` is never constructed
+   --> executors/src/eoa/store/atomic.rs:821:8
+    |
+821 | struct FailPendingTransactions<'a> {
+    |        ^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `validate_unique_allocations` is never used
+   --> executors/src/eoa/store/pending.rs:282:4
+    |
+282 | fn validate_unique_allocations(
+    |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: constant `MAX_INFLIGHT_PER_EOA` is never used
+  --> executors/src/eoa/worker/mod.rs:36:7
+   |
+36 | const MAX_INFLIGHT_PER_EOA: u64 = 100; // Default from spec
+   |       ^^^^^^^^^^^^^^^^^^^^
+
+warning: constant `MAX_RECYCLED_THRESHOLD` is never used
+  --> executors/src/eoa/worker/mod.rs:37:7
+   |
+37 | const MAX_RECYCLED_THRESHOLD: u64 = 50; // Circuit breaker from spec
+   |       ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: constant `TARGET_TRANSACTIONS_PER_EOA` is never used
+  --> executors/src/eoa/worker/mod.rs:38:7
+   |
+38 | const TARGET_TRANSACTIONS_PER_EOA: u64 = 10; // Fleet management from spec
+   |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: constant `MIN_TRANSACTIONS_PER_EOA` is never used
+  --> executors/src/eoa/worker/mod.rs:39:7
+   |
+39 | const MIN_TRANSACTIONS_PER_EOA: u64 = 1; // Fleet management from spec
+   |       ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: `engine-executors` (lib test) generated 8 warnings
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 4.01s
+warning: the following packages contain code that will be rejected by a future version of Rust: proc-macro-error2 v2.0.1
+note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 1`
+     Running unittests src/lib.rs (target/debug/deps/engine_executors-3aa8776dbc2dc9f7)
+
+running 13 tests
+test eoa::store::atomic::tests::command_errors_are_not_retried_as_watch_conflicts ... ok
+test eoa::store::atomic::tests::aborted_exec_revalidates_before_reporting_commit ... FAILED
+test eoa::store::atomic::tests::simple_lock_checked_write_rejects_takeover_before_exec ... FAILED
+test eoa::store::atomic::tests::shared_unwatch_cannot_disable_a_stale_owner_fence ... FAILED
+test eoa::store::atomic::tests::trailing_recycled_nonce_resets_to_chain_count_including_zero ... FAILED
+test eoa::store::atomic::tests::removed_pending_request_cannot_be_borrowed_from_a_stale_read ... FAILED
+test eoa::store::atomic::tests::duplicate_intent_cannot_reserve_two_incremented_nonces ... FAILED
+test eoa::store::atomic::tests::incremented_batch_order_does_not_move_nonce_backward ... FAILED
+test eoa::store::atomic::tests::recycled_nonce_cannot_be_reserved_by_two_intents ... FAILED
+test eoa::store::atomic::tests::stale_owner_cannot_fail_pending_batch ... FAILED
+test eoa::store::atomic::tests::stale_owner_cannot_fail_single_pending_request ... FAILED
+test eoa::store::atomic::tests::pending_failure_requires_current_pending_membership ... FAILED
+test eoa::store::atomic::tests::pending_failure_commits_status_removal_and_retention ... ok
+
+failures:
+
+---- eoa::store::atomic::tests::aborted_exec_revalidates_before_reporting_commit stdout ----
+
+thread 'eoa::store::atomic::tests::aborted_exec_revalidates_before_reporting_commit' (10506458) panicked at executors/src/eoa/store/tests.rs:148:5:
+assertion `left == right` failed: must retry against the value that invalidated EXEC
+  left: 1
+ right: 11
+
+---- eoa::store::atomic::tests::simple_lock_checked_write_rejects_takeover_before_exec stdout ----
+
+thread 'eoa::store::atomic::tests::simple_lock_checked_write_rejects_takeover_before_exec' (10506467) panicked at executors/src/eoa/store/tests.rs:206:5:
+assertion failed: matches!(result, Err(TransactionStoreError::LockLost { .. }))
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- eoa::store::atomic::tests::shared_unwatch_cannot_disable_a_stale_owner_fence stdout ----
+
+thread 'eoa::store::atomic::tests::shared_unwatch_cannot_disable_a_stale_owner_fence' (10506466) panicked at executors/src/eoa/store/tests.rs:173:5:
+assertion failed: matches!(owner.execute_with_watch_and_retry(&operation).await,
+    Err(TransactionStoreError::LockLost { .. }))
+
+---- eoa::store::atomic::tests::trailing_recycled_nonce_resets_to_chain_count_including_zero stdout ----
+
+thread 'eoa::store::atomic::tests::trailing_recycled_nonce_resets_to_chain_count_including_zero' (10506470) panicked at executors/src/eoa/store/tests.rs:437:9:
+assertion `left == right` failed: failed trailing allocation must be reusable, including a fresh account's nonce zero
+  left: 1
+ right: 0
+
+---- eoa::store::atomic::tests::removed_pending_request_cannot_be_borrowed_from_a_stale_read stdout ----
+
+thread 'eoa::store::atomic::tests::removed_pending_request_cannot_be_borrowed_from_a_stale_read' (10506465) panicked at executors/src/eoa/store/tests.rs:620:5:
+assertion failed: matches!(owner.execute_with_watch_and_retry(&operation).await,
+    Err(TransactionStoreError::TransactionNotInPendingQueue { .. }))
+
+---- eoa::store::atomic::tests::duplicate_intent_cannot_reserve_two_incremented_nonces stdout ----
+
+thread 'eoa::store::atomic::tests::duplicate_intent_cannot_reserve_two_incremented_nonces' (10506460) panicked at executors/src/eoa/store/tests.rs:519:5:
+assertion failed: owner.atomic_move_pending_to_borrowed_with_incremented_nonces(&[borrowed("same",
+                            0), borrowed("same", 1)]).await.is_err()
+
+---- eoa::store::atomic::tests::incremented_batch_order_does_not_move_nonce_backward stdout ----
+
+thread 'eoa::store::atomic::tests::incremented_batch_order_does_not_move_nonce_backward' (10506461) panicked at executors/src/eoa/store/tests.rs:499:5:
+assertion `left == right` failed
+  left: 1
+ right: 2
+
+---- eoa::store::atomic::tests::recycled_nonce_cannot_be_reserved_by_two_intents stdout ----
+
+thread 'eoa::store::atomic::tests::recycled_nonce_cannot_be_reserved_by_two_intents' (10506464) panicked at executors/src/eoa/store/tests.rs:546:5:
+assertion failed: owner.atomic_move_pending_to_borrowed_with_recycled_nonces(&[borrowed("first",
+                            0), borrowed("second", 0)]).await.is_err()
+
+---- eoa::store::atomic::tests::stale_owner_cannot_fail_pending_batch stdout ----
+
+thread 'eoa::store::atomic::tests::stale_owner_cannot_fail_pending_batch' (10506468) panicked at executors/src/eoa/store/tests.rs:275:5:
+assertion failed: matches!(result, Err(TransactionStoreError::LockLost { .. }))
+
+---- eoa::store::atomic::tests::stale_owner_cannot_fail_single_pending_request stdout ----
+
+thread 'eoa::store::atomic::tests::stale_owner_cannot_fail_single_pending_request' (10506469) panicked at executors/src/eoa/store/tests.rs:275:5:
+assertion failed: matches!(result, Err(TransactionStoreError::LockLost { .. }))
+
+---- eoa::store::atomic::tests::pending_failure_requires_current_pending_membership stdout ----
+
+thread 'eoa::store::atomic::tests::pending_failure_requires_current_pending_membership' (10506463) panicked at executors/src/eoa/store/tests.rs:332:5:
+assertion failed: matches!(result,
+    Err(TransactionStoreError::TransactionNotInPendingQueue { .. }))
+
+
+failures:
+    eoa::store::atomic::tests::aborted_exec_revalidates_before_reporting_commit
+    eoa::store::atomic::tests::duplicate_intent_cannot_reserve_two_incremented_nonces
+    eoa::store::atomic::tests::incremented_batch_order_does_not_move_nonce_backward
+    eoa::store::atomic::tests::pending_failure_requires_current_pending_membership
+    eoa::store::atomic::tests::recycled_nonce_cannot_be_reserved_by_two_intents
+    eoa::store::atomic::tests::removed_pending_request_cannot_be_borrowed_from_a_stale_read
+    eoa::store::atomic::tests::shared_unwatch_cannot_disable_a_stale_owner_fence
+    eoa::store::atomic::tests::simple_lock_checked_write_rejects_takeover_before_exec
+    eoa::store::atomic::tests::stale_owner_cannot_fail_pending_batch
+    eoa::store::atomic::tests::stale_owner_cannot_fail_single_pending_request
+    eoa::store::atomic::tests::trailing_recycled_nonce_resets_to_chain_count_including_zero
+
+test result: FAILED. 2 passed; 11 failed; 0 ignored; 0 measured; 11 filtered out; finished in 0.03s
+
+error: test failed, to rerun pass `-p engine-executors --lib`

@@ -1,0 +1,50 @@
+[
+  {
+    "version": "v0.6",
+    "factory_address": "0x85e23b94e7F5E9cC1fF78BCe78cfb15B81f0DF00",
+    "url": "https://etherscan.io/address/0x85e23b94e7F5E9cC1fF78BCe78cfb15B81f0DF00#code",
+    "accessed": "2026-09-15",
+    "sources": [
+      {
+        "path": "contracts/external-deps/openzeppelin/utils/cryptography/ECDSA.sol",
+        "sha256": "883b764775fc31287a6da98e6d96708f64f1099bf4afefb0777e50ed80c1e696"
+      },
+      {
+        "path": "contracts/prebuilts/account/non-upgradeable/Account.sol",
+        "sha256": "8a939d46a5744cec85670bdbf37de11c651816b9dc6ce7dd60b2062178c0bd4e"
+      },
+      {
+        "path": "contracts/prebuilts/account/non-upgradeable/AccountFactory.sol",
+        "sha256": "1eb5aa428178fc9b0ebf2c97f32a14693a5d8677a0252824db3177467ee05712"
+      },
+      {
+        "path": "contracts/prebuilts/account/utils/AccountCore.sol",
+        "sha256": "67f1ba1b43cde537d1392316d3028cbb8fce4ca4e14bafec60c7118ad6c46b53"
+      }
+    ]
+  },
+  {
+    "version": "v0.7",
+    "factory_address": "0x4bE0ddfebcA9A5A4a617dee4DeCe99E7c862dceb",
+    "url": "https://etherscan.io/address/0x4bE0ddfebcA9A5A4a617dee4DeCe99E7c862dceb#code",
+    "accessed": "2026-09-15",
+    "sources": [
+      {
+        "path": "contracts/prebuilts/account/utils/AccountCore.sol",
+        "sha256": "297fcb823109741ea76ec2cd935fce1da258dfafd7c233de067d76774c81bf71"
+      },
+      {
+        "path": "contracts/prebuilts/account/non-upgradeable/Account.sol",
+        "sha256": "9cbca7a210bf1064b5c072f4d19f702d006e0af57b946ca5c765d610f7ab47ca"
+      },
+      {
+        "path": "contracts/prebuilts/account/non-upgradeable/AccountFactory.sol",
+        "sha256": "a1ea8c1164053156d9e8532e53e4526b7d901525fd403078588695b5256807e5"
+      },
+      {
+        "path": "contracts/external-deps/openzeppelin/utils/cryptography/ECDSA.sol",
+        "sha256": "883b764775fc31287a6da98e6d96708f64f1099bf4afefb0777e50ed80c1e696"
+      }
+    ]
+  }
+]

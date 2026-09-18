@@ -3,3 +3,9 @@ README.md
 .github/
 scripts/
 target/
+.git/
+.env
+**/.env
+**/.env.*
+**/target/
+docs/baselines/

@@ -10,7 +10,10 @@ use serde::Serialize;
 use twmq::{CancelResult as TwmqCancelResult, error::TwmqError};
 use utoipa::ToSchema;
 
-use crate::http::{error::ApiEngineError, server::EngineServerState, types::SuccessResponse};
+use crate::http::{
+    error::ApiEngineError, extractors::DiagnosticAuthExtractor, server::EngineServerState,
+    types::SuccessResponse,
+};
 
 // ===== TYPES =====
 
@@ -42,13 +45,16 @@ pub enum CancelResult {
     ),
     params(
         ("id" = String, Path, description = "Transaction ID to cancel"),
+        ("x-diagnostic-access-password" = String, Header, description = "Administrative access password"),
     )
 )]
 /// Cancel Transaction
 ///
 /// Attempt to cancel a queued transaction. Transactions that have been sent and are waiting for mine cannot be cancelled.
+/// Requires administrative access because transaction IDs do not carry tenant ownership.
 #[debug_handler]
 pub async fn cancel_transaction(
+    _auth: DiagnosticAuthExtractor,
     State(state): State<EngineServerState>,
     Path(transaction_id): Path<String>,
 ) -> Result<impl IntoResponse, ApiEngineError> {

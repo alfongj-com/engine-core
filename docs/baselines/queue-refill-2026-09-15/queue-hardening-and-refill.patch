@@ -1,0 +1,1267 @@
+--- a/twmq/src/lease_tests.rs
++++ b/twmq/src/lease_tests.rs
+@@ -0,0 +1,381 @@
++//! Queue safety regressions using explicit transitions, not sleeps or live RPCs.
++use super::*;
++use serde::{Deserialize, Serialize};
++
++#[derive(Debug, Serialize, Deserialize)]
++pub(crate) struct TestError;
++impl From<TwmqError> for TestError {
++    fn from(_: TwmqError) -> Self {
++        Self
++    }
++}
++impl UserCancellable for TestError {
++    fn user_cancelled() -> Self {
++        Self
++    }
++}
++pub(crate) struct Handler {
++    pub counter: String,
++}
++impl DurableExecution for Handler {
++    type Output = u64;
++    type ErrorData = TestError;
++    type JobData = u64;
++    async fn process(&self, job: &BorrowedJob<u64>) -> JobResult<u64, TestError> {
++        Ok(*job.data())
++    }
++    async fn on_success(
++        &self,
++        _: &BorrowedJob<u64>,
++        _: SuccessHookData<'_, u64>,
++        tx: &mut TransactionContext<'_>,
++    ) {
++        tx.pipeline().incr(&self.counter, 1);
++    }
++}
++pub(crate) fn redis_url() -> String {
++    std::env::var("TEST_REDIS_URL").expect("set TEST_REDIS_URL to a disposable Redis")
++}
++pub(crate) async fn queue() -> Arc<Queue<Handler>> {
++    let name = format!("lease-regression:{}", nanoid::nanoid!());
++    Arc::new(
++        Queue::new(
++            &redis_url(),
++            &name,
++            Some(QueueOptions {
++                idempotency_mode: IdempotencyMode::Active,
++                ..Default::default()
++            }),
++            Handler {
++                counter: format!("twmq:{name}:hook-count"),
++            },
++        )
++        .await
++        .unwrap(),
++    )
++}
++pub(crate) async fn cleanup(conn: &mut ConnectionManager, prefix: &str) {
++    let keys: Vec<String> = redis::cmd("KEYS")
++        .arg(format!("{prefix}:*"))
++        .query_async(conn)
++        .await
++        .unwrap();
++    if !keys.is_empty() {
++        let _: usize = conn.del(keys).await.unwrap();
++    }
++}
++
++#[tokio::test]
++#[ignore = "requires disposable Redis in TEST_REDIS_URL"]
++async fn cancelled_expired_job_is_not_reborrowed_in_the_same_batch() {
++    let queue = queue().await;
++    queue
++        .push(JobOptions::new(7).with_id("cancel-me"))
++        .await
++        .unwrap();
++    let borrowed = queue.pop_batch_jobs(1).await.unwrap().pop().unwrap();
++    assert!(matches!(
++        queue.cancel_job(borrowed.id()).await.unwrap(),
++        CancelResult::CancellationPending
++    ));
++    let _: () = queue
++        .redis
++        .clone()
++        .del(queue.lease_key_name(borrowed.id(), &borrowed.lease_token))
++        .await
++        .unwrap();
++    assert!(queue.pop_batch_jobs(1).await.unwrap().is_empty());
++    assert_eq!(queue.count(JobStatus::Pending).await.unwrap(), 0);
++    assert_eq!(queue.count(JobStatus::Active).await.unwrap(), 0);
++    assert_eq!(queue.count(JobStatus::Failed).await.unwrap(), 1);
++    cleanup(&mut queue.redis.clone(), &format!("twmq:{}", queue.name())).await;
++}
++
++#[tokio::test]
++#[ignore = "requires disposable Redis in TEST_REDIS_URL"]
++async fn old_completion_cannot_ack_a_reborrowed_job_or_commit_hooks() {
++    let queue = queue().await;
++    queue
++        .push(JobOptions::new(7).with_id("reuse"))
++        .await
++        .unwrap();
++    let old = queue.pop_batch_jobs(1).await.unwrap().pop().unwrap();
++    let _: () = queue
++        .redis
++        .clone()
++        .del(queue.lease_key_name(old.id(), &old.lease_token))
++        .await
++        .unwrap();
++    let current = queue.pop_batch_jobs(1).await.unwrap().pop().unwrap();
++    assert_ne!(old.lease_token, current.lease_token);
++    queue.complete_job(&old, Ok(9)).await.unwrap();
++    assert_eq!(queue.count(JobStatus::Active).await.unwrap(), 1);
++    assert_eq!(queue.count(JobStatus::Success).await.unwrap(), 0);
++    assert_eq!(
++        queue
++            .redis
++            .clone()
++            .get::<_, Option<u64>>(&queue.handler.counter)
++            .await
++            .unwrap(),
++        None
++    );
++    queue.complete_job(&current, Ok(7)).await.unwrap();
++    assert_eq!(queue.count(JobStatus::Success).await.unwrap(), 1);
++    assert_eq!(
++        queue
++            .redis
++            .clone()
++            .get::<_, u64>(&queue.handler.counter)
++            .await
++            .unwrap(),
++        1
++    );
++    cleanup(&mut queue.redis.clone(), &format!("twmq:{}", queue.name())).await;
++}
++
++#[tokio::test]
++#[ignore = "requires disposable Redis in TEST_REDIS_URL"]
++async fn concurrent_acknowledgements_commit_one_outcome_and_one_hook() {
++    let queue = queue().await;
++    queue.push(JobOptions::new(7)).await.unwrap();
++    let borrowed = queue.pop_batch_jobs(1).await.unwrap().pop().unwrap();
++    let acknowledgements = (0..32).map(|_| queue.complete_job(&borrowed, Ok(7)));
++    for result in futures::future::join_all(acknowledgements).await {
++        result.unwrap();
++    }
++    assert_eq!(queue.count(JobStatus::Success).await.unwrap(), 1);
++    assert_eq!(queue.count(JobStatus::Active).await.unwrap(), 0);
++    assert_eq!(
++        queue
++            .redis
++            .clone()
++            .get::<_, u64>(&queue.handler.counter)
++            .await
++            .unwrap(),
++        1
++    );
++    cleanup(&mut queue.redis.clone(), &format!("twmq:{}", queue.name())).await;
++}
++
++#[tokio::test]
++#[ignore = "requires disposable Redis in TEST_REDIS_URL"]
++async fn cancellation_after_nack_removes_delayed_work() {
++    let queue = queue().await;
++    queue.push(JobOptions::new(7)).await.unwrap();
++    let borrowed = queue.pop_batch_jobs(1).await.unwrap().pop().unwrap();
++    queue.cancel_job(borrowed.id()).await.unwrap();
++    queue
++        .complete_job(
++            &borrowed,
++            Err(JobError::Nack {
++                error: TestError,
++                delay: Some(Duration::from_secs(60)),
++                position: RequeuePosition::Last,
++            }),
++        )
++        .await
++        .unwrap();
++    assert!(queue.pop_batch_jobs(1).await.unwrap().is_empty());
++    assert_eq!(queue.count(JobStatus::Delayed).await.unwrap(), 0);
++    assert_eq!(queue.count(JobStatus::Failed).await.unwrap(), 1);
++    cleanup(&mut queue.redis.clone(), &format!("twmq:{}", queue.name())).await;
++}
++
++#[tokio::test]
++#[ignore = "requires disposable Redis in TEST_REDIS_URL"]
++async fn completion_error_does_not_replay_partially_executed_commands() {
++    let queue = queue().await;
++    let lease = format!("twmq:{}:test-lease", queue.name());
++    let invalid = format!("twmq:{}:wrong-type", queue.name());
++    let effects = format!("twmq:{}:effects", queue.name());
++    let mut observer = queue.redis.clone();
++    let _: () = observer.set_ex(&lease, 1, 30).await.unwrap();
++    let _: () = observer.set(&invalid, "string").await.unwrap();
++    let mut pipeline = redis::pipe();
++    pipeline.incr(&effects, 1).hset(&invalid, "field", "value");
++    let result = tokio::time::timeout(
++        Duration::from_secs(2),
++        queue
++            .transaction_connections
++            .commit_if_leased(&lease, &pipeline),
++    )
++    .await
++    .unwrap();
++    assert!(result.is_err());
++    assert_eq!(observer.get::<_, u64>(&effects).await.unwrap(), 1);
++    cleanup(&mut observer, &format!("twmq:{}", queue.name())).await;
++}
++
++#[tokio::test]
++#[ignore = "requires disposable Redis in TEST_REDIS_URL"]
++async fn completed_permits_refill_backlog_without_waiting_for_poll_timer() {
++    let name = format!("refill:{}", nanoid::nanoid!());
++    let queue = Arc::new(
++        Queue::new(
++            &redis_url(),
++            &name,
++            Some(QueueOptions {
++                local_concurrency: 2,
++                polling_interval: Duration::from_secs(3600),
++                ..Default::default()
++            }),
++            Handler {
++                counter: format!("twmq:{name}:hook-count"),
++            },
++        )
++        .await
++        .unwrap(),
++    );
++    for id in 0..20 {
++        queue.push(JobOptions::new(id)).await.unwrap();
++    }
++    let worker = queue.work();
++    tokio::time::timeout(Duration::from_secs(5), async {
++        while queue.count(JobStatus::Success).await.unwrap() != 20 {
++            tokio::task::yield_now().await;
++        }
++    })
++    .await
++    .expect("backlog must refill on completion, before the next hourly poll");
++    tokio::time::sleep(Duration::from_millis(50)).await;
++    assert!(
++        queue.poll_count.load(std::sync::atomic::Ordering::Relaxed) <= 21,
++        "a drained backlog must stop waking the worker"
++    );
++    assert_eq!(
++        queue
++            .redis
++            .clone()
++            .get::<_, u64>(&queue.handler.counter)
++            .await
++            .unwrap(),
++        20
++    );
++    tokio::time::timeout(Duration::from_secs(2), worker.shutdown())
++        .await
++        .unwrap()
++        .unwrap();
++    cleanup(&mut queue.redis.clone(), &format!("twmq:{name}")).await;
++}
++
++#[tokio::test]
++#[ignore = "requires disposable Redis in TEST_REDIS_URL"]
++async fn empty_worker_does_not_spin_and_shutdown_does_not_wait_for_poll() {
++    let name = format!("idle:{}", nanoid::nanoid!());
++    let queue = Arc::new(
++        Queue::new(
++            &redis_url(),
++            &name,
++            Some(QueueOptions {
++                polling_interval: Duration::from_secs(3600),
++                ..Default::default()
++            }),
++            Handler {
++                counter: format!("twmq:{name}:hook-count"),
++            },
++        )
++        .await
++        .unwrap(),
++    );
++    let worker = queue.work();
++    tokio::time::timeout(Duration::from_secs(2), async {
++        while queue.poll_count.load(std::sync::atomic::Ordering::Relaxed) == 0 {
++            tokio::task::yield_now().await;
++        }
++    })
++    .await
++    .unwrap();
++    // Observation window for absence of activity, not synchronization with a job.
++    tokio::time::sleep(Duration::from_millis(50)).await;
++    assert_eq!(
++        queue.poll_count.load(std::sync::atomic::Ordering::Relaxed),
++        1
++    );
++    tokio::time::timeout(Duration::from_secs(2), worker.shutdown())
++        .await
++        .unwrap()
++        .unwrap();
++    cleanup(&mut queue.redis.clone(), &format!("twmq:{name}")).await;
++}
++
++pub(crate) struct Gate {
++    pub current: std::sync::atomic::AtomicUsize,
++    pub peak: std::sync::atomic::AtomicUsize,
++    pub started: std::sync::atomic::AtomicUsize,
++    pub releases: tokio::sync::Semaphore,
++}
++impl Gate {
++    pub fn new() -> Arc<Self> {
++        Arc::new(Self {
++            current: 0.into(),
++            peak: 0.into(),
++            started: 0.into(),
++            releases: tokio::sync::Semaphore::new(0),
++        })
++    }
++    pub async fn wait_for_started(&self, count: usize) {
++        tokio::time::timeout(Duration::from_secs(5), async {
++            while self.started.load(std::sync::atomic::Ordering::SeqCst) < count {
++                tokio::task::yield_now().await;
++            }
++        })
++        .await
++        .expect("worker should refill after a permit is released");
++    }
++}
++pub(crate) struct GatedHandler {
++    pub gate: Arc<Gate>,
++}
++impl DurableExecution for GatedHandler {
++    type Output = u64;
++    type ErrorData = TestError;
++    type JobData = u64;
++    async fn process(&self, job: &BorrowedJob<u64>) -> JobResult<u64, TestError> {
++        use std::sync::atomic::Ordering::SeqCst;
++        let current = self.gate.current.fetch_add(1, SeqCst) + 1;
++        self.gate.peak.fetch_max(current, SeqCst);
++        self.gate.started.fetch_add(1, SeqCst);
++        self.gate.releases.acquire().await.unwrap().forget();
++        self.gate.current.fetch_sub(1, SeqCst);
++        Ok(*job.data())
++    }
++}
++
++#[tokio::test]
++#[ignore = "requires disposable Redis in TEST_REDIS_URL"]
++async fn immediate_refill_preserves_configured_concurrency() {
++    let name = format!("bounded-refill:{}", nanoid::nanoid!());
++    let gate = Gate::new();
++    let queue = Arc::new(
++        Queue::new(
++            &redis_url(),
++            &name,
++            Some(QueueOptions {
++                local_concurrency: 2,
++                polling_interval: Duration::from_secs(3600),
++                ..Default::default()
++            }),
++            GatedHandler { gate: gate.clone() },
++        )
++        .await
++        .unwrap(),
++    );
++    for id in 0..8 {
++        queue.push(JobOptions::new(id)).await.unwrap();
++    }
++    let worker = queue.work();
++    gate.wait_for_started(2).await;
++    gate.releases.add_permits(2);
++    gate.wait_for_started(4).await;
++    assert_eq!(gate.current.load(std::sync::atomic::Ordering::SeqCst), 2);
++    gate.releases.add_permits(8);
++    gate.wait_for_started(8).await;
++    tokio::time::timeout(Duration::from_secs(2), worker.shutdown())
++        .await
++        .unwrap()
++        .unwrap();
++    assert_eq!(gate.peak.load(std::sync::atomic::Ordering::SeqCst), 2);
++    assert_eq!(queue.count(JobStatus::Success).await.unwrap(), 8);
++    cleanup(&mut queue.redis.clone(), &format!("twmq:{name}")).await;
++}
+--- a/twmq/src/lib.rs
++++ b/twmq/src/lib.rs
+@@ -4,6 +4,7 @@
+ pub mod multilane;
+ pub mod queue;
+ pub mod shutdown;
++mod transaction;
+ 
+ use std::sync::Arc;
+ use std::time::{Duration, SystemTime, UNIX_EPOCH};
+@@ -134,6 +135,9 @@
+     H: DurableExecution,
+ {
+     pub redis: ConnectionManager,
++    #[cfg(test)]
++    pub(crate) poll_count: std::sync::atomic::AtomicUsize,
++    pub(crate) transaction_connections: transaction::TransactionConnections,
+     pub handler: Arc<H>,
+     pub options: QueueOptions,
+     // concurrency: usize,
+@@ -153,6 +157,9 @@
+ 
+         let queue = Self {
+             redis,
++            #[cfg(test)]
++            poll_count: std::sync::atomic::AtomicUsize::new(0),
++            transaction_connections: transaction::TransactionConnections::new(client),
+             name: name.to_string(),
+             // concurrency,
+             options: options.unwrap_or_default(),
+@@ -477,6 +484,7 @@
+         let (shutdown_tx, mut shutdown_rx) = tokio::sync::oneshot::channel::<()>();
+         // Local semaphore to limit concurrency per instance
+         let semaphore = Arc::new(Semaphore::new(self.options.local_concurrency));
++        let completed = Arc::new(tokio::sync::Notify::new());
+         let handler = self.handler.clone();
+         let outer_queue_clone = self.clone();
+         // Start worker
+@@ -494,8 +502,14 @@
+                         break;
+                     }
+ 
+-                    // Normal polling tick
+-                    _ = interval.tick() => {
++                    // Completed permits refill backlog immediately; the timer still
++                    // discovers external work and performs lease/delay housekeeping.
++                    _ = async {
++                        tokio::select! {
++                            _ = interval.tick() => {},
++                            _ = completed.notified() => {},
++                        }
++                    } => {
+                         let queue_clone = outer_queue_clone.clone();
+                         let queue_name = queue_clone.name();
+ 
+@@ -516,6 +530,7 @@
+                                     let queue_clone = queue_clone.clone();
+                                     let job_id = job.id().to_string();
+                                     let handler_clone = handler_clone.clone();
++                                    let completed = completed.clone();
+ 
+                                     tokio::spawn(
+                                         async move {
+@@ -533,6 +548,7 @@
+ 
+                                         // Release permit when done
+                                         drop(permit);
++                                        completed.notify_one();
+                                     }.instrument(tracing::info_span!("twmq_worker", job_id, queue_name)));
+                                 }
+                             }
+@@ -586,7 +602,10 @@
+         self: &Arc<Self>,
+         batch_size: usize,
+     ) -> RedisResult<Vec<BorrowedJob<H::JobData>>> {
+-        let pop_id = nanoid::nanoid!(4);
++        #[cfg(test)]
++        self.poll_count
++            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
++        let pop_id = nanoid::nanoid!();
+ 
+         // Lua script that does:
+         // 1. Clean up expired leases (with lease token validation)
+@@ -666,7 +685,10 @@
+                         -- Job succeeded, just remove from cancellation set
+                         table.insert(completed_jobs, job_id)
+                     else
+-                        -- Job not successful, cancel it now
++                        -- Remove recovered/retried work before this batch borrows jobs.
++                        redis.call('LREM', pending_list_name, 0, job_id)
++                        redis.call('ZREM', delayed_zset_name, job_id)
++                        redis.call('LREM', failed_list_name, 0, job_id)
+                         redis.call('LPUSH', failed_list_name, job_id)
+                         -- Add cancellation timestamp
+                         local job_meta_hash_name = 'twmq:' .. queue_id .. ':job:' .. job_id .. ':meta'
+@@ -1245,59 +1267,19 @@
+             }
+         }
+ 
+-        // 2. Now use this pipeline in unlimited retry loop with lease check
+         let lease_key = self.lease_key_name(&job.job.id, &job.lease_token);
+-
+-        loop {
+-            let mut conn = self.redis.clone();
+-
+-            // WATCH the lease key
+-            redis::cmd("WATCH")
+-                .arg(&lease_key)
+-                .query_async::<()>(&mut conn)
+-                .await?;
+-
+-            // Check if lease exists - if not, job was cancelled or timed out
+-            let lease_exists: bool = conn.exists(&lease_key).await?;
+-            if !lease_exists {
+-                redis::cmd("UNWATCH").query_async::<()>(&mut conn).await?;
+-                tracing::warn!(
+-                    job_id = job.job.id,
+-                    "Lease no longer exists, job was cancelled or timed out"
+-                );
+-                return Ok(());
+-            }
+-
+-            // Clone the pipeline and make it atomic for this attempt
+-            let mut atomic_pipeline = hook_pipeline.clone();
+-            atomic_pipeline.atomic();
+-
+-            // Execute atomically with WATCH/MULTI/EXEC
+-            match atomic_pipeline
+-                .query_async::<Vec<redis::Value>>(&mut conn)
+-                .await
+-            {
+-                Ok(_) => {
+-                    // Success! Now run post-completion methods
+-                    match &result {
+-                        Ok(_) => self.post_success_completion().await?,
+-                        Err(JobError::Nack { .. }) => self.post_nack_completion().await?,
+-                        Err(JobError::Fail(_)) => self.post_fail_completion().await?,
+-                    }
+-
+-                    tracing::debug!(job_id = job.job.id, "Job completion successful");
+-                    return Ok(());
+-                }
+-                Err(_) => {
+-                    // WATCH failed (lease key changed), retry
+-                    tracing::debug!(
+-                        job_id = job.job.id,
+-                        "WATCH failed during completion, retrying"
+-                    );
+-                    continue;
+-                }
+-            }
+-        }
++        if self
++            .transaction_connections
++            .commit_if_leased(&lease_key, &hook_pipeline)
++            .await?
++        {
++            match &result {
++                Ok(_) => self.post_success_completion().await?,
++                Err(JobError::Nack { .. }) => self.post_nack_completion().await?,
++                Err(JobError::Fail(_)) => self.post_fail_completion().await?,
++            }
++        }
++        Ok(())
+     }
+ 
+     // Special completion method for queue errors (deserialization failures) with lease token
+@@ -1353,52 +1335,14 @@
+             hook_pipeline.srem(self.dedupe_set_name(), &job.id);
+         }
+ 
+-        // 2. Use pipeline in unlimited retry loop with lease check
+-        loop {
+-            let mut conn = self.redis.clone();
+-
+-            // WATCH the lease key
+-            redis::cmd("WATCH")
+-                .arg(&lease_key)
+-                .query_async::<()>(&mut conn)
+-                .await?;
+-
+-            // Check if lease exists - if not, job was cancelled or timed out
+-            let lease_exists: bool = conn.exists(&lease_key).await?;
+-            if !lease_exists {
+-                redis::cmd("UNWATCH").query_async::<()>(&mut conn).await?;
+-                tracing::warn!(
+-                    job_id = job.id,
+-                    "Lease no longer exists, job was cancelled or timed out"
+-                );
+-                return Ok(());
+-            }
+-
+-            // Clone the pipeline and make it atomic for this attempt
+-            let mut atomic_pipeline = hook_pipeline.clone();
+-            atomic_pipeline.atomic();
+-
+-            // Execute atomically with WATCH/MULTI/EXEC
+-            match atomic_pipeline
+-                .query_async::<Vec<redis::Value>>(&mut conn)
+-                .await
+-            {
+-                Ok(_) => {
+-                    // Success! Run post-completion
+-                    self.post_fail_completion().await?;
+-                    tracing::debug!(job_id = job.id, "Queue error job completion successful");
+-                    return Ok(());
+-                }
+-                Err(_) => {
+-                    // WATCH failed (lease key changed), retry
+-                    tracing::debug!(
+-                        job_id = job.id,
+-                        "WATCH failed during queue error completion, retrying"
+-                    );
+-                    continue;
+-                }
+-            }
+-        }
++        if self
++            .transaction_connections
++            .commit_if_leased(&lease_key, &hook_pipeline)
++            .await?
++        {
++            self.post_fail_completion().await?;
++        }
++        Ok(())
+     }
+ 
+     pub async fn remove_from_dedupe_set(&self, job_id: &str) -> Result<(), TwmqError> {
+@@ -1417,3 +1361,6 @@
+         Ok(())
+     }
+ }
++
++#[cfg(test)]
++mod lease_tests;
+--- a/twmq/src/multilane.rs
++++ b/twmq/src/multilane.rs
+@@ -27,6 +27,9 @@
+     H: DurableExecution,
+ {
+     pub redis: ConnectionManager,
++    #[cfg(test)]
++    pub(crate) poll_count: std::sync::atomic::AtomicUsize,
++    transaction_connections: crate::transaction::TransactionConnections,
+     handler: Arc<H>,
+     options: QueueOptions,
+     /// Unique identifier for this multilane queue instance
+@@ -55,6 +58,9 @@
+ 
+         let queue = Self {
+             redis,
++            #[cfg(test)]
++            poll_count: std::sync::atomic::AtomicUsize::new(0),
++            transaction_connections: crate::transaction::TransactionConnections::new(client),
+             queue_id: queue_id.to_string(),
+             options: options.unwrap_or_default(),
+             handler: Arc::new(handler),
+@@ -443,6 +449,7 @@
+     pub fn work(self: &Arc<Self>) -> WorkerHandle<MultilaneQueue<H>> {
+         let (shutdown_tx, mut shutdown_rx) = tokio::sync::oneshot::channel::<()>();
+         let semaphore = Arc::new(Semaphore::new(self.options.local_concurrency));
++        let completed = Arc::new(tokio::sync::Notify::new());
+         let handler = self.handler.clone();
+         let outer_queue_clone = self.clone();
+ 
+@@ -463,7 +470,14 @@
+                         break;
+                     }
+ 
+-                    _ = interval.tick() => {
++                    // Completed permits refill backlog immediately; the timer still
++                    // discovers external work and performs lease/delay housekeeping.
++                    _ = async {
++                        tokio::select! {
++                            _ = interval.tick() => {},
++                            _ = completed.notified() => {},
++                        }
++                    } => {
+                         let queue_clone = outer_queue_clone.clone();
+                         let available_permits = semaphore.available_permits();
+ 
+@@ -483,6 +497,7 @@
+                                     let queue_clone = queue_clone.clone();
+                                     let job_id = job.id().to_string();
+                                     let handler_clone = handler_clone.clone();
++                                    let completed = completed.clone();
+ 
+                                     tokio::spawn(async move {
+                                         let result = handler_clone.process(&job).await;
+@@ -496,6 +511,7 @@
+                                         }
+ 
+                                         drop(permit);
++                                        completed.notify_one();
+                                     }.instrument(tracing::info_span!("twmq_multilane_worker", job_id, lane_id)));
+                                 }
+                             }
+@@ -544,12 +560,16 @@
+         self: &Arc<Self>,
+         batch_size: usize,
+     ) -> RedisResult<Vec<(String, BorrowedJob<H::JobData>)>> {
++        #[cfg(test)]
++        self.poll_count
++            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+         let script = redis::Script::new(
+             r#"
+             local queue_id = ARGV[1]
+             local now = tonumber(ARGV[2])
+             local batch_size = tonumber(ARGV[3])
+             local lease_seconds = tonumber(ARGV[4])
++            local pop_id = ARGV[5]
+ 
+             local lanes_zset_name = KEYS[1]
+             local job_data_hash_name = KEYS[2]
+@@ -636,7 +656,7 @@
+                 local created_at = redis.call('HGET', job_meta_hash, 'created_at') or now
+                 local attempts = redis.call('HINCRBY', job_meta_hash, 'attempts', 1)
+ 
+-                local lease_token = now .. '_' .. job_id .. '_' .. attempts
++                local lease_token = now .. '_' .. job_id .. '_' .. attempts .. '_' .. pop_id
+                 local lease_key = 'twmq_multilane:' .. queue_id .. ':job:' .. job_id .. ':lease:' .. lease_token
+                 
+                 redis.call('SET', lease_key, '1')
+@@ -656,6 +676,7 @@
+                 
+                 if lane_id then
+                     local lane_active_hash = 'twmq_multilane:' .. queue_id .. ':lane:' .. lane_id .. ':active'
++                    cleanup_lane_leases(lane_id)
+                     
+                     if redis.call('HEXISTS', lane_active_hash, job_id) == 1 then
+                         -- Still processing, keep in cancellation set
+@@ -666,6 +687,9 @@
+                             -- Job succeeded, add it back to success list
+                             redis.call('LPUSH', success_list_name, job_id)
+                         else
++                            redis.call('LREM', 'twmq_multilane:' .. queue_id .. ':lane:' .. lane_id .. ':pending', 0, job_id)
++                            redis.call('ZREM', 'twmq_multilane:' .. queue_id .. ':lane:' .. lane_id .. ':delayed', job_id)
++                            redis.call('LREM', failed_list_name, 0, job_id)
+                             redis.call('LPUSH', failed_list_name, job_id)
+                             redis.call('HSET', job_meta_hash, 'finished_at', now)
+                             table.insert(cancelled_jobs, {lane_id, job_id})
+@@ -764,6 +788,7 @@
+             .arg(now)
+             .arg(batch_size)
+             .arg(self.options.lease_duration.as_secs())
++            .arg(nanoid::nanoid!())
+             .invoke_async(&mut self.redis.clone())
+             .await?;
+ 
+@@ -1262,57 +1287,19 @@
+             }
+         }
+ 
+-        // Execute with lease protection (same pattern as single-lane queue)
+         let lease_key = self.lease_key_name(&job.job.id, &job.lease_token);
+-
+-        loop {
+-            let mut conn = self.redis.clone();
+-
+-            redis::cmd("WATCH")
+-                .arg(&lease_key)
+-                .query_async::<()>(&mut conn)
+-                .await?;
+-
+-            let lease_exists: bool = conn.exists(&lease_key).await?;
+-            if !lease_exists {
+-                redis::cmd("UNWATCH").query_async::<()>(&mut conn).await?;
+-                tracing::warn!(
+-                    job_id = job.job.id,
+-                    "Lease no longer exists, job was cancelled or timed out"
+-                );
+-                return Ok(());
++        if self
++            .transaction_connections
++            .commit_if_leased(&lease_key, &hook_pipeline)
++            .await?
++        {
++            match &result {
++                Ok(_) => self.post_success_completion().await?,
++                Err(JobError::Nack { .. }) => self.post_nack_completion().await?,
++                Err(JobError::Fail(_)) => self.post_fail_completion().await?,
+             }
+-
+-            let mut atomic_pipeline = hook_pipeline.clone();
+-            atomic_pipeline.atomic();
+-
+-            match atomic_pipeline
+-                .query_async::<Vec<redis::Value>>(&mut conn)
+-                .await
+-            {
+-                Ok(_) => {
+-                    match &result {
+-                        Ok(_) => self.post_success_completion().await?,
+-                        Err(JobError::Nack { .. }) => self.post_nack_completion().await?,
+-                        Err(JobError::Fail(_)) => self.post_fail_completion().await?,
+-                    }
+-
+-                    tracing::debug!(
+-                        job_id = job.job.id,
+-                        lane_id = lane_id,
+-                        "Job completion successful"
+-                    );
+-                    return Ok(());
+-                }
+-                Err(_) => {
+-                    tracing::debug!(
+-                        job_id = job.job.id,
+-                        "WATCH failed during completion, retrying"
+-                    );
+-                    continue;
+-                }
+-            }
+-        }
++        }
++        Ok(())
+     }
+ 
+     #[tracing::instrument(level = "debug", skip_all, fields(job_id = job.id, queue = self.queue_id()))]
+@@ -1371,50 +1358,14 @@
+             hook_pipeline.srem(self.dedupe_set_name(), &job.id);
+         }
+ 
+-        // Execute with lease protection
+-        loop {
+-            let mut conn = self.redis.clone();
+-
+-            redis::cmd("WATCH")
+-                .arg(&lease_key)
+-                .query_async::<()>(&mut conn)
+-                .await?;
+-
+-            let lease_exists: bool = conn.exists(&lease_key).await?;
+-            if !lease_exists {
+-                redis::cmd("UNWATCH").query_async::<()>(&mut conn).await?;
+-                tracing::warn!(
+-                    job_id = job.id,
+-                    "Lease no longer exists, job was cancelled or timed out"
+-                );
+-                return Ok(());
+-            }
+-
+-            let mut atomic_pipeline = hook_pipeline.clone();
+-            atomic_pipeline.atomic();
+-
+-            match atomic_pipeline
+-                .query_async::<Vec<redis::Value>>(&mut conn)
+-                .await
+-            {
+-                Ok(_) => {
+-                    self.post_fail_completion().await?;
+-                    tracing::debug!(
+-                        job_id = job.id,
+-                        lane_id = lane_id,
+-                        "Queue error job completion successful"
+-                    );
+-                    return Ok(());
+-                }
+-                Err(_) => {
+-                    tracing::debug!(
+-                        job_id = job.id,
+-                        "WATCH failed during queue error completion, retrying"
+-                    );
+-                    continue;
+-                }
+-            }
+-        }
++        if self
++            .transaction_connections
++            .commit_if_leased(&lease_key, &hook_pipeline)
++            .await?
++        {
++            self.post_fail_completion().await?;
++        }
++        Ok(())
+     }
+ }
+ 
+@@ -1441,3 +1392,7 @@
+         self.queue.push_to_lane(&self.lane_id, self.options).await
+     }
+ }
++
++#[cfg(test)]
++#[path = "multilane_lease_tests.rs"]
++mod lease_tests;
+--- a/twmq/src/multilane_lease_tests.rs
++++ b/twmq/src/multilane_lease_tests.rs
+@@ -0,0 +1,264 @@
++use super::*;
++use crate::lease_tests::{Handler, cleanup, redis_url};
++use crate::{IdempotencyMode, job::JobStatus};
++
++async fn queue() -> Arc<MultilaneQueue<Handler>> {
++    let name = format!("multilane-regression:{}", nanoid::nanoid!());
++    Arc::new(
++        MultilaneQueue::new(
++            &redis_url(),
++            &name,
++            Some(QueueOptions {
++                idempotency_mode: IdempotencyMode::Active,
++                ..Default::default()
++            }),
++            Handler {
++                counter: format!("twmq_multilane:{name}:hook-count"),
++            },
++        )
++        .await
++        .unwrap(),
++    )
++}
++
++#[tokio::test]
++#[ignore = "requires disposable Redis in TEST_REDIS_URL"]
++async fn cancelled_expired_lane_job_is_not_reborrowed() {
++    let queue = queue().await;
++    queue
++        .push_to_lane("lane", JobOptions::new(7))
++        .await
++        .unwrap();
++    let (_, borrowed) = queue.pop_batch_jobs(1).await.unwrap().pop().unwrap();
++    assert!(matches!(
++        queue.cancel_job(borrowed.id()).await.unwrap(),
++        CancelResult::CancellationPending
++    ));
++    let _: () = queue
++        .redis
++        .clone()
++        .del(queue.lease_key_name(borrowed.id(), &borrowed.lease_token))
++        .await
++        .unwrap();
++    assert!(queue.pop_batch_jobs(1).await.unwrap().is_empty());
++    assert_eq!(queue.count(JobStatus::Pending, None).await.unwrap(), 0);
++    assert_eq!(queue.count(JobStatus::Active, None).await.unwrap(), 0);
++    assert_eq!(queue.count(JobStatus::Failed, None).await.unwrap(), 1);
++    cleanup(
++        &mut queue.redis.clone(),
++        &format!("twmq_multilane:{}", queue.queue_id()),
++    )
++    .await;
++}
++
++#[tokio::test]
++#[ignore = "requires disposable Redis in TEST_REDIS_URL"]
++async fn same_id_reuse_creates_a_new_lease_generation() {
++    let queue = queue().await;
++    queue
++        .push_to_lane("lane", JobOptions::new(7).with_id("reused"))
++        .await
++        .unwrap();
++    let (_, old) = queue.pop_batch_jobs(1).await.unwrap().pop().unwrap();
++    queue.complete_job(&old, Ok(7)).await.unwrap();
++    queue
++        .push_to_lane("lane", JobOptions::new(8).with_id("reused"))
++        .await
++        .unwrap();
++    let (_, current) = queue.pop_batch_jobs(1).await.unwrap().pop().unwrap();
++    assert_ne!(old.lease_token, current.lease_token);
++    queue.complete_job(&old, Ok(7)).await.unwrap();
++    assert_eq!(queue.count(JobStatus::Active, None).await.unwrap(), 1);
++    assert_eq!(
++        queue
++            .redis
++            .clone()
++            .get::<_, u64>(&queue.handler.counter)
++            .await
++            .unwrap(),
++        1
++    );
++    queue.complete_job(&current, Ok(8)).await.unwrap();
++    assert_eq!(
++        queue
++            .redis
++            .clone()
++            .get::<_, u64>(&queue.handler.counter)
++            .await
++            .unwrap(),
++        2
++    );
++    cleanup(
++        &mut queue.redis.clone(),
++        &format!("twmq_multilane:{}", queue.queue_id()),
++    )
++    .await;
++}
++
++#[tokio::test]
++#[ignore = "requires disposable Redis in TEST_REDIS_URL"]
++async fn concurrent_lane_acknowledgements_commit_once() {
++    let queue = queue().await;
++    queue
++        .push_to_lane("lane", JobOptions::new(7))
++        .await
++        .unwrap();
++    let (_, borrowed) = queue.pop_batch_jobs(1).await.unwrap().pop().unwrap();
++    for result in
++        futures::future::join_all((0..32).map(|_| queue.complete_job(&borrowed, Ok(7)))).await
++    {
++        result.unwrap();
++    }
++    assert_eq!(queue.count(JobStatus::Success, None).await.unwrap(), 1);
++    assert_eq!(queue.count(JobStatus::Active, None).await.unwrap(), 0);
++    assert_eq!(
++        queue
++            .redis
++            .clone()
++            .get::<_, u64>(&queue.handler.counter)
++            .await
++            .unwrap(),
++        1
++    );
++    cleanup(
++        &mut queue.redis.clone(),
++        &format!("twmq_multilane:{}", queue.queue_id()),
++    )
++    .await;
++}
++
++#[tokio::test]
++#[ignore = "requires disposable Redis in TEST_REDIS_URL"]
++async fn completed_lane_permits_refill_without_waiting_for_poll_timer() {
++    let name = format!("lane-refill:{}", nanoid::nanoid!());
++    let queue = Arc::new(
++        MultilaneQueue::new(
++            &redis_url(),
++            &name,
++            Some(QueueOptions {
++                local_concurrency: 2,
++                polling_interval: std::time::Duration::from_secs(3600),
++                ..Default::default()
++            }),
++            Handler {
++                counter: format!("twmq_multilane:{name}:hook-count"),
++            },
++        )
++        .await
++        .unwrap(),
++    );
++    for id in 0..20 {
++        queue
++            .push_to_lane(&format!("lane-{}", id % 3), JobOptions::new(id))
++            .await
++            .unwrap();
++    }
++    let worker = queue.work();
++    tokio::time::timeout(std::time::Duration::from_secs(5), async {
++        while queue.count(JobStatus::Success, None).await.unwrap() != 20 {
++            tokio::task::yield_now().await;
++        }
++    })
++    .await
++    .expect("lane backlog must refill before the next hourly poll");
++    tokio::time::sleep(std::time::Duration::from_millis(50)).await;
++    assert!(
++        queue.poll_count.load(std::sync::atomic::Ordering::Relaxed) <= 21,
++        "a drained lane backlog must stop waking the worker"
++    );
++    assert_eq!(
++        queue
++            .redis
++            .clone()
++            .get::<_, u64>(&queue.handler.counter)
++            .await
++            .unwrap(),
++        20
++    );
++    tokio::time::timeout(std::time::Duration::from_secs(2), worker.shutdown())
++        .await
++        .unwrap()
++        .unwrap();
++    cleanup(&mut queue.redis.clone(), &format!("twmq_multilane:{name}")).await;
++}
++
++#[tokio::test]
++#[ignore = "requires disposable Redis in TEST_REDIS_URL"]
++async fn empty_lane_worker_does_not_spin_and_shuts_down_promptly() {
++    let name = format!("lane-idle:{}", nanoid::nanoid!());
++    let queue = Arc::new(
++        MultilaneQueue::new(
++            &redis_url(),
++            &name,
++            Some(QueueOptions {
++                polling_interval: std::time::Duration::from_secs(3600),
++                ..Default::default()
++            }),
++            Handler {
++                counter: format!("twmq_multilane:{name}:hook-count"),
++            },
++        )
++        .await
++        .unwrap(),
++    );
++    let worker = queue.work();
++    tokio::time::timeout(std::time::Duration::from_secs(2), async {
++        while queue.poll_count.load(std::sync::atomic::Ordering::Relaxed) == 0 {
++            tokio::task::yield_now().await;
++        }
++    })
++    .await
++    .unwrap();
++    tokio::time::sleep(std::time::Duration::from_millis(50)).await;
++    assert_eq!(
++        queue.poll_count.load(std::sync::atomic::Ordering::Relaxed),
++        1
++    );
++    tokio::time::timeout(std::time::Duration::from_secs(2), worker.shutdown())
++        .await
++        .unwrap()
++        .unwrap();
++    cleanup(&mut queue.redis.clone(), &format!("twmq_multilane:{name}")).await;
++}
++
++#[tokio::test]
++#[ignore = "requires disposable Redis in TEST_REDIS_URL"]
++async fn immediate_lane_refill_preserves_configured_concurrency() {
++    use crate::lease_tests::{Gate, GatedHandler};
++    let name = format!("bounded-lane-refill:{}", nanoid::nanoid!());
++    let gate = Gate::new();
++    let queue = Arc::new(
++        MultilaneQueue::new(
++            &redis_url(),
++            &name,
++            Some(QueueOptions {
++                local_concurrency: 2,
++                polling_interval: std::time::Duration::from_secs(3600),
++                ..Default::default()
++            }),
++            GatedHandler { gate: gate.clone() },
++        )
++        .await
++        .unwrap(),
++    );
++    for id in 0..8 {
++        queue
++            .push_to_lane(&format!("lane-{}", id % 3), JobOptions::new(id))
++            .await
++            .unwrap();
++    }
++    let worker = queue.work();
++    gate.wait_for_started(2).await;
++    gate.releases.add_permits(2);
++    gate.wait_for_started(4).await;
++    assert_eq!(gate.current.load(std::sync::atomic::Ordering::SeqCst), 2);
++    gate.releases.add_permits(8);
++    gate.wait_for_started(8).await;
++    tokio::time::timeout(std::time::Duration::from_secs(2), worker.shutdown())
++        .await
++        .unwrap()
++        .unwrap();
++    assert_eq!(gate.peak.load(std::sync::atomic::Ordering::SeqCst), 2);
++    assert_eq!(queue.count(JobStatus::Success, None).await.unwrap(), 8);
++    cleanup(&mut queue.redis.clone(), &format!("twmq_multilane:{name}")).await;
++}
+--- a/twmq/src/queue.rs
++++ b/twmq/src/queue.rs
+@@ -66,7 +66,7 @@
+ enum RedisSource {
+     Url(String),
+     Client(Client),
+-    ConnectionManager(ConnectionManager),
++    ConnectionManager(ConnectionManager, Client),
+ }
+ 
+ // Builder with typestate pattern
+@@ -124,13 +124,15 @@
+         }
+     }
+ 
+-    /// Set Redis connection from existing connection manager
++    /// Set an existing manager and its source client (same server, database and auth).
++    /// The client creates isolated connections for lease-protected transactions.
+     pub fn redis_connection_manager(
+         self,
+         manager: ConnectionManager,
++        source_client: Client,
+     ) -> QueueBuilder<H, HasRedis, N, Hn> {
+         QueueBuilder {
+-            redis_source: Some(RedisSource::ConnectionManager(manager)),
++            redis_source: Some(RedisSource::ConnectionManager(manager, source_client)),
+             name: self.name,
+             options: self.options,
+             handler: self.handler,
+@@ -190,17 +192,20 @@
+         let name = self.name.unwrap();
+         let handler = self.handler.unwrap();
+ 
+-        let redis = match redis_source {
++        let (redis, client) = match redis_source {
+             RedisSource::Url(url) => {
+                 let client = Client::open(url)?;
+-                client.get_connection_manager().await?
++                (client.get_connection_manager().await?, client)
+             }
+-            RedisSource::Client(client) => client.get_connection_manager().await?,
+-            RedisSource::ConnectionManager(manager) => manager,
++            RedisSource::Client(client) => (client.get_connection_manager().await?, client),
++            RedisSource::ConnectionManager(manager, client) => (manager, client),
+         };
+ 
+         Ok(Queue {
+             redis,
++            #[cfg(test)]
++            poll_count: std::sync::atomic::AtomicUsize::new(0),
++            transaction_connections: crate::transaction::TransactionConnections::new(client),
+             name,
+             options: self.options.unwrap_or_default(),
+             handler: Arc::new(handler),
+--- a/twmq/src/transaction.rs
++++ b/twmq/src/transaction.rs
+@@ -0,0 +1,74 @@
++//! Isolated connections for connection-scoped Redis transactions.
++use crate::error::TwmqError;
++use redis::{AsyncCommands, Client, Pipeline, aio::MultiplexedConnection};
++use std::sync::Mutex;
++
++/// A checked-out connection is exclusively owned by one acknowledgement. It is
++/// returned only after EXEC or UNWATCH cleared connection state. Cancellation or
++/// a transport error drops it, including any abandoned WATCH state.
++pub(crate) struct TransactionConnections {
++    client: Client,
++    idle: Mutex<Vec<MultiplexedConnection>>,
++}
++
++impl TransactionConnections {
++    pub(crate) fn new(client: Client) -> Self {
++        Self {
++            client,
++            idle: Mutex::new(Vec::new()),
++        }
++    }
++
++    async fn checkout(&self) -> Result<MultiplexedConnection, TwmqError> {
++        let connection = self.idle.lock().expect("transaction pool poisoned").pop();
++        match connection {
++            Some(connection) => Ok(connection),
++            None => Ok(self.client.get_multiplexed_async_connection().await?),
++        }
++    }
++
++    fn checkin(&self, connection: MultiplexedConnection) {
++        self.idle
++            .lock()
++            .expect("transaction pool poisoned")
++            .push(connection);
++    }
++
++    /// Return true only when the lease-protected writes committed. Redis nil is
++    /// an optimistic conflict, not a successful empty transaction.
++    pub(crate) async fn commit_if_leased(
++        &self,
++        lease_key: &str,
++        pipeline: &Pipeline,
++    ) -> Result<bool, TwmqError> {
++        let mut connection = self.checkout().await?;
++        let mut transaction = pipeline.clone();
++        transaction.atomic();
++        for _ in 0..10 {
++            redis::cmd("WATCH")
++                .arg(lease_key)
++                .query_async::<()>(&mut connection)
++                .await?;
++            if !connection.exists::<_, bool>(lease_key).await? {
++                redis::cmd("UNWATCH")
++                    .query_async::<()>(&mut connection)
++                    .await?;
++                self.checkin(connection);
++                return Ok(false);
++            }
++            match transaction
++                .query_async::<Option<Vec<redis::Value>>>(&mut connection)
++                .await?
++            {
++                Some(_) => {
++                    self.checkin(connection);
++                    return Ok(true);
++                }
++                None => continue,
++            }
++        }
++        Err(TwmqError::Runtime {
++            message: "Lease changed repeatedly while completing a job".into(),
++        })
++    }
++}

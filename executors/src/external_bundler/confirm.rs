@@ -48,6 +48,9 @@ pub struct UserOpConfirmationJobData {
     pub user_op_hash: Bytes,
     pub nonce: U256,
     pub deployment_lock_acquired: bool,
+    /// Ownership token from the send attempt. Legacy jobs cannot release newer locks.
+    #[serde(default)]
+    pub deployment_lock_id: Option<String>,
     pub webhook_options: Vec<WebhookOptions>,
     pub rpc_credentials: RpcCredentials,
     /// Original timestamp when the transaction was first queued (unix timestamp in milliseconds)
@@ -61,7 +64,10 @@ pub struct UserOpConfirmationJobData {
 pub struct UserOpConfirmationResult {
     pub user_op_hash: Bytes,
     pub receipt: UserOperationReceipt,
-    pub deployment_lock_released: bool,
+    /// Unknown until the ownership-checked Redis completion hook commits.
+    /// Historical boolean results still deserialize.
+    #[serde(default)]
+    pub deployment_lock_released: Option<bool>,
 }
 
 // --- Error Types ---
@@ -220,7 +226,7 @@ where
             .await
             .map_err(|e| UserOpConfirmationError::ReceiptQueryFailed {
                 user_op_hash: job_data.user_op_hash.clone(),
-                message: e.to_string(),
+                message: engine_core::error::rpc_error_diagnostic(&e),
                 inner_error: Some(e.to_engine_bundler_error(&chain)),
             })
             .map_err_nack(Some(self.confirmation_retry_delay), RequeuePosition::Last)?;
@@ -272,7 +278,7 @@ where
         Ok(UserOpConfirmationResult {
             user_op_hash: job_data.user_op_hash.clone(),
             receipt,
-            deployment_lock_released: job_data.deployment_lock_acquired, // Will be released in hook
+            deployment_lock_released: None, // Ownership is checked later inside the Redis hook.
         })
     }
 
@@ -286,13 +292,14 @@ where
         self.transaction_registry
             .add_remove_command(tx.pipeline(), &job.job.data.transaction_id);
 
-        // Atomic cleanup: release lock + update cache if lock was acquired
-        if job.job.data.deployment_lock_acquired {
+        // Fence both cleanup and cache writes against newer lock owners.
+        if let Some(lock_id) = job.job.data.deployment_lock_id.as_deref() {
             self.deployment_lock
                 .release_lock_and_update_cache_with_pipeline(
                     tx.pipeline(),
                     job.job.data.chain_id,
                     &job.job.data.account_address,
+                    lock_id,
                     true, // is_deployed = true
                 );
 
@@ -360,12 +367,13 @@ where
         self.transaction_registry
             .add_remove_command(tx.pipeline(), &job.job.data.transaction_id);
 
-        // Always release lock on permanent failure
-        if job.job.data.deployment_lock_acquired {
+        // Release only this send attempt's lock on permanent failure.
+        if let Some(lock_id) = job.job.data.deployment_lock_id.as_deref() {
             self.deployment_lock.release_lock_with_pipeline(
                 tx.pipeline(),
                 job.job.data.chain_id,
                 &job.job.data.account_address,
+                lock_id,
             );
 
             let failure_reason = match fail_data.error {

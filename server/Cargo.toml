@@ -4,13 +4,13 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+hmac = { workspace = true }
+sha2 = { workspace = true }
 alloy = { workspace = true, features = ["serde"] }
 axum = { workspace = true, features = ["macros"] }
 config = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
-vault-sdk = { workspace = true }
-vault-types = { workspace = true }
 engine-core = { path = "../core" }
 engine-aa-core = { path = "../aa-core" }
 engine-solana-core = { path = "../solana-core" }
@@ -28,7 +28,6 @@ serde-bool = { workspace = true }
 base64 = { workspace = true }
 bincode = { workspace = true }
 solana-sdk = { workspace = true }
-solana-client = { workspace = true }
 aide = { workspace = true, features = [
     "axum",
     "axum-json",
@@ -51,3 +50,6 @@ moka = { workspace = true }
 engine-eip7702-core = { path = "../eip7702-core" }
 prometheus = { workspace = true }
 thiserror = { workspace = true }
+
+[dev-dependencies]
+reqwest = { workspace = true, features = ["json"] }

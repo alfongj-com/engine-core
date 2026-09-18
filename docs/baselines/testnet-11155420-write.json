@@ -1,0 +1,91 @@
+{
+  "scenario": "public EOA transfers and duplicate admission",
+  "chain_id": 11155420,
+  "network": "optimism-sepolia",
+  "transactions": 10,
+  "offered_rate_tps": 1,
+  "run_id": "0325a8d20a5f4d3ba5549a0abbc128b4",
+  "private_recovery_directory": "/Users/alfongj/.config/engine-core/public-runs/0325a8d20a5f4d3ba5549a0abbc128b4",
+  "outcome": "fail",
+  "source_commit": "6f24e89e7b5c93c65dae0efdc6d3b54649bdef57",
+  "binary_sha256": "6407a6c3b108d040da1c92a0405f71155d7de59841edb4ae8955fde3a2941cd0",
+  "error": "AssertionError: Fee reconciliation outside test allocation",
+  "guard_errors": [],
+  "elapsed_seconds": 14.95,
+  "budget_after": {
+    "version": 1,
+    "ceiling": 2000000,
+    "reserved": 372000,
+    "observed": 368051,
+    "startedAt": "2026-09-17T05:34:20.334Z",
+    "remainingCalls": 1628740,
+    "estimatedUsageUsd": 2.208306,
+    "conservativeReservedUsd": 2.232,
+    "ceilingUsd": 12
+  },
+  "rpc_methods": {
+    "11155420:eth_getBlockByNumber": {
+      "count": 1,
+      "httpErrors": 0,
+      "rpcErrors": 0,
+      "totalMs": 51.228541999997105
+    },
+    "11155420:eth_maxPriorityFeePerGas": {
+      "count": 1,
+      "httpErrors": 0,
+      "rpcErrors": 0,
+      "totalMs": 53.56749999994645
+    },
+    "11155420:eth_estimateGas": {
+      "count": 1,
+      "httpErrors": 0,
+      "rpcErrors": 0,
+      "totalMs": 203.2624160000123
+    },
+    "11155420:eth_getBalance": {
+      "count": 5,
+      "httpErrors": 0,
+      "rpcErrors": 0,
+      "totalMs": 701.025168000022
+    },
+    "11155420:eth_chainId": {
+      "count": 1,
+      "httpErrors": 0,
+      "rpcErrors": 0,
+      "totalMs": 135.39508399995975
+    },
+    "11155420:eth_getTransactionCount": {
+      "count": 14,
+      "httpErrors": 0,
+      "rpcErrors": 0,
+      "totalMs": 837.8515009999392
+    },
+    "11155420:eth_getCode": {
+      "count": 2,
+      "httpErrors": 0,
+      "rpcErrors": 0,
+      "totalMs": 192.42258300003596
+    },
+    "11155420:eth_sendRawTransaction": {
+      "count": 10,
+      "httpErrors": 0,
+      "rpcErrors": 0,
+      "totalMs": 1111.8480419999687
+    },
+    "11155420:eth_getTransactionReceipt": {
+      "count": 20,
+      "httpErrors": 0,
+      "rpcErrors": 0,
+      "totalMs": 1128.2672450000537
+    },
+    "11155420:eth_getTransactionByHash": {
+      "count": 10,
+      "httpErrors": 0,
+      "rpcErrors": 0,
+      "totalMs": 556.2825839999132
+    }
+  },
+  "rpc_calls": 65,
+  "estimated_rpc_cost_usd": 0.00039,
+  "reconciliation_lock_retained": "/Users/alfongj/.config/engine-core/public-evm-11155420.lock"
+}

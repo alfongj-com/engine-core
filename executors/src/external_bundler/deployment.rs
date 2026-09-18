@@ -21,11 +21,13 @@ const LOCK_TTL_SECONDS: u64 = 300;
 #[derive(Clone)]
 pub struct RedisDeploymentCache {
     connection_manager: twmq::redis::aio::ConnectionManager,
+    namespace: Option<String>,
 }
 
 #[derive(Clone)]
 pub struct RedisDeploymentLock {
     connection_manager: twmq::redis::aio::ConnectionManager,
+    namespace: Option<String>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -38,7 +40,13 @@ impl RedisDeploymentCache {
     pub async fn new(client: twmq::redis::Client) -> Result<Self, TwmqError> {
         Ok(Self {
             connection_manager: ConnectionManager::new(client).await?,
+            namespace: None,
         })
+    }
+
+    pub fn with_namespace(mut self, namespace: Option<String>) -> Self {
+        self.namespace = namespace;
+        self
     }
 
     pub fn conn(&self) -> &ConnectionManager {
@@ -46,7 +54,12 @@ impl RedisDeploymentCache {
     }
 
     fn cache_key(&self, chain_id: u64, account_address: &Address) -> String {
-        format!("{CACHE_PREFIX}:{chain_id}:{account_address}")
+        deployment_key(
+            self.namespace.as_deref(),
+            CACHE_PREFIX,
+            chain_id,
+            account_address,
+        )
     }
 }
 
@@ -67,7 +80,13 @@ impl RedisDeploymentLock {
     pub async fn new(client: twmq::redis::Client) -> Result<Self, TwmqError> {
         Ok(Self {
             connection_manager: ConnectionManager::new(client).await?,
+            namespace: None,
         })
+    }
+
+    pub fn with_namespace(mut self, namespace: Option<String>) -> Self {
+        self.namespace = namespace;
+        self
     }
 
     pub fn conn(&self) -> &ConnectionManager {
@@ -75,51 +94,75 @@ impl RedisDeploymentLock {
     }
 
     fn lock_key(&self, chain_id: u64, account_address: &Address) -> String {
-        format!("{LOCK_PREFIX}:{chain_id}:{account_address}")
+        deployment_key(
+            self.namespace.as_deref(),
+            LOCK_PREFIX,
+            chain_id,
+            account_address,
+        )
     }
 
     fn cache_key(&self, chain_id: u64, account_address: &Address) -> String {
-        format!("{CACHE_PREFIX}:{chain_id}:{account_address}")
+        deployment_key(
+            self.namespace.as_deref(),
+            CACHE_PREFIX,
+            chain_id,
+            account_address,
+        )
     }
 
-    /// Release a deployment lock using the provided pipeline
+    /// Schedule an atomic compare-and-delete. A stale worker cannot release a
+    /// newer worker's lock, even if its own lease expired during submission.
     pub fn release_lock_with_pipeline(
         &self,
         pipeline: &mut Pipeline,
         chain_id: u64,
         account_address: &Address,
+        lock_id: &str,
     ) {
-        let key = self.lock_key(chain_id, account_address);
-        pipeline.del(&key);
+        self.release_owned_with_pipeline(pipeline, chain_id, account_address, lock_id, None);
     }
 
-    /// Update deployment cache using the provided pipeline
-    pub fn update_cache_with_pipeline(
-        &self,
-        pipeline: &mut Pipeline,
-        chain_id: u64,
-        account_address: &Address,
-        is_deployed: bool,
-    ) {
-        let cache_key = self.cache_key(chain_id, account_address);
-        let value = if is_deployed {
-            "deployed"
-        } else {
-            "not_deployed"
-        };
-        pipeline.set_ex(&cache_key, value, 3600); // Cache for 1 hour
-    }
-
-    /// Atomically release lock and update cache using the provided pipeline
+    /// Cache updates are fenced by the same ownership check as lock release.
     pub fn release_lock_and_update_cache_with_pipeline(
         &self,
         pipeline: &mut Pipeline,
         chain_id: u64,
         account_address: &Address,
+        lock_id: &str,
         is_deployed: bool,
     ) {
-        self.release_lock_with_pipeline(pipeline, chain_id, account_address);
-        self.update_cache_with_pipeline(pipeline, chain_id, account_address, is_deployed);
+        self.release_owned_with_pipeline(
+            pipeline,
+            chain_id,
+            account_address,
+            lock_id,
+            Some(is_deployed),
+        );
+    }
+
+    fn release_owned_with_pipeline(
+        &self,
+        pipeline: &mut Pipeline,
+        chain_id: u64,
+        account_address: &Address,
+        lock_id: &str,
+        is_deployed: Option<bool>,
+    ) {
+        let cache_value = match is_deployed {
+            Some(true) => "deployed",
+            Some(false) => "not_deployed",
+            None => "",
+        };
+        pipeline
+            .cmd("EVAL")
+            .arg(RELEASE_OWNED_LOCK)
+            .arg(2)
+            .arg(self.lock_key(chain_id, account_address))
+            .arg(self.cache_key(chain_id, account_address))
+            .arg(lock_id)
+            .arg(cache_value)
+            .ignore();
     }
 }
 
@@ -182,7 +225,7 @@ impl DeploymentLock for RedisDeploymentLock {
                 })?;
 
         match result {
-            Some(_) => Ok(AcquireLockResult::Acquired),
+            Some(_) => Ok(AcquireLockResult::Acquired(lock_id)),
             None => {
                 // Lock already exists, get the lock_id
                 let existing_data: Option<String> =
@@ -202,25 +245,6 @@ impl DeploymentLock for RedisDeploymentLock {
         }
     }
 
-    async fn release_lock(
-        &self,
-        chain_id: u64,
-        account_address: &Address,
-    ) -> Result<bool, EngineError> {
-        let mut conn = self.conn().clone();
-
-        let key = self.lock_key(chain_id, account_address);
-
-        let deleted =
-            conn.del::<&str, usize>(&key)
-                .await
-                .map_err(|e| EngineError::InternalError {
-                    message: format!("Failed to delete lock for account {account_address}: {e}"),
-                })?;
-
-        Ok(deleted > 0)
-    }
-
     async fn release_lock_if_owner(
         &self,
         chain_id: u64,
@@ -236,7 +260,7 @@ impl DeploymentLock for RedisDeploymentLock {
             local v = redis.call('GET', KEYS[1])
             if not v then return 0 end
             local ok, data = pcall(cjson.decode, v)
-            if ok and data.lock_id == ARGV[1] then
+            if ok and type(data) == 'table' and data.lock_id == ARGV[1] then
                 return redis.call('DEL', KEYS[1])
             end
             return 0
@@ -255,3 +279,29 @@ impl DeploymentLock for RedisDeploymentLock {
         Ok(deleted > 0)
     }
 }
+
+fn deployment_key(
+    namespace: Option<&str>,
+    prefix: &str,
+    chain_id: u64,
+    address: &Address,
+) -> String {
+    match namespace {
+        Some(namespace) => format!("{namespace}:{prefix}:{chain_id}:{address}"),
+        None => format!("{prefix}:{chain_id}:{address}"),
+    }
+}
+
+const RELEASE_OWNED_LOCK: &str = r#"
+local value = redis.call('GET', KEYS[1])
+if not value then return 0 end
+local ok, data = pcall(cjson.decode, value)
+if not ok or type(data) ~= 'table' or data.lock_id ~= ARGV[1] then return 0 end
+redis.call('DEL', KEYS[1])
+if ARGV[2] ~= '' then redis.call('SETEX', KEYS[2], 3600, ARGV[2]) end
+return 1
+"#;
+
+#[cfg(test)]
+#[path = "deployment_tests.rs"]
+mod tests;

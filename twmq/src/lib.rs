@@ -4,6 +4,7 @@ pub mod job;
 pub mod multilane;
 pub mod queue;
 pub mod shutdown;
+mod transaction;
 
 use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
@@ -134,6 +135,9 @@ where
     H: DurableExecution,
 {
     pub redis: ConnectionManager,
+    #[cfg(test)]
+    pub(crate) poll_count: std::sync::atomic::AtomicUsize,
+    pub(crate) transaction_connections: transaction::TransactionConnections,
     pub handler: Arc<H>,
     pub options: QueueOptions,
     // concurrency: usize,
@@ -153,6 +157,9 @@ impl<H: DurableExecution> Queue<H> {
 
         let queue = Self {
             redis,
+            #[cfg(test)]
+            poll_count: std::sync::atomic::AtomicUsize::new(0),
+            transaction_connections: transaction::TransactionConnections::new(client),
             name: name.to_string(),
             // concurrency,
             options: options.unwrap_or_default(),
@@ -477,6 +484,7 @@ impl<H: DurableExecution> Queue<H> {
         let (shutdown_tx, mut shutdown_rx) = tokio::sync::oneshot::channel::<()>();
         // Local semaphore to limit concurrency per instance
         let semaphore = Arc::new(Semaphore::new(self.options.local_concurrency));
+        let completed = Arc::new(tokio::sync::Notify::new());
         let handler = self.handler.clone();
         let outer_queue_clone = self.clone();
         // Start worker
@@ -494,8 +502,14 @@ impl<H: DurableExecution> Queue<H> {
                         break;
                     }
 
-                    // Normal polling tick
-                    _ = interval.tick() => {
+                    // Completed permits refill backlog immediately; the timer still
+                    // discovers external work and performs lease/delay housekeeping.
+                    _ = async {
+                        tokio::select! {
+                            _ = interval.tick() => {},
+                            _ = completed.notified() => {},
+                        }
+                    } => {
                         let queue_clone = outer_queue_clone.clone();
                         let queue_name = queue_clone.name();
 
@@ -516,6 +530,7 @@ impl<H: DurableExecution> Queue<H> {
                                     let queue_clone = queue_clone.clone();
                                     let job_id = job.id().to_string();
                                     let handler_clone = handler_clone.clone();
+                                    let completed = completed.clone();
 
                                     tokio::spawn(
                                         async move {
@@ -533,6 +548,7 @@ impl<H: DurableExecution> Queue<H> {
 
                                         // Release permit when done
                                         drop(permit);
+                                        completed.notify_one();
                                     }.instrument(tracing::info_span!("twmq_worker", job_id, queue_name)));
                                 }
                             }
@@ -586,7 +602,10 @@ impl<H: DurableExecution> Queue<H> {
         self: &Arc<Self>,
         batch_size: usize,
     ) -> RedisResult<Vec<BorrowedJob<H::JobData>>> {
-        let pop_id = nanoid::nanoid!(4);
+        #[cfg(test)]
+        self.poll_count
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        let pop_id = nanoid::nanoid!();
 
         // Lua script that does:
         // 1. Clean up expired leases (with lease token validation)
@@ -666,7 +685,10 @@ impl<H: DurableExecution> Queue<H> {
                         -- Job succeeded, just remove from cancellation set
                         table.insert(completed_jobs, job_id)
                     else
-                        -- Job not successful, cancel it now
+                        -- Remove recovered/retried work before this batch borrows jobs.
+                        redis.call('LREM', pending_list_name, 0, job_id)
+                        redis.call('ZREM', delayed_zset_name, job_id)
+                        redis.call('LREM', failed_list_name, 0, job_id)
                         redis.call('LPUSH', failed_list_name, job_id)
                         -- Add cancellation timestamp
                         local job_meta_hash_name = 'twmq:' .. queue_id .. ':job:' .. job_id .. ':meta'
@@ -1245,59 +1267,19 @@ impl<H: DurableExecution> Queue<H> {
             }
         }
 
-        // 2. Now use this pipeline in unlimited retry loop with lease check
         let lease_key = self.lease_key_name(&job.job.id, &job.lease_token);
-
-        loop {
-            let mut conn = self.redis.clone();
-
-            // WATCH the lease key
-            redis::cmd("WATCH")
-                .arg(&lease_key)
-                .query_async::<()>(&mut conn)
-                .await?;
-
-            // Check if lease exists - if not, job was cancelled or timed out
-            let lease_exists: bool = conn.exists(&lease_key).await?;
-            if !lease_exists {
-                redis::cmd("UNWATCH").query_async::<()>(&mut conn).await?;
-                tracing::warn!(
-                    job_id = job.job.id,
-                    "Lease no longer exists, job was cancelled or timed out"
-                );
-                return Ok(());
-            }
-
-            // Clone the pipeline and make it atomic for this attempt
-            let mut atomic_pipeline = hook_pipeline.clone();
-            atomic_pipeline.atomic();
-
-            // Execute atomically with WATCH/MULTI/EXEC
-            match atomic_pipeline
-                .query_async::<Vec<redis::Value>>(&mut conn)
-                .await
-            {
-                Ok(_) => {
-                    // Success! Now run post-completion methods
-                    match &result {
-                        Ok(_) => self.post_success_completion().await?,
-                        Err(JobError::Nack { .. }) => self.post_nack_completion().await?,
-                        Err(JobError::Fail(_)) => self.post_fail_completion().await?,
-                    }
-
-                    tracing::debug!(job_id = job.job.id, "Job completion successful");
-                    return Ok(());
-                }
-                Err(_) => {
-                    // WATCH failed (lease key changed), retry
-                    tracing::debug!(
-                        job_id = job.job.id,
-                        "WATCH failed during completion, retrying"
-                    );
-                    continue;
-                }
+        if self
+            .transaction_connections
+            .commit_if_leased(&lease_key, &hook_pipeline)
+            .await?
+        {
+            match &result {
+                Ok(_) => self.post_success_completion().await?,
+                Err(JobError::Nack { .. }) => self.post_nack_completion().await?,
+                Err(JobError::Fail(_)) => self.post_fail_completion().await?,
             }
         }
+        Ok(())
     }
 
     // Special completion method for queue errors (deserialization failures) with lease token
@@ -1353,52 +1335,14 @@ impl<H: DurableExecution> Queue<H> {
             hook_pipeline.srem(self.dedupe_set_name(), &job.id);
         }
 
-        // 2. Use pipeline in unlimited retry loop with lease check
-        loop {
-            let mut conn = self.redis.clone();
-
-            // WATCH the lease key
-            redis::cmd("WATCH")
-                .arg(&lease_key)
-                .query_async::<()>(&mut conn)
-                .await?;
-
-            // Check if lease exists - if not, job was cancelled or timed out
-            let lease_exists: bool = conn.exists(&lease_key).await?;
-            if !lease_exists {
-                redis::cmd("UNWATCH").query_async::<()>(&mut conn).await?;
-                tracing::warn!(
-                    job_id = job.id,
-                    "Lease no longer exists, job was cancelled or timed out"
-                );
-                return Ok(());
-            }
-
-            // Clone the pipeline and make it atomic for this attempt
-            let mut atomic_pipeline = hook_pipeline.clone();
-            atomic_pipeline.atomic();
-
-            // Execute atomically with WATCH/MULTI/EXEC
-            match atomic_pipeline
-                .query_async::<Vec<redis::Value>>(&mut conn)
-                .await
-            {
-                Ok(_) => {
-                    // Success! Run post-completion
-                    self.post_fail_completion().await?;
-                    tracing::debug!(job_id = job.id, "Queue error job completion successful");
-                    return Ok(());
-                }
-                Err(_) => {
-                    // WATCH failed (lease key changed), retry
-                    tracing::debug!(
-                        job_id = job.id,
-                        "WATCH failed during queue error completion, retrying"
-                    );
-                    continue;
-                }
-            }
+        if self
+            .transaction_connections
+            .commit_if_leased(&lease_key, &hook_pipeline)
+            .await?
+        {
+            self.post_fail_completion().await?;
         }
+        Ok(())
     }
 
     pub async fn remove_from_dedupe_set(&self, job_id: &str) -> Result<(), TwmqError> {
@@ -1417,3 +1361,6 @@ impl<H: DurableExecution> Queue<H> {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod lease_tests;

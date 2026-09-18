@@ -1,0 +1,55 @@
+{
+  "generator": "manual ABI + PyCryptodome 3.23.0 Keccak; AccountCore EIP-191 bytes32 policy",
+  "cases": [
+    {
+      "version": "0.6",
+      "factory": "0x85e23b94e7F5E9cC1fF78BCe78cfb15B81f0DF00",
+      "implementation": "0xf22175c80c6e074C171811C59C6c0087e2a6a346",
+      "admin": "0x7e5f4552091a69125d5dfcb7b8c2659029395bdf",
+      "accountSalt": "0x",
+      "entrypoint": "0x1111111111111111111111111111111111111111",
+      "chainId": 42161,
+      "userop": {
+        "sender": "0x2e5cf4c1226c261f873307a32ed586872ed1d0c9",
+        "nonce": "0x7",
+        "callData": "0x1234",
+        "callGasLimit": "0x5208",
+        "verificationGasLimit": "0x186a0",
+        "preVerificationGas": "0xc350",
+        "maxFeePerGas": "0x3b9aca00",
+        "maxPriorityFeePerGas": "0x1",
+        "signature": "0x",
+        "initCode": "0x",
+        "paymasterAndData": "0x"
+      },
+      "userOpHash": "0xcdacb3ef69e7effbb27237325feb5dd7c87368b09b50a5ec4b48051b4dae0b45",
+      "contractDigest": "0x0ece1ab8768317e2c809619d9465fd21880e88bb84bfa521977b703c82eece92",
+      "otherChainDigest": "0xc2d78a3ff1ee259a90284208ff7e2f12a1e0c21eff816dd0d94eca826d69abe0",
+      "otherEntrypointDigest": "0x5d0615fc947435e36bf90816ac6e74a2089327d5b813e6c0a4a04a97c72751b9"
+    },
+    {
+      "version": "0.7",
+      "factory": "0x4bE0ddfebcA9A5A4a617dee4DeCe99E7c862dceb",
+      "implementation": "0x94eC38a5d2EDA5A543Ab4c08D998338D4082beb2",
+      "admin": "0x7e5f4552091a69125d5dfcb7b8c2659029395bdf",
+      "accountSalt": "0x",
+      "entrypoint": "0x1111111111111111111111111111111111111111",
+      "chainId": 42161,
+      "userop": {
+        "sender": "0xeae62eec20c302719330db3506c01dacaa6768a6",
+        "nonce": "0x7",
+        "callData": "0x1234",
+        "callGasLimit": "0x5208",
+        "verificationGasLimit": "0x186a0",
+        "preVerificationGas": "0xc350",
+        "maxFeePerGas": "0x3b9aca00",
+        "maxPriorityFeePerGas": "0x1",
+        "signature": "0x"
+      },
+      "userOpHash": "0x5c9f386177f6ec4de261e8459a968fd5e993b0e06aa6f982ba0d760e80f38f01",
+      "contractDigest": "0x06fb0fe7465b7cd06a483d39dcb732e3214db701667beae53ea83013e31bb949",
+      "otherChainDigest": "0x69139bf4260c6ec7d6b9938a0a721ad392671362f51c6e3ab616e17cccc2bbf0",
+      "otherEntrypointDigest": "0xb68fe12a5ba8861a96f8cfc1ede095f018af28f6acc9dd0a94538086a0975e9b"
+    }
+  ]
+}

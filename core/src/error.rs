@@ -306,11 +306,6 @@ pub enum EngineError {
         kind: SolanaRpcErrorKind,
     },
 
-    #[schema(title = "Engine Vault KMS Error")]
-    #[error("Error interaction with vault: {message}")]
-    #[serde(rename_all = "camelCase")]
-    VaultError { message: String },
-
     #[schema(title = "Engine IAW Service Error")]
     #[error("Error interaction with IAW service: {error}")]
     #[serde(rename_all = "camelCase")]
@@ -496,24 +491,6 @@ impl From<AwsSignerError> for EngineError {
     }
 }
 
-impl From<vault_sdk::error::VaultError> for EngineError {
-    fn from(err: vault_sdk::error::VaultError) -> Self {
-        let message = match &err {
-            vault_sdk::error::VaultError::EnclaveError {
-                code,
-                message,
-                details,
-            } => match details {
-                Some(details) => format!("Enclave error: {code} - {message} - details: {details}"),
-                None => format!("Enclave error: {code} - {message}"),
-            },
-            _ => err.to_string(),
-        };
-
-        EngineError::VaultError { message }
-    }
-}
-
 impl From<InvalidHeaderValue> for EngineError {
     fn from(err: InvalidHeaderValue) -> Self {
         EngineError::ValidationError {
@@ -571,45 +548,54 @@ pub trait SolanaRpcErrorToEngineError {
 }
 
 // Implementation for Solana client errors
-impl SolanaRpcErrorToEngineError for solana_client::client_error::ClientError {
+impl SolanaRpcErrorToEngineError for solana_rpc_client_api::client_error::Error {
     fn to_engine_solana_error(&self, chain_id: &str) -> EngineError {
-        use solana_client::client_error::ClientErrorKind;
+        use solana_rpc_client_api::client_error::ErrorKind as ClientErrorKind;
 
         let kind = match self.kind() {
             ClientErrorKind::Io(err) => SolanaRpcErrorKind::Io {
-                message: err.to_string(),
+                message: "RPC client error details withheld".into(),
                 kind: Some(format!("{:?}", err.kind())),
             },
             ClientErrorKind::Reqwest(err) => {
                 let status = err.status().map(|s| s.as_u16());
-                let url = err.url().map(|u| u.to_string());
+                let url = err.url().map(crate::rpc_clients::transport::diagnostic_url);
                 SolanaRpcErrorKind::Reqwest {
-                    message: err.to_string(),
+                    message: if err.is_timeout() {
+                        "RPC HTTP request timed out"
+                    } else if err.is_connect() {
+                        "RPC HTTP connection failed"
+                    } else {
+                        "RPC HTTP request failed"
+                    }
+                    .into(),
                     url,
                     status,
                 }
             }
             ClientErrorKind::RpcError(rpc_err) => {
-                use solana_client::rpc_request::{RpcError, RpcResponseErrorData};
+                use solana_rpc_client_api::request::{RpcError, RpcResponseErrorData};
                 match rpc_err {
                     RpcError::RpcResponseError {
                         code,
-                        message,
+                        message: _,
                         data,
                     } => {
                         let structured_data = match data {
                             RpcResponseErrorData::Empty => SolanaRpcResponseErrorData::Empty,
                             RpcResponseErrorData::SendTransactionPreflightFailure(result) => {
                                 SolanaRpcResponseErrorData::SendTransactionPreflightFailure {
-                                    err: result.err.as_ref().map(|e| format!("{:?}", e)),
-                                    logs: result.logs.clone(),
-                                    accounts: result.accounts.as_ref().map(|a| {
-                                        serde_json::to_value(a).unwrap_or(serde_json::Value::Null)
+                                    err: result.err.as_ref().map(|e| {
+                                        format!("{e:?}")
+                                            .split('(')
+                                            .next()
+                                            .unwrap_or("Unknown")
+                                            .to_string()
                                     }),
+                                    logs: None,
+                                    accounts: None,
                                     units_consumed: result.units_consumed,
-                                    return_data: result.return_data.as_ref().map(|d| {
-                                        serde_json::to_value(d).unwrap_or(serde_json::Value::Null)
-                                    }),
+                                    return_data: None,
                                 }
                             }
                             RpcResponseErrorData::NodeUnhealthy { num_slots_behind } => {
@@ -620,22 +606,22 @@ impl SolanaRpcErrorToEngineError for solana_client::client_error::ClientError {
                         };
                         SolanaRpcErrorKind::RpcError {
                             code: *code,
-                            message: message.clone(),
+                            message: "RPC provider error details withheld".into(),
                             data: structured_data,
                         }
                     }
-                    RpcError::RpcRequestError(msg) => SolanaRpcErrorKind::RpcError {
+                    RpcError::RpcRequestError(_) => SolanaRpcErrorKind::RpcError {
                         code: -32600,
-                        message: msg.clone(),
+                        message: "RPC provider error details withheld".into(),
                         data: SolanaRpcResponseErrorData::Empty,
                     },
-                    RpcError::ParseError(msg) => SolanaRpcErrorKind::SerdeJson {
-                        message: msg.clone(),
+                    RpcError::ParseError(_) => SolanaRpcErrorKind::SerdeJson {
+                        message: "RPC provider error details withheld".into(),
                         line: None,
                         column: None,
                     },
-                    RpcError::ForUser(msg) => SolanaRpcErrorKind::Custom {
-                        message: msg.clone(),
+                    RpcError::ForUser(_) => SolanaRpcErrorKind::Custom {
+                        message: "RPC provider error details withheld".into(),
                     },
                 }
             }
@@ -643,13 +629,13 @@ impl SolanaRpcErrorToEngineError for solana_client::client_error::ClientError {
                 let line = err.line();
                 let column = err.column();
                 SolanaRpcErrorKind::SerdeJson {
-                    message: err.to_string(),
+                    message: "RPC client error details withheld".into(),
                     line: Some(line),
                     column: Some(column),
                 }
             }
-            ClientErrorKind::SigningError(err) => SolanaRpcErrorKind::SigningError {
-                message: err.to_string(),
+            ClientErrorKind::SigningError(_) => SolanaRpcErrorKind::SigningError {
+                message: "RPC client error details withheld".into(),
             },
             ClientErrorKind::TransactionError(err) => {
                 // Extract structured transaction error information
@@ -660,22 +646,32 @@ impl SolanaRpcErrorToEngineError for solana_client::client_error::ClientError {
                     .to_string();
                 SolanaRpcErrorKind::TransactionError {
                     error_type,
-                    message: err.to_string(),
+                    message: "RPC client error details withheld".into(),
                 }
             }
-            ClientErrorKind::Custom(msg) => SolanaRpcErrorKind::Custom {
-                message: msg.clone(),
+            ClientErrorKind::Custom(_) => SolanaRpcErrorKind::Custom {
+                message: "RPC provider error details withheld".into(),
             },
             _ => SolanaRpcErrorKind::Unknown {
-                message: self.to_string(),
+                message: "RPC client error details withheld".into(),
             },
         };
 
         EngineError::SolanaRpcError {
             chain_id: chain_id.to_string(),
-            message: self.to_string(),
+            message: "RPC client error details withheld".into(),
             kind,
         }
+    }
+}
+
+/// Typed result decoding happens after the transport has parsed the JSON-RPC
+/// envelope. Its error can contain an entire provider response, including echoed
+/// endpoint credentials, so diagnostics must not format that raw error.
+pub fn rpc_error_diagnostic(err: &AlloyRpcError<TransportErrorKind>) -> String {
+    match err {
+        AlloyRpcError::DeserError { .. } => "Invalid RPC result; response details withheld".into(),
+        _ => err.to_string(),
     }
 }
 
@@ -696,9 +692,9 @@ fn to_engine_rpc_error_kind(err: &AlloyRpcError<TransportErrorKind>) -> RpcError
         AlloyRpcError::SerError(err) => RpcErrorKind::SerError {
             message: err.to_string(),
         },
-        AlloyRpcError::DeserError { err, text } => RpcErrorKind::DeserError {
-            message: err.to_string(),
-            text: text.to_string(),
+        AlloyRpcError::DeserError { .. } => RpcErrorKind::DeserError {
+            message: "Invalid RPC result".into(),
+            text: "RPC response body withheld".into(),
         },
         AlloyRpcError::Transport(err) => match err {
             TransportErrorKind::HttpError(err) => RpcErrorKind::TransportHttpError {
@@ -719,8 +715,8 @@ impl AlloyRpcErrorToEngineError for AlloyRpcError<TransportErrorKind> {
     fn to_engine_error(&self, chain: &impl Chain) -> EngineError {
         EngineError::RpcError {
             chain_id: chain.chain_id(),
-            rpc_url: chain.rpc_url().to_string(),
-            message: self.to_string(),
+            rpc_url: crate::rpc_clients::transport::diagnostic_url(&chain.rpc_url()),
+            message: rpc_error_diagnostic(self),
             kind: to_engine_rpc_error_kind(self),
         }
     }
@@ -728,16 +724,16 @@ impl AlloyRpcErrorToEngineError for AlloyRpcError<TransportErrorKind> {
     fn to_engine_bundler_error(&self, chain: &impl Chain) -> EngineError {
         EngineError::BundlerError {
             chain_id: chain.chain_id(),
-            rpc_url: chain.bundler_url().to_string(),
-            message: self.to_string(),
+            rpc_url: crate::rpc_clients::transport::diagnostic_url(&chain.bundler_url()),
+            message: rpc_error_diagnostic(self),
             kind: to_engine_rpc_error_kind(self),
         }
     }
     fn to_engine_paymaster_error(&self, chain: &impl Chain) -> EngineError {
         EngineError::PaymasterError {
             chain_id: chain.chain_id(),
-            rpc_url: chain.paymaster_url().to_string(),
-            message: self.to_string(),
+            rpc_url: crate::rpc_clients::transport::diagnostic_url(&chain.paymaster_url()),
+            message: rpc_error_diagnostic(self),
             kind: to_engine_rpc_error_kind(self),
         }
     }
@@ -786,9 +782,17 @@ impl ContractErrorToEngineError for alloy::contract::Error {
                 },
             ),
             alloy::contract::Error::TransportError(err) => (
-                format!("Transport error: {err}"),
+                format!("Transport error: {}", rpc_error_diagnostic(&err)),
                 ContractInteractionErrorKind::TransportError {
-                    message: err.to_string(),
+                    message: rpc_error_diagnostic(&err),
+                },
+            ),
+            alloy::contract::Error::PendingTransactionError(
+                alloy::providers::PendingTransactionError::TransportError(err),
+            ) => (
+                format!("Pending transaction error: {}", rpc_error_diagnostic(&err)),
+                ContractInteractionErrorKind::PendingTransactionError {
+                    message: rpc_error_diagnostic(&err),
                 },
             ),
             alloy::contract::Error::PendingTransactionError(err) => (
@@ -829,5 +833,97 @@ impl From<TwmqError> for EngineError {
         EngineError::InternalError {
             message: error.to_string(),
         }
+    }
+}
+
+#[cfg(test)]
+mod rpc_redaction_tests {
+    use super::*;
+    use solana_rpc_client_api::{
+        client_error::Error as ClientError,
+        request::{RpcError, RpcResponseErrorData},
+    };
+
+    #[test]
+    fn typed_result_deserialization_diagnostics_do_not_echo_provider_payload() {
+        let chain = crate::chain::ThirdwebChainConfig {
+            secret_key: "unused",
+            chain_id: 31337,
+            rpc_base_url: "invalid",
+            bundler_base_url: "invalid",
+            paymaster_base_url: "invalid",
+            client_id: "unused",
+        }
+        .to_chain()
+        .unwrap();
+        let raw_result = "\"provider-secret-echo\"";
+        let error = || {
+            AlloyRpcError::<TransportErrorKind>::deser_err(
+                serde_json::from_str::<u64>(raw_result).unwrap_err(),
+                raw_result,
+            )
+        };
+        // This models Alloy's typed result decoder after a valid RPC envelope.
+        assert!(format!("{:?}", error()).contains("provider-secret-echo"));
+        let public_errors = [
+            error().to_engine_error(&chain),
+            error().to_engine_bundler_error(&chain),
+            error().to_engine_paymaster_error(&chain),
+            ContractErrorToEngineError::to_engine_error(
+                alloy::contract::Error::TransportError(error()),
+                31337,
+                None,
+            ),
+            ContractErrorToEngineError::to_engine_error(
+                alloy::contract::Error::PendingTransactionError(
+                    alloy::providers::PendingTransactionError::TransportError(error()),
+                ),
+                31337,
+                None,
+            ),
+        ];
+        for public in public_errors {
+            assert!(!format!("{public:?} {public}").contains("provider-secret-echo"));
+            assert!(
+                !serde_json::to_string(&public)
+                    .unwrap()
+                    .contains("provider-secret-echo")
+            );
+        }
+        assert!(!rpc_error_diagnostic(&error()).contains("provider-secret-echo"));
+    }
+
+    #[test]
+    fn solana_error_conversion_keeps_codes_and_withholds_provider_text() {
+        let secret = "provider-key-should-never-appear";
+        let errors = [
+            RpcError::RpcResponseError {
+                code: -32002,
+                message: secret.into(),
+                data: RpcResponseErrorData::Empty,
+            },
+            RpcError::RpcRequestError(secret.into()),
+            RpcError::ParseError(secret.into()),
+            RpcError::ForUser(secret.into()),
+        ];
+        for error in errors {
+            let error = ClientError::from(error).to_engine_solana_error("solana:devnet");
+            assert!(!format!("{error:?} {error}").contains(secret));
+            assert!(!serde_json::to_string(&error).unwrap().contains(secret));
+        }
+        let error = ClientError::from(RpcError::RpcResponseError {
+            code: -32002,
+            message: secret.into(),
+            data: RpcResponseErrorData::Empty,
+        })
+        .to_engine_solana_error("solana:devnet");
+        let EngineError::SolanaRpcError {
+            kind: SolanaRpcErrorKind::RpcError { code, .. },
+            ..
+        } = error
+        else {
+            panic!("RPC error lost its classification")
+        };
+        assert_eq!(code, -32002);
     }
 }

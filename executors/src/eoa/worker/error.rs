@@ -151,13 +151,16 @@ pub enum SendContext {
     InitialBroadcast,
 }
 
-#[tracing::instrument(skip_all, fields(error = ?error, context = ?context))]
+#[tracing::instrument(skip_all, fields(context = ?context))]
 pub fn classify_send_error(
     error: &RpcError<TransportErrorKind>,
     context: SendContext,
 ) -> SendErrorClassification {
     if !error.is_error_resp() {
-        return SendErrorClassification::DeterministicFailure;
+        // A dropped connection, timeout, or malformed response does not tell us
+        // whether the node accepted the transaction. Preserve its nonce and signed
+        // bytes so recovery can reconcile/rebroadcast that exact transaction.
+        return SendErrorClassification::PossiblySent;
     }
 
     let error_str = error.to_string().to_lowercase();
@@ -264,8 +267,6 @@ pub fn is_retryable_preparation_error(error: &EoaExecutorWorkerError) -> bool {
         EoaExecutorWorkerError::TransactionSimulationFailed { .. } => false, // Deterministic
         EoaExecutorWorkerError::TransactionBuildFailed { .. } => false,      // Deterministic
         EoaExecutorWorkerError::SigningError { inner_error, .. } => match inner_error {
-            // if vault error, it's not retryable
-            EngineError::VaultError { .. } => false,
             // if iaw error, it's retryable only if it's a network error
             EngineError::IawError { error, .. } => matches!(error, IAWError::NetworkError { .. }),
             _ => false,
@@ -304,7 +305,10 @@ impl SubmissionResult {
                         // Transaction failed, should be retried
                         let engine_error = rpc_error.to_engine_error(chain);
                         let error = EoaExecutorWorkerError::TransactionSendError {
-                            message: format!("Transaction send failed: {rpc_error}"),
+                            message: format!(
+                                "Transaction send failed: {}",
+                                engine_core::error::rpc_error_diagnostic(rpc_error)
+                            ),
                             inner_error: engine_error,
                         };
                         SubmissionResult {
@@ -315,7 +319,10 @@ impl SubmissionResult {
                     SendErrorClassification::DeterministicFailureNonRetryable => SubmissionResult {
                         result: SubmissionResultType::Fail(
                             EoaExecutorWorkerError::TransactionSendError {
-                                message: format!("Transaction send failed: {rpc_error}"),
+                                message: format!(
+                                    "Transaction send failed: {}",
+                                    engine_core::error::rpc_error_diagnostic(rpc_error)
+                                ),
                                 inner_error: rpc_error.to_engine_error(chain),
                             },
                         ),
@@ -338,4 +345,25 @@ pub fn is_unsupported_eip1559_error(error: &RpcError<TransportErrorKind>) -> boo
     }
 
     false
+}
+
+#[cfg(test)]
+mod send_error_tests {
+    use super::*;
+
+    #[test]
+    fn ambiguous_transport_errors_preserve_the_submitted_transaction() {
+        let errors = [
+            TransportErrorKind::custom_str("connection closed after write"),
+            TransportErrorKind::http_error(502, "upstream unavailable".into()),
+        ];
+        for error in errors {
+            for context in [SendContext::InitialBroadcast, SendContext::Rebroadcast] {
+                assert!(matches!(
+                    classify_send_error(&error, context),
+                    SendErrorClassification::PossiblySent
+                ));
+            }
+        }
+    }
 }

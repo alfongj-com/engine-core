@@ -1,0 +1,20 @@
+{
+  "date_utc": "2026-09-15T07:14:25.454429+00:00",
+  "upstream_revision": "b6b7a0bbdc737b3a2b09611305b71b1bf6aba6e8",
+  "checkout": "upstream plus queue lease/transaction hardening; same baseline dependency lock",
+  "queue_source_sha256": "9a60664aea1311c0e6e15e311cd2f85296109dbed21f0186919a92d8140533da",
+  "cargo_lock_sha256": "a4b40ab3ef1f466e86a1492673d9edfbc0889b22f0aa030b9b07c72fd921cb76",
+  "harness_sha256": "1da2a7dee0e9373988b720dd6f8c7df1a41d36367310779c2e885dd0f78f0a5d",
+  "platform": "macOS-26.6.2-arm64-arm-64bit",
+  "cpu": "Apple M4",
+  "memory_bytes": 17179869184,
+  "logical_cpus": 10,
+  "rust": "rustc 1.98.1 (48a229cea 2026-09-01)\nbinary: rustc\ncommit-hash: 48a229ceaefd4985c50990b14116b6d856af0985\ncommit-date: 2026-09-01\nhost: aarch64-apple-darwin\nrelease: 1.98.1\nLLVM version: 22.1.8",
+  "cargo": "cargo 1.98.1 (797e8a9bc 2026-08-05)",
+  "redis_info": "# Server\nredis_version:7.4.2\nredis_git_sha1:00000000\nredis_git_dirty:1\nredis_build_id:81164a97f5f25d51\nredis_mode:standalone\nos:Darwin 25.6.0 arm64\narch_bits:64\nmonotonic_clock:POSIX clock_gettime\nmultiplexing_api:kqueue\natomicvar_api:c11-builtin\ngcc_version:4.2.1\nprocess_id:60409\nprocess_supervised:no\nrun_id:d633b84b7539f15e933ab2f71ee95aa5ff17bd01\ntcp_port:16379\nserver_time_usec:1789456465510687\nuptime_in_seconds:1245\nuptime_in_days:0\nhz:10\nconfigured_hz:10\nlru_clock:11071569\nexecutable:/tmp/redis-7.4.2/src/redis-server\nconfig_file:\nio_threads_active:0\nlistener0:name=tcp,bind=127.0.0.1,port=16379",
+  "redis_config": "maxmemory\n0\nappendfsync\neverysec\nsave\n\nappendonly\nno\nmaxmemory-policy\nnoeviction",
+  "profile": "release optimized default",
+  "warmup": "1000/s for 2s excluded",
+  "background_note": "Shared desktop; Chrome renderer active (~one core); no Rust builds during measurements",
+  "command": "BENCH_REDIS_URL=redis://127.0.0.1:16379/ BENCH_RATE=<rate> BENCH_SECONDS=5 BENCH_RETRY_EVERY=<0|10> cargo run --release -p twmq --example queue_baseline"
+}
