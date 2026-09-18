@@ -1,0 +1,2542 @@
+warning: very complex type used. Consider factoring parts into `type` definitions
+   --> twmq/src/multilane.rs:777:31
+    |
+777 |           let results_from_lua: (
+    |  _______________________________^
+778 | |             Vec<(String, String, String, String, String, String, String)>,
+779 | |             Vec<(String, String)>,
+780 | |             Vec<(String, String)>,
+781 | |         ) = script
+    | |_________^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#type_complexity
+    = note: `#[warn(clippy::type_complexity)]` on by default
+
+warning: this `impl` can be derived
+  --> twmq/src/queue.rs:19:1
+   |
+19 | / impl Default for IdempotencyMode {
+20 | |     fn default() -> Self {
+21 | |         Self::Permanent
+22 | |     }
+23 | | }
+   | |_^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#derivable_impls
+   = note: `#[warn(clippy::derivable_impls)]` on by default
+help: replace the manual implementation with a derive attribute and mark the default variant
+   |
+10 + #[derive(Default)]
+11 | pub enum IdempotencyMode {
+12 |     /// Jobs stay in the deduplication set until pruned (existing behavior)
+13 |     /// This prevents duplicate jobs from being added even after completion
+14 ~     #[default]
+15 ~     Permanent,
+   |
+
+warning: very complex type used. Consider factoring parts into `type` definitions
+   --> twmq/src/lib.rs:774:31
+    |
+774 |           let results_from_lua: (
+    |  _______________________________^
+775 | |             Vec<(String, String, String, String, String, String)>,
+776 | |             Vec<String>,
+777 | |             Vec<String>,
+778 | |         ) = script
+    | |_________^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#type_complexity
+
+warning: `twmq` (lib) generated 3 warnings (run `cargo clippy --fix --lib -p twmq -- ` to apply 1 suggestion)
+    Checking engine-core v0.1.0 (/Users/alfongj/Code/engine-core/core)
+warning: struct `TestJobPayload` is never constructed
+  --> twmq/tests/fixtures.rs:16:12
+   |
+16 | pub struct TestJobPayload {
+   |            ^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: struct `TestJobOutput` is never constructed
+  --> twmq/tests/fixtures.rs:22:12
+   |
+22 | pub struct TestJobOutput {
+   |            ^^^^^^^^^^^^^
+
+warning: static `TEST_JOB_PROCESSED_SUCCESSFULLY` is never used
+  --> twmq/tests/fixtures.rs:49:12
+   |
+49 | pub static TEST_JOB_PROCESSED_SUCCESSFULLY: AtomicBool = AtomicBool::new(false);
+   |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: struct `TestJobHandler` is never constructed
+  --> twmq/tests/fixtures.rs:51:12
+   |
+51 | pub struct TestJobHandler;
+   |            ^^^^^^^^^^^^^^
+
+warning: field assignment outside of initializer for an instance created with Default::default()
+   --> twmq/tests/nack.rs:185:5
+    |
+185 |     queue_options.local_concurrency = 1;
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+note: consider initializing the variable with `twmq::queue::QueueOptions { local_concurrency: 1, ..Default::default() }` and removing relevant reassignments
+   --> twmq/tests/nack.rs:184:5
+    |
+184 |     let mut queue_options = QueueOptions::default();
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#field_reassign_with_default
+    = note: `#[warn(clippy::field_reassign_with_default)]` on by default
+
+warning: field assignment outside of initializer for an instance created with Default::default()
+   --> twmq/tests/nack.rs:306:9
+    |
+306 |         queue_options.local_concurrency = 1;
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+note: consider initializing the variable with `twmq::queue::QueueOptions { local_concurrency: 1, ..Default::default() }` and removing relevant reassignments
+   --> twmq/tests/nack.rs:305:9
+    |
+305 |         let mut queue_options = QueueOptions::default();
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#field_reassign_with_default
+
+warning: unused variable: `race_detected`
+   --> twmq/tests/prune_race_condition.rs:302:9
+    |
+302 |     let race_detected = RACE_DETECTED.load(Ordering::SeqCst);
+    |         ^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_race_detected`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: `twmq` (test "prune_race_random_ids") generated 4 warnings
+warning: `twmq` (test "lease_expiry") generated 4 warnings (4 duplicates)
+warning: `twmq` (test "nack") generated 6 warnings (4 duplicates)
+warning: `twmq` (lib test) generated 3 warnings (3 duplicates)
+warning: `twmq` (test "prune_race_condition") generated 5 warnings (4 duplicates) (run `cargo clippy --fix --test "prune_race_condition" -p twmq -- ` to apply 1 suggestion)
+warning: `twmq` (test "delay") generated 4 warnings (4 duplicates)
+warning: manual implementation of `.is_multiple_of()`
+  --> twmq/examples/queue_baseline.rs:77:37
+   |
+77 |         if self.retry_every != 0 && data.sequence % self.retry_every == 0 && attempt == 0 {
+   |                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: replace with: `data.sequence.is_multiple_of(self.retry_every)`
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#manual_is_multiple_of
+   = note: `#[warn(clippy::manual_is_multiple_of)]` on by default
+
+warning: unnecessary use of `clone` to create a slice from a reference
+  --> solana-core/src/transaction_wire_tests.rs:15:13
+   |
+15 |             &[instruction.clone()],
+   |             ^^^^^^^^^^^^^^^^^^^^^^ help: try: `std::slice::from_ref(&instruction)`
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#cloned_ref_to_slice_refs
+   = note: `#[warn(clippy::cloned_ref_to_slice_refs)]` on by default
+
+warning: `twmq` (example "queue_baseline") generated 1 warning (run `cargo clippy --fix --example "queue_baseline" -p twmq -- ` to apply 1 suggestion)
+warning: `twmq` (test "basic_hook") generated 3 warnings (3 duplicates)
+warning: `engine-solana-core` (lib test) generated 1 warning (run `cargo clippy --fix --lib -p engine-solana-core --tests -- ` to apply 1 suggestion)
+warning: the `Err`-variant returned from this function is very large
+   --> core/src/chain.rs:33:36
+    |
+ 33 |       pub fn to_header_map(&self) -> Result<HeaderMap, EngineError> {
+    |                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+   ::: core/src/error.rs:300:5
+    |
+300 | /     SolanaRpcError {
+301 | |         /// Solana chain identifier
+302 | |         chain_id: String,
+303 | |         /// Human-readable error message
+...   |
+306 | |         kind: SolanaRpcErrorKind,
+307 | |     },
+    | |_____- the largest variant contains at least 208 bytes
+    |
+    = help: try reducing the size of `error::EngineError`, for example by boxing large elements or replacing it with `Box<error::EngineError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+    = note: `#[warn(clippy::result_large_err)]` on by default
+
+warning: the `Err`-variant returned from this function is very large
+   --> core/src/chain.rs:66:31
+    |
+ 66 |       pub fn validate(&self) -> Result<(Url, HeaderMap), EngineError> {
+    |                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+   ::: core/src/error.rs:300:5
+    |
+300 | /     SolanaRpcError {
+301 | |         /// Solana chain identifier
+302 | |         chain_id: String,
+303 | |         /// Human-readable error message
+...   |
+306 | |         kind: SolanaRpcErrorKind,
+307 | |     },
+    | |_____- the largest variant contains at least 208 bytes
+    |
+    = help: try reducing the size of `error::EngineError`, for example by boxing large elements or replacing it with `Box<error::EngineError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> core/src/chain.rs:214:31
+    |
+214 |       pub fn to_chain(&self) -> Result<ThirdwebChain, EngineError> {
+    |                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+   ::: core/src/error.rs:300:5
+    |
+300 | /     SolanaRpcError {
+301 | |         /// Solana chain identifier
+302 | |         chain_id: String,
+303 | |         /// Human-readable error message
+...   |
+306 | |         kind: SolanaRpcErrorKind,
+307 | |     },
+    | |_____- the largest variant contains at least 208 bytes
+    |
+    = help: try reducing the size of `error::EngineError`, for example by boxing large elements or replacing it with `Box<error::EngineError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> core/src/chain.rs:225:10
+    |
+225 |       ) -> Result<ThirdwebChain, EngineError> {
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+   ::: core/src/error.rs:300:5
+    |
+300 | /     SolanaRpcError {
+301 | |         /// Solana chain identifier
+302 | |         chain_id: String,
+303 | |         /// Human-readable error message
+...   |
+306 | |         kind: SolanaRpcErrorKind,
+307 | |     },
+    | |_____- the largest variant contains at least 208 bytes
+    |
+    = help: try reducing the size of `error::EngineError`, for example by boxing large elements or replacing it with `Box<error::EngineError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> core/src/chain.rs:378:43
+    |
+378 |       fn get_chain(&self, chain_id: u64) -> Result<impl Chain + Clone, EngineError>;
+    |                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+   ::: core/src/error.rs:300:5
+    |
+300 | /     SolanaRpcError {
+301 | |         /// Solana chain identifier
+302 | |         chain_id: String,
+303 | |         /// Human-readable error message
+...   |
+306 | |         kind: SolanaRpcErrorKind,
+307 | |     },
+    | |_____- the largest variant contains at least 208 bytes
+    |
+    = help: try reducing the size of `error::EngineError`, for example by boxing large elements or replacing it with `Box<error::EngineError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> core/src/credentials.rs:26:29
+    |
+ 26 |       pub fn environment() -> Result<Self, EngineError> {
+    |                               ^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+   ::: core/src/error.rs:300:5
+    |
+300 | /     SolanaRpcError {
+301 | |         /// Solana chain identifier
+302 | |         chain_id: String,
+303 | |         /// Human-readable error message
+...   |
+306 | |         kind: SolanaRpcErrorKind,
+307 | |     },
+    | |_____- the largest variant contains at least 208 bytes
+    |
+    = help: try reducing the size of `error::EngineError`, for example by boxing large elements or replacing it with `Box<error::EngineError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> core/src/credentials.rs:33:35
+    |
+ 33 |       pub fn local_signer(&self) -> Result<PrivateKeySigner, EngineError> {
+    |                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+   ::: core/src/error.rs:300:5
+    |
+300 | /     SolanaRpcError {
+301 | |         /// Solana chain identifier
+302 | |         chain_id: String,
+303 | |         /// Human-readable error message
+...   |
+306 | |         kind: SolanaRpcErrorKind,
+307 | |     },
+    | |_____- the largest variant contains at least 208 bytes
+    |
+    = help: try reducing the size of `error::EngineError`, for example by boxing large elements or replacing it with `Box<error::EngineError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> core/src/credentials.rs:48:36
+    |
+ 48 |       pub fn solana_environment() -> Result<Self, EngineError> {
+    |                                      ^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+   ::: core/src/error.rs:300:5
+    |
+300 | /     SolanaRpcError {
+301 | |         /// Solana chain identifier
+302 | |         chain_id: String,
+303 | |         /// Human-readable error message
+...   |
+306 | |         kind: SolanaRpcErrorKind,
+307 | |     },
+    | |_____- the largest variant contains at least 208 bytes
+    |
+    = help: try reducing the size of `error::EngineError`, for example by boxing large elements or replacing it with `Box<error::EngineError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> core/src/credentials.rs:55:37
+    |
+ 55 |       pub fn solana_keypair(&self) -> Result<solana_sdk::signature::Keypair, EngineError> {
+    |                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+   ::: core/src/error.rs:300:5
+    |
+300 | /     SolanaRpcError {
+301 | |         /// Solana chain identifier
+302 | |         chain_id: String,
+303 | |         /// Human-readable error message
+...   |
+306 | |         kind: SolanaRpcErrorKind,
+307 | |     },
+    | |_____- the largest variant contains at least 208 bytes
+    |
+    = help: try reducing the size of `error::EngineError`, for example by boxing large elements or replacing it with `Box<error::EngineError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> core/src/credentials.rs:169:42
+    |
+169 |       async fn create_kms_client(&self) -> Result<aws_sdk_kms::Client, EngineError> {
+    |                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+   ::: core/src/error.rs:300:5
+    |
+300 | /     SolanaRpcError {
+301 | |         /// Solana chain identifier
+302 | |         chain_id: String,
+303 | |         /// Human-readable error message
+...   |
+306 | |         kind: SolanaRpcErrorKind,
+307 | |     },
+    | |_____- the largest variant contains at least 208 bytes
+    |
+    = help: try reducing the size of `error::EngineError`, for example by boxing large elements or replacing it with `Box<error::EngineError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> core/src/credentials.rs:179:46
+    |
+179 |       async fn get_cached_kms_client(&self) -> Result<aws_sdk_kms::Client, EngineError> {
+    |                                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+   ::: core/src/error.rs:300:5
+    |
+300 | /     SolanaRpcError {
+301 | |         /// Solana chain identifier
+302 | |         chain_id: String,
+303 | |         /// Human-readable error message
+...   |
+306 | |         kind: SolanaRpcErrorKind,
+307 | |     },
+    | |_____- the largest variant contains at least 208 bytes
+    |
+    = help: try reducing the size of `error::EngineError`, for example by boxing large elements or replacing it with `Box<error::EngineError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> core/src/credentials.rs:201:66
+    |
+201 |       pub async fn get_signer(&self, chain_id: Option<ChainId>) -> Result<AwsSigner, EngineError> {
+    |                                                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+   ::: core/src/error.rs:300:5
+    |
+300 | /     SolanaRpcError {
+301 | |         /// Solana chain identifier
+302 | |         chain_id: String,
+303 | |         /// Human-readable error message
+...   |
+306 | |         kind: SolanaRpcErrorKind,
+307 | |     },
+    | |_____- the largest variant contains at least 208 bytes
+    |
+    = help: try reducing the size of `error::EngineError`, for example by boxing large elements or replacing it with `Box<error::EngineError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> core/src/credentials.rs:208:28
+    |
+208 |   fn environment_signer() -> Result<PrivateKeySigner, EngineError> {
+    |                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+   ::: core/src/error.rs:300:5
+    |
+300 | /     SolanaRpcError {
+301 | |         /// Solana chain identifier
+302 | |         chain_id: String,
+303 | |         /// Human-readable error message
+...   |
+306 | |         kind: SolanaRpcErrorKind,
+307 | |     },
+    | |_____- the largest variant contains at least 208 bytes
+    |
+    = help: try reducing the size of `error::EngineError`, for example by boxing large elements or replacing it with `Box<error::EngineError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> core/src/credentials.rs:217:72
+    |
+217 |   pub fn validate_signer_address(actual: Address, requested: Address) -> Result<(), EngineError> {
+    |                                                                          ^^^^^^^^^^^^^^^^^^^^^^^
+    |
+   ::: core/src/error.rs:300:5
+    |
+300 | /     SolanaRpcError {
+301 | |         /// Solana chain identifier
+302 | |         chain_id: String,
+303 | |         /// Human-readable error message
+...   |
+306 | |         kind: SolanaRpcErrorKind,
+307 | |     },
+    | |_____- the largest variant contains at least 208 bytes
+    |
+    = help: try reducing the size of `error::EngineError`, for example by boxing large elements or replacing it with `Box<error::EngineError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> core/src/credentials.rs:258:36
+    |
+258 |   fn environment_solana_keypair() -> Result<solana_sdk::signature::Keypair, EngineError> {
+    |                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+   ::: core/src/error.rs:300:5
+    |
+300 | /     SolanaRpcError {
+301 | |         /// Solana chain identifier
+302 | |         chain_id: String,
+303 | |         /// Human-readable error message
+...   |
+306 | |         kind: SolanaRpcErrorKind,
+307 | |     },
+    | |_____- the largest variant contains at least 208 bytes
+    |
+    = help: try reducing the size of `error::EngineError`, for example by boxing large elements or replacing it with `Box<error::EngineError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> core/src/execution_options/aa.rs:91:36
+    |
+ 91 |       pub fn get_salt_data(&self) -> Result<Bytes, EngineError> {
+    |                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+   ::: core/src/error.rs:300:5
+    |
+300 | /     SolanaRpcError {
+301 | |         /// Solana chain identifier
+302 | |         chain_id: String,
+303 | |         /// Human-readable error message
+...   |
+306 | |         kind: SolanaRpcErrorKind,
+307 | |     },
+    | |_____- the largest variant contains at least 208 bytes
+    |
+    = help: try reducing the size of `error::EngineError`, for example by boxing large elements or replacing it with `Box<error::EngineError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: this `if` statement can be collapsed
+  --> core/src/execution_options/mod.rs:83:5
+   |
+83 | /     if let Some(meta) = metadata {
+84 | |         if meta.len() > MAX_USER_METADATA_SIZE {
+85 | |             return Err(format!(
+86 | |                 "User metadata exceeds maximum size of {} bytes (provided: {} bytes)",
+...  |
+91 | |     }
+   | |_____^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#collapsible_if
+   = note: `#[warn(clippy::collapsible_if)]` on by default
+help: collapse nested if block
+   |
+83 ~     if let Some(meta) = metadata
+84 ~         && meta.len() > MAX_USER_METADATA_SIZE {
+85 |             return Err(format!(
+...
+89 |             ));
+90 ~         }
+   |
+
+warning: this `if` statement can be collapsed
+   --> core/src/rpc_clients/transport.rs:114:17
+    |
+114 | /                 if let Some((scheme, token)) = value.split_once(char::is_whitespace) {
+115 | |                     if scheme.eq_ignore_ascii_case("bearer") {
+116 | |                         secrets.push(token.trim().to_owned());
+117 | |                     }
+118 | |                 }
+    | |_________________^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#collapsible_if
+help: collapse nested if block
+    |
+114 ~                 if let Some((scheme, token)) = value.split_once(char::is_whitespace)
+115 ~                     && scheme.eq_ignore_ascii_case("bearer") {
+116 |                         secrets.push(token.trim().to_owned());
+117 ~                     }
+    |
+
+warning: the `Err`-variant returned from this function is very large
+   --> core/src/signer.rs:108:36
+    |
+108 |       pub fn get_salt_data(&self) -> Result<Bytes, EngineError> {
+    |                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+   ::: core/src/error.rs:300:5
+    |
+300 | /     SolanaRpcError {
+301 | |         /// Solana chain identifier
+302 | |         chain_id: String,
+303 | |         /// Human-readable error message
+...   |
+306 | |         kind: SolanaRpcErrorKind,
+307 | |     },
+    | |_____- the largest variant contains at least 208 bytes
+    |
+    = help: try reducing the size of `error::EngineError`, for example by boxing large elements or replacing it with `Box<error::EngineError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> core/src/signer.rs:566:10
+    |
+566 |       ) -> Result<solana_sdk::transaction::VersionedTransaction, EngineError> {
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+   ::: core/src/error.rs:300:5
+    |
+300 | /     SolanaRpcError {
+301 | |         /// Solana chain identifier
+302 | |         chain_id: String,
+303 | |         /// Human-readable error message
+...   |
+306 | |         kind: SolanaRpcErrorKind,
+307 | |     },
+    | |_____- the largest variant contains at least 208 bytes
+    |
+    = help: try reducing the size of `error::EngineError`, for example by boxing large elements or replacing it with `Box<error::EngineError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: this `if` statement can be collapsed
+   --> core/src/transaction.rs:96:5
+    |
+ 96 | /     if let (Some(max_fee), Some(priority_fee)) =
+ 97 | |         (fields.max_fee_per_gas, fields.max_priority_fee_per_gas)
+ 98 | |     {
+ 99 | |         if priority_fee > max_fee {
+...   |
+104 | |     }
+    | |_____^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#collapsible_if
+help: collapse nested if block
+    |
+ 97 ~         (fields.max_fee_per_gas, fields.max_priority_fee_per_gas)
+ 98 ~         && priority_fee > max_fee {
+ 99 |             return Err(D::Error::custom(
+100 |                 "maxPriorityFeePerGas must not exceed maxFeePerGas",
+101 |             ));
+102 ~         }
+    |
+
+warning: the `Err`-variant returned from this function is very large
+   --> core/src/userop.rs:31:10
+    |
+ 31 |       ) -> Result<Self, EngineError> {
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+   ::: core/src/error.rs:300:5
+    |
+300 | /     SolanaRpcError {
+301 | |         /// Solana chain identifier
+302 | |         chain_id: String,
+303 | |         /// Human-readable error message
+...   |
+306 | |         kind: SolanaRpcErrorKind,
+307 | |     },
+    | |_____- the largest variant contains at least 208 bytes
+    |
+    = help: try reducing the size of `error::EngineError`, for example by boxing large elements or replacing it with `Box<error::EngineError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> core/src/userop.rs:59:39
+    |
+ 59 |       fn local_signing_digest(&self) -> Result<B256, EngineError> {
+    |                                         ^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+   ::: core/src/error.rs:300:5
+    |
+300 | /     SolanaRpcError {
+301 | |         /// Solana chain identifier
+302 | |         chain_id: String,
+303 | |         /// Human-readable error message
+...   |
+306 | |         kind: SolanaRpcErrorKind,
+307 | |     },
+    | |_____- the largest variant contains at least 208 bytes
+    |
+    = help: try reducing the size of `error::EngineError`, for example by boxing large elements or replacing it with `Box<error::EngineError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> core/src/userop.rs:82:61
+    |
+ 82 |       pub async fn sign(&self, params: UserOpSignerParams) -> Result<Bytes, EngineError> {
+    |                                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+   ::: core/src/error.rs:300:5
+    |
+300 | /     SolanaRpcError {
+301 | |         /// Solana chain identifier
+302 | |         chain_id: String,
+303 | |         /// Human-readable error message
+...   |
+306 | |         kind: SolanaRpcErrorKind,
+307 | |     },
+    | |_____- the largest variant contains at least 208 bytes
+    |
+    = help: try reducing the size of `error::EngineError`, for example by boxing large elements or replacing it with `Box<error::EngineError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: `engine-core` (lib test) generated 24 warnings (19 duplicates)
+warning: `engine-core` (lib) generated 24 warnings (5 duplicates) (run `cargo clippy --fix --lib -p engine-core -- ` to apply 3 suggestions)
+    Checking engine-eip7702-core v0.1.0 (/Users/alfongj/Code/engine-core/eip7702-core)
+    Checking engine-aa-core v0.1.0 (/Users/alfongj/Code/engine-core/aa-core)
+    Checking engine-integration-tests v0.1.0 (/Users/alfongj/Code/engine-core/integration-tests)
+warning: unnecessary use of `clone` to create a slice from a reference
+  --> core/tests/solana_signing.rs:81:17
+   |
+81 |                 &[instruction.clone()],
+   |                 ^^^^^^^^^^^^^^^^^^^^^^ help: try: `std::slice::from_ref(&instruction)`
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#cloned_ref_to_slice_refs
+   = note: `#[warn(clippy::cloned_ref_to_slice_refs)]` on by default
+
+warning: unnecessary use of `clone` to create a slice from a reference
+  --> core/tests/solana_signing.rs:86:59
+   |
+86 |                 v0::Message::try_compile(&payer.pubkey(), &[instruction.clone()], &[], blockhash)
+   |                                                           ^^^^^^^^^^^^^^^^^^^^^^ help: try: `std::slice::from_ref(&instruction)`
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#cloned_ref_to_slice_refs
+
+warning: `engine-core` (test "solana_signing") generated 2 warnings (run `cargo clippy --fix --test "solana_signing" -p engine-core -- ` to apply 2 suggestions)
+warning: the `Err`-variant returned from this function is very large
+  --> eip7702-core/src/delegated_account.rs:34:10
+   |
+34 |     ) -> Result<bool, EngineError> {
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 208 bytes
+   |
+   = help: try reducing the size of `engine_core::error::EngineError`, for example by boxing large elements or replacing it with `Box<engine_core::error::EngineError>`
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+   = note: `#[warn(clippy::result_large_err)]` on by default
+
+warning: the `Err`-variant returned from this function is very large
+  --> eip7702-core/src/delegated_account.rs:92:38
+   |
+92 |     pub async fn get_nonce(&self) -> Result<u64, EngineError> {
+   |                                      ^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 208 bytes
+   |
+   = help: try reducing the size of `engine_core::error::EngineError`, for example by boxing large elements or replacing it with `Box<engine_core::error::EngineError>`
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> eip7702-core/src/delegated_account.rs:111:10
+    |
+111 |     ) -> Result<alloy::eips::eip7702::SignedAuthorization, EngineError> {
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 208 bytes
+    |
+    = help: try reducing the size of `engine_core::error::EngineError`, for example by boxing large elements or replacing it with `Box<engine_core::error::EngineError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> eip7702-core/src/transaction.rs:205:10
+    |
+205 |     ) -> Result<Self, EngineError> {
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 208 bytes
+    |
+    = help: try reducing the size of `engine_core::error::EngineError`, for example by boxing large elements or replacing it with `Box<engine_core::error::EngineError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> eip7702-core/src/transaction.rs:227:10
+    |
+227 |     ) -> Result<(Value, String), EngineError> {
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 208 bytes
+    |
+    = help: try reducing the size of `engine_core::error::EngineError`, for example by boxing large elements or replacing it with `Box<engine_core::error::EngineError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> eip7702-core/src/transaction.rs:254:10
+    |
+254 |     ) -> Result<String, EngineError> {
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 208 bytes
+    |
+    = help: try reducing the size of `engine_core::error::EngineError`, for example by boxing large elements or replacing it with `Box<engine_core::error::EngineError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> eip7702-core/src/transaction.rs:284:10
+    |
+284 |     ) -> Result<String, EngineError> {
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 208 bytes
+    |
+    = help: try reducing the size of `engine_core::error::EngineError`, for example by boxing large elements or replacing it with `Box<engine_core::error::EngineError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> eip7702-core/src/transaction.rs:295:10
+    |
+295 |     ) -> Result<String, EngineError> {
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 208 bytes
+    |
+    = help: try reducing the size of `engine_core::error::EngineError`, for example by boxing large elements or replacing it with `Box<engine_core::error::EngineError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+  --> aa-core/src/signer.rs:72:33
+   |
+72 |     pub async fn build(self) -> Result<SmartAccountSigner<C>, EngineError> {
+   |                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 208 bytes
+   |
+   = help: try reducing the size of `engine_core::error::EngineError`, for example by boxing large elements or replacing it with `Box<engine_core::error::EngineError>`
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+   = note: `#[warn(clippy::result_large_err)]` on by default
+
+warning: the `Err`-variant returned from this function is very large
+   --> aa-core/src/signer.rs:117:73
+    |
+117 |     async fn check_712_factory_support(&self, impl_address: Address) -> Result<bool, EngineError> {
+    |                                                                         ^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 208 bytes
+    |
+    = help: try reducing the size of `engine_core::error::EngineError`, for example by boxing large elements or replacing it with `Box<engine_core::error::EngineError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> aa-core/src/signer.rs:149:10
+    |
+149 |     ) -> Result<String, EngineError> {
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 208 bytes
+    |
+    = help: try reducing the size of `engine_core::error::EngineError`, for example by boxing large elements or replacing it with `Box<engine_core::error::EngineError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> aa-core/src/signer.rs:174:10
+    |
+174 |     ) -> Result<String, EngineError> {
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 208 bytes
+    |
+    = help: try reducing the size of `engine_core::error::EngineError`, for example by boxing large elements or replacing it with `Box<engine_core::error::EngineError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> aa-core/src/signer.rs:222:58
+    |
+222 |     async fn sign_712_wrapped_hash(&self, hash: B256) -> Result<String, EngineError> {
+    |                                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 208 bytes
+    |
+    = help: try reducing the size of `engine_core::error::EngineError`, for example by boxing large elements or replacing it with `Box<engine_core::error::EngineError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> aa-core/src/signer.rs:251:72
+    |
+251 |     pub async fn verify_erc1271(&self, hash: B256, signature: &str) -> Result<bool, EngineError> {
+    |                                                                        ^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 208 bytes
+    |
+    = help: try reducing the size of `engine_core::error::EngineError`, for example by boxing large elements or replacing it with `Box<engine_core::error::EngineError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> aa-core/src/signer.rs:276:66
+    |
+276 |     async fn create_erc6492_signature(&self, signature: &str) -> Result<String, EngineError> {
+    |                                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 208 bytes
+    |
+    = help: try reducing the size of `engine_core::error::EngineError`, for example by boxing large elements or replacing it with `Box<engine_core::error::EngineError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> aa-core/src/signer.rs:312:10
+    |
+312 |     ) -> Result<String, EngineError> {
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 208 bytes
+    |
+    = help: try reducing the size of `engine_core::error::EngineError`, for example by boxing large elements or replacing it with `Box<engine_core::error::EngineError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> aa-core/src/signer.rs:338:68
+    |
+338 |     pub async fn sign_typed_data(&self, typed_data: &TypedData) -> Result<String, EngineError> {
+    |                                                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 208 bytes
+    |
+    = help: try reducing the size of `engine_core::error::EngineError`, for example by boxing large elements or replacing it with `Box<engine_core::error::EngineError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+  --> aa-core/src/smart_account/mod.rs:77:55
+   |
+77 |     pub async fn to_determined_smart_account(self) -> Result<DeterminedSmartAccount, EngineError> {
+   |                                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 208 bytes
+   |
+   = help: try reducing the size of `engine_core::error::EngineError`, for example by boxing large elements or replacing it with `Box<engine_core::error::EngineError>`
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+  --> aa-core/src/userop/builder.rs:47:33
+   |
+47 |     pub async fn build(self) -> Result<VersionedUserOp, EngineError> {
+   |                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 208 bytes
+   |
+   = help: try reducing the size of `engine_core::error::EngineError`, for example by boxing large elements or replacing it with `Box<engine_core::error::EngineError>`
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+  --> aa-core/src/userop/builder.rs:99:6
+   |
+99 | ) -> Result<(), EngineError> {
+   |      ^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 208 bytes
+   |
+   = help: try reducing the size of `engine_core::error::EngineError`, for example by boxing large elements or replacing it with `Box<engine_core::error::EngineError>`
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> aa-core/src/userop/builder.rs:233:33
+    |
+233 |     async fn build(mut self) -> Result<VersionedUserOp, EngineError> {
+    |                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 208 bytes
+    |
+    = help: try reducing the size of `engine_core::error::EngineError`, for example by boxing large elements or replacing it with `Box<engine_core::error::EngineError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> aa-core/src/userop/builder.rs:346:33
+    |
+346 |     async fn build(mut self) -> Result<VersionedUserOp, EngineError> {
+    |                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 208 bytes
+    |
+    = help: try reducing the size of `engine_core::error::EngineError`, for example by boxing large elements or replacing it with `Box<engine_core::error::EngineError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+  --> aa-core/src/userop/deployment.rs:90:10
+   |
+90 |     ) -> Result<DeploymentStatus, EngineError> {
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 208 bytes
+   |
+   = help: try reducing the size of `engine_core::error::EngineError`, for example by boxing large elements or replacing it with `Box<engine_core::error::EngineError>`
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: `engine-eip7702-core` (lib) generated 8 warnings
+warning: `engine-aa-core` (lib) generated 15 warnings
+    Checking engine-executors v0.1.0 (/Users/alfongj/Code/engine-core/executors)
+warning: items after a test module
+   --> aa-core/src/userop/builder.rs:121:1
+    |
+121 | mod signing_profile_tests {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+194 | struct UserOpBuilderV0_6<'a, C: Chain> {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+200 | impl<'a, C: Chain> UserOpBuilderV0_6<'a, C> {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+304 | struct UserOpBuilderV0_7<'a, C: Chain> {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+310 | impl<'a, C: Chain> UserOpBuilderV0_7<'a, C> {
+    | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#items_after_test_module
+    = note: `#[warn(clippy::items_after_test_module)]` on by default
+    = help: move the items to before the test module was defined
+
+warning: `engine-eip7702-core` (lib test) generated 8 warnings (8 duplicates)
+warning: `engine-aa-core` (lib test) generated 16 warnings (15 duplicates) (run `cargo clippy --fix --lib -p engine-aa-core --tests -- ` to apply 1 suggestion)
+warning: very complex type used. Consider factoring parts into `type` definitions
+   --> eip7702-core/tests/integration_tests.rs:271:21
+    |
+271 |       anvil_provider: FillProvider<
+    |  _____________________^
+272 | |         JoinFill<
+273 | |             JoinFill<
+274 | |                 Identity,
+...   |
+279 | |         AnvilProvider<RootProvider>,
+280 | |     >,
+    | |_____^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#type_complexity
+    = note: `#[warn(clippy::type_complexity)]` on by default
+
+warning: `engine-eip7702-core` (test "integration_tests") generated 1 warning
+warning: constant `MAX_INFLIGHT_PER_EOA` is never used
+  --> executors/src/eoa/worker/mod.rs:36:7
+   |
+36 | const MAX_INFLIGHT_PER_EOA: u64 = 100; // Default from spec
+   |       ^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: constant `MAX_RECYCLED_THRESHOLD` is never used
+  --> executors/src/eoa/worker/mod.rs:37:7
+   |
+37 | const MAX_RECYCLED_THRESHOLD: u64 = 50; // Circuit breaker from spec
+   |       ^^^^^^^^^^^^^^^^^^^^^^
+
+warning: constant `TARGET_TRANSACTIONS_PER_EOA` is never used
+  --> executors/src/eoa/worker/mod.rs:38:7
+   |
+38 | const TARGET_TRANSACTIONS_PER_EOA: u64 = 10; // Fleet management from spec
+   |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: constant `MIN_TRANSACTIONS_PER_EOA` is never used
+  --> executors/src/eoa/worker/mod.rs:39:7
+   |
+39 | const MIN_TRANSACTIONS_PER_EOA: u64 = 1; // Fleet management from spec
+   |       ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: the `Err`-variant returned from this function is very large
+  --> executors/src/eip7702_executor/delegation_cache.rs:33:10
+   |
+33 |     ) -> Result<Address, EngineError> {
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 208 bytes
+   |
+   = help: try reducing the size of `engine_core::error::EngineError`, for example by boxing large elements or replacing it with `Box<engine_core::error::EngineError>`
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+   = note: `#[warn(clippy::result_large_err)]` on by default
+
+warning: the `Err`-variant returned from this function is very large
+  --> executors/src/eoa/authorization_cache.rs:29:10
+   |
+29 |     ) -> Result<bool, EngineError> {
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 208 bytes
+   |
+   = help: try reducing the size of `engine_core::error::EngineError`, for example by boxing large elements or replacing it with `Box<engine_core::error::EngineError>`
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: large size difference between variants
+  --> executors/src/eoa/error_classifier.rs:11:1
+   |
+11 | /  pub enum EoaExecutionError {
+12 | |      /// Nonce too low - transaction might already be in mempool
+13 | |      NonceTooLow { message: String },
+   | |      ------------------------------- the second-largest variant contains at least 24 bytes
+...  |
+37 | |/     RpcError {
+38 | ||         message: String,
+39 | ||         inner_error: Option<EngineError>,
+40 | ||     },
+   | ||_____- the largest variant contains at least 232 bytes
+41 | |  }
+   | |__^ the entire enum is at least 232 bytes
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#large_enum_variant
+   = note: `#[warn(clippy::large_enum_variant)]` on by default
+help: consider boxing the large fields or introducing indirection in some other way to reduce the total size of the enum
+   |
+39 -         inner_error: Option<EngineError>,
+39 +         inner_error: Box<Option<EngineError>>,
+   |
+
+warning: the `Err`-variant returned from this function is very large
+  --> executors/src/eoa/error_classifier.rs:66:10
+   |
+66 |     ) -> Result<EoaExecutionError, EngineError> {
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 208 bytes
+   |
+   = help: try reducing the size of `engine_core::error::EngineError`, for example by boxing large elements or replacing it with `Box<engine_core::error::EngineError>`
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: large size difference between variants
+  --> executors/src/eoa/events.rs:25:1
+   |
+25 | /  pub enum EoaConfirmationError {
+26 | |      #[error(
+27 | |          "Previously submitted attempt for transaction replaced at nonce with different transaction"
+28 | |      )]
+29 | |      #[serde(rename_all = "camelCase")]
+30 | |      TransactionReplaced { nonce: u64, hash: String },
+   | |      ------------------------------------------------ the second-largest variant contains at least 32 bytes
+...  |
+33 | |/     TransactionReverted {
+34 | ||         #[serde(flatten)]
+35 | ||         transaction: EoaExecutorConfirmedTransaction,
+36 | ||     },
+   | ||_____- the largest variant contains at least 656 bytes
+37 | |  }
+   | |__^ the entire enum is at least 656 bytes
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#large_enum_variant
+help: consider boxing the large fields or introducing indirection in some other way to reduce the total size of the enum
+   |
+35 -         transaction: EoaExecutorConfirmedTransaction,
+35 +         transaction: Box<EoaExecutorConfirmedTransaction>,
+   |
+
+warning: this `if` statement can be collapsed
+   --> executors/src/eoa/store/atomic.rs:595:13
+    |
+595 | /             if !pending_transaction.user_request.webhook_options.is_empty() {
+596 | |                 if let Err(e) = queue_webhook_envelopes(
+597 | |                     fail_envelope,
+598 | |                     pending_transaction.user_request.webhook_options.clone(),
+...   |
+608 | |             }
+    | |_____________^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#collapsible_if
+    = note: `#[warn(clippy::collapsible_if)]` on by default
+help: collapse nested if block
+    |
+595 ~             if !pending_transaction.user_request.webhook_options.is_empty()
+596 ~                 && let Err(e) = queue_webhook_envelopes(
+597 |                     fail_envelope,
+...
+606 |                     );
+607 ~                 }
+    |
+
+warning: large size difference between variants
+  --> executors/src/eoa/store/submitted.rs:63:1
+   |
+63 | / pub enum SubmittedTransactionHydrated {
+64 | |     Noop(SubmittedNoopTransaction),
+   | |     ------------------------------ the second-largest variant contains at least 32 bytes
+65 | |     Real(SubmittedTransaction),
+   | |     -------------------------- the largest variant contains at least 640 bytes
+66 | | }
+   | |_^ the entire enum is at least 640 bytes
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#large_enum_variant
+help: consider boxing the large fields or introducing indirection in some other way to reduce the total size of the enum
+   |
+65 -     Real(SubmittedTransaction),
+65 +     Real(Box<SubmittedTransaction>),
+   |
+
+warning: this `if` statement can be collapsed
+   --> executors/src/eoa/store/submitted.rs:512:21
+    |
+512 | /                     if let SubmittedTransactionHydrated::Real(_) = tx {
+513 | |                         if tx_nonce < self.transaction_counts.latest
+514 | |                             && nonces_with_receipts.contains(&tx_nonce)
+...   |
+519 | |                     }
+    | |_____________________^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#collapsible_if
+help: collapse nested if block
+    |
+512 ~                     if let SubmittedTransactionHydrated::Real(_) = tx
+513 ~                         && tx_nonce < self.transaction_counts.latest
+514 |                             && nonces_with_receipts.contains(&tx_nonce)
+...
+517 |                         }
+518 ~                         // If beyond latest confirmed nonce, keep in submitted state (don't clean up)
+    |
+
+warning: very complex type used. Consider factoring parts into `type` definitions
+   --> executors/src/eoa/store/submitted.rs:547:6
+    |
+547 |   ) -> (
+    |  ______^
+548 | |     HashMap<&'a str, Vec<u64>>,
+549 | |     BTreeMap<u64, Vec<&'a SubmittedTransaction>>,
+550 | |     CleanupReport,
+551 | | ) {
+    | |_^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#type_complexity
+    = note: `#[warn(clippy::type_complexity)]` on by default
+
+warning: the `Err`-variant returned from this function is very large
+  --> executors/src/eoa/worker/confirm.rs:82:41
+   |
+82 |       pub async fn confirm_flow(&self) -> Result<CleanupReport, EoaExecutorWorkerError> {
+   |                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+  ::: executors/src/eoa/worker/error.rs:40:5
+   |
+40 | /     TransactionSimulationFailed {
+41 | |         message: String,
+42 | |         inner_error: EngineError,
+43 | |     },
+   | |_____- the largest variant contains at least 232 bytes
+...
+49 | /     RpcError {
+50 | |         message: String,
+51 | |         inner_error: EngineError,
+52 | |     },
+   | |_____- the variant `RpcError` contains at least 232 bytes
+...
+55 | /     TransactionSendError {
+56 | |         message: String,
+57 | |         inner_error: EngineError,
+58 | |     },
+   | |_____- the variant `TransactionSendError` contains at least 232 bytes
+...
+64 | /     SigningError {
+65 | |         message: String,
+66 | |         inner_error: EngineError,
+67 | |     },
+   | |_____- the variant `SigningError` contains at least 232 bytes
+   |
+   = help: try reducing the size of `eoa::worker::error::EoaExecutorWorkerError`, for example by boxing large elements or replacing it with `Box<eoa::worker::error::EoaExecutorWorkerError>`
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> executors/src/eoa/worker/confirm.rs:305:10
+    |
+305 |       ) -> Result<bool, EoaExecutorWorkerError> {
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+   ::: executors/src/eoa/worker/error.rs:40:5
+    |
+ 40 | /     TransactionSimulationFailed {
+ 41 | |         message: String,
+ 42 | |         inner_error: EngineError,
+ 43 | |     },
+    | |_____- the largest variant contains at least 232 bytes
+...
+ 49 | /     RpcError {
+ 50 | |         message: String,
+ 51 | |         inner_error: EngineError,
+ 52 | |     },
+    | |_____- the variant `RpcError` contains at least 232 bytes
+...
+ 55 | /     TransactionSendError {
+ 56 | |         message: String,
+ 57 | |         inner_error: EngineError,
+ 58 | |     },
+    | |_____- the variant `TransactionSendError` contains at least 232 bytes
+...
+ 64 | /     SigningError {
+ 65 | |         message: String,
+ 66 | |         inner_error: EngineError,
+ 67 | |     },
+    | |_____- the variant `SigningError` contains at least 232 bytes
+    |
+    = help: try reducing the size of `eoa::worker::error::EoaExecutorWorkerError`, for example by boxing large elements or replacing it with `Box<eoa::worker::error::EoaExecutorWorkerError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+  --> executors/src/eoa/worker/send.rs:24:38
+   |
+24 |       pub async fn send_flow(&self) -> Result<u32, EoaExecutorWorkerError> {
+   |                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+  ::: executors/src/eoa/worker/error.rs:40:5
+   |
+40 | /     TransactionSimulationFailed {
+41 | |         message: String,
+42 | |         inner_error: EngineError,
+43 | |     },
+   | |_____- the largest variant contains at least 232 bytes
+...
+49 | /     RpcError {
+50 | |         message: String,
+51 | |         inner_error: EngineError,
+52 | |     },
+   | |_____- the variant `RpcError` contains at least 232 bytes
+...
+55 | /     TransactionSendError {
+56 | |         message: String,
+57 | |         inner_error: EngineError,
+58 | |     },
+   | |_____- the variant `TransactionSendError` contains at least 232 bytes
+...
+64 | /     SigningError {
+65 | |         message: String,
+66 | |         inner_error: EngineError,
+67 | |     },
+   | |_____- the variant `SigningError` contains at least 232 bytes
+   |
+   = help: try reducing the size of `eoa::worker::error::EoaExecutorWorkerError`, for example by boxing large elements or replacing it with `Box<eoa::worker::error::EoaExecutorWorkerError>`
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> executors/src/eoa/worker/send.rs:159:48
+    |
+159 |       async fn process_recycled_nonces(&self) -> Result<u32, EoaExecutorWorkerError> {
+    |                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+   ::: executors/src/eoa/worker/error.rs:40:5
+    |
+ 40 | /     TransactionSimulationFailed {
+ 41 | |         message: String,
+ 42 | |         inner_error: EngineError,
+ 43 | |     },
+    | |_____- the largest variant contains at least 232 bytes
+...
+ 49 | /     RpcError {
+ 50 | |         message: String,
+ 51 | |         inner_error: EngineError,
+ 52 | |     },
+    | |_____- the variant `RpcError` contains at least 232 bytes
+...
+ 55 | /     TransactionSendError {
+ 56 | |         message: String,
+ 57 | |         inner_error: EngineError,
+ 58 | |     },
+    | |_____- the variant `TransactionSendError` contains at least 232 bytes
+...
+ 64 | /     SigningError {
+ 65 | |         message: String,
+ 66 | |         inner_error: EngineError,
+ 67 | |     },
+    | |_____- the variant `SigningError` contains at least 232 bytes
+    |
+    = help: try reducing the size of `eoa::worker::error::EoaExecutorWorkerError`, for example by boxing large elements or replacing it with `Box<eoa::worker::error::EoaExecutorWorkerError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: explicit call to `.into_iter()` in function argument accepting `IntoIterator`
+   --> executors/src/eoa/worker/send.rs:200:22
+    |
+200 |                 .zip(prepared_results.into_iter())
+    |                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+note: this parameter accepts any `IntoIterator`, so you don't need to call `.into_iter()`
+   --> /rustc/48a229ceaefd4985c50990b14116b6d856af0985/library/core/src/iter/traits/iterator.rs:632:11
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#useless_conversion
+    = note: `#[warn(clippy::useless_conversion)]` on by default
+help: consider removing the `.into_iter()`
+    |
+200 -                 .zip(prepared_results.into_iter())
+200 +                 .zip(prepared_results)
+    |
+
+warning: explicit call to `.into_iter()` in function argument accepting `IntoIterator`
+   --> executors/src/eoa/worker/send.rs:248:22
+    |
+248 |                 .zip(cleaned_results.into_iter())
+    |                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+note: this parameter accepts any `IntoIterator`, so you don't need to call `.into_iter()`
+   --> /rustc/48a229ceaefd4985c50990b14116b6d856af0985/library/core/src/iter/traits/iterator.rs:632:11
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#useless_conversion
+help: consider removing the `.into_iter()`
+    |
+248 -                 .zip(cleaned_results.into_iter())
+248 +                 .zip(cleaned_results)
+    |
+
+warning: the `Err`-variant returned from this function is very large
+   --> executors/src/eoa/worker/send.rs:316:10
+    |
+316 |       ) -> Result<Vec<BorrowedTransaction>, EoaExecutorWorkerError> {
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+   ::: executors/src/eoa/worker/error.rs:40:5
+    |
+ 40 | /     TransactionSimulationFailed {
+ 41 | |         message: String,
+ 42 | |         inner_error: EngineError,
+ 43 | |     },
+    | |_____- the largest variant contains at least 232 bytes
+...
+ 49 | /     RpcError {
+ 50 | |         message: String,
+ 51 | |         inner_error: EngineError,
+ 52 | |     },
+    | |_____- the variant `RpcError` contains at least 232 bytes
+...
+ 55 | /     TransactionSendError {
+ 56 | |         message: String,
+ 57 | |         inner_error: EngineError,
+ 58 | |     },
+    | |_____- the variant `TransactionSendError` contains at least 232 bytes
+...
+ 64 | /     SigningError {
+ 65 | |         message: String,
+ 66 | |         inner_error: EngineError,
+ 67 | |     },
+    | |_____- the variant `SigningError` contains at least 232 bytes
+    |
+    = help: try reducing the size of `eoa::worker::error::EoaExecutorWorkerError`, for example by boxing large elements or replacing it with `Box<eoa::worker::error::EoaExecutorWorkerError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: this `if` statement can be collapsed
+   --> executors/src/eoa/worker/send.rs:362:9
+    |
+362 | /         if !non_retryable_failures.is_empty() {
+363 | |             if let Err(e) = self
+364 | |                 .store
+365 | |                 .fail_pending_transactions_batch(non_retryable_failures, self.webhook_queue.clone())
+...   |
+374 | |         }
+    | |_________^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#collapsible_if
+help: collapse nested if block
+    |
+362 ~         if !non_retryable_failures.is_empty()
+363 ~             && let Err(e) = self
+364 |                 .store
+...
+372 |                 // Don't propagate the error, continue processing
+373 ~             }
+    |
+
+warning: the `Err`-variant returned from this function is very large
+   --> executors/src/eoa/worker/send.rs:384:62
+    |
+384 |       async fn process_new_transactions(&self, budget: u64) -> Result<u32, EoaExecutorWorkerError> {
+    |                                                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+   ::: executors/src/eoa/worker/error.rs:40:5
+    |
+ 40 | /     TransactionSimulationFailed {
+ 41 | |         message: String,
+ 42 | |         inner_error: EngineError,
+ 43 | |     },
+    | |_____- the largest variant contains at least 232 bytes
+...
+ 49 | /     RpcError {
+ 50 | |         message: String,
+ 51 | |         inner_error: EngineError,
+ 52 | |     },
+    | |_____- the variant `RpcError` contains at least 232 bytes
+...
+ 55 | /     TransactionSendError {
+ 56 | |         message: String,
+ 57 | |         inner_error: EngineError,
+ 58 | |     },
+    | |_____- the variant `TransactionSendError` contains at least 232 bytes
+...
+ 64 | /     SigningError {
+ 65 | |         message: String,
+ 66 | |         inner_error: EngineError,
+ 67 | |     },
+    | |_____- the variant `SigningError` contains at least 232 bytes
+    |
+    = help: try reducing the size of `eoa::worker::error::EoaExecutorWorkerError`, for example by boxing large elements or replacing it with `Box<eoa::worker::error::EoaExecutorWorkerError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: explicit call to `.into_iter()` in function argument accepting `IntoIterator`
+   --> executors/src/eoa/worker/send.rs:462:22
+    |
+462 |                 .zip(prepared_results.into_iter())
+    |                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+note: this parameter accepts any `IntoIterator`, so you don't need to call `.into_iter()`
+   --> /rustc/48a229ceaefd4985c50990b14116b6d856af0985/library/core/src/iter/traits/iterator.rs:632:11
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#useless_conversion
+help: consider removing the `.into_iter()`
+    |
+462 -                 .zip(prepared_results.into_iter())
+462 +                 .zip(prepared_results)
+    |
+
+warning: explicit call to `.into_iter()` in function argument accepting `IntoIterator`
+   --> executors/src/eoa/worker/send.rs:539:22
+    |
+539 |                 .zip(cleaned_results.into_iter())
+    |                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+note: this parameter accepts any `IntoIterator`, so you don't need to call `.into_iter()`
+   --> /rustc/48a229ceaefd4985c50990b14116b6d856af0985/library/core/src/iter/traits/iterator.rs:632:11
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#useless_conversion
+help: consider removing the `.into_iter()`
+    |
+539 -                 .zip(cleaned_results.into_iter())
+539 +                 .zip(cleaned_results)
+    |
+
+warning: the `Err`-variant returned from this function is very large
+   --> executors/src/eoa/worker/transaction.rs:112:10
+    |
+112 |       ) -> Result<BorrowedTransaction, EoaExecutorWorkerError> {
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+   ::: executors/src/eoa/worker/error.rs:40:5
+    |
+ 40 | /     TransactionSimulationFailed {
+ 41 | |         message: String,
+ 42 | |         inner_error: EngineError,
+ 43 | |     },
+    | |_____- the largest variant contains at least 232 bytes
+...
+ 49 | /     RpcError {
+ 50 | |         message: String,
+ 51 | |         inner_error: EngineError,
+ 52 | |     },
+    | |_____- the variant `RpcError` contains at least 232 bytes
+...
+ 55 | /     TransactionSendError {
+ 56 | |         message: String,
+ 57 | |         inner_error: EngineError,
+ 58 | |     },
+    | |_____- the variant `TransactionSendError` contains at least 232 bytes
+...
+ 64 | /     SigningError {
+ 65 | |         message: String,
+ 66 | |         inner_error: EngineError,
+ 67 | |     },
+    | |_____- the variant `SigningError` contains at least 232 bytes
+    |
+    = help: try reducing the size of `eoa::worker::error::EoaExecutorWorkerError`, for example by boxing large elements or replacing it with `Box<eoa::worker::error::EoaExecutorWorkerError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> executors/src/eoa/worker/transaction.rs:164:10
+    |
+164 |       ) -> Result<BorrowedTransaction, EoaExecutorWorkerError> {
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+   ::: executors/src/eoa/worker/error.rs:40:5
+    |
+ 40 | /     TransactionSimulationFailed {
+ 41 | |         message: String,
+ 42 | |         inner_error: EngineError,
+ 43 | |     },
+    | |_____- the largest variant contains at least 232 bytes
+...
+ 49 | /     RpcError {
+ 50 | |         message: String,
+ 51 | |         inner_error: EngineError,
+ 52 | |     },
+    | |_____- the variant `RpcError` contains at least 232 bytes
+...
+ 55 | /     TransactionSendError {
+ 56 | |         message: String,
+ 57 | |         inner_error: EngineError,
+ 58 | |     },
+    | |_____- the variant `TransactionSendError` contains at least 232 bytes
+...
+ 64 | /     SigningError {
+ 65 | |         message: String,
+ 66 | |         inner_error: EngineError,
+ 67 | |     },
+    | |_____- the variant `SigningError` contains at least 232 bytes
+    |
+    = help: try reducing the size of `eoa::worker::error::EoaExecutorWorkerError`, for example by boxing large elements or replacing it with `Box<eoa::worker::error::EoaExecutorWorkerError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> executors/src/eoa/worker/transaction.rs:185:10
+    |
+185 |       ) -> Result<Signed<TypedTransaction>, EoaExecutorWorkerError> {
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+   ::: executors/src/eoa/worker/error.rs:40:5
+    |
+ 40 | /     TransactionSimulationFailed {
+ 41 | |         message: String,
+ 42 | |         inner_error: EngineError,
+ 43 | |     },
+    | |_____- the largest variant contains at least 232 bytes
+...
+ 49 | /     RpcError {
+ 50 | |         message: String,
+ 51 | |         inner_error: EngineError,
+ 52 | |     },
+    | |_____- the variant `RpcError` contains at least 232 bytes
+...
+ 55 | /     TransactionSendError {
+ 56 | |         message: String,
+ 57 | |         inner_error: EngineError,
+ 58 | |     },
+    | |_____- the variant `TransactionSendError` contains at least 232 bytes
+...
+ 64 | /     SigningError {
+ 65 | |         message: String,
+ 66 | |         inner_error: EngineError,
+ 67 | |     },
+    | |_____- the variant `SigningError` contains at least 232 bytes
+    |
+    = help: try reducing the size of `eoa::worker::error::EoaExecutorWorkerError`, for example by boxing large elements or replacing it with `Box<eoa::worker::error::EoaExecutorWorkerError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> executors/src/eoa/worker/transaction.rs:225:10
+    |
+225 |       ) -> Result<SubmittedNoopTransaction, EoaExecutorWorkerError> {
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+   ::: executors/src/eoa/worker/error.rs:40:5
+    |
+ 40 | /     TransactionSimulationFailed {
+ 41 | |         message: String,
+ 42 | |         inner_error: EngineError,
+ 43 | |     },
+    | |_____- the largest variant contains at least 232 bytes
+...
+ 49 | /     RpcError {
+ 50 | |         message: String,
+ 51 | |         inner_error: EngineError,
+ 52 | |     },
+    | |_____- the variant `RpcError` contains at least 232 bytes
+...
+ 55 | /     TransactionSendError {
+ 56 | |         message: String,
+ 57 | |         inner_error: EngineError,
+ 58 | |     },
+    | |_____- the variant `TransactionSendError` contains at least 232 bytes
+...
+ 64 | /     SigningError {
+ 65 | |         message: String,
+ 66 | |         inner_error: EngineError,
+ 67 | |     },
+    | |_____- the variant `SigningError` contains at least 232 bytes
+    |
+    = help: try reducing the size of `eoa::worker::error::EoaExecutorWorkerError`, for example by boxing large elements or replacing it with `Box<eoa::worker::error::EoaExecutorWorkerError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> executors/src/eoa/worker/transaction.rs:248:10
+    |
+248 |       ) -> Result<AlloyTransactionRequest, EoaExecutorWorkerError> {
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+   ::: executors/src/eoa/worker/error.rs:40:5
+    |
+ 40 | /     TransactionSimulationFailed {
+ 41 | |         message: String,
+ 42 | |         inner_error: EngineError,
+ 43 | |     },
+    | |_____- the largest variant contains at least 232 bytes
+...
+ 49 | /     RpcError {
+ 50 | |         message: String,
+ 51 | |         inner_error: EngineError,
+ 52 | |     },
+    | |_____- the variant `RpcError` contains at least 232 bytes
+...
+ 55 | /     TransactionSendError {
+ 56 | |         message: String,
+ 57 | |         inner_error: EngineError,
+ 58 | |     },
+    | |_____- the variant `TransactionSendError` contains at least 232 bytes
+...
+ 64 | /     SigningError {
+ 65 | |         message: String,
+ 66 | |         inner_error: EngineError,
+ 67 | |     },
+    | |_____- the variant `SigningError` contains at least 232 bytes
+    |
+    = help: try reducing the size of `eoa::worker::error::EoaExecutorWorkerError`, for example by boxing large elements or replacing it with `Box<eoa::worker::error::EoaExecutorWorkerError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> executors/src/eoa/worker/transaction.rs:387:10
+    |
+387 |       ) -> Result<TypedTransaction, EoaExecutorWorkerError> {
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+   ::: executors/src/eoa/worker/error.rs:40:5
+    |
+ 40 | /     TransactionSimulationFailed {
+ 41 | |         message: String,
+ 42 | |         inner_error: EngineError,
+ 43 | |     },
+    | |_____- the largest variant contains at least 232 bytes
+...
+ 49 | /     RpcError {
+ 50 | |         message: String,
+ 51 | |         inner_error: EngineError,
+ 52 | |     },
+    | |_____- the variant `RpcError` contains at least 232 bytes
+...
+ 55 | /     TransactionSendError {
+ 56 | |         message: String,
+ 57 | |         inner_error: EngineError,
+ 58 | |     },
+    | |_____- the variant `TransactionSendError` contains at least 232 bytes
+...
+ 64 | /     SigningError {
+ 65 | |         message: String,
+ 66 | |         inner_error: EngineError,
+ 67 | |     },
+    | |_____- the variant `SigningError` contains at least 232 bytes
+    |
+    = help: try reducing the size of `eoa::worker::error::EoaExecutorWorkerError`, for example by boxing large elements or replacing it with `Box<eoa::worker::error::EoaExecutorWorkerError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: this `if` statement can be collapsed
+   --> executors/src/eoa/worker/transaction.rs:519:9
+    |
+519 | /         if request.chain_id == ETHERLINK_CHAIN_ID {
+520 | |             if let Some(auth_list) = &tx_request.authorization_list {
+521 | |                 let extra = auth_list.len() as u64 * ETHERLINK_GAS_PER_AUTHORIZATION;
+522 | |                 let current_gas = tx_request.gas.unwrap_or(0);
+...   |
+531 | |         }
+    | |_________^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#collapsible_if
+help: collapse nested if block
+    |
+519 ~         if request.chain_id == ETHERLINK_CHAIN_ID
+520 ~             && let Some(auth_list) = &tx_request.authorization_list {
+521 |                 let extra = auth_list.len() as u64 * ETHERLINK_GAS_PER_AUTHORIZATION;
+...
+529 |                 tx_request = tx_request.with_gas_limit(current_gas + extra);
+530 ~             }
+    |
+
+warning: the `Err`-variant returned from this function is very large
+   --> executors/src/eoa/worker/transaction.rs:545:10
+    |
+545 |       ) -> Result<Signed<TypedTransaction>, EoaExecutorWorkerError> {
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+   ::: executors/src/eoa/worker/error.rs:40:5
+    |
+ 40 | /     TransactionSimulationFailed {
+ 41 | |         message: String,
+ 42 | |         inner_error: EngineError,
+ 43 | |     },
+    | |_____- the largest variant contains at least 232 bytes
+...
+ 49 | /     RpcError {
+ 50 | |         message: String,
+ 51 | |         inner_error: EngineError,
+ 52 | |     },
+    | |_____- the variant `RpcError` contains at least 232 bytes
+...
+ 55 | /     TransactionSendError {
+ 56 | |         message: String,
+ 57 | |         inner_error: EngineError,
+ 58 | |     },
+    | |_____- the variant `TransactionSendError` contains at least 232 bytes
+...
+ 64 | /     SigningError {
+ 65 | |         message: String,
+ 66 | |         inner_error: EngineError,
+ 67 | |     },
+    | |_____- the variant `SigningError` contains at least 232 bytes
+    |
+    = help: try reducing the size of `eoa::worker::error::EoaExecutorWorkerError`, for example by boxing large elements or replacing it with `Box<eoa::worker::error::EoaExecutorWorkerError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> executors/src/eoa/worker/transaction.rs:573:10
+    |
+573 |       ) -> Result<Signed<TypedTransaction>, EoaExecutorWorkerError> {
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+   ::: executors/src/eoa/worker/error.rs:40:5
+    |
+ 40 | /     TransactionSimulationFailed {
+ 41 | |         message: String,
+ 42 | |         inner_error: EngineError,
+ 43 | |     },
+    | |_____- the largest variant contains at least 232 bytes
+...
+ 49 | /     RpcError {
+ 50 | |         message: String,
+ 51 | |         inner_error: EngineError,
+ 52 | |     },
+    | |_____- the variant `RpcError` contains at least 232 bytes
+...
+ 55 | /     TransactionSendError {
+ 56 | |         message: String,
+ 57 | |         inner_error: EngineError,
+ 58 | |     },
+    | |_____- the variant `TransactionSendError` contains at least 232 bytes
+...
+ 64 | /     SigningError {
+ 65 | |         message: String,
+ 66 | |         inner_error: EngineError,
+ 67 | |     },
+    | |_____- the variant `SigningError` contains at least 232 bytes
+    |
+    = help: try reducing the size of `eoa::worker::error::EoaExecutorWorkerError`, for example by boxing large elements or replacing it with `Box<eoa::worker::error::EoaExecutorWorkerError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> executors/src/eoa/worker/mod.rs:314:10
+    |
+314 |     ) -> JobResult<EoaExecutorWorkerResult, EoaExecutorWorkerError> {
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 264 bytes
+    |
+    = help: try reducing the size of `twmq::job::JobError<eoa::worker::error::EoaExecutorWorkerError>`, for example by boxing large elements or replacing it with `Box<twmq::job::JobError<eoa::worker::error::EoaExecutorWorkerError>>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> executors/src/eoa/worker/mod.rs:424:56
+    |
+424 |       async fn cull_stale_pending_transactions(&self) -> Result<(), EoaExecutorWorkerError> {
+    |                                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+   ::: executors/src/eoa/worker/error.rs:40:5
+    |
+ 40 | /     TransactionSimulationFailed {
+ 41 | |         message: String,
+ 42 | |         inner_error: EngineError,
+ 43 | |     },
+    | |_____- the largest variant contains at least 232 bytes
+...
+ 49 | /     RpcError {
+ 50 | |         message: String,
+ 51 | |         inner_error: EngineError,
+ 52 | |     },
+    | |_____- the variant `RpcError` contains at least 232 bytes
+...
+ 55 | /     TransactionSendError {
+ 56 | |         message: String,
+ 57 | |         inner_error: EngineError,
+ 58 | |     },
+    | |_____- the variant `TransactionSendError` contains at least 232 bytes
+...
+ 64 | /     SigningError {
+ 65 | |         message: String,
+ 66 | |         inner_error: EngineError,
+ 67 | |     },
+    | |_____- the variant `SigningError` contains at least 232 bytes
+    |
+    = help: try reducing the size of `eoa::worker::error::EoaExecutorWorkerError`, for example by boxing large elements or replacing it with `Box<eoa::worker::error::EoaExecutorWorkerError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> executors/src/eoa/worker/mod.rs:473:47
+    |
+473 |       async fn recover_borrowed_state(&self) -> Result<u32, EoaExecutorWorkerError> {
+    |                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+   ::: executors/src/eoa/worker/error.rs:40:5
+    |
+ 40 | /     TransactionSimulationFailed {
+ 41 | |         message: String,
+ 42 | |         inner_error: EngineError,
+ 43 | |     },
+    | |_____- the largest variant contains at least 232 bytes
+...
+ 49 | /     RpcError {
+ 50 | |         message: String,
+ 51 | |         inner_error: EngineError,
+ 52 | |     },
+    | |_____- the variant `RpcError` contains at least 232 bytes
+...
+ 55 | /     TransactionSendError {
+ 56 | |         message: String,
+ 57 | |         inner_error: EngineError,
+ 58 | |     },
+    | |_____- the variant `TransactionSendError` contains at least 232 bytes
+...
+ 64 | /     SigningError {
+ 65 | |         message: String,
+ 66 | |         inner_error: EngineError,
+ 67 | |     },
+    | |_____- the variant `SigningError` contains at least 232 bytes
+    |
+    = help: try reducing the size of `eoa::worker::error::EoaExecutorWorkerError`, for example by boxing large elements or replacing it with `Box<eoa::worker::error::EoaExecutorWorkerError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> executors/src/eoa/worker/mod.rs:557:39
+    |
+557 |       async fn get_eoa_health(&self) -> Result<EoaHealth, EoaExecutorWorkerError> {
+    |                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+   ::: executors/src/eoa/worker/error.rs:40:5
+    |
+ 40 | /     TransactionSimulationFailed {
+ 41 | |         message: String,
+ 42 | |         inner_error: EngineError,
+ 43 | |     },
+    | |_____- the largest variant contains at least 232 bytes
+...
+ 49 | /     RpcError {
+ 50 | |         message: String,
+ 51 | |         inner_error: EngineError,
+ 52 | |     },
+    | |_____- the variant `RpcError` contains at least 232 bytes
+...
+ 55 | /     TransactionSendError {
+ 56 | |         message: String,
+ 57 | |         inner_error: EngineError,
+ 58 | |     },
+    | |_____- the variant `TransactionSendError` contains at least 232 bytes
+...
+ 64 | /     SigningError {
+ 65 | |         message: String,
+ 66 | |         inner_error: EngineError,
+ 67 | |     },
+    | |_____- the variant `SigningError` contains at least 232 bytes
+    |
+    = help: try reducing the size of `eoa::worker::error::EoaExecutorWorkerError`, for example by boxing large elements or replacing it with `Box<eoa::worker::error::EoaExecutorWorkerError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> executors/src/eoa/worker/mod.rs:598:49
+    |
+598 |       async fn update_balance_threshold(&self) -> Result<(), EoaExecutorWorkerError> {
+    |                                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+   ::: executors/src/eoa/worker/error.rs:40:5
+    |
+ 40 | /     TransactionSimulationFailed {
+ 41 | |         message: String,
+ 42 | |         inner_error: EngineError,
+ 43 | |     },
+    | |_____- the largest variant contains at least 232 bytes
+...
+ 49 | /     RpcError {
+ 50 | |         message: String,
+ 51 | |         inner_error: EngineError,
+ 52 | |     },
+    | |_____- the variant `RpcError` contains at least 232 bytes
+...
+ 55 | /     TransactionSendError {
+ 56 | |         message: String,
+ 57 | |         inner_error: EngineError,
+ 58 | |     },
+    | |_____- the variant `TransactionSendError` contains at least 232 bytes
+...
+ 64 | /     SigningError {
+ 65 | |         message: String,
+ 66 | |         inner_error: EngineError,
+ 67 | |     },
+    | |_____- the variant `SigningError` contains at least 232 bytes
+    |
+    = help: try reducing the size of `eoa::worker::error::EoaExecutorWorkerError`, for example by boxing large elements or replacing it with `Box<eoa::worker::error::EoaExecutorWorkerError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> executors/src/eoa/worker/mod.rs:620:40
+    |
+620 |       async fn release_eoa_lock(self) -> Result<(), EoaExecutorWorkerError> {
+    |                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+   ::: executors/src/eoa/worker/error.rs:40:5
+    |
+ 40 | /     TransactionSimulationFailed {
+ 41 | |         message: String,
+ 42 | |         inner_error: EngineError,
+ 43 | |     },
+    | |_____- the largest variant contains at least 232 bytes
+...
+ 49 | /     RpcError {
+ 50 | |         message: String,
+ 51 | |         inner_error: EngineError,
+ 52 | |     },
+    | |_____- the variant `RpcError` contains at least 232 bytes
+...
+ 55 | /     TransactionSendError {
+ 56 | |         message: String,
+ 57 | |         inner_error: EngineError,
+ 58 | |     },
+    | |_____- the variant `TransactionSendError` contains at least 232 bytes
+...
+ 64 | /     SigningError {
+ 65 | |         message: String,
+ 66 | |         inner_error: EngineError,
+ 67 | |     },
+    | |_____- the variant `SigningError` contains at least 232 bytes
+    |
+    = help: try reducing the size of `eoa::worker::error::EoaExecutorWorkerError`, for example by boxing large elements or replacing it with `Box<eoa::worker::error::EoaExecutorWorkerError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: large size difference between variants
+   --> executors/src/external_bundler/confirm.rs:76:1
+    |
+ 76 | /   pub enum UserOpConfirmationError {
+ 77 | |       #[error("Chain service error for chainId {chain_id}: {message}")]
+ 78 | |       #[serde(rename_all = "camelCase")]
+ 79 | |       ChainServiceError { chain_id: u64, message: String },
+...   |
+ 92 | | /     StaleJob {
+ 93 | | |         user_op_hash: Bytes,
+ 94 | | |         attempt_number: u32,
+ 95 | | |         age_seconds: u64,
+ 96 | | |     },
+    | | |_____- the second-largest variant contains at least 44 bytes
+...   |
+100 | | /     ReceiptQueryFailed {
+101 | | |         user_op_hash: Bytes,
+102 | | |         message: String,
+103 | | |         inner_error: Option<EngineError>,
+104 | | |     },
+    | | |_____- the largest variant contains at least 264 bytes
+...   |
+111 | |       UserCancelled,
+112 | |   }
+    | |___^ the entire enum is at least 264 bytes
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#large_enum_variant
+help: consider boxing the large fields or introducing indirection in some other way to reduce the total size of the enum
+    |
+103 -         inner_error: Option<EngineError>,
+103 +         inner_error: Box<Option<EngineError>>,
+    |
+
+warning: large size difference between variants
+   --> executors/src/external_bundler/send.rs:96:1
+    |
+ 96 | /   pub enum ExternalBundlerSendError {
+ 97 | |       #[error("Chain service error for chainId {chain_id}: {message}")]
+ 98 | |       ChainServiceError { chain_id: u64, message: String },
+...   |
+119 | | /     UserOpBuildFailed {
+120 | | |         account_address: Address,
+121 | | |         nonce_used: U256,
+122 | | |         had_deployment_lock: bool,
+...   | |
+127 | | |         inner_error: Option<EngineError>,
+128 | | |     },
+    | | |_____- the second-largest variant contains at least 333 bytes
+...   |
+131 | | /     BundlerSendFailed {
+132 | | |         account_address: Address,
+133 | | |         nonce_used: U256,
+134 | | |         had_deployment_lock: bool,
+...   | |
+139 | | |         inner_error: Option<EngineError>,
+140 | | |     },
+    | | |_____- the largest variant contains at least 773 bytes
+...   |
+152 | |       UserCancelled,
+153 | |   }
+    | |___^ the entire enum is at least 776 bytes
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#large_enum_variant
+help: consider boxing the large fields or introducing indirection in some other way to reduce the total size of the enum
+    |
+137 -         user_op: VersionedUserOp,
+137 +         user_op: Box<VersionedUserOp>,
+    |
+
+warning: the `Err`-variant returned from this closure is very large
+   --> executors/src/solana_executor/worker.rs:284:25
+    |
+284 |           .unwrap_or_else(|_| {
+    |  _________________________^
+285 | |             Err(SolanaExecutorError::InternalError {
+286 | |                 message:
+287 | |                     "Solana processing deadline exceeded; any persisted attempt will be reconciled"
+...   |
+290 | |             .nack(Some(NETWORK_ERROR_RETRY_DELAY), RequeuePosition::Last))
+291 | |         });
+    | |_________^ the `Err`-variant is at least 240 bytes
+    |
+    = help: try reducing the size of `twmq::job::JobError<solana_executor::worker::SolanaExecutorError>`, for example by boxing large elements or replacing it with `Box<twmq::job::JobError<solana_executor::worker::SolanaExecutorError>>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> executors/src/solana_executor/worker.rs:491:10
+    |
+491 |     ) -> JobResult<u64, SolanaExecutorError> {
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 240 bytes
+    |
+    = help: try reducing the size of `twmq::job::JobError<solana_executor::worker::SolanaExecutorError>`, for example by boxing large elements or replacing it with `Box<twmq::job::JobError<solana_executor::worker::SolanaExecutorError>>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> executors/src/solana_executor/worker.rs:549:10
+    |
+549 |     ) -> JobResult<u64, SolanaExecutorError> {
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 240 bytes
+    |
+    = help: try reducing the size of `twmq::job::JobError<solana_executor::worker::SolanaExecutorError>`, for example by boxing large elements or replacing it with `Box<twmq::job::JobError<solana_executor::worker::SolanaExecutorError>>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> executors/src/solana_executor/worker.rs:580:10
+    |
+580 |     ) -> JobResult<SolanaExecutorResult, SolanaExecutorError> {
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 240 bytes
+    |
+    = help: try reducing the size of `twmq::job::JobError<solana_executor::worker::SolanaExecutorError>`, for example by boxing large elements or replacing it with `Box<twmq::job::JobError<solana_executor::worker::SolanaExecutorError>>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> executors/src/solana_executor/worker.rs:873:10
+    |
+873 |     ) -> JobResult<Option<JobResult<SolanaExecutorResult, SolanaExecutorError>>, SolanaExecutorError>
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 240 bytes
+    |
+    = help: try reducing the size of `twmq::job::JobError<solana_executor::worker::SolanaExecutorError>`, for example by boxing large elements or replacing it with `Box<twmq::job::JobError<solana_executor::worker::SolanaExecutorError>>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> executors/src/solana_executor/worker.rs:970:10
+    |
+970 |     ) -> JobResult<SolanaExecutorResult, SolanaExecutorError> {
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 240 bytes
+    |
+    = help: try reducing the size of `twmq::job::JobError<solana_executor::worker::SolanaExecutorError>`, for example by boxing large elements or replacing it with `Box<twmq::job::JobError<solana_executor::worker::SolanaExecutorError>>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+    --> executors/src/solana_executor/worker.rs:1047:10
+     |
+1047 |     ) -> JobResult<(), SolanaExecutorError> {
+     |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 240 bytes
+     |
+     = help: try reducing the size of `twmq::job::JobError<solana_executor::worker::SolanaExecutorError>`, for example by boxing large elements or replacing it with `Box<twmq::job::JobError<solana_executor::worker::SolanaExecutorError>>`
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: `engine-executors` (lib) generated 48 warnings (run `cargo clippy --fix --lib -p engine-executors -- ` to apply 8 suggestions)
+    Checking thirdweb-engine v0.1.0 (/Users/alfongj/Code/engine-core/server)
+warning: this expression creates a reference which is immediately dereferenced by the compiler
+   --> executors/src/eoa/worker/receipt_tests.rs:187:10
+    |
+187 |     seed(&store, &tx).await;
+    |          ^^^^^^ help: change this to: `store`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#needless_borrow
+    = note: `#[warn(clippy::needless_borrow)]` on by default
+
+warning: this expression creates a reference which is immediately dereferenced by the compiler
+   --> executors/src/eoa/worker/receipt_tests.rs:216:10
+    |
+216 |     seed(&store, &winner).await;
+    |          ^^^^^^ help: change this to: `store`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#needless_borrow
+
+warning: this expression creates a reference which is immediately dereferenced by the compiler
+   --> executors/src/eoa/worker/receipt_tests.rs:218:10
+    |
+218 |     seed(&store, &submitted("other-nonce", 3, 8)).await;
+    |          ^^^^^^ help: change this to: `store`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#needless_borrow
+
+warning: this `MutexGuard` is held across an await point
+   --> executors/src/solana_executor/recovery_tests.rs:351:9
+    |
+351 |     let seen = seen.lock().unwrap();
+    |         ^^^^
+    |
+    = help: consider using an async-aware `Mutex` type or ensuring the `MutexGuard` is dropped before calling `await`
+note: these are all the await points this lock is held through
+   --> executors/src/solana_executor/recovery_tests.rs:358:34
+    |
+358 |     let stored = f.stored(&lock).await;
+    |                                  ^^^^^
+...
+362 |     lock.release().await.unwrap();
+    |                    ^^^^^
+363 |     f.cleanup().await;
+    |                 ^^^^^
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#await_holding_lock
+    = note: `#[warn(clippy::await_holding_lock)]` on by default
+
+warning: this `MutexGuard` is held across an await point
+   --> executors/src/solana_executor/recovery_tests.rs:416:9
+    |
+416 |     let seen = seen.lock().unwrap();
+    |         ^^^^
+    |
+    = help: consider using an async-aware `Mutex` type or ensuring the `MutexGuard` is dropped before calling `await`
+note: these are all the await points this lock is held through
+   --> executors/src/solana_executor/recovery_tests.rs:425:32
+    |
+425 |     assert_eq!(f.stored(&lock).await.broadcast_attempts, 2);
+    |                                ^^^^^
+426 |     lock.release().await.unwrap();
+    |                    ^^^^^
+427 |     f.cleanup().await;
+    |                 ^^^^^
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#await_holding_lock
+
+warning: items after a test module
+   --> executors/src/webhook/mod.rs:500:1
+    |
+500 |   mod tests {
+    |   ^^^^^^^^^
+...
+634 | / pub fn queue_webhook_envelopes<T: Serialize + Clone>(
+635 | |     envelope: BareWebhookNotificationEnvelope<T>,
+636 | |     webhook_options: Vec<WebhookOptions>,
+637 | |     tx: &mut TransactionContext<'_>,
+638 | |     webhook_queue: Arc<Queue<WebhookJobHandler>>,
+639 | | ) -> Result<(), TwmqError> {
+    | |__________________________^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#items_after_test_module
+    = note: `#[warn(clippy::items_after_test_module)]` on by default
+    = help: move the items to before the test module was defined
+
+warning: `engine-executors` (lib test) generated 54 warnings (48 duplicates) (run `cargo clippy --fix --lib -p engine-executors --tests -- ` to apply 4 suggestions)
+warning: the `Err`-variant returned from this function is very large
+  --> server/src/chains.rs:31:66
+   |
+31 |     pub fn new(thirdweb: &ThirdwebConfig, rpc: &EvmRpcConfig) -> Result<Self, EngineError> {
+   |                                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 208 bytes
+   |
+   = help: try reducing the size of `engine_core::error::EngineError`, for example by boxing large elements or replacing it with `Box<engine_core::error::EngineError>`
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+   = note: `#[warn(clippy::result_large_err)]` on by default
+
+warning: this `if` statement can be collapsed
+   --> server/src/chains.rs:100:9
+    |
+100 | /         if cache.chains.len() >= FALLBACK_CACHE_CAPACITY {
+101 | |             if let Some(oldest) = cache.order.pop_front() {
+102 | |                 cache.chains.remove(&oldest);
+103 | |             }
+104 | |         }
+    | |_________^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#collapsible_if
+    = note: `#[warn(clippy::collapsible_if)]` on by default
+help: collapse nested if block
+    |
+100 ~         if cache.chains.len() >= FALLBACK_CACHE_CAPACITY
+101 ~             && let Some(oldest) = cache.order.pop_front() {
+102 |                 cache.chains.remove(&oldest);
+103 ~             }
+    |
+
+warning: the `Err`-variant returned from this function is very large
+  --> server/src/execution_router/mod.rs:58:10
+   |
+58 |     ) -> Result<Vec<QueuedTransaction>, EngineError> {
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 208 bytes
+   |
+   = help: try reducing the size of `engine_core::error::EngineError`, for example by boxing large elements or replacing it with `Box<engine_core::error::EngineError>`
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: this function has too many arguments (8/7)
+   --> server/src/execution_router/mod.rs:167:5
+    |
+167 | /     async fn execute_external_bundler(
+168 | |         &self,
+169 | |         base_execution_options: &BaseExecutionOptions,
+170 | |         erc4337_execution_options: &Erc4337ExecutionOptions,
+...   |
+175 | |         pregenerated_nonce: Option<U256>,
+176 | |     ) -> Result<(), TwmqError> {
+    | |______________________________^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#too_many_arguments
+    = note: `#[warn(clippy::too_many_arguments)]` on by default
+
+warning: the `Err`-variant returned from this function is very large
+   --> server/src/execution_router/mod.rs:275:10
+    |
+275 |     ) -> Result<(), EngineError> {
+    |          ^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 208 bytes
+    |
+    = help: try reducing the size of `engine_core::error::EngineError`, for example by boxing large elements or replacing it with `Box<engine_core::error::EngineError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> server/src/execution_router/mod.rs:394:10
+    |
+394 |     ) -> Result<engine_core::execution_options::solana::QueuedSolanaTransactionResponse, EngineError>
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 208 bytes
+    |
+    = help: try reducing the size of `engine_core::error::EngineError`, for example by boxing large elements or replacing it with `Box<engine_core::error::EngineError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> server/src/execution_router/mod.rs:476:68
+    |
+476 | fn validate_execution_request(request: &SendTransactionRequest) -> Result<(), EngineError> {
+    |                                                                    ^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 208 bytes
+    |
+    = help: try reducing the size of `engine_core::error::EngineError`, for example by boxing large elements or replacing it with `Box<engine_core::error::EngineError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: large size difference between variants
+  --> server/src/http/dyn_contract.rs:54:1
+   |
+54 | / pub enum ContractOperationResult<T> {
+55 | |     Success(T),
+   | |     ---------- the second-largest variant contains at least 0 bytes
+56 | |     Failure(EngineError),
+   | |     -------------------- the largest variant contains at least 208 bytes
+57 | | }
+   | |_^ the entire enum is at least 208 bytes
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#large_enum_variant
+   = note: `#[warn(clippy::large_enum_variant)]` on by default
+help: consider boxing the large fields or introducing indirection in some other way to reduce the total size of the enum
+   |
+56 -     Failure(EngineError),
+56 +     Failure(Box<EngineError>),
+   |
+
+warning: the `Err`-variant returned from this function is very large
+  --> server/src/http/dyn_contract.rs:77:10
+   |
+77 |     ) -> Result<Function, EngineError> {
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 208 bytes
+   |
+   = help: try reducing the size of `engine_core::error::EngineError`, for example by boxing large elements or replacing it with `Box<engine_core::error::EngineError>`
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> server/src/http/dyn_contract.rs:107:10
+    |
+107 |     ) -> Result<Function, EngineError> {
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 208 bytes
+    |
+    = help: try reducing the size of `engine_core::error::EngineError`, for example by boxing large elements or replacing it with `Box<engine_core::error::EngineError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> server/src/http/dyn_contract.rs:149:10
+    |
+149 |     ) -> Result<Function, EngineError> {
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 208 bytes
+    |
+    = help: try reducing the size of `engine_core::error::EngineError`, for example by boxing large elements or replacing it with `Box<engine_core::error::EngineError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> server/src/http/dyn_contract.rs:169:10
+    |
+169 |     ) -> Result<JsonAbi, EngineError> {
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 208 bytes
+    |
+    = help: try reducing the size of `engine_core::error::EngineError`, for example by boxing large elements or replacing it with `Box<engine_core::error::EngineError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> server/src/http/dyn_contract.rs:199:54
+    |
+199 |     fn extract_function_name(&self, method: &str) -> Result<String, EngineError> {
+    |                                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 208 bytes
+    |
+    = help: try reducing the size of `engine_core::error::EngineError`, for example by boxing large elements or replacing it with `Box<engine_core::error::EngineError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> server/src/http/dyn_contract.rs:287:10
+    |
+287 |     ) -> Result<Vec<u8>, EngineError> {
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 208 bytes
+    |
+    = help: try reducing the size of `engine_core::error::EngineError`, for example by boxing large elements or replacing it with `Box<engine_core::error::EngineError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> server/src/http/dyn_contract.rs:319:10
+    |
+319 |     ) -> Result<PreparedContractCall, EngineError> {
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 208 bytes
+    |
+    = help: try reducing the size of `engine_core::error::EngineError`, for example by boxing large elements or replacing it with `Box<engine_core::error::EngineError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> server/src/http/error.rs:107:27
+    |
+107 |     fn api_error(self) -> Result<T, ApiEngineError>;
+    |                           ^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 208 bytes
+    |
+    = help: try reducing the size of `http::error::ApiEngineError`, for example by boxing large elements or replacing it with `Box<http::error::ApiEngineError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> server/src/http/extractors.rs:202:10
+    |
+202 |     ) -> Result<Option<AwsKmsCredential>, ApiEngineError> {
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 208 bytes
+    |
+    = help: try reducing the size of `http::error::ApiEngineError`, for example by boxing large elements or replacing it with `Box<http::error::ApiEngineError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> server/src/http/extractors.rs:223:36
+    |
+223 |     fn parse_kms_arn(arn: &str) -> Result<(String, String), ApiEngineError> {
+    |                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 208 bytes
+    |
+    = help: try reducing the size of `http::error::ApiEngineError`, for example by boxing large elements or replacing it with `Box<http::error::ApiEngineError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> server/src/http/extractors.rs:260:42
+    |
+260 |     fn try_extract_iaw(parts: &Parts) -> Result<Option<(String, ThirdwebAuth)>, ApiEngineError> {
+    |                                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 208 bytes
+    |
+    = help: try reducing the size of `http::error::ApiEngineError`, for example by boxing large elements or replacing it with `Box<http::error::ApiEngineError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> server/src/http/extractors.rs:400:66
+    |
+400 | fn verify_environment_token(configured: &str, provided: &str) -> Result<(), ApiEngineError> {
+    |                                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 208 bytes
+    |
+    = help: try reducing the size of `http::error::ApiEngineError`, for example by boxing large elements or replacing it with `Box<http::error::ApiEngineError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> server/src/http/routes/admin/eoa_diagnostics.rs:160:6
+    |
+160 | ) -> Result<impl IntoResponse, ApiEngineError> {
+    |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 208 bytes
+    |
+    = help: try reducing the size of `http::error::ApiEngineError`, for example by boxing large elements or replacing it with `Box<http::error::ApiEngineError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> server/src/http/routes/admin/eoa_diagnostics.rs:254:6
+    |
+254 | ) -> Result<impl IntoResponse, ApiEngineError> {
+    |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 208 bytes
+    |
+    = help: try reducing the size of `http::error::ApiEngineError`, for example by boxing large elements or replacing it with `Box<http::error::ApiEngineError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> server/src/http/routes/admin/eoa_diagnostics.rs:308:6
+    |
+308 | ) -> Result<impl IntoResponse, ApiEngineError> {
+    |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 208 bytes
+    |
+    = help: try reducing the size of `http::error::ApiEngineError`, for example by boxing large elements or replacing it with `Box<http::error::ApiEngineError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> server/src/http/routes/admin/eoa_diagnostics.rs:372:6
+    |
+372 | ) -> Result<impl IntoResponse, ApiEngineError> {
+    |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 208 bytes
+    |
+    = help: try reducing the size of `http::error::ApiEngineError`, for example by boxing large elements or replacing it with `Box<http::error::ApiEngineError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> server/src/http/routes/admin/eoa_diagnostics.rs:418:6
+    |
+418 | ) -> Result<impl IntoResponse, ApiEngineError> {
+    |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 208 bytes
+    |
+    = help: try reducing the size of `http::error::ApiEngineError`, for example by boxing large elements or replacing it with `Box<http::error::ApiEngineError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> server/src/http/routes/admin/eoa_diagnostics.rs:463:6
+    |
+463 | ) -> Result<impl IntoResponse, ApiEngineError> {
+    |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 208 bytes
+    |
+    = help: try reducing the size of `http::error::ApiEngineError`, for example by boxing large elements or replacing it with `Box<http::error::ApiEngineError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> server/src/http/routes/admin/eoa_diagnostics.rs:509:40
+    |
+509 | fn parse_eoa_chain(eoa_chain: &str) -> Result<(String, u64), ApiEngineError> {
+    |                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 208 bytes
+    |
+    = help: try reducing the size of `http::error::ApiEngineError`, for example by boxing large elements or replacing it with `Box<http::error::ApiEngineError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> server/src/http/routes/admin/eoa_diagnostics.rs:534:6
+    |
+534 | ) -> Result<bool, ApiEngineError> {
+    |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 208 bytes
+    |
+    = help: try reducing the size of `http::error::ApiEngineError`, for example by boxing large elements or replacing it with `Box<http::error::ApiEngineError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> server/src/http/routes/admin/eoa_diagnostics.rs:567:6
+    |
+567 | ) -> Result<bool, ApiEngineError> {
+    |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 208 bytes
+    |
+    = help: try reducing the size of `http::error::ApiEngineError`, for example by boxing large elements or replacing it with `Box<http::error::ApiEngineError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> server/src/http/routes/admin/eoa_diagnostics.rs:580:6
+    |
+580 | ) -> Result<SigningCredential, ApiEngineError> {
+    |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 208 bytes
+    |
+    = help: try reducing the size of `http::error::ApiEngineError`, for example by boxing large elements or replacing it with `Box<http::error::ApiEngineError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+  --> server/src/http/routes/admin/queue.rs:48:6
+   |
+48 | ) -> Result<impl IntoResponse, ApiEngineError> {
+   |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 208 bytes
+   |
+   = help: try reducing the size of `http::error::ApiEngineError`, for example by boxing large elements or replacing it with `Box<http::error::ApiEngineError>`
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> server/src/http/routes/contract_encode.rs:107:6
+    |
+107 | ) -> Result<impl IntoResponse, ApiEngineError> {
+    |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 208 bytes
+    |
+    = help: try reducing the size of `http::error::ApiEngineError`, for example by boxing large elements or replacing it with `Box<http::error::ApiEngineError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> server/src/http/routes/contract_read.rs:226:6
+    |
+226 | ) -> Result<impl IntoResponse, ApiEngineError> {
+    |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 208 bytes
+    |
+    = help: try reducing the size of `http::error::ApiEngineError`, for example by boxing large elements or replacing it with `Box<http::error::ApiEngineError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> server/src/http/routes/contract_read.rs:516:6
+    |
+516 | ) -> Result<Vec<Result3>, EngineError> {
+    |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 208 bytes
+    |
+    = help: try reducing the size of `engine_core::error::EngineError`, for example by boxing large elements or replacing it with `Box<engine_core::error::EngineError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> server/src/http/routes/contract_write.rs:105:6
+    |
+105 | ) -> Result<impl IntoResponse, ApiEngineError> {
+    |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 208 bytes
+    |
+    = help: try reducing the size of `http::error::ApiEngineError`, for example by boxing large elements or replacing it with `Box<http::error::ApiEngineError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+  --> server/src/http/routes/sign_message.rs:90:6
+   |
+90 | ) -> Result<impl IntoResponse, ApiEngineError> {
+   |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 208 bytes
+   |
+   = help: try reducing the size of `http::error::ApiEngineError`, for example by boxing large elements or replacing it with `Box<http::error::ApiEngineError>`
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+  --> server/src/http/routes/sign_solana_transaction.rs:68:6
+   |
+68 | ) -> Result<impl IntoResponse, ApiEngineError> {
+   |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 208 bytes
+   |
+   = help: try reducing the size of `http::error::ApiEngineError`, for example by boxing large elements or replacing it with `Box<http::error::ApiEngineError>`
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+   --> server/src/http/routes/sign_typed_data.rs:117:6
+    |
+117 | ) -> Result<impl IntoResponse, ApiEngineError> {
+    |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 208 bytes
+    |
+    = help: try reducing the size of `http::error::ApiEngineError`, for example by boxing large elements or replacing it with `Box<http::error::ApiEngineError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+  --> server/src/http/routes/solana_transaction.rs:39:6
+   |
+39 | ) -> Result<impl IntoResponse, ApiEngineError> {
+   |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 208 bytes
+   |
+   = help: try reducing the size of `http::error::ApiEngineError`, for example by boxing large elements or replacing it with `Box<http::error::ApiEngineError>`
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+  --> server/src/http/routes/transaction.rs:60:6
+   |
+60 | ) -> Result<impl IntoResponse, ApiEngineError> {
+   |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 208 bytes
+   |
+   = help: try reducing the size of `http::error::ApiEngineError`, for example by boxing large elements or replacing it with `Box<http::error::ApiEngineError>`
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: the `Err`-variant returned from this function is very large
+  --> server/src/http/routes/transaction_write.rs:45:6
+   |
+45 | ) -> Result<impl IntoResponse, ApiEngineError> {
+   |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 208 bytes
+   |
+   = help: try reducing the size of `http::error::ApiEngineError`, for example by boxing large elements or replacing it with `Box<http::error::ApiEngineError>`
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: this `if` statement can be collapsed
+   --> server/src/http/server.rs:151:9
+    |
+151 | /         if let Some(tx) = self.shutdown_tx.take() {
+152 | |             if tx.send(true).is_err() {
+153 | |                 tracing::error!("Failed to send shutdown signal to HTTP server");
+154 | |             }
+155 | |         }
+    | |_________^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#collapsible_if
+help: collapse nested if block
+    |
+151 ~         if let Some(tx) = self.shutdown_tx.take()
+152 ~             && tx.send(true).is_err() {
+153 |                 tracing::error!("Failed to send shutdown signal to HTTP server");
+154 ~             }
+    |
+
+warning: the `Err`-variant returned from this function is very large
+  --> server/src/queue/manager.rs:60:10
+   |
+60 |     ) -> Result<Self, EngineError> {
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 208 bytes
+   |
+   = help: try reducing the size of `engine_core::error::EngineError`, for example by boxing large elements or replacing it with `Box<engine_core::error::EngineError>`
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: this function has too many arguments (8/7)
+  --> server/src/queue/manager.rs:51:5
+   |
+51 | /     pub async fn new(
+52 | |         redis_client: twmq::redis::Client,
+53 | |         queue_config: &QueueConfig,
+54 | |         solana_config: &crate::config::SolanaConfig,
+...  |
+59 | |         kms_client_cache: KmsClientCache,
+60 | |     ) -> Result<Self, EngineError> {
+   | |__________________________________^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#too_many_arguments
+
+warning: the `Err`-variant returned from this function is very large
+  --> server/src/solana_admission.rs:23:6
+   |
+23 | ) -> Result<(), EngineError> {
+   |      ^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 208 bytes
+   |
+   = help: try reducing the size of `engine_core::error::EngineError`, for example by boxing large elements or replacing it with `Box<engine_core::error::EngineError>`
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: `thirdweb-engine` (lib) generated 45 warnings (run `cargo clippy --fix --lib -p thirdweb-engine -- ` to apply 2 suggestions)
+warning: the `Err`-variant returned from this function is very large
+   --> server/src/solana_admission_tests.rs:130:60
+    |
+130 |     async fn admit(&self, data: &SolanaExecutorJobData) -> Result<(), EngineError> {
+    |                                                            ^^^^^^^^^^^^^^^^^^^^^^^ the `Err`-variant is at least 208 bytes
+    |
+    = help: try reducing the size of `engine_core::error::EngineError`, for example by boxing large elements or replacing it with `Box<engine_core::error::EngineError>`
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.98.0/index.html#result_large_err
+
+warning: `thirdweb-engine` (lib test) generated 46 warnings (45 duplicates)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 10.90s

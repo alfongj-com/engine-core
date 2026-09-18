@@ -2,7 +2,7 @@
 
 ## Decision
 
-dRPC handled the tested read mix at 1,000 requests/second on all five networks for 30 seconds. This is enough to begin low-rate EVM transaction qualification after wallet funding. It is not proof of transaction submission capacity or sustained Engine throughput. Solana needs further capacity work before a 100-transaction/second target: its current polling model may require about 2,000 RPC/s, with a desired margin of 4,000 RPC/s. Those higher rates did not pass this screen.
+dRPC handled the tested read mix at 1,000 requests/second on all five networks for 30 seconds. Subsequent [funded Engine transaction tests](public-transactions.md) passed on all five networks. These short checks do not prove sustained Engine throughput. Solana needs further capacity work before a 100-transaction/second target: the planning model allows about 2,000 RPC/s, with a desired margin of 4,000 RPC/s. Those higher rates did not pass this screen; [actual polling measurements](../design/solana-polling-cost.md) now provide a smaller-workload baseline.
 
 ## 30-second follow-up
 
@@ -29,6 +29,9 @@ The earlier classifier labeled all dispatched calls successful, but rising laten
 
 ## Cost and controls
 
+The counters below close the read-screening round. Later writes reuse the same
+campaign budget; see the public transaction report for their updated total.
+
 - Campaign observed calls: **367,791**, conservatively priced at $6/million = **$2.206746**. This includes discovery, smoke checks and failed faucet attempts through the gateway.
 - Reserved upper bound: **371,000 calls = $2.23**. Reservations persist before dispatch; unused reservations after a restart are forfeited.
 - Campaign ceiling: **2,000,000 calls = $12**, below the supplied $50 credit.
@@ -54,4 +57,4 @@ The final review found that malformed `error: null/false/0` envelopes could coun
 
 ## Reproduce
 
-See the [probe README](../../scripts/rpc/README.md). Reuse the campaign budget; do not reset its state. Provider credentials and signer keys remain outside Git. Start with funded transactions at one per second, record actual calls per transaction, and raise rates only while every submitted intent can be reconciled.
+See the [probe README](../../scripts/rpc/README.md). Reuse the campaign budget; do not reset its state. Provider credentials and signer keys remain outside Git. The funded harnesses and their initial rate increases are documented in the [public results](public-transactions.md); further runs must retain the same reconciliation and spending controls.

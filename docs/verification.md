@@ -6,9 +6,27 @@ Updated: **2026-09-17**. Upstream baseline: `b6b7a0bbdc737b3a2b09611305b71b1bf6a
 
 macOS arm64, Apple M4 (10 cores), 16 GiB RAM; Rust 1.98.1; Redis 7.4.2 built from official source; Anvil 1.8.1 from the official release with verified SHA-256; Agave local validator 4.2.2. Service tests use disposable loopback instances. Recovery scripts generate temporary local keys outside the repository.
 
-Public dRPC endpoints were used for **reads and simulation** on Ethereum Sepolia, Arbitrum Sepolia, OP Sepolia, Base Sepolia and Solana Devnet. At the time of those gates, the wallets were unfunded and no Engine transaction was broadcast publicly. Subsequent [faucet funding](testnet-funding.md) succeeded on all five networks; that round verifies balances and faucet receipts only. Successful transfers below ran only on Anvil or the isolated Solana validator. AWS KMS and IAW were not exercised live.
+Public dRPC endpoints were first used for reads and simulation, then for funded Engine transactions on Ethereum Sepolia, Arbitrum Sepolia, OP Sepolia, Base Sepolia and Solana Devnet. [Public transaction results](baselines/public-transactions.md) record successful transfers, duplicate-request checks, process-crash recovery and short rate increases. They are separate from the local suites below. AWS KMS and IAW were not exercised live.
 
 ## Current local gates — 2026-09-17
+
+### Public-write follow-up
+
+Source `c8347c7` also passes the full workspace suite, **37 executor Redis
+regressions**, both HTTP integration tests, Engine build, and Clippy (warnings
+remain). [Commands, timings and source hashes](baselines/public-round-gates.json)
+tie these gates to the final Rust source. Four fee regressions and two new receipt
+lifecycle regressions cover the fixes described in the [fee contract](design/eoa-fee-recovery.md)
+and [execution-status contract](design/eoa-execution-status.md).
+
+The actual Anvil test executed **eight reverting transactions**, killed Engine
+and Redis, restored the AOF, and verified eight terminal failures, consumed nonces,
+zero transferred value and no duplicate effects. The normal 24-transfer recovery
+scenario also passes. [Reverted scenario](baselines/local-eoa-reverted-recovery.json),
+[normal scenario](baselines/local-eoa-public-round-recovery.json). Ten offline
+public-harness safeguard tests pass. [Harness log](baselines/public-harness-tests.log).
+
+### Earlier configuration and recovery gates
 
 Every recorded gate completed successfully. [Commands, exit codes and timings](baselines/testnet-round-gates.json) accompany the logs. Saved console logs normalize trailing whitespace only. Counts refer to individual suites; they are not summed, because filtered runs, nested signing subprocesses and scenario assertions overlap.
 
@@ -48,7 +66,16 @@ These records remain useful regression and performance evidence; they do not sub
 
 ## Hosted verification
 
-Current source commit **`3aad56d21b479f5b62bd18bd60030d3f22ffcd9c` passed all three Linux workflows**: [Rust correctness](https://github.com/alfongj-com/engine-core/actions/runs/35189854266), [queue tests](https://github.com/alfongj-com/engine-core/actions/runs/35189854267), and [queue coverage](https://github.com/alfongj-com/engine-core/actions/runs/35189854352). The full workflow includes real Redis/HTTP faults, EOA process and Redis AOF recovery, the actual Solana validator scenario, and the dependency audit. [Final run metadata](baselines/testnet-round-ci-results.json) records every step and the exact source. Subsequent commits contain documentation/evidence only.
+**Final source `c8347c783b2e2776d71dfec64374b6d2fa2d1c3c` passed all three Linux
+workflows:** [Rust correctness](https://github.com/alfongj-com/engine-core/actions/runs/35296492459),
+[queue tests](https://github.com/alfongj-com/engine-core/actions/runs/35296492447),
+and [queue coverage](https://github.com/alfongj-com/engine-core/actions/runs/35296492472).
+The full gate includes the new public-harness safeguards, actual reverted-contract
+crash recovery, existing Solana validator recovery, and dependency audit.
+[Final metadata](baselines/public-round-ci-results.json) records every step.
+Subsequent commits contain documentation and test evidence only.
+
+The pre-public-write source **`3aad56d21b479f5b62bd18bd60030d3f22ffcd9c` passed all three Linux workflows**: [Rust correctness](https://github.com/alfongj-com/engine-core/actions/runs/35189854266), [queue tests](https://github.com/alfongj-com/engine-core/actions/runs/35189854267), and [queue coverage](https://github.com/alfongj-com/engine-core/actions/runs/35189854352). The full workflow includes real Redis/HTTP faults, EOA process and Redis AOF recovery, the actual Solana validator scenario, and the dependency audit. [Run metadata](baselines/testnet-round-ci-results.json) records every step and the exact source. Later EOA fee and execution-status changes require their own gates; these historical runs do not qualify newer code.
 
 The **earlier** source commit `648ef088cb95168e12d5e7643ae825c8791ed7b5` passed three Linux workflows: [Rust correctness](https://github.com/alfongj-com/engine-core/actions/runs/34943655662), [queue tests](https://github.com/alfongj-com/engine-core/actions/runs/34943655977), and [queue coverage](https://github.com/alfongj-com/engine-core/actions/runs/34943655828). [Run metadata](baselines/ci-results.json) retains the exact commit and outcomes. These historical results retain their earlier scope; the current source is qualified by the new runs above.
 
@@ -80,5 +107,5 @@ Use the explicit `solana_admission::tests` filter: an unfiltered server `--ignor
 - EOA Redis SIGKILL/AOF recovery covers one local crash window, not host power loss, replication failover, every state transition, reorgs or external nonce use. Solana's validator scenario restarts Engine with Redis kept alive; it does not test Solana recovery across Redis loss.
 - Expired Solana signatures with absent or stale historical status remain **outcome unknown**. Their signed bytes/admission identity are retained; automatic re-signing is disabled. Cancellation/orphan recovery still needs operator reconciliation, and completed admission retention is finite/configurable.
 - Local signature checks cannot prove deployed wallet/EntryPoint compatibility. ERC-4337 and EIP-7702 require qualification against pinned account implementations, EntryPoint, bundler and chain. [Account-specific scope](design/userop-signing.md).
-- No Engine public submission test, live KMS/IAW, public transaction throughput, 24-hour soak, production webhook delivery or Docker build is claimed. Public faucet funding is recorded separately. Solana signing here uses a local Ed25519 key file.
+- Funded Engine submissions and short public bursts are recorded separately; sustained transaction capacity, a 24-hour soak, live KMS/IAW, production webhook delivery and a Docker build remain unqualified. Solana signing here uses a local Ed25519 key file.
 - Compiler/Clippy warnings remain visible in the logs. A successful gate is not a warning-free build or a blanket production-readiness claim.

@@ -1,6 +1,6 @@
 # Configured RPCs and Solana recovery
 
-Status: implemented; public submission qualification is still required. Updated September 17, 2026.
+Status: implemented; initial public submission and process-recovery tests passed. Updated September 17, 2026. [Evidence and limits](../baselines/public-transactions.md).
 
 ## Purpose
 
