@@ -1,0 +1,61 @@
+   Compiling twmq v0.1.0 (/Users/alfongj/Code/engine-core/twmq)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.19s
+     Running unittests src/lib.rs (target/debug/deps/twmq-395ea38072a245fa)
+
+running 6 tests
+test lease_tests::zero_terminal_retention_removes_index_and_records ... FAILED
+test multilane::lease_tests::zero_terminal_retention_removes_index_and_records ... FAILED
+test lease_tests::same_kind_terminal_history_retains_reused_id_until_last_reference ... FAILED
+test multilane::lease_tests::same_kind_terminal_history_retains_reused_id_until_last_reference ... FAILED
+test lease_tests::cross_kind_terminal_history_retains_reused_id_until_last_reference ... FAILED
+test multilane::lease_tests::cross_kind_terminal_history_retains_reused_id_until_last_reference ... FAILED
+
+failures:
+
+---- lease_tests::zero_terminal_retention_removes_index_and_records stdout ----
+
+thread 'lease_tests::zero_terminal_retention_removes_index_and_records' (475363) panicked at twmq/src/lease_tests.rs:577:9:
+assertion `left == right` failed
+  left: 1
+ right: 0
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- multilane::lease_tests::zero_terminal_retention_removes_index_and_records stdout ----
+
+thread 'multilane::lease_tests::zero_terminal_retention_removes_index_and_records' (475366) panicked at twmq/src/multilane_lease_tests.rs:459:9:
+assertion `left == right` failed
+  left: 1
+ right: 0
+
+---- lease_tests::same_kind_terminal_history_retains_reused_id_until_last_reference stdout ----
+
+thread 'lease_tests::same_kind_terminal_history_retains_reused_id_until_last_reference' (475362) panicked at twmq/src/lease_tests.rs:529:55:
+retained newest entry must keep shared data
+
+---- multilane::lease_tests::same_kind_terminal_history_retains_reused_id_until_last_reference stdout ----
+
+thread 'multilane::lease_tests::same_kind_terminal_history_retains_reused_id_until_last_reference' (475365) panicked at twmq/src/multilane_lease_tests.rs:411:55:
+retained newest entry must keep shared data
+
+---- lease_tests::cross_kind_terminal_history_retains_reused_id_until_last_reference stdout ----
+
+thread 'lease_tests::cross_kind_terminal_history_retains_reused_id_until_last_reference' (475361) panicked at twmq/src/lease_tests.rs:537:59:
+other terminal list still retains this ID
+
+---- multilane::lease_tests::cross_kind_terminal_history_retains_reused_id_until_last_reference stdout ----
+
+thread 'multilane::lease_tests::cross_kind_terminal_history_retains_reused_id_until_last_reference' (475364) panicked at twmq/src/multilane_lease_tests.rs:419:59:
+other terminal list still retains this ID
+
+
+failures:
+    lease_tests::cross_kind_terminal_history_retains_reused_id_until_last_reference
+    lease_tests::same_kind_terminal_history_retains_reused_id_until_last_reference
+    lease_tests::zero_terminal_retention_removes_index_and_records
+    multilane::lease_tests::cross_kind_terminal_history_retains_reused_id_until_last_reference
+    multilane::lease_tests::same_kind_terminal_history_retains_reused_id_until_last_reference
+    multilane::lease_tests::zero_terminal_retention_removes_index_and_records
+
+test result: FAILED. 0 passed; 6 failed; 0 ignored; 0 measured; 18 filtered out; finished in 0.02s
+
+error: test failed, to rerun pass `-p twmq --lib`

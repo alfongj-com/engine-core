@@ -9,3 +9,11 @@ coverage
 !.env.example
 __pycache__/
 *.pyc
+# Formal verification downloads, solver outputs and local state graphs
+/formal/.cache/
+/formal/results/
+/formal/fees/target/
+/formal/fees/results/
+/formal/tla/states/
+/formal/tla/*_TTrace_*.tla
+/formal/tla/*_TTrace_*.bin

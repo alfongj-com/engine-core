@@ -1,28 +1,29 @@
 # To Alfonso
 
-Updated September 17, 2026.
+Updated September 26, 2026.
 
-## Done
+## Formal verification
 
-The [fork](https://github.com/alfongj-com/engine-core/tree/production-hardening) builds without Thirdweb Vault. Changes are in [draft PR #1](https://github.com/alfongj-com/engine-core/pull/1).
+Added **TLA+ models for queue ownership, EVM/Solana recovery and request retention**, plus **Kani proofs of the production Rust fee arithmetic**. The fee proofs cover all possible integer inputs within their stated assumptions. Protocol models explore finite combinations of workers, crashes, retries and observations.
 
-- **332 public testnet transactions verified:** Ethereum Sepolia 58; Arbitrum, OP and Base Sepolia 78 each; Solana Devnet 40. **Zero duplicate effects.** Repeating request IDs produced no extra broadcasts.
-- Crash tests passed on all five networks. EVM tests restarted both Engine and Redis; Solana recovered by resending identical signed bytes.
-- Fixed two more bugs: recovery could exceed supplied EVM fee limits, and reverted transactions were reported as successful confirmations. A real reverting-contract test now proves terminal failure, consumed nonces and no duplicate retry after a crash.
-- Full local workspace, 37 executor Redis regressions, HTTP tests, build and Clippy pass. **All three Linux CI workflows passed** on the final source. Warnings remain. [Verification](docs/verification.md) records exact results.
+**35 model checks pass; five Rust proofs pass all 116 checks.** The model suite includes required counterexamples for broken behavior and unsupported guarantees.
 
-[Public results and receipts](docs/baselines/public-transactions.md) include the original OP fee-accounting test failure and its successful reconciliation.
+The models also exposed queue cancellation and pruning bugs. Those fixes have real Redis regressions, including checks that fail against the previous behavior.
 
-## Speed and cost
+Start with [formal verification](formal/README.md), [coverage and remaining gaps](formal/coverage.md), and the [verification record](docs/verification.md). These checks do **not** prove the entire service correct. Reorg/finality handling, storage loss and dishonest providers have explicit counterexamples; they remain production work.
 
-Short bursts passed at **10 requests/s on Ethereum, 20/s on the three EVM L2s, and 5/s on Solana**. These are offered rates, not sustained production capacity. Gas/fees were precomputed for the EVM runs.
+## Existing qualification
 
-Estimated RPC spending is **$2.22 total**; this round added about **1.4 cents**. The gateway is stopped, and the persistent **$12 ceiling** remains. Keys and recovery data stay outside Git. Rotate the shared dRPC key when the campaign ends.
+The [fork](https://github.com/alfongj-com/engine-core/tree/production-hardening) builds without Thirdweb Vault. Everything remains in [draft PR #1](https://github.com/alfongj-com/engine-core/pull/1).
 
-## Remaining work
+The earlier public round verified **332 transactions on five test networks, with zero duplicate effects**, including crash recovery. Short bursts reached offered rates of 10/s on Ethereum, 20/s on the EVM L2s and 5/s on Solana. They do not establish sustained capacity. [Receipts and results](docs/baselines/public-transactions.md).
 
-1. Test reorgs, finality, provider disagreement and Redis failover.
-2. Add an operator recovery API and production spending limits; measure sustained load and Solana polling before optimizing it.
+This formal-verification work used **no paid RPC calls**. Estimated campaign spending remains **$2.22**, the gateway is stopped, and the persistent $12 ceiling remains. Rotate the shared dRPC key when the campaign ends.
+
+## Next production work
+
+1. Define and implement chain-specific finality/reorg handling and Redis disaster recovery.
+2. Add operator recovery, production spending limits and sustained multi-wallet tests.
 3. Integrate AWS KMS through credential references and qualify deployed smart-account contracts.
 
-**No action is needed from you for the completed tests.** Before deployment, we need your target traffic, AWS/KMS setup, hosting/Redis choice, and resolution of the upstream repository's missing license. This remains a draft, not a production release. Follow the [migration guide](docs/replay-migration.md) before upgrading existing queues.
+**Nothing is needed from you for these checks.** Before deployment, we still need target traffic, AWS/KMS setup, hosting/Redis choice and resolution of the upstream repository's missing license. Follow the [migration guide](docs/replay-migration.md) before upgrading retained queues.

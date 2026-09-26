@@ -1,6 +1,19 @@
 # Verification record
 
-Updated: **2026-09-17**. Upstream baseline: `b6b7a0bbdc737b3a2b09611305b71b1bf6aba6e8`. The current results below cover the local testnet-configuration, Solana recovery and RPC transport changes with the committed `Cargo.lock`. Earlier queue benchmarks and hosted results retain their original scope.
+Updated: **2026-09-26**. Upstream baseline: `b6b7a0bbdc737b3a2b09611305b71b1bf6aba6e8`. Each round below records its own source, tool versions and limitations. Earlier public-chain and benchmark results do not automatically qualify later runtime changes.
+
+## Formal verification — 2026-09-26
+
+[TLA+ protocol models and production Rust fee proofs](../formal/README.md) add
+explicit invariants, expected counterexamples, pinned runners and CI gates.
+[Coverage](../formal/coverage.md) distinguishes checked properties from assumptions
+and open work. Queue cancellation/pruning fixes are backed by real Redis
+regressions that fail before the fixes. No paid RPC or chain transactions were
+used in this round.
+
+The final source hashes, checker output and implementation test results are
+recorded in [formal evidence](../formal/evidence/README.md).
+
 
 ## Environment and scope
 
@@ -8,7 +21,7 @@ macOS arm64, Apple M4 (10 cores), 16 GiB RAM; Rust 1.98.1; Redis 7.4.2 built fro
 
 Public dRPC endpoints were first used for reads and simulation, then for funded Engine transactions on Ethereum Sepolia, Arbitrum Sepolia, OP Sepolia, Base Sepolia and Solana Devnet. [Public transaction results](baselines/public-transactions.md) record successful transfers, duplicate-request checks, process-crash recovery and short rate increases. They are separate from the local suites below. AWS KMS and IAW were not exercised live.
 
-## Current local gates — 2026-09-17
+## Public-round local gates — 2026-09-17
 
 ### Public-write follow-up
 
@@ -73,7 +86,7 @@ and [queue coverage](https://github.com/alfongj-com/engine-core/actions/runs/352
 The full gate includes the new public-harness safeguards, actual reverted-contract
 crash recovery, existing Solana validator recovery, and dependency audit.
 [Final metadata](baselines/public-round-ci-results.json) records every step.
-Subsequent commits contain documentation and test evidence only.
+Through `224b638`, subsequent commits contained documentation and test evidence only. The September 26 formal-verification round changes runtime code and has separate evidence above.
 
 The pre-public-write source **`3aad56d21b479f5b62bd18bd60030d3f22ffcd9c` passed all three Linux workflows**: [Rust correctness](https://github.com/alfongj-com/engine-core/actions/runs/35189854266), [queue tests](https://github.com/alfongj-com/engine-core/actions/runs/35189854267), and [queue coverage](https://github.com/alfongj-com/engine-core/actions/runs/35189854352). The full workflow includes real Redis/HTTP faults, EOA process and Redis AOF recovery, the actual Solana validator scenario, and the dependency audit. [Run metadata](baselines/testnet-round-ci-results.json) records every step and the exact source. Later EOA fee and execution-status changes require their own gates; these historical runs do not qualify newer code.
 

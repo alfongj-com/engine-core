@@ -1,0 +1,148 @@
+{
+  "status": "pass",
+  "kani_version": "0.68.0",
+  "source_sha256": {
+    "executors/src/eoa/worker/fee_math.rs": "98a27d1919e073ccf8d3ce66ce665bd03a6e6a14671fe371e7c1e2b7006db6f0",
+    "formal/fees/src/lib.rs": "cccdc619cfee272693cd81917ddc1e469e292160c1be963cc4df8d76b315d6d7",
+    "formal/fees/check.py": "4f0d088260e48ff2f46579e835c9b67a256115f7da4cf34fb936c3da5ac8c86e"
+  },
+  "runs": [
+    {
+      "label": "production",
+      "status": "proved",
+      "seconds": 105.473,
+      "command": [
+        "cargo",
+        "kani",
+        "--manifest-path",
+        "/Users/alfongj/Code/engine-core/formal/fees/Cargo.toml",
+        "--output-format",
+        "terse",
+        "-Z",
+        "unstable-options",
+        "--harness-timeout",
+        "300s",
+        "--export-json",
+        "/private/tmp/engine-core-fees-verified/production.json",
+        "-j",
+        "3"
+      ],
+      "harnesses": [
+        {
+          "name": "proofs::actual_dynamic_bump_preserves_valid_order_and_values",
+          "status": "Success",
+          "checks": 24,
+          "duration_ms": 1716
+        },
+        {
+          "name": "proofs::division_parts_reconstruct_all_inputs",
+          "status": "Success",
+          "checks": 16,
+          "duration_ms": 104572
+        },
+        {
+          "name": "proofs::actual_parts_match_mathematical_saturation_threshold",
+          "status": "Success",
+          "checks": 30,
+          "duration_ms": 9218
+        },
+        {
+          "name": "proofs::all_increases_are_nondecreasing_when_cap_permits",
+          "status": "Success",
+          "checks": 22,
+          "duration_ms": 9209
+        },
+        {
+          "name": "proofs::all_multipliers_respect_caps_and_priority",
+          "status": "Success",
+          "checks": 24,
+          "duration_ms": 570
+        }
+      ],
+      "expected_assertion": null,
+      "failed_checks": []
+    },
+    {
+      "label": "removed_cap",
+      "status": "expected_counterexample",
+      "seconds": 1.761,
+      "command": [
+        "cargo",
+        "kani",
+        "--manifest-path",
+        "/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/engine-fee-mutation-s5klqggv/formal/fees/Cargo.toml",
+        "--output-format",
+        "terse",
+        "-Z",
+        "unstable-options",
+        "--harness-timeout",
+        "300s",
+        "--export-json",
+        "/private/tmp/engine-core-fees-verified/removed_cap.json",
+        "-j",
+        "1",
+        "--harness",
+        "proofs::all_multipliers_respect_caps_and_priority",
+        "--exact"
+      ],
+      "harnesses": [
+        {
+          "name": "proofs::all_multipliers_respect_caps_and_priority",
+          "status": "Failure",
+          "checks": 24,
+          "duration_ms": 905
+        }
+      ],
+      "expected_assertion": "new_fee <= fee_cap.unwrap_or(u128::MAX)",
+      "failed_checks": [
+        {
+          "category": "assertion",
+          "description": "assertion failed: new_fee <= fee_cap.unwrap_or(u128::MAX)"
+        },
+        {
+          "category": "assertion",
+          "description": "assertion failed: new_priority <= priority_cap.unwrap_or(u128::MAX)"
+        }
+      ]
+    },
+    {
+      "label": "wrapping_multiply",
+      "status": "expected_counterexample",
+      "seconds": 0.8,
+      "command": [
+        "cargo",
+        "kani",
+        "--manifest-path",
+        "/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/engine-fee-mutation-v36ohxe7/formal/fees/Cargo.toml",
+        "--output-format",
+        "terse",
+        "-Z",
+        "unstable-options",
+        "--harness-timeout",
+        "300s",
+        "--export-json",
+        "/private/tmp/engine-core-fees-verified/wrapping_multiply.json",
+        "-j",
+        "1",
+        "--harness",
+        "proofs::all_increases_are_nondecreasing_when_cap_permits",
+        "--exact"
+      ],
+      "harnesses": [
+        {
+          "name": "proofs::all_increases_are_nondecreasing_when_cap_permits",
+          "status": "Failure",
+          "checks": 21,
+          "duration_ms": 412
+        }
+      ],
+      "expected_assertion": "fee_math::capped_increase(value, multiplier, Some(cap)) >= value",
+      "failed_checks": [
+        {
+          "category": "assertion",
+          "description": "assertion failed: fee_math::capped_increase(value, multiplier, Some(cap)) >= value"
+        }
+      ]
+    }
+  ]
+}

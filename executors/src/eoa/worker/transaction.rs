@@ -47,6 +47,9 @@ use crate::eoa::{
 const MAX_PREPARATION_RETRIES: u32 = 3;
 const PREPARATION_RETRY_DELAY_MS: u64 = 100;
 
+#[path = "fee_math.rs"]
+mod fee_math;
+
 /// Explicit caller fees remain ceilings during recovery. An unchanged fee pair
 /// is not a replacement and must not cause another signature/broadcast attempt.
 fn bump_transaction_fees(
@@ -68,22 +71,17 @@ fn bump_transaction_fees(
         None => (None, None),
     };
     let old_fees = (tx.max_fee_per_gas(), tx.max_priority_fee_per_gas());
-    let increase = |value: u128, cap: Option<u128>| {
-        // Divide first without losing the remainder: multiplying u128 fee data
-        // directly can wrap in release builds or panic in debug builds.
-        let multiplier = u128::from(multiplier);
-        let bumped = (value / 100)
-            .saturating_mul(multiplier)
-            .saturating_add((value % 100) * multiplier / 100);
-        bumped.min(cap.unwrap_or(u128::MAX))
-    };
     let dynamic = |fee: &mut u128, priority: &mut u128| {
-        *fee = increase(*fee, fee_cap);
-        *priority = increase(*priority, priority_cap).min(*fee);
+        (*fee, *priority) =
+            fee_math::capped_dynamic_fees(*fee, *priority, multiplier, fee_cap, priority_cap);
     };
     match &mut tx {
-        TypedTransaction::Legacy(tx) => tx.gas_price = increase(tx.gas_price, fee_cap),
-        TypedTransaction::Eip2930(tx) => tx.gas_price = increase(tx.gas_price, fee_cap),
+        TypedTransaction::Legacy(tx) => {
+            tx.gas_price = fee_math::capped_increase(tx.gas_price, multiplier, fee_cap)
+        }
+        TypedTransaction::Eip2930(tx) => {
+            tx.gas_price = fee_math::capped_increase(tx.gas_price, multiplier, fee_cap)
+        }
         TypedTransaction::Eip1559(tx) => {
             dynamic(&mut tx.max_fee_per_gas, &mut tx.max_priority_fee_per_gas)
         }
