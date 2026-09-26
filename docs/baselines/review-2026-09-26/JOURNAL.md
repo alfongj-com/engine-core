@@ -53,9 +53,10 @@ with `workingTreeChanges: true`; the hashes identify the measured implementation
 - Signature preparation, queue work, RPC, chain execution, finality assessment,
   repeated checks and receipt polling are excluded. Finality checkpoints can
   require additional durable mutations in the real Engine.
-- FULL durability was not weakened. Sustainable multi-chain capacity needs a
-  separately designed, bounded group-commit or authority-partitioning protocol
-  and its crash/rollback tests, rather than a higher intake cap alone.
+- FULL durability was not weakened. Multi-chain capacity must be
+  measured on production storage. Faster durable storage, a separately designed
+  bounded group-commit protocol, or authority partitioning are candidates; each
+  still needs crash/rollback qualification. A higher intake cap alone is insufficient.
 
 ## Reproduce
 

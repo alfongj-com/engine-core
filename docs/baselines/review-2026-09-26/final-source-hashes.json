@@ -177,5 +177,15 @@
     "target/release/thirdweb-engine": "3cfc678585f598d8dea481ca2830de2b044b682f4c94e03eaa6eaabd602b2a9d",
     "target/debug/thirdweb-engine": "3bd27e12be660930aa86d79b3e0f986cf54064f1f4f1db222e6b580681c4f228",
     "target/debug/engine-recovery": "14d1d5b7eb0b6a2181fbeba017fb7c002cdfd7548dcab112116620c760432efd"
+  },
+  "test_only_followup": {
+    "commit": "9537ac6ade9bd1acafe4d2e8bd1f2ceb919d1725",
+    "reason": "Bounded test-fixture setup only; production sources and measured binary bytes unchanged. Original measured source hashes above are retained.",
+    "files": {
+      "executors/src/eoa/store/tests.rs": {
+        "measured_source_sha256": "3d3f02053931cfe1ecb81e74548467c30be27147bebea862e27c06103e1d5487",
+        "qualification_source_sha256": "c03d99e608dd10ca7dd02f7b259d4829d68c76b76942c84864783aae8f408d30"
+      }
+    }
   }
 }

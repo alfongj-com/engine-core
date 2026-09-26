@@ -2,7 +2,7 @@
 
 ## Contract
 
-An accepted request and a possibly broadcast transaction must remain identifiable
+For queued execution, an accepted request and a possibly broadcast transaction must remain identifiable
 after Redis loss. Redis alone cannot establish that a missing transaction never
 executed. The independent SQLite ledger records immutable intent, replay identity,
 exact attempted wire/request and terminal evidence before the relevant action can
@@ -11,7 +11,7 @@ to create another transaction.
 
 This implementation supports **one active Engine process on one Unix host**, one
 durable local ledger directory, and one Redis primary projection. All workers and
-signing routes must use the installed journal. The server requires it; library
+signing routes must use the installed recovery health gate. The server requires it; library
 tests may omit the global journal. File locks exclude cooperating processes using
 the same ledger. They do not fence a different host, copied ledger, other wallet
 software, or an old Engine binary that ignores the journal.
@@ -35,7 +35,9 @@ There is no automatic initialization or force-clear command.
 
 The ledger retains records without the Redis terminal TTL. Repeating admission
 returns the stored payload, preserving the originally generated ERC-4337 nonce
-or EIP-7702 UID. A changed intent conflicts. A terminal ID skips queue creation;
+or a legacy EIP-7702 UID. Bundled EIP-7702 admission and execution are disabled;
+retention of legacy records does not enable that path. See
+[execution attribution](confirmation-identity.md). A changed intent conflicts. A terminal ID skips queue creation;
 a quarantined ID is rejected. EOA and no-op records share the canonical replay
 key `evm:<chain>:<lowercase sender>:<nonce>`, so neither can reuse the other's
 allocation. Fee replacements can retain the same replay identity; a new nonce
@@ -53,7 +55,10 @@ record the exact attempt. Existing Solana attempts must be reconciled or replaye
 unchanged; missing Redis attempt data cannot authorize a fresh blockhash/signature.
 Direct transaction-signing and administrative mutation routes also require the
 recovery gate. An already authorized request may reach the chain after a halt;
-its attempt must already exist in the ledger.
+its queued execution attempt must already exist in the ledger. Direct signing
+returns bytes to the caller; it does not create a queued admission or record the
+returned wire as an execution attempt. Any external broadcast of those bytes is
+outside Engine's recovery and inclusion guarantee.
 
 ## Commit ordering and failure cuts
 

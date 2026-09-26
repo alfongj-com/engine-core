@@ -31,6 +31,7 @@ Model composition and Rust-to-TLA+ refinement are not machine-checked.
 | Webhook events follow durable transitions; retries preserve event identity | Queue fencing model for hook commit; implementation tests | End-to-end outbox proof; delivery is at least once and consumers must deduplicate |
 | RPC/webhook URLs cannot reach forbidden networks or expose secrets | Transport/policy/redaction tests and audit | DNS/network-policy threat modeling; not represented by protocol models |
 | Shutdown, deadlines and bounded concurrency preserve work | Process/queue tests | Tokio scheduling, wall-clock jumps, resource exhaustion and fairness models |
+| Useful EOA send/recovery progress can continue without a timer delay while polling-only work stays delayed | Real Redis scheduling regression through production result decision and TWMQ lease completion | No wall-clock/fairness proof; mixed-progress unknown retries can run sooner; local matched load is measured separately; public-chain capacity remains unqualified |
 | Throughput and resource use meet production targets | Local benchmarks + short public bursts; [pruning cost](evidence/pruning/README.md) | Bounded 20k page/churn and 10k cleanup-isolation tests, policy-head hint and false-high-count fixtures added; sustained finality-window load, memory/disk/backpressure and chain/provider quotas remain qualification work |
 | Dependencies, compiler, Redis and operating system behave correctly | Pinned versions, tests and dependency audit | These components remain in the trusted computing base |
 

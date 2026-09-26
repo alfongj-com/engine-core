@@ -1,0 +1,40 @@
+{
+  "runtime_commit": "025a3d154c23f26e8e5bc6a8f7ef7c3a8294e90b",
+  "date": "2026-09-26",
+  "scope": "TLC protocol checks on 65 reviewed source files, including a test-only fixture follow-up to runtime 025a3d1; independent implementation regressions. No model composition, implementation refinement, throughput or public-chain qualification claim.",
+  "implementation_tests": {
+    "eoa_regressions": {
+      "passed": 39,
+      "seconds": 1.61,
+      "log": "eoa-regressions.log",
+      "note": "Initial runtime 025a3d1 validation before import-only cleanup; final targeted regression rerun after cleanup. This is an overlapping subset of the later executor suite, not additional unique tests."
+    },
+    "final_targeted_regression": {
+      "passed": 1,
+      "seconds": 0.59,
+      "log": "eoa-final-import-check.log"
+    },
+    "runner_parser_tests": {
+      "passed": 3,
+      "log": "runner-tests.log"
+    },
+    "executor_serial_fixture_followup": {
+      "passed": 57,
+      "seconds": 4.83,
+      "log": "../fixture-batching/executor-serial.log",
+      "checked_commit": "9537ac6ade9bd1acafe4d2e8bd1f2ceb919d1725",
+      "note": "Exact ignored serial CI command against fresh disposable Redis on macOS. The same57 tests subsequently passed on Linux in14.12s at9537ac6 (Rust run36271173982); this predates the progress-scheduling runtime change."
+    }
+  },
+  "passed": true,
+  "cases": 56,
+  "positive_states_sum": 3164046,
+  "kinds": {
+    "positive": 13,
+    "fault": 29,
+    "boundary": 10,
+    "witness": 4
+  },
+  "checked_commit": "9537ac6ade9bd1acafe4d2e8bd1f2ceb919d1725",
+  "runner_seconds_sum": 186.307
+}

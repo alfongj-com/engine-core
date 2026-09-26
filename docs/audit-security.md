@@ -10,6 +10,15 @@ Do not treat the baseline as ready for custody or unrestricted network exposure.
 
 This is a source audit, not a claim of complete security assurance. Findings below describe the baseline; later fixes and tests must be checked separately. No production keys, funded transactions, or third-party services were used to reproduce issues.
 
+## Latest review
+
+The September 26 review adds durable attempt-to-terminal identity checks,
+legacy API authentication, Solana genesis checks, and disables bundled EIP-7702
+until independent attribution is qualified. Ambiguous EOA send errors retain
+signed bytes and nonce. See the [current confirmation contract](design/confirmation-identity.md)
+and [review results](baselines/review-2026-09-26/README.md). The findings below
+remain a dated audit of the original baseline, not a current feature matrix.
+
 ## Follow-up implementation
 
 | Finding | Current change | Evidence |

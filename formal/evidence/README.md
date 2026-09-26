@@ -3,7 +3,49 @@
 The reports bind results to exact model, configuration and Rust source hashes.
 No paid RPC or blockchain transactions were used. This is finite protocol
 verification plus proofs of the production fee arithmetic, not an end-to-end
-proof of Engine.
+proof of Engine. Trailing blank lines in stored test logs are normalized.
+
+## Latest scheduling follow-up
+
+The [progress scheduling record](progress-scheduling/README.md) covers runtime
+`f309177`: 56 expected model outcomes, 66 reviewed source hashes, 40 EOA tests
+including a nine-scenario real Redis scheduling regression. Immediate requeue
+requires useful progress and rejoins the queue tail. Unknown-only work remains
+delayed. Model transitions are unchanged; elapsed time, scheduler fairness,
+per-wire retry rates and throughput are not proved.
+
+## Throughput and recovery review (preceding runtime)
+
+The [56-case protocol report](throughput-review/report.json) passes on checked
+source `9537ac6ade9bd1acafe4d2e8bd1f2ceb919d1725`, with **65 reviewed source hashes**.
+That follow-up changes only Redis test-fixture setup and its reviewed hash.
+Production runtime and measured binaries remain at
+`025a3d154c23f26e8e5bc6a8f7ef7c3a8294e90b`.
+Thirteen positive configurations exhaust **3,164,046 distinct states** in total;
+29 fault, ten boundary and four reachability configurations produce the exact
+required counterexamples. State counts are summed across separate configurations,
+not one combined service state space. Pinned TLC 1.7.4 took about 186 seconds
+locally; all raw logs are beside the report.
+
+The extension adds the consumed-nonce allocator floor and terminal-attribution
+mutation. Source review also maps bounded finality polling, per-attempt membership,
+post-dispatch EOA uncertainty, pre-dispatch NOOP retention and Solana's independent
+reservation before Redis. These mappings do not prove Rust/model refinement,
+model composition, automated NOOP recovery or 50 TPS.
+
+[Implementation evidence](throughput-review/summary.json) records 39 passing EOA
+tests (including real Redis/HTTP/SQLite) and a final targeted rerun after import-only
+cleanup. The new rejection fixture verifies unchanged signed bytes/nonce, no
+uncertain send webhook, receipt reconciliation and rejected NOOP preservation.
+Three formal-runner parser tests also pass. After the test-only fixture change,
+the [exact serial executor command](fixture-batching/README.md) passes 57/57 tests
+in 4.83 seconds locally; these overlap the earlier EOA tests. The earlier Linux
+run was cancelled after its fixture stopped advancing; Linux confirmation of
+the correction subsequently passed at `9537ac6` ([Rust](https://github.com/alfongj-com/engine-core/actions/runs/36271173982),
+[formal](https://github.com/alfongj-com/engine-core/actions/runs/36271174009)).
+These CI results precede the later progress-scheduling runtime experiment.
+Hosted CI and measured Engine load remain separate qualification records. Fee arithmetic
+source is unchanged; the earlier direct Rust proof retains its stated source scope.
 
 ## Finality and disaster-recovery extension
 
@@ -83,7 +125,7 @@ no HTTP code change was needed.
 
 Read [coverage](../coverage.md) and the per-model documents before using these
 results as a release claim. TLA+ models are manually mapped to Rust/Redis tests;
-there is no mechanically checked refinement or composition of all four models.
+there is no mechanically checked refinement or composition of the separate models.
 Exploratory incomplete searches and solver timeouts are not counted as passes.
 Historical public-network and throughput results retain their earlier source
 scope. In particular, the previous queue benchmark did not exercise pruning;

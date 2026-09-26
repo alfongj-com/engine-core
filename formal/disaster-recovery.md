@@ -141,7 +141,9 @@ checks. Admission overload likewise makes no durable state change.
 executed attempt; the fault configuration deliberately permits attribution of
 another ID's real execution. The positive model's existing effect/attempt state
 is independent of that observation. The prior recorded state counts above are
-for the earlier model version; the added mutation awaits the final full run.
+for the earlier model version. The [latest full run](evidence/throughput-review/report.json)
+passes all ten recovery configurations; terminal misattribution reaches its named
+counterexample after 11,865 distinct states.
 
 Runtime tests cover EOA hash/wallet/nonce membership, Solana chain/signature
 membership, and ERC-4337 operation hashes recomputed from the signed request and
@@ -155,16 +157,8 @@ represent this new SQL-to-Redis cut; the real worker regression
 `sql_attempt_precedes_redis_and_unbound_substitution_never_broadcasts` and this
 model's retained-authority assumption cover separate parts, not a composition proof.
 
-### Latest frozen-source correspondence review
-
-The new terminal-attribution mutation checks that a terminal outcome belongs to
-an independently executed attempt of the same admission. Runtime validation also
-binds the exact EOA hash/nonce, Solana chain/signature and computed ERC-4337 hash;
-cryptographic decoding and protocol attribution remain implementation assumptions.
-Exact wire reauthorization and unchanged chain checkpoint are stuttering operations
-after health, ownership, chain-halt and compare-and-set checks. Admission pressure
-rejection has no journal transition. Matching terminal retries may bypass a full
-Redis intake queue without creating work.
+Matching terminal retries may bypass a full Redis intake queue without creating
+work. This is also a stuttering operation.
 
 EOA `Uncertain` retains its borrowed projection; NOOP submitted reservation now
 precedes dispatch. Both preserve the durable replay binding. The model does not

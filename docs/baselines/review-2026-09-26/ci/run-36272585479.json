@@ -1,0 +1,119 @@
+{
+  "conclusion": "success",
+  "createdAt": "2026-09-26T21:20:21Z",
+  "databaseId": 36272585479,
+  "headSha": "f309177186e9f5215a1e0acd036bfba1bb15fa6c",
+  "jobs": [
+    {
+      "completedAt": "2026-09-26T21:22:36Z",
+      "conclusion": "success",
+      "databaseId": 108489225175,
+      "name": "test",
+      "startedAt": "2026-09-26T21:20:25Z",
+      "status": "completed",
+      "steps": [
+        {
+          "completedAt": "2026-09-26T21:20:27Z",
+          "conclusion": "success",
+          "name": "Set up job",
+          "number": 1,
+          "startedAt": "2026-09-26T21:20:25Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-09-26T21:20:49Z",
+          "conclusion": "success",
+          "name": "Initialize containers",
+          "number": 2,
+          "startedAt": "2026-09-26T21:20:27Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-09-26T21:20:51Z",
+          "conclusion": "success",
+          "name": "Run actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+          "number": 3,
+          "startedAt": "2026-09-26T21:20:49Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-09-26T21:20:52Z",
+          "conclusion": "success",
+          "name": "Install CI dependencies",
+          "number": 4,
+          "startedAt": "2026-09-26T21:20:51Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-09-26T21:21:06Z",
+          "conclusion": "success",
+          "name": "Cache",
+          "number": 5,
+          "startedAt": "2026-09-26T21:20:52Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-09-26T21:21:16Z",
+          "conclusion": "success",
+          "name": "Build",
+          "number": 6,
+          "startedAt": "2026-09-26T21:21:06Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-09-26T21:22:32Z",
+          "conclusion": "success",
+          "name": "Run tests",
+          "number": 7,
+          "startedAt": "2026-09-26T21:21:16Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-09-26T21:22:33Z",
+          "conclusion": "success",
+          "name": "Test Report",
+          "number": 8,
+          "startedAt": "2026-09-26T21:22:32Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-09-26T21:22:33Z",
+          "conclusion": "success",
+          "name": "Post Cache",
+          "number": 14,
+          "startedAt": "2026-09-26T21:22:33Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-09-26T21:22:33Z",
+          "conclusion": "success",
+          "name": "Post Run actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+          "number": 15,
+          "startedAt": "2026-09-26T21:22:33Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-09-26T21:22:33Z",
+          "conclusion": "success",
+          "name": "Stop containers",
+          "number": 16,
+          "startedAt": "2026-09-26T21:22:33Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-09-26T21:22:33Z",
+          "conclusion": "success",
+          "name": "Complete job",
+          "number": 17,
+          "startedAt": "2026-09-26T21:22:33Z",
+          "status": "completed"
+        }
+      ],
+      "url": "https://github.com/alfongj-com/engine-core/actions/runs/36272585479/job/108489225175"
+    }
+  ],
+  "name": "twmq Tests",
+  "status": "completed",
+  "updatedAt": "2026-09-26T21:22:37Z",
+  "url": "https://github.com/alfongj-com/engine-core/actions/runs/36272585479"
+}

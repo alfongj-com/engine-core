@@ -34,7 +34,8 @@ still violates the allocator floor and can block progress.
 Pinned TLC checked four nonce values. The positive model exhausted **645 states**;
 removing the consumed floor failed `ObservedNonceFloor` after **184 explored
 states**. The witness reached a remaining old receipt with newer consumed nonces
-after **69 states**. These targeted results precede the final source-map gate.
+after **69 states**. The [full frozen-source gate](evidence/throughput-review/report.json)
+reproduced all three results.
 
 ## Limits
 

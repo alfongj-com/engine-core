@@ -1,0 +1,170 @@
+{
+  "conclusion": "success",
+  "createdAt": "2026-09-26T21:20:21Z",
+  "databaseId": 36272585476,
+  "headSha": "f309177186e9f5215a1e0acd036bfba1bb15fa6c",
+  "jobs": [
+    {
+      "completedAt": "2026-09-26T21:23:28Z",
+      "conclusion": "success",
+      "databaseId": 108489225257,
+      "name": "rust-fees",
+      "startedAt": "2026-09-26T21:20:25Z",
+      "status": "completed",
+      "steps": [
+        {
+          "completedAt": "2026-09-26T21:20:26Z",
+          "conclusion": "success",
+          "name": "Set up job",
+          "number": 1,
+          "startedAt": "2026-09-26T21:20:25Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-09-26T21:20:29Z",
+          "conclusion": "success",
+          "name": "Run actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+          "number": 2,
+          "startedAt": "2026-09-26T21:20:26Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-09-26T21:20:49Z",
+          "conclusion": "success",
+          "name": "Install pinned verifier",
+          "number": 3,
+          "startedAt": "2026-09-26T21:20:29Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-09-26T21:20:49Z",
+          "conclusion": "success",
+          "name": "Independent arithmetic reference examples",
+          "number": 4,
+          "startedAt": "2026-09-26T21:20:49Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-09-26T21:23:24Z",
+          "conclusion": "success",
+          "name": "Prove production arithmetic and reject source mutations",
+          "number": 5,
+          "startedAt": "2026-09-26T21:20:49Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-09-26T21:23:25Z",
+          "conclusion": "success",
+          "name": "Run actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+          "number": 6,
+          "startedAt": "2026-09-26T21:23:24Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-09-26T21:23:26Z",
+          "conclusion": "success",
+          "name": "Post Run actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+          "number": 12,
+          "startedAt": "2026-09-26T21:23:25Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-09-26T21:23:26Z",
+          "conclusion": "success",
+          "name": "Complete job",
+          "number": 13,
+          "startedAt": "2026-09-26T21:23:26Z",
+          "status": "completed"
+        }
+      ],
+      "url": "https://github.com/alfongj-com/engine-core/actions/runs/36272585476/job/108489225257"
+    },
+    {
+      "completedAt": "2026-09-26T21:25:56Z",
+      "conclusion": "success",
+      "databaseId": 108489225397,
+      "name": "protocols",
+      "startedAt": "2026-09-26T21:20:25Z",
+      "status": "completed",
+      "steps": [
+        {
+          "completedAt": "2026-09-26T21:20:26Z",
+          "conclusion": "success",
+          "name": "Set up job",
+          "number": 1,
+          "startedAt": "2026-09-26T21:20:26Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-09-26T21:20:28Z",
+          "conclusion": "success",
+          "name": "Run actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+          "number": 2,
+          "startedAt": "2026-09-26T21:20:26Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-09-26T21:20:28Z",
+          "conclusion": "success",
+          "name": "Run actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3",
+          "number": 3,
+          "startedAt": "2026-09-26T21:20:28Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-09-26T21:20:28Z",
+          "conclusion": "success",
+          "name": "Model runner safeguards",
+          "number": 4,
+          "startedAt": "2026-09-26T21:20:28Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-09-26T21:25:54Z",
+          "conclusion": "success",
+          "name": "Exhaust protocol models and require specific counterexamples",
+          "number": 5,
+          "startedAt": "2026-09-26T21:20:28Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-09-26T21:25:55Z",
+          "conclusion": "success",
+          "name": "Run actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+          "number": 6,
+          "startedAt": "2026-09-26T21:25:54Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-09-26T21:25:55Z",
+          "conclusion": "success",
+          "name": "Post Run actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3",
+          "number": 11,
+          "startedAt": "2026-09-26T21:25:55Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-09-26T21:25:55Z",
+          "conclusion": "success",
+          "name": "Post Run actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+          "number": 12,
+          "startedAt": "2026-09-26T21:25:55Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-09-26T21:25:55Z",
+          "conclusion": "success",
+          "name": "Complete job",
+          "number": 13,
+          "startedAt": "2026-09-26T21:25:55Z",
+          "status": "completed"
+        }
+      ],
+      "url": "https://github.com/alfongj-com/engine-core/actions/runs/36272585476/job/108489225397"
+    }
+  ],
+  "name": "Formal verification",
+  "status": "completed",
+  "updatedAt": "2026-09-26T21:25:57Z",
+  "url": "https://github.com/alfongj-com/engine-core/actions/runs/36272585476"
+}

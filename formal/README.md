@@ -45,9 +45,12 @@ The [recorded run and raw evidence](evidence/README.md) identify the exact sourc
 state counts, counterexamples and implementation regressions for that run. The
 manifest contains **56 configurations**: the previous 52, three allocator
 checks and one terminal-attribution mutation. The prior 52-case run remains
-historical evidence for its recorded source. The allocator trio passed targeted
-checks; the new full frozen-source run is pending. These finite models do not
-prove a 50 TPS target or compose automatically into a whole-system proof.
+historical evidence for its recorded source. The [latest runtime check](evidence/progress-scheduling/README.md)
+passes all 56 expected outcomes at `f309177`, with 66 reviewed source hashes
+and 3,164,046 summed positive states. It also tests real Redis scheduling after
+useful EOA progress. The [preceding report](evidence/throughput-review/report.json)
+retains its `9537ac6` scope. These finite models do not prove a 50 TPS target or
+compose automatically into a whole-system proof.
 
 ## Run locally
 

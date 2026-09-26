@@ -2,6 +2,32 @@
 
 Updated: **2026-09-26**. Upstream baseline: `b6b7a0bbdc737b3a2b09611305b71b1bf6aba6e8`. Each round below records its own source, tool versions and limitations. Earlier public-chain and benchmark results do not automatically qualify later runtime changes.
 
+## Iterative production review — 2026-09-26
+
+Latest runtime: `f309177186e9f5215a1e0acd036bfba1bb15fa6c`.
+The [five-area review](../TO_ALFONSO.md) covers performance, security, reliability,
+readability and test/proof coverage. New regressions bind terminal evidence to
+the request's own attempt, retain uncertain EOA identity, reserve Solana wire
+before Redis writes, preserve consumed nonce floors and verify scheduling through
+actual Redis leases. Bundled EIP-7702 is now disabled pending independent execution
+attribution; the older round's capability description below is historical.
+
+The final [matched EVM load](baselines/review-2026-09-26/README.md) reconciles
+18,000 exact effects after six minutes at 50 offered requests/s. Last-minute
+attempted/terminal rates are 50.075/50.515 TPS. The previous build managed
+45.085/47.747 on the same workload. Measurements identify exact binaries and
+distinguish load from drain. Public-chain and concurrent-chain capacity remain
+unqualified.
+
+The [latest formal record](../formal/evidence/progress-scheduling/README.md)
+passes 56 expected model outcomes against 66 reviewed source hashes. Separate
+production fee proofs and implementation tests do not establish model composition
+or whole-program correctness. Queue line coverage includes ignored Redis tests;
+its 64.17% result is not workspace coverage. All four Linux workflows pass at
+this runtime commit; [CI results and artifacts](baselines/review-2026-09-26/ci/SUMMARY.md)
+record the actual process scenarios, proof results and dependency warnings. No
+paid RPC calls were used.
+
 ## Finality and independent Redis recovery — 2026-09-26
 
 Added [chain-specific finality rules](design/finality-and-recovery.md), retained

@@ -41,6 +41,7 @@ consensus or batch publication delays. Ethereum gas examples use the standard
 | Every page fetched all retained records; every cleanup hydrated the whole eligible range. | Redis returns bounded rank pages; cleanup reads only finalized nonce groups and at most 4096 group records. Pathological replacement fanout exceeding that budget fails closed with evidence retained. |
 | Old retained receipts could rewind optimistic nonce below consumed chain count. | Cleanup always includes the consumed-count floor; real Redis regression reproduces 313 consumed / 250 retained. [Finite model](../../formal/nonce-allocator.md) |
 | A larger inflight window could keep the send cycle busy with one huge batch. | Each new allocation cycle consumes at most 128 nonce reservations; ordered preparation/send concurrency is 32. Ten preparation refill passes may process up to 1,280 rejected pending jobs. Borrowed recovery still visits all retained borrowed attempts (up to the configured 4,096 window), and recycled recovery reads its retained set. No universal 128-work or elapsed-time bound follows. |
+| Even a useful bounded send cycle with unsigned backlog waited behind a 200ms delay rounded to one second by TWMQ. | Successful nondelegated cycles with acknowledged send or recovery progress and remaining unsigned work now rejoin the queue tail immediately. Delegated accounts retain 2s; unknown delegation, no-progress, unknown-only and finality-only cycles retain the rounded 1s delay. Errors retain their existing handling. The [matched six-minute run](../baselines/review-2026-09-26/README.md) raises last-minute attempted TPS from 45.085 to 50.075; public-chain capacity is still unqualified. |
 | Repeated identical journal attempts/checkpoints incurred avoidable durable work. | Exact attempt and same policy/checkpoint-head no-ops remain behind health/owner/CAS checks. Terminal receipt anchors still belong to each intent. Disk durability and serialization remain required. |
 
 Block evidence is shared only within one worker cycle and exact block number/hash;
@@ -86,9 +87,10 @@ and admission permits do not bound permanent journal growth; provision and
 monitor disk, Redis memory, oldest unresolved age, rejection rate and checkpoint
 lag. Confirmation work still shares the EOA worker cycle: RPC RTT can delay its
 next send batch even with bounded concurrency. Unknown borrowed attempts may
-retry indefinitely at one cycle per second or slower, with one receipt read and
-one broadcast per unresolved attempt; shared provider throttling and lifetime
-EOA retry budgets are not implemented.
+retry indefinitely with one receipt read and one broadcast per unresolved attempt.
+Unknown-only cycles keep the rounded one-second delay; mixed cycles making useful
+send/recovery progress with unsigned backlog can immediately rejoin the queue.
+Shared provider throttling and lifetime EOA retry budgets are not implemented.
 
 ## Qualification and next work
 
@@ -109,9 +111,10 @@ EOA retry budgets are not implemented.
 
 ## Durable writer capacity qualification
 
-A separate short, prebuilt journal probe on this host measured roughly 53–57
-combined admission/attempt/terminal intent lifecycles per second. That isolated
-measurement does not establish Engine throughput, and cannot support a claim of
+The [separate unoptimized journal probe](../baselines/review-2026-09-26/JOURNAL.md)
+on this host measured an equivalent 53–57 three-stage intents/second, derived
+from separately timed admission, attempt and terminal phases. This was not mixed
+Engine traffic. That isolated measurement cannot support a claim of
 50 TPS on several chains simultaneously: all chains share the serial durable
 writer. Per-chain send/receipt improvements must therefore be qualified together
 under the intended aggregate load, including SQLite FULL-sync and Redis persistence.

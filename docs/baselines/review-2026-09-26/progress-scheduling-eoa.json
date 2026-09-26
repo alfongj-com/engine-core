@@ -1,0 +1,600 @@
+{
+  "scope": "local EOA; one signer; fixed-cadence Anvil; no public chain qualification",
+  "offered_tps": 50,
+  "duration_seconds": 360,
+  "block_seconds": 12,
+  "finality_depth": 2,
+  "requested_max_inflight": 1024,
+  "durability": "SQLite WAL synchronous=FULL/fullfsync=ON; Redis AOF appendfsync=everysec",
+  "engine_binary": "/Users/alfongj/Code/engine-core/target/release/thirdweb-engine",
+  "engine_binary_sha256": "a0b38a6444682de64cc9264f27f826cb14a4913692b5ed8e9cc837d360588ccc",
+  "log_directory": "/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/engine-eoa-throughput-pblaojw5",
+  "during_load": {
+    "seconds": 359.997,
+    "admitted": 18000,
+    "attempted": 17988,
+    "included": 17929,
+    "terminal": 16117
+  },
+  "observed_rates": {
+    "from_seconds": 301.025,
+    "to_seconds": 359.997,
+    "admitted_tps": 50.007,
+    "attempted_tps": 50.075,
+    "included_tps": 50.583,
+    "terminal_tps": 50.515
+  },
+  "admission_completion_seconds": 360.023,
+  "admission_responses": {
+    "202": 18000
+  },
+  "admission_latency_ms": {
+    "p50": 13.312,
+    "p95": 19.611,
+    "p99": 23.575
+  },
+  "rpc_calls_during_load": {
+    "eth_getCode": 2,
+    "eth_getTransactionCount": 318,
+    "eth_getBalance": 1,
+    "eth_blockNumber": 66,
+    "eth_feeHistory": 17988,
+    "eth_sendRawTransaction": 17988,
+    "eth_getTransactionReceipt": 16117,
+    "eth_getBlockByNumber": 192
+  },
+  "final": {
+    "seconds": 375.124,
+    "admitted": 18000,
+    "attempted": 18000,
+    "included": 18000,
+    "terminal": 18000
+  },
+  "recipient_value_wei": 18000,
+  "outcome": "pass",
+  "rpc_calls_total": {
+    "eth_getCode": 2,
+    "eth_getTransactionCount": 325,
+    "eth_getBalance": 1,
+    "eth_blockNumber": 68,
+    "eth_feeHistory": 18000,
+    "eth_sendRawTransaction": 18000,
+    "eth_getTransactionReceipt": 18000,
+    "eth_getBlockByNumber": 228
+  },
+  "samples": [
+    {
+      "seconds": 5.012,
+      "admitted": 250,
+      "attempted": 226,
+      "included": 0,
+      "terminal": 0
+    },
+    {
+      "seconds": 10.027,
+      "admitted": 501,
+      "attempted": 483,
+      "included": 0,
+      "terminal": 0
+    },
+    {
+      "seconds": 15.038,
+      "admitted": 752,
+      "attempted": 728,
+      "included": 525,
+      "terminal": 0
+    },
+    {
+      "seconds": 20.053,
+      "admitted": 1003,
+      "attempted": 975,
+      "included": 525,
+      "terminal": 0
+    },
+    {
+      "seconds": 25.06,
+      "admitted": 1253,
+      "attempted": 1229,
+      "included": 1127,
+      "terminal": 0
+    },
+    {
+      "seconds": 30.069,
+      "admitted": 1503,
+      "attempted": 1477,
+      "included": 1127,
+      "terminal": 0
+    },
+    {
+      "seconds": 35.074,
+      "admitted": 1754,
+      "attempted": 1732,
+      "included": 1127,
+      "terminal": 0
+    },
+    {
+      "seconds": 40.084,
+      "admitted": 2004,
+      "attempted": 1926,
+      "included": 1732,
+      "terminal": 121
+    },
+    {
+      "seconds": 45.099,
+      "admitted": 2255,
+      "attempted": 2228,
+      "included": 1732,
+      "terminal": 525
+    },
+    {
+      "seconds": 50.112,
+      "admitted": 2505,
+      "attempted": 2475,
+      "included": 2328,
+      "terminal": 525
+    },
+    {
+      "seconds": 55.121,
+      "admitted": 2756,
+      "attempted": 2618,
+      "included": 2328,
+      "terminal": 1127
+    },
+    {
+      "seconds": 60.138,
+      "admitted": 3007,
+      "attempted": 2979,
+      "included": 2928,
+      "terminal": 1127
+    },
+    {
+      "seconds": 65.147,
+      "admitted": 3257,
+      "attempted": 3058,
+      "included": 2928,
+      "terminal": 1732
+    },
+    {
+      "seconds": 70.164,
+      "admitted": 3508,
+      "attempted": 3481,
+      "included": 2928,
+      "terminal": 1732
+    },
+    {
+      "seconds": 75.183,
+      "admitted": 3759,
+      "attempted": 3581,
+      "included": 3530,
+      "terminal": 2176
+    },
+    {
+      "seconds": 80.203,
+      "admitted": 4010,
+      "attempted": 3986,
+      "included": 3530,
+      "terminal": 2328
+    },
+    {
+      "seconds": 85.224,
+      "admitted": 4261,
+      "attempted": 4133,
+      "included": 4133,
+      "terminal": 2600
+    },
+    {
+      "seconds": 90.242,
+      "admitted": 4512,
+      "attempted": 4483,
+      "included": 4133,
+      "terminal": 2928
+    },
+    {
+      "seconds": 95.256,
+      "admitted": 4763,
+      "attempted": 4733,
+      "included": 4133,
+      "terminal": 2928
+    },
+    {
+      "seconds": 100.267,
+      "admitted": 5013,
+      "attempted": 4926,
+      "included": 4733,
+      "terminal": 3075
+    },
+    {
+      "seconds": 105.285,
+      "admitted": 5264,
+      "attempted": 5264,
+      "included": 4733,
+      "terminal": 3530
+    },
+    {
+      "seconds": 110.299,
+      "admitted": 5515,
+      "attempted": 5484,
+      "included": 5338,
+      "terminal": 3530
+    },
+    {
+      "seconds": 115.318,
+      "admitted": 5766,
+      "attempted": 5703,
+      "included": 5338,
+      "terminal": 4133
+    },
+    {
+      "seconds": 120.334,
+      "admitted": 6017,
+      "attempted": 5988,
+      "included": 5928,
+      "terminal": 4133
+    },
+    {
+      "seconds": 125.34,
+      "admitted": 6267,
+      "attempted": 6031,
+      "included": 5928,
+      "terminal": 4733
+    },
+    {
+      "seconds": 130.354,
+      "admitted": 6518,
+      "attempted": 6491,
+      "included": 5928,
+      "terminal": 4733
+    },
+    {
+      "seconds": 135.373,
+      "admitted": 6768,
+      "attempted": 6582,
+      "included": 6532,
+      "terminal": 5184
+    },
+    {
+      "seconds": 140.391,
+      "admitted": 7020,
+      "attempted": 6998,
+      "included": 6532,
+      "terminal": 5338
+    },
+    {
+      "seconds": 145.411,
+      "admitted": 7270,
+      "attempted": 7127,
+      "included": 7127,
+      "terminal": 5694
+    },
+    {
+      "seconds": 150.427,
+      "admitted": 7521,
+      "attempted": 7505,
+      "included": 7127,
+      "terminal": 5928
+    },
+    {
+      "seconds": 155.437,
+      "admitted": 7771,
+      "attempted": 7758,
+      "included": 7731,
+      "terminal": 5928
+    },
+    {
+      "seconds": 160.448,
+      "admitted": 8022,
+      "attempted": 7931,
+      "included": 7731,
+      "terminal": 6092
+    },
+    {
+      "seconds": 165.476,
+      "admitted": 8273,
+      "attempted": 8253,
+      "included": 7731,
+      "terminal": 6532
+    },
+    {
+      "seconds": 170.482,
+      "admitted": 8524,
+      "attempted": 8481,
+      "included": 8328,
+      "terminal": 6540
+    },
+    {
+      "seconds": 175.502,
+      "admitted": 8775,
+      "attempted": 8635,
+      "included": 8328,
+      "terminal": 7127
+    },
+    {
+      "seconds": 180.513,
+      "admitted": 9025,
+      "attempted": 9016,
+      "included": 8934,
+      "terminal": 7127
+    },
+    {
+      "seconds": 185.534,
+      "admitted": 9276,
+      "attempted": 9032,
+      "included": 8934,
+      "terminal": 7721
+    },
+    {
+      "seconds": 190.549,
+      "admitted": 9528,
+      "attempted": 9526,
+      "included": 8934,
+      "terminal": 7731
+    },
+    {
+      "seconds": 195.571,
+      "admitted": 9778,
+      "attempted": 9582,
+      "included": 9526,
+      "terminal": 8182
+    },
+    {
+      "seconds": 200.601,
+      "admitted": 10030,
+      "attempted": 10013,
+      "included": 9526,
+      "terminal": 8328
+    },
+    {
+      "seconds": 205.624,
+      "admitted": 10281,
+      "attempted": 10278,
+      "included": 10134,
+      "terminal": 8328
+    },
+    {
+      "seconds": 210.649,
+      "admitted": 10532,
+      "attempted": 10429,
+      "included": 10134,
+      "terminal": 8509
+    },
+    {
+      "seconds": 215.663,
+      "admitted": 10783,
+      "attempted": 10736,
+      "included": 10557,
+      "terminal": 8934
+    },
+    {
+      "seconds": 220.677,
+      "admitted": 11034,
+      "attempted": 10984,
+      "included": 10557,
+      "terminal": 8983
+    },
+    {
+      "seconds": 225.7,
+      "admitted": 11285,
+      "attempted": 11184,
+      "included": 10557,
+      "terminal": 9526
+    },
+    {
+      "seconds": 230.716,
+      "admitted": 11536,
+      "attempted": 11532,
+      "included": 11340,
+      "terminal": 9526
+    },
+    {
+      "seconds": 235.723,
+      "admitted": 11786,
+      "attempted": 11533,
+      "included": 11340,
+      "terminal": 10134
+    },
+    {
+      "seconds": 240.748,
+      "admitted": 12037,
+      "attempted": 12031,
+      "included": 11927,
+      "terminal": 10134
+    },
+    {
+      "seconds": 245.767,
+      "admitted": 12288,
+      "attempted": 12135,
+      "included": 11927,
+      "terminal": 10557
+    },
+    {
+      "seconds": 250.793,
+      "admitted": 12539,
+      "attempted": 12527,
+      "included": 11927,
+      "terminal": 10557
+    },
+    {
+      "seconds": 255.811,
+      "admitted": 12790,
+      "attempted": 12629,
+      "included": 12527,
+      "terminal": 10889
+    },
+    {
+      "seconds": 260.834,
+      "admitted": 13041,
+      "attempted": 12853,
+      "included": 12527,
+      "terminal": 11340
+    },
+    {
+      "seconds": 265.859,
+      "admitted": 13292,
+      "attempted": 13233,
+      "included": 13138,
+      "terminal": 11429
+    },
+    {
+      "seconds": 270.886,
+      "admitted": 13544,
+      "attempted": 13538,
+      "included": 13138,
+      "terminal": 11927
+    },
+    {
+      "seconds": 275.906,
+      "admitted": 13795,
+      "attempted": 13782,
+      "included": 13733,
+      "terminal": 11927
+    },
+    {
+      "seconds": 280.929,
+      "admitted": 14046,
+      "attempted": 13894,
+      "included": 13733,
+      "terminal": 12527
+    },
+    {
+      "seconds": 285.947,
+      "admitted": 14297,
+      "attempted": 14283,
+      "included": 13733,
+      "terminal": 12527
+    },
+    {
+      "seconds": 290.974,
+      "admitted": 14549,
+      "attempted": 14533,
+      "included": 14327,
+      "terminal": 12527
+    },
+    {
+      "seconds": 295.999,
+      "admitted": 14800,
+      "attempted": 14584,
+      "included": 14327,
+      "terminal": 13074
+    },
+    {
+      "seconds": 301.025,
+      "admitted": 15051,
+      "attempted": 15035,
+      "included": 14946,
+      "terminal": 13138
+    },
+    {
+      "seconds": 306.042,
+      "admitted": 15302,
+      "attempted": 15128,
+      "included": 14946,
+      "terminal": 13531
+    },
+    {
+      "seconds": 311.069,
+      "admitted": 15553,
+      "attempted": 15527,
+      "included": 14946,
+      "terminal": 13733
+    },
+    {
+      "seconds": 316.092,
+      "admitted": 15804,
+      "attempted": 15681,
+      "included": 15527,
+      "terminal": 13970
+    },
+    {
+      "seconds": 321.106,
+      "admitted": 16055,
+      "attempted": 15955,
+      "included": 15527,
+      "terminal": 14327
+    },
+    {
+      "seconds": 326.132,
+      "admitted": 16306,
+      "attempted": 16227,
+      "included": 16117,
+      "terminal": 14431
+    },
+    {
+      "seconds": 331.149,
+      "admitted": 16558,
+      "attempted": 16391,
+      "included": 16117,
+      "terminal": 14946
+    },
+    {
+      "seconds": 336.168,
+      "admitted": 16808,
+      "attempted": 16777,
+      "included": 16745,
+      "terminal": 14946
+    },
+    {
+      "seconds": 341.195,
+      "admitted": 17059,
+      "attempted": 16859,
+      "included": 16745,
+      "terminal": 15527
+    },
+    {
+      "seconds": 346.223,
+      "admitted": 17311,
+      "attempted": 17287,
+      "included": 16745,
+      "terminal": 15527
+    },
+    {
+      "seconds": 351.251,
+      "admitted": 17562,
+      "attempted": 17330,
+      "included": 17330,
+      "terminal": 16061
+    },
+    {
+      "seconds": 356.279,
+      "admitted": 17814,
+      "attempted": 17780,
+      "included": 17330,
+      "terminal": 16117
+    },
+    {
+      "seconds": 359.997,
+      "admitted": 18000,
+      "attempted": 17988,
+      "included": 17929,
+      "terminal": 16117
+    },
+    {
+      "seconds": 361.306,
+      "admitted": 18000,
+      "attempted": 18000,
+      "included": 17988,
+      "terminal": 16117
+    },
+    {
+      "seconds": 366.334,
+      "admitted": 18000,
+      "attempted": 18000,
+      "included": 18000,
+      "terminal": 16679
+    },
+    {
+      "seconds": 371.364,
+      "admitted": 18000,
+      "attempted": 18000,
+      "included": 18000,
+      "terminal": 17519
+    },
+    {
+      "seconds": 375.124,
+      "admitted": 18000,
+      "attempted": 18000,
+      "included": 18000,
+      "terminal": 18000
+    }
+  ],
+  "journal_bytes": 40403072
+}

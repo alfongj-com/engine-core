@@ -1,0 +1,16 @@
+{
+  "scenario": "Redis disaster quarantine and fresh intake",
+  "loss": "flush",
+  "log_directory": "/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/engine-redis-disaster-ecr50f5s",
+  "outcome": "pass",
+  "prior_uncertain_effects": 1,
+  "new_intent_effects": 1,
+  "live_projection_loss_halts_writes": true,
+  "duplicate_effects": 0,
+  "quarantined_ids": 1,
+  "unsafe_reattach_rejected": true,
+  "ordinary_startup_rejected": true,
+  "new_namespace_healthy": true,
+  "terminal_duplicate_created_no_work": true,
+  "elapsed_seconds": 5.915
+}

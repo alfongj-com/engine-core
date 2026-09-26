@@ -250,7 +250,9 @@ All post-dispatch RPC errors retain the original signed borrowed attempt and its
 nonce. Recovery first looks for a matching included receipt, then retransmits the
 same wire when unresolved; error text never recycles the nonce. Unknown sends do
 not emit a send-success webhook or terminal failure. The existing worker requeue
-cadence is at least one second, with 32 concurrent recovery RPC tasks; retries can
+cadence uses a rounded one-second delay for unknown-only/no-progress work, with
+32 concurrent recovery RPC tasks. Mixed successful cycles with send/recovery
+progress and unsigned backlog can rejoin the queue tail immediately; retries can
 continue indefinitely while evidence remains unknown. Admission and inflight
 bounds limit retained work, not lifetime provider spend. Recovery visits all
 borrowed records (potentially 4,096), so slow RPC can delay finality polling; the

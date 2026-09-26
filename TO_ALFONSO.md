@@ -1,35 +1,35 @@
 # To Alfonso
 
-Updated September 26, 2026.
+Updated September 26, 2026. Work is in [draft PR #1](https://github.com/alfongj-com/engine-core/pull/1).
 
-## Finality and Redis recovery
+## What the review found
 
-Implemented on `production-hardening`, in [draft PR #1](https://github.com/alfongj-com/engine-core/pull/1).
+**The implementation is safer and faster, but 50 TPS per chain in production is not yet qualified.** I reviewed all five areas, fixed the concrete findings, and repeated the affected tests and measurements.
 
-- **Final outcomes wait for finality.** Ethereum, Arbitrum and OP Stack/Base use the RPC's finalized checkpoint by default. Solana requires finalized status. Reverted execution follows the same rule. Explicit EVM block-depth policies remain probabilistic.
-- **Reorgs retain the original intent.** Provisional receipts cannot release a nonce or create a fresh Solana signature. Conflicting retained EVM checkpoints halt that chain when detected during active polling.
-- **Redis is no longer the only recovery record.** An independent SQLite journal stores admitted requests, signed attempts, replay bindings and final outcomes. Lost or stale Redis data closes writes. Offline recovery uses a new namespace and quarantines uncertain transactions.
+| Area | Result |
+|---|---|
+| Performance | The final six-minute EVM run reached 50.1 attempted and 50.5 terminal TPS in its last minute, after fixing a scheduling delay. Solana reached roughly 50 terminal TPS after startup. Public chains and concurrent chains sharing one journal remain unqualified. |
+| Security | Final outcomes must match that request's durable signed attempt. Added legacy API authentication and Solana cluster checks. Bundled EIP-7702 is disabled until independent execution attribution exists; direct EOA type-4 transactions remain supported. |
+| Reliability | Fixed nonce-counter rollback and recycling after ambiguous send errors. Original bytes and nonce survive uncertainty. Reorg and Solana crash/lost-response tests produced no duplicate effects. Redis recovery retains its independent journal and quarantine rules. |
+| Readability | Split streaming export into its own module, named the journal operations, simplified send outcomes and bounded queue work. Clippy completes, but substantial warnings remain, mostly large error types. The whole repository is not yet clean. |
+| Tests and proofs | Added failure-path, identity, capacity and recovery regressions. All 56 finite model cases pass; five production fee-arithmetic proofs pass and two deliberate mutations are rejected. Queue coverage now includes Redis regressions: 64.2%, up from 41.2%. This is not workspace coverage or a proof of the whole service. |
 
-### Evidence
+All four Linux CI workflows passed at `f309177`, including the real-chain recovery/load scenarios. [Exact CI results](docs/baselines/review-2026-09-26/ci/SUMMARY.md).
 
-Local process tests pass for Redis deletion, stale-backup restore, intact AOF restart, and successful/reverted EVM reorg recovery. Engine automatically recovered each orphaned transaction at its original nonce; no duplicate effects occurred. The local Solana validator test passed 12 lost-response/crash recoveries with identical signed bytes and 12 finalized effects.
+## Actual load results
 
-**All four Linux CI workflows pass at `6f96544`.** That includes the full Rust/Redis/HTTP suite, eight real-process scenarios, all 52 TLA+ model cases and five Rust fee proofs (116 checks). [Exact results and reports](docs/baselines/finality-recovery/README.md).
+All runs used one signer, local nodes, SQLite FULL sync and Redis AOF every-second sync. EVM used an inflight window of 1,024; the default remains 50. They completed with the exact expected effects. “Terminal” means Engine recorded the outcome after the configured finality checks.
 
-The new models cover finality and independent-journal recovery, including expected counterexamples for dishonest RPCs, finalized rollback and loss of the authoritative journal. They are bounded models, not a proof of the entire service.
+- **Earlier delayed-finality EVM:** 12,000 requests over four minutes; about 49.7 included TPS near the end. All finalized after releasing the test checkpoint. Premature receipt queries fell from 43,489 to zero.
+- **Final EVM, 12-second blocks:** 18,000 requests over six minutes; all completed by 375.1 seconds. The scheduling change raised last-minute attempted TPS from 45.1 to 50.1 and terminal TPS from 47.7 to 50.5. Unsigned backlog fell from 505 to 12; admission p99 stayed below 24ms.
+- **Final Solana:** 3,000 requests over one minute; 49.7 terminal TPS over the roughly 40-second interval after startup, all completed by 80.1 seconds. Admission p99 was 248ms.
 
-### Operating limits
+[Measurements, limitations and exact build hashes](docs/baselines/review-2026-09-26/README.md).
 
-This version supports **one active Engine process on one host**, with the journal on a persistent local volume independent of Redis. Startup requires explicit journal initialization. Existing deployments need an offline cutover; old Redis jobs cannot establish missing journal evidence. [Setup and recovery commands](docs/design/redis-disaster-recovery.md).
+## Next work before production
 
-Quarantined transactions need reconciliation; recovery does not automatically resend them. Losing or rolling back both the journal and Redis remains unsupported. EIP-7702 still relies on the bundler's transaction attribution. Production endpoints, KMS and deployed smart-account contracts remain unqualified.
+1. Qualify production storage; if durable writes still limit capacity, design and test batching or independent journal partitions. A separate debug-build probe measured 53–57 three-stage intents/second, excluding other Engine work; it is not a production capacity limit. Qualify complete finality windows, real RPC quotas, realistic transaction gas/compute, and concurrent chains.
+2. Replace legacy KMS credential payloads with immutable key references and worker-role credentials. Current legacy credentials can remain in journal history and backups.
+3. Add evidence-based operator reconciliation for quarantined/parked attempts. Rejected NOOPs can require manual reconciliation. Multi-host operation and loss of both journal and Redis remain unsupported.
 
-No paid RPC calls were used. The earlier campaign estimate remains **$2.22**; its gateway is stopped and its $12 ceiling remains. Rotate the shared dRPC key when the campaign ends.
-
-## Next work
-
-1. Add evidence-based operator reconciliation for quarantined transactions and a shared durable authority before multi-host deployment.
-2. Measure sustained throughput with the journal, finality backlog and production storage enabled; earlier Redis-only throughput figures do not apply to this path. Add intake/storage limits and production spending controls.
-3. Integrate AWS KMS through credential references and independently verify smart-account execution, especially EIP-7702.
-
-Nothing is needed from you for this change. Deployment still needs target traffic, hosting/storage and KMS choices, endpoint qualification, and resolution of the upstream repository's missing license.
+No paid RPC credits were used for this review. Nothing is needed from you to finish it. Deployment still needs storage, endpoint and signer qualification, plus resolution of the upstream repository's missing license. Rotate the shared dRPC key when the campaign ends.

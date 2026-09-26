@@ -86,13 +86,14 @@ prove polling fairness, elapsed-time latency, or sustained terminal throughput.
 ## Post-dispatch uncertainty review
 
 `Broadcast` records possible network delivery independently from observer state.
-Every RPC error after dispatch now preserves the original borrowed ID, nonce and
-signed wire. Error text (including nonce-high, insufficient funds, invalid
+For initial/recovered ordinary EOA sends, every RPC error after dispatch now
+preserves the original borrowed ID, nonce and signed wire. Error text (including nonce-high, insufficient funds, invalid
 signature or oversized) cannot prove that a previous dispatch was never accepted.
 An exact included receipt moves borrowed state into the submitted projection
 without a send-success webhook; it still needs the independent finality gate.
 Absent/error/wrong-hash receipt reads retry only the original bytes. A matching
 send acknowledgment may emit the send-attempt webhook, not a terminal event.
+Fee-bump errors retain their submitted attempt and original intent/nonce.
 
 The real Redis + HTTP + SQLite regression
 [`rpc_rejection_keeps_original_nonce_wire_and_unknown_webhook_state`](../executors/src/eoa/worker/send_tests.rs)
@@ -109,9 +110,32 @@ nonce available to another intent. A rejected or indefinitely absent NOOP has
 no automatic borrowed-wire retry slot: it requires explicit offline journal
 reconciliation. The model's conditional liveness must not be read as proving
 NOOP availability. Normal uncertain borrowed retries occur once per worker cycle,
-with 32 RPC tasks in flight; the 200ms worker requeue delay rounds to one second
-in TWMQ. A recovery cycle still visits every borrowed attempt (potentially the
-configured 4,096 inflight window); high RTT or an outage can therefore delay
+with 32 RPC tasks in flight. Unknown-only/no-progress cycles retain the 200ms
+requeue delay, which TWMQ rounds to one second. A successful nondelegated cycle
+with acknowledged send or reconciled recovery progress and unsigned backlog
+instead rejoins the queue tail immediately. Mixed cycles can therefore retry
+unknown attempts sooner while other intents make progress. A recovery cycle still
+visits every borrowed attempt (potentially the configured 4,096 inflight window); high RTT or an outage can therefore delay
 receipt/send work and consume substantial RPC budget. The 128 new-reservation
 cap does not bound this recovery work. Retry lifetime, provider quotas and
 elapsed-time guarantees are not modeled.
+
+## Progress-driven scheduling follow-up
+
+[`into_job_result`](../executors/src/eoa/worker/mod.rs) removes the rounded delay
+only for a successful cycle with a positive nondelegation read, remaining unsigned
+work, and `sent_transactions > 0` or `recovered_transactions > 0`. Unknown send
+results do not increment those counters. Delegated accounts retain two seconds;
+unknown delegation, no progress, unknown-only and finality-only work retain the
+rounded one-second delay. Workflow errors keep their existing error-specific
+handling. A mixed progress/unknown cycle can run sooner; this is not an outage
+rate limiter.
+
+The real Redis [scheduling regression](../executors/src/eoa/worker/scheduling_tests.rs)
+uses the production decision with actual TWMQ lease completion. It checks tail
+placement behind another job, immediate availability despite a one-hour polling
+timer, exact delayed scores for non-progress paths and release of the old lease.
+This changes how soon existing transitions are scheduled, not their identity,
+finality or durable authorization premises. The TLA+ model already permits those
+steps without wall-clock delays; no new invariant or throughput theorem follows.
+Its conditional fairness assumptions and the unmodeled RPC budget remain explicit.
