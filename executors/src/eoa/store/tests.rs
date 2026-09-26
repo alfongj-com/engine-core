@@ -1067,21 +1067,35 @@ async fn retained_finality_backlog_is_bounded_independently_of_mempool_capacity(
     let fixture = Fixture::new().await;
     let owner = fixture.owner().await;
     let cap = crate::eoa::store::MAX_UNFINALIZED_ATTEMPTS;
-    let mut pipeline = twmq::redis::pipe();
-    pipeline
+    let _: () = twmq::redis::pipe()
         .set(owner.optimistic_transaction_count_key_name(), cap)
-        .set(owner.last_transaction_count_key_name(), cap);
-    for n in 0..cap {
-        pipeline.zadd(
-            owner.submitted_transactions_zset_name(),
-            format!("hash-{n}:intent-{n}:1:1"),
-            n,
-        );
-    }
-    let _: () = pipeline
+        .set(owner.last_transaction_count_key_name(), cap)
         .query_async(&mut fixture.shared.clone())
         .await
         .unwrap();
+    // Seed the same full production cap without a single 100k-command write.
+    // Linux CI stopped at this fixture. Bounded batches avoid large simultaneous
+    // request/response buffers and identify a stalled setup instead of hanging.
+    for start in (0..cap).step_by(1000) {
+        let mut pipeline = twmq::redis::pipe();
+        for n in start..(start + 1000).min(cap) {
+            pipeline
+                .zadd(
+                    owner.submitted_transactions_zset_name(),
+                    format!("hash-{n}:intent-{n}:1:1"),
+                    n,
+                )
+                .ignore();
+        }
+        tokio::time::timeout(
+            Duration::from_secs(10),
+            pipeline.query_async::<()>(&mut fixture.shared.clone()),
+        )
+        .await
+        .unwrap_or_else(|_| panic!("backlog fixture seed timed out at offset {start}"))
+        .unwrap();
+    }
+    assert_eq!(owner.get_submitted_transactions_count().await.unwrap(), cap);
     assert_eq!(owner.get_inflight_budget(50).await.unwrap(), 0);
     let _: () = fixture
         .shared

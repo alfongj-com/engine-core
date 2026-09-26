@@ -141,7 +141,7 @@
     },
     {
       "path": "executors/src/eoa/store/tests.rs",
-      "sha256": "3d3f02053931cfe1ecb81e74548467c30be27147bebea862e27c06103e1d5487",
+      "sha256": "c03d99e608dd10ca7dd02f7b259d4829d68c76b76942c84864783aae8f408d30",
       "models": [
         "DisasterRecovery",
         "EoaRecovery",
@@ -507,6 +507,11 @@
       "Exact attempt and unchanged checkpoint no-ops retain health/owner/CAS guards; admission overload makes no durable transition. Retained terminal retries do not enqueue new work.",
       "Solana independent signature reservation precedes Redis attempt storage; missing projection after SQL commit parks. The Redis and authority models are separate and not mechanically composed.",
       "Bundled EIP-7702 is disabled and legacy work parks; no dedicated protocol qualification is claimed. Streaming export, HTTP authentication/semaphores and provider genesis checks are outside the state-machine proof."
-    ]
+    ],
+    "test_fixture_followup": {
+      "date": "2026-09-26",
+      "path": "executors/src/eoa/store/tests.rs",
+      "reason": "Linux CI stalled at the retained-backlog fixture after its predecessor passed. Replace one 100k-command setup pipeline with 1,000-command batches, each with 10s timeout, and assert exact production-cap cardinality before unchanged cap/cap-minus-one budget assertions. No production or model semantics changed; observed buffering pressure is a diagnosis to verify on Linux, not an established Redis library defect."
+    }
   }
 }
