@@ -12,7 +12,7 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 40
     services:
       redis:
         image: redis:7.4.2-alpine
@@ -85,6 +85,8 @@ jobs:
         run: |
           ANVIL_BIN=/tmp/engine-foundry/anvil python3 scripts/local_eoa_reorg.py --report /tmp/local-eoa-reorg.json
           ANVIL_BIN=/tmp/engine-foundry/anvil python3 scripts/local_eoa_reorg.py --revert --report /tmp/local-eoa-reorg-reverted.json
+      - name: Single signer EVM load and finality drain (local debug build)
+        run: ANVIL_BIN=/tmp/engine-foundry/anvil python3 scripts/local_eoa_throughput.py --engine-bin "$PWD/target/debug/thirdweb-engine" --rate 50 --seconds 20 --redis-fsync everysec --drain-seconds 120 --report /tmp/local-eoa-throughput.json
       - name: Install pinned local Solana validator
         run: |
           curl -fL --retry 3 https://github.com/anza-xyz/agave/releases/download/v4.2.2/solana-release-x86_64-unknown-linux-gnu.tar.bz2 -o /tmp/solana.tar.bz2
@@ -93,6 +95,8 @@ jobs:
           tar xjf /tmp/solana.tar.bz2 -C /tmp/engine-solana
       - name: Solana accepted-send response loss and process recovery
         run: python3 scripts/local_solana_recovery.py --solana-bin-dir /tmp/engine-solana/solana-release/bin --rust-log debug --report /tmp/local-solana-recovery.json
+      - name: Single payer Solana load and finality drain (local debug build)
+        run: python3 scripts/local_solana_throughput.py --engine-bin "$PWD/target/debug/thirdweb-engine" --solana-bin-dir /tmp/engine-solana/solana-release/bin --rate 50 --seconds 20 --redis-fsync everysec --drain-seconds 120 --report /tmp/local-solana-throughput.json
       - name: Preserve local-chain scenario reports
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -101,7 +105,7 @@ jobs:
           path: |
             /tmp/local-eoa-*.json
             /tmp/local-redis-*.json
-            /tmp/local-solana-recovery.json
+            /tmp/local-solana-*.json
           if-no-files-found: ignore
       - name: Dependency advisories
         run: |
