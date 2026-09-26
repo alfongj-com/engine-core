@@ -31,6 +31,9 @@ pub mod error;
 mod send;
 mod transaction;
 
+#[cfg(test)]
+mod scheduling_tests;
+
 use error::{EoaExecutorWorkerError, SendContext};
 
 const MAX_PENDING_TRANSACTION_AGE_MS: u64 = 24 * 60 * 60 * 1000;
@@ -84,6 +87,29 @@ impl EoaExecutorWorkerResult {
             || self.borrowed_transactions > 0
             || self.recycled_nonces > 0
             || self.submitted_transactions > 0
+    }
+
+    fn into_job_result(self, delegation: Option<bool>) -> JobResult<Self, EoaExecutorWorkerError> {
+        if !self.is_work_remaining() {
+            return Ok(self);
+        }
+
+        // Yield the queue slot after each bounded send cycle, but do not put
+        // useful unsigned backlog behind TWMQ's one-second minimum delay.
+        // Unknown dispatches do not increment these progress counters. Keep
+        // ordinary polling delays unless non-delegation was positively read.
+        let delay = match delegation {
+            Some(true) => Some(Duration::from_secs(2)),
+            Some(false)
+                if self.pending_transactions > 0
+                    && (self.sent_transactions > 0 || self.recovered_transactions > 0) =>
+            {
+                None
+            }
+            _ => Some(Duration::from_millis(200)),
+        };
+        Err(EoaExecutorWorkerError::WorkRemaining { result: self })
+            .map_err_nack(delay, RequeuePosition::Last)
     }
 }
 
@@ -172,15 +198,15 @@ where
         let delegated_account = DelegatedAccount::new(data.eoa_address, chain.clone());
 
         // if there's an error checking 7702 delegation here, we'll just assume it's not a minimal account for the purposes of max in flight
-        let is_minimal_account = self
+        let delegation = self
             .authorization_cache
             .is_minimal_account(&delegated_account, None)
             .await
             .inspect_err(|e| {
                 tracing::error!(error = ?e, "Error checking 7702 delegation");
             })
-            .ok()
-            .unwrap_or(false);
+            .ok();
+        let is_minimal_account = delegation.unwrap_or(false);
 
         let chain_id = chain.chain_id();
 
@@ -236,26 +262,7 @@ where
             "JOB_LIFECYCLE - EOA executor job completed"
         );
 
-        let delay = if is_minimal_account {
-            Some(Duration::from_secs(2))
-        } else {
-            Some(Duration::from_millis(200))
-        };
-
-        if result.is_work_remaining() {
-            Err(EoaExecutorWorkerError::WorkRemaining { result })
-                .map_err_nack(delay, RequeuePosition::Last)
-        } else {
-            Ok(result)
-        }
-
-        // // initiate health data if doesn't exist
-        // self.get_eoa_health(&scoped, &chain)
-        //     .await
-        //     .map_err_nack(Some(Duration::from_secs(10)), RequeuePosition::Last)?;
-
-        // // Execute main workflow with proper error handling
-        // self.execute_main_workflow(&scoped, &chain).await
+        result.into_job_result(delegation)
     }
 
     async fn on_success(

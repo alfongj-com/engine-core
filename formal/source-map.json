@@ -181,7 +181,7 @@
     },
     {
       "path": "executors/src/eoa/worker/mod.rs",
-      "sha256": "0cd9f52e30246c2f07a4ffc402b5dfc0c8174ec68c4052b2e4f38e7d8f320ca2",
+      "sha256": "f07e4e51a6c80cbe117ac44fede0ed59983dd9364697047e67b3c769826df4c9",
       "models": [
         "DisasterRecovery",
         "EoaRecovery",
@@ -195,6 +195,14 @@
         "EoaRecovery",
         "Finality"
       ]
+    },
+    {
+      "path": "executors/src/eoa/worker/scheduling_tests.rs",
+      "models": [
+        "EoaRecovery",
+        "QueueLease"
+      ],
+      "sha256": "e13f61f476c4fe9b1b82f6a7024eed8b5d560225486c48456ea0848dec05a280"
     },
     {
       "path": "executors/src/eoa/worker/send.rs",
@@ -512,6 +520,14 @@
       "date": "2026-09-26",
       "path": "executors/src/eoa/store/tests.rs",
       "reason": "Linux CI stalled at the retained-backlog fixture after its predecessor passed. Replace one 100k-command setup pipeline with 1,000-command batches, each with 10s timeout, and assert exact production-cap cardinality before unchanged cap/cap-minus-one budget assertions. No production or model semantics changed; observed buffering pressure is a diagnosis to verify on Linux, not an established Redis library defect."
+    },
+    "progress_scheduling_followup": {
+      "date": "2026-09-26",
+      "paths": [
+        "executors/src/eoa/worker/mod.rs",
+        "executors/src/eoa/worker/scheduling_tests.rs"
+      ],
+      "reason": "Reviewed successful-cycle result construction: sent counts only moved-to-submitted acknowledgments, recovered counts submitted-projection reconciliation/acknowledgment, while uncertain attempts retain borrowed state. Only positive nondelegation plus unsigned backlog plus either positive progress counter skips delay and still rejoins queue tail. Delegated/unknown/no-progress/finality-only/error handling retain existing delays. EoaRecovery already admits transitions without wall-clock waits; QueueLease keeps fenced completion and pending membership. Timing, fairness, mixed-progress unknown-retry RPC costs and throughput remain outside these finite safety models. Real Redis regression exercises actual queue lease completion, tail ordering, ready work and rounded delayed scores."
     }
   }
 }
