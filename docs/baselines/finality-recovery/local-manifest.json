@@ -1,0 +1,45 @@
+{
+  "runtime_commit": "7078799652b4c07c552a397be2faf89f0d18577d",
+  "ci_commit": "6f965440d7587cd68bbb9a5a7588601dfaa4b75e",
+  "platform": "macOS arm64; Rust 1.98.1; Redis 7.4.2; Anvil 1.8.1",
+  "source_provenance": "The 58 runtime/test/harness hashes in the formal report match the runtime commit. The later CI commit only adds workflow gates.",
+  "engine_binary_sha256": "56b4fa3f7f436663e343570f5b4ea6c58d845f013efd8c82eb6cdae99c8d2c91",
+  "formal_report_sha256": "a00282f549803604438a07ab9e95879549938435525ac1c9ee137045da2d064a",
+  "local_gates": {
+    "workspace": "passed",
+    "executor_redis": "49 passed",
+    "journal_ignored": "10 passed; pure journal unit test runs in workspace",
+    "http": "2 passed",
+    "admission": "4 passed",
+    "queue_regressions": "26 passed",
+    "clippy": "passed with warnings",
+    "build": "both binaries passed",
+    "formal": "52 expected results"
+  },
+  "local_scenarios": [
+    "final-disaster-flush",
+    "final-disaster-rollback",
+    "final-eoa-reorg",
+    "final-eoa-reorg-reverted"
+  ],
+  "limits": [
+    "Loopback process faults, not physical host power loss",
+    "No new public provider or throughput qualification",
+    "No RPC credits used"
+  ],
+  "files": {
+    "local/admission.log": "f52ad2640fc87ab0b624354ba557251135bbb0de850ddb14b70e05b72572e9ff",
+    "local/build.log": "70440d1fae44e9b870c5f1289811dbdd5eb7bc705f016682a4c9bc8fe0c04fac",
+    "local/clippy.log": "164744a8a6ed9eef1834d384e3da5a87aeb64fa36ed5bb1b39acc43c574fe43b",
+    "local/executors-redis.log": "fec8582bcd78291d1d6be33da34295383674418517a1c94377da7e331acbcdce",
+    "local/final-disaster-flush.json": "0decc4c87ec192faacfa773c01e81fa07c221797e8545c9e9cc0447b64db82cb",
+    "local/final-disaster-rollback.json": "fb05496f948f00f2485ace78c2ca5f5eec6084a1e97d085c069d99dfc10ff5dc",
+    "local/final-eoa-reorg-reverted.json": "0880fdfbad4e8cf27cee304ebd95a6219ac33b540424b0809bf966bd4e96df53",
+    "local/final-eoa-reorg.json": "facc5ff3a543d565af87dae5cac60538ee25cfbfd35eec5982d6711f50b068e2",
+    "local/http.log": "232a4458dbda03ab787ffcd90dcd9100b17d0f0f9f3532a575f448ccffb6f805",
+    "local/journal-faults.log": "01d212436b43064629af7e01fde889aab92dcf9002aa5fd1299fdb65fae0b627",
+    "local/model-runner-tests.log": "c63e54ff02ed00fe05bbf37c33fecf2bed964648475e65399d359bfe2a5aacbd",
+    "local/queue.log": "5c74637bce822092e2c078b715dfddbf55498fdef09508ab51744c646a30192f",
+    "local/workspace.log": "ca53b95662c252938de1adcacbe99c2d8b38d242d70d6d12d1098a3a025b1475"
+  }
+}

@@ -41,6 +41,12 @@ key `evm:<chain>:<lowercase sender>:<nonce>`, so neither can reuse the other's
 allocation. Fee replacements can retain the same replay identity; a new nonce
 for the same ID is rejected.
 
+EOA signing also preserves the full admitted authorization list. The old
+recipient-code filter could silently remove an authorization belonging to a
+different authority and has been removed. Networks with stricter authorization
+admission rules require valid caller-supplied tuples and separate qualification;
+Engine does not rewrite the intent to make a provider accept it.
+
 Before signing, validate the complete current job payload against the ledger and
 check an existing replay binding once known. Before network emission, durably
 record the exact attempt. Existing Solana attempts must be reconciled or replayed

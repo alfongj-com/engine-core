@@ -1,0 +1,17 @@
+{
+  "scenario": "local EOA HTTP admission, crash with pending transactions, restart, mine, duplicate admission",
+  "transactions": 24,
+  "configured_rpc": true,
+  "redis_crash": false,
+  "reverted_execution": false,
+  "outcome": "pass",
+  "unique_chain_effects": 24,
+  "duplicate_chain_effects": 0,
+  "unauthorized_requests_rejected": 2,
+  "successful_transfers": 24,
+  "reverted_transactions": 0,
+  "recipient_value_received_wei": 24,
+  "terminal_status": "confirmed",
+  "elapsed_seconds": 8.172,
+  "redis_persistence": "disabled; Engine process-restart test, not Redis power-loss test"
+}

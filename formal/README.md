@@ -43,8 +43,10 @@ machine-checked proof of their composition.
 The [recorded run and raw evidence](evidence/README.md) identify the exact source,
 state counts, counterexamples and implementation regressions for that run. The
 manifest now contains **52 configurations** (35 earlier, 8 finality, 9 disaster
-recovery); targeted new-family runs do not certify an older evidence report or
-replace the frozen-source full run.
+recovery). The full run on 2026-09-26 passed all 52 against the refreshed frozen
+source map: 12 positive, 27 fault, 10 boundary and 3 witness cases; both source
+checks passed all 58 mapped files. Older evidence reports retain their original
+source scope and do not independently attest to these additions.
 
 ## Run locally
 

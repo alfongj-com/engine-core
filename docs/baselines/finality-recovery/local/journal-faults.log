@@ -1,0 +1,18 @@
+    Blocking waiting for file lock on build directory
+   Compiling engine-core v0.1.0 (/Users/alfongj/Code/engine-core/core)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 14.56s
+     Running unittests src/lib.rs (target/debug/deps/engine_core-cc5f92a341c79164)
+
+running 10 tests
+test recovery::tests::checkpoint_cas_prevents_stale_validation_and_conflicting_chain_progress ... ok
+test recovery::tests::immutable_admission_and_replay_ownership_survive_process_reopen ... ok
+test recovery::tests::initialization_is_explicit_private_exclusive_and_requires_empty_namespace ... ok
+test recovery::tests::lost_checkpoint_or_sql_commit_before_mirror_is_fail_closed ... ok
+test recovery::tests::reattach_requires_exact_checkpoint_and_cannot_clear_other_halts ... ok
+test recovery::tests::rollback_latches_halt_and_recovery_quarantines_ambiguous_attempts ... ok
+test recovery::tests::sigkill_before_send_and_after_response_loss_preserves_exact_attempt_and_blocks_new_identity ... ok
+test recovery::tests::storage_write_failure_cannot_authorize_broadcast ... ok
+test recovery::tests::subprocess_broadcast_cut ... ok
+test recovery::tests::terminal_evidence_is_idempotent_and_conflicts_durably_stop_execution ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 17 filtered out; finished in 0.79s

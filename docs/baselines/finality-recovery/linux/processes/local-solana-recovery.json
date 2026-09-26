@@ -1,0 +1,38 @@
+{
+  "scenario": "Solana accepted-send response loss, Engine crash/restart, identical-byte retransmission, duplicate admission",
+  "transactions": 12,
+  "validator_version": {
+    "feature-set": 565236538,
+    "solana-core": "4.2.2"
+  },
+  "outcome": "pass",
+  "unique_chain_effects": 12,
+  "duplicate_chain_effects": 0,
+  "same_wire_retransmissions": 12,
+  "discarded_send_responses": 12,
+  "terminal_attempt_records_remaining": 0,
+  "completed_admission_tombstones": 12,
+  "duplicates_after_queue_pruning": "no new queue jobs or RPC sends",
+  "rpc_url_secret_logged": false,
+  "rust_log": "debug",
+  "payer": "5hMbn1nLHAhKbHAZhrWAac8Ko6PWhw7wm82hrez1MW4W",
+  "recipient": "ER8Z3h1zLQ9jAHyhE9MA74RPoy6tXvvHSEqgtSao1WRj",
+  "lamports_per_transfer": 1000,
+  "total_transaction_fees_lamports": 60000,
+  "wire_sha256": [
+    "01687bea96d70a823a442943930fc81be5cd5e34e8be27d0a9cd80ce586e5fff",
+    "1a40b3fc16dc1695be8db9ef3347d4c8f823322c2d806c55a9ac0c3e9831c6e9",
+    "30ccd034ca2877cb2d487aff01491f41e6f25bf61d250e18acf8ddf1b7d4214f",
+    "4234add6b8e44b29c558ad54bbc6ed32764f28b5b668e31d2392529d6da13e0f",
+    "47750d867c8d23d8398bd8adad79c883e6bf7542c1b2ddad1efb0d38ec6977e8",
+    "75cdf91cbd7623691146346ebd9b996c6c9bad6a08f3824410f68f1d5e335fcb",
+    "92fb4a026cc86dc8f684244f38a9df5419669c3aadd2359af5ad5f20a19f9e38",
+    "96dd81885634c8a02374f059d20a20e571e42ed1e454d886eef1ed30ab0e325f",
+    "a1ba3e6a1a5a9ab4a1fc6a5ba7f143b43ce9de7e2a1b0b4996611379aac6158d",
+    "f3b5e69916137d89ea025ee623805ce4761398792451df31e4398fc00ea63c0d",
+    "f4d023064e328e5bdb6d08e1c05415fccd48c3b06a54351010934050f924868f",
+    "f8d6957f5f5086fd41e72a240696f966167816a5482b4b269c434bc73189f16e"
+  ],
+  "elapsed_seconds": 44.499,
+  "redis_persistence": "disabled; Engine process-restart test, not Redis power-loss durability"
+}

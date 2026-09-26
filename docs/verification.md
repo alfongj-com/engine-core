@@ -33,8 +33,12 @@ No paid RPC calls were used. This round does not qualify public provider finalit
 host power-loss durability, multi-host execution or production throughput. The
 new synchronous journal adds storage work; earlier queue/admission benchmark
 numbers do not measure it. EIP-7702 transaction attribution remains dependent on
-the bundler. Exact source, scenario reports and hosted results are recorded in
-the finality/recovery evidence added with this round.
+the bundler. All four Linux workflows pass at
+`6f965440d7587cd68bbb9a5a7588601dfaa4b75e`, including dependency audit and all eight
+actual-process scenarios. Linux reproduces 52 expected model results and five
+production fee proofs with all 116 checks. [Exact source, reports and workflow
+metadata](baselines/finality-recovery/README.md) bind these results to the
+published commit; later evidence/documentation edits leave its runtime unchanged.
 
 ## Formal verification — 2026-09-26
 

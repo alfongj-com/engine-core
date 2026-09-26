@@ -5,7 +5,17 @@ No paid RPC or blockchain transactions were used. This is finite protocol
 verification plus proofs of the production fee arithmetic, not an end-to-end
 proof of Engine.
 
-## Final Linux CI
+## Finality and disaster-recovery extension
+
+The later finality/recovery implementation has a separate
+[52-case protocol report](finality-recovery/report.json), with all 58 reviewed
+source hashes and 3,163,401 distinct states across positive cases. The new models
+add independent chain state and journal/Redis failure cuts. See the
+[round's verification record](../../docs/verification.md#finality-and-independent-redis-recovery--2026-09-26)
+for runtime tests and hosted evidence. The older results below qualify only their
+named source commit.
+
+## Initial formal round: Linux CI
 
 All four workflows passed for source
 `1c0bb18acd0f92ecb3fe275202f03517aef68bc5`:

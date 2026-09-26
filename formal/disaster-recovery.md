@@ -77,11 +77,13 @@ liveness result is claimed. `CHECK_DEADLOCK FALSE` permits exhausted/parked stat
 | `DisasterRecovery_authority_rollback.cfg` | `AtMostOneEffectPerId`: a coherent old copy of the authoritative ledger and Redis can forget an execution and admit another identity. This is an explicit unsupported disaster boundary. |
 | `DisasterRecovery_late_execution_witness.cfg` | `LateExecutionWitnessNotReached`: an expected counterexample demonstrates actual chain execution after a durable halt. It uses an already-journaled identity and does not violate positive safety checks. |
 
-On 2026-09-26 the pinned TLC runner exhausted the positive case: **3,664,561
-generated states, 698,992 distinct states**, zero pending states, in 22.5 seconds
-on the local machine. All eight fault/boundary/witness cases reached exactly
-their named invariant violation. These targeted runs preceded runtime freeze
-and source-map refresh; the full repository evidence gate must run afterward.
+On 2026-09-26 the complete pinned-TLC run passed all 52 repository configurations
+against the refreshed frozen source map. This family's positive case exhausted
+**3,664,561 generated states, 698,992 distinct states**, with zero pending states,
+in 21.6 seconds on the local machine. All eight fault/boundary/witness cases
+reached exactly their named invariant violation. The runner's final source check
+passed all 58 mapped files. These are finite model results, not a performance or
+whole-service correctness claim.
 
 ## Assumptions and gaps
 

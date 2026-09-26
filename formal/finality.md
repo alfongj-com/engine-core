@@ -55,10 +55,11 @@ states without suppressing invariant checking.
 | `Finality_depth_boundary.cfg` | `TerminalRemainsCanonical`: depth confirmation remains vulnerable to later canonical changes. |
 | `Finality_reinclusion_witness.cfg` | `ReinclusionWitnessNotReached`: an expected witness proving the model reaches terminal completion after observing inclusion, loss and re-inclusion. |
 
-On 2026-09-26, targeted runs with the pinned TLC artifact passed the positive
-configuration (752 distinct states) and produced every named negative/witness
-counterexample. These targeted runs preceded final runtime source-map refresh;
-the repository's complete runner/evidence gate must be repeated on frozen source.
+On 2026-09-26, the complete pinned-TLC run passed all 52 repository configurations
+against the refreshed frozen source map. This family passed its positive case
+(752 distinct states) and produced all seven named fault/boundary/witness
+counterexamples. The runner checked source fingerprints again after the run;
+this records finite model results, not whole-service correctness.
 
 ## Assumptions and gaps
 

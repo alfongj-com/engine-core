@@ -14,7 +14,9 @@ Implemented on `production-hardening`, in [draft PR #1](https://github.com/alfon
 
 Local process tests pass for Redis deletion, stale-backup restore, intact AOF restart, and successful/reverted EVM reorg recovery. Engine automatically recovered each orphaned transaction at its original nonce; no duplicate effects occurred. The local Solana validator test passed 12 lost-response/crash recoveries with identical signed bytes and 12 finalized effects.
 
-The final full-suite and CI results will be recorded in [verification](docs/verification.md). The new TLA+ models cover finality and independent-journal recovery, including expected counterexamples for dishonest RPCs, finalized rollback and loss of the authoritative journal. These are bounded models, not a proof of the entire service.
+**All four Linux CI workflows pass at `6f96544`.** That includes the full Rust/Redis/HTTP suite, eight real-process scenarios, all 52 TLA+ model cases and five Rust fee proofs (116 checks). [Exact results and reports](docs/baselines/finality-recovery/README.md).
+
+The new models cover finality and independent-journal recovery, including expected counterexamples for dishonest RPCs, finalized rollback and loss of the authoritative journal. They are bounded models, not a proof of the entire service.
 
 ### Operating limits
 
@@ -30,4 +32,4 @@ No paid RPC calls were used. The earlier campaign estimate remains **$2.22**; it
 2. Measure sustained throughput with the journal, finality backlog and production storage enabled; earlier Redis-only throughput figures do not apply to this path. Add intake/storage limits and production spending controls.
 3. Integrate AWS KMS through credential references and independently verify smart-account execution, especially EIP-7702.
 
-Nothing is needed from you to finish these checks. Deployment still needs target traffic, hosting/storage and KMS choices, endpoint qualification, and resolution of the upstream repository's missing license.
+Nothing is needed from you for this change. Deployment still needs target traffic, hosting/storage and KMS choices, endpoint qualification, and resolution of the upstream repository's missing license.

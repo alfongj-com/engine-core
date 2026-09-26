@@ -1,0 +1,19 @@
+{
+  "scenario": "pre-finality reorg and same-nonce recovery",
+  "reverted_execution": true,
+  "policy": {
+    "mode": "depth",
+    "confirmations": 2
+  },
+  "outcome": "pass",
+  "provisional_result_withheld": true,
+  "orphaned_receipt_disappeared": true,
+  "engine_recovered_original_nonce": true,
+  "attempts": 2,
+  "unique_chain_effects": 1,
+  "duplicate_effects": 0,
+  "terminal_status": "failed",
+  "original_transaction_hash": "0xb0e2e445d19f2161999598e3d0772dcc19514bd1f01bf7e84e67a3ab14e293c4",
+  "final_transaction_hash": "0x85ced9460a6e03a81e40bb04ca7af0721ea939628ae5b7c64153e328d14d58cb",
+  "elapsed_seconds": 76.802
+}

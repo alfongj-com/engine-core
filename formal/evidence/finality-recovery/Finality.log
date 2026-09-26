@@ -1,0 +1,148 @@
+TLC2 Version 2.19 of 08 August 2024 (rev: 5a47802)
+Running breadth-first search Model-Checking with fp 0 and seed 1 with 1 worker on 10 cores with 1820MB heap and 64MB offheap memory [pid: 22548] (Mac OS X 26.6.2 aarch64, Eclipse Adoptium 21.0.12.1 x86_64, MSBDiskFPSet, DiskStateQueue).
+Parsing file /Users/alfongj/Code/engine-core/formal/tla/Finality.tla
+Parsing file /private/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/Naturals.tla
+Parsing file /private/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/FiniteSets.tla
+Parsing file /private/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/Sequences.tla
+Semantic processing of module Naturals
+Semantic processing of module Sequences
+Semantic processing of module FiniteSets
+Semantic processing of module Finality
+Starting... (2026-09-26 15:22:22)
+Computing initial states...
+Finished computing initial states: 1 distinct state generated at 2026-09-26 15:22:22.
+Model checking completed. No error has been found.
+  Estimates of the probability that TLC did not check all reachable states
+  because two distinct states had the same fingerprint:
+  calculated (optimistic):  val = 6.3E-14
+The coverage statistics at 2026-09-26 15:22:22
+<Init line 15, col 1 to line 15, col 4 of module Finality>: 1:1
+  line 15, col 9 to line 21, col 75 of module Finality: 1
+<ChainChange line 29, col 1 to line 29, col 18 of module Finality>: 60:256
+  line 30, col 8 to line 30, col 23 of module Finality: 2512
+  |line 30, col 8 to line 30, col 12 of module Finality: 2256
+  |line 30, col 18 to line 30, col 23 of module Finality: 2256
+  line 30, col 28 to line 30, col 46 of module Finality: 2512
+  |line 30, col 28 to line 30, col 32 of module Finality: 2256
+  |line 30, col 36 to line 30, col 46 of module Finality: 2256
+  line 31, col 8 to line 31, col 29 of module Finality: 256
+  |line 31, col 8 to line 31, col 16 of module Finality: 1504
+  |line 31, col 20 to line 31, col 29 of module Finality: 1504
+  line 32, col 8 to line 32, col 20 of module Finality: 896
+  |line 32, col 9 to line 32, col 20 of module Finality: 640
+  line 33, col 8 to line 34, col 51 of module Finality: 256
+<ChainFinalize line 36, col 1 to line 36, col 13 of module Finality>: 105:312
+  line 37, col 8 to line 37, col 20 of module Finality: 1064
+  |line 37, col 9 to line 37, col 20 of module Finality: 752
+  line 38, col 8 to line 38, col 42 of module Finality: 312
+<DepthAdvance line 40, col 1 to line 40, col 12 of module Finality>: 122:376
+  line 41, col 8 to line 41, col 22 of module Finality: 1128
+  |line 41, col 9 to line 41, col 22 of module Finality: 752
+  line 42, col 8 to line 42, col 44 of module Finality: 376
+<ReadReceipt line 46, col 1 to line 46, col 11 of module Finality>: 40:112
+  line 47, col 8 to line 47, col 23 of module Finality: 864
+  |line 47, col 8 to line 47, col 14 of module Finality: 752
+  line 48, col 8 to line 53, col 72 of module Finality: 112
+  |line 48, col 13 to line 53, col 72 of module Finality: 112
+  ||line 48, col 14 to line 48, col 14 of module Finality: 112
+  ||line 49, col 22 to line 49, col 72 of module Finality: 112
+  |||line 49, col 25 to line 49, col 45 of module Finality: 112
+  |||line 49, col 52 to line 49, col 55 of module Finality: 32
+  |||line 49, col 62 to line 49, col 72 of module Finality: 80
+  ||line 50, col 10 to line 50, col 72 of module Finality: 112
+  ||line 51, col 28 to line 51, col 53 of module Finality: 112
+  |||line 51, col 33 to line 51, col 53 of module Finality: 36
+  ||line 52, col 23 to line 52, col 69 of module Finality: 112
+  |||line 52, col 29 to line 52, col 68 of module Finality: 68
+  ||||line 52, col 29 to line 52, col 43 of module Finality: 68
+  ||||line 52, col 48 to line 52, col 68 of module Finality: 32
+  ||line 53, col 30 to line 53, col 71 of module Finality: 112
+  |||line 53, col 36 to line 53, col 70 of module Finality: 92
+  ||||line 53, col 36 to line 53, col 45 of module Finality: 92
+  ||||line 53, col 50 to line 53, col 70 of module Finality: 24
+<ReadCanonical line 55, col 1 to line 55, col 13 of module Finality>: 88:88
+  line 56, col 8 to line 56, col 28 of module Finality: 840
+  |line 56, col 8 to line 56, col 14 of module Finality: 752
+  line 57, col 8 to line 58, col 51 of module Finality: 88
+  |line 57, col 13 to line 58, col 51 of module Finality: 88
+  ||line 57, col 14 to line 57, col 14 of module Finality: 88
+  ||line 57, col 23 to line 57, col 52 of module Finality: 88
+  ||line 58, col 23 to line 58, col 50 of module Finality: 88
+  |||line 58, col 28 to line 58, col 50 of module Finality: 56
+<ReadHead line 60, col 1 to line 60, col 8 of module Finality>: 112:168
+  line 61, col 8 to line 61, col 23 of module Finality: 920
+  |line 61, col 8 to line 61, col 14 of module Finality: 752
+  line 62, col 11 to line 62, col 59 of module Finality: 168
+  line 63, col 13 to line 63, col 33 of module Finality: 80
+  line 64, col 13 to line 68, col 47 of module Finality: 88
+  |line 64, col 18 to line 68, col 47 of module Finality: 88
+  ||line 64, col 19 to line 64, col 19 of module Finality: 88
+  ||line 65, col 21 to line 68, col 46 of module Finality: 88
+  |||line 65, col 24 to line 67, col 62 of module Finality: 88
+  ||||line 65, col 24 to line 66, col 64 of module Finality: 88
+  ||||line 67, col 28 to line 67, col 61 of module Finality: 44
+  |||line 68, col 26 to line 68, col 36 of module Finality: 44
+  |||line 68, col 43 to line 68, col 46 of module Finality: 44
+<RecheckCanonical line 70, col 1 to line 70, col 16 of module Finality>: 132:132
+  line 71, col 8 to line 71, col 35 of module Finality: 884
+  |line 71, col 8 to line 71, col 14 of module Finality: 752
+  line 72, col 8 to line 74, col 51 of module Finality: 132
+  |line 72, col 13 to line 74, col 51 of module Finality: 132
+  ||line 72, col 14 to line 72, col 14 of module Finality: 132
+  ||line 72, col 23 to line 72, col 53 of module Finality: 132
+  ||line 74, col 23 to line 74, col 50 of module Finality: 132
+  |||line 74, col 28 to line 74, col 50 of module Finality: 84
+<RecheckCheckpoint line 77, col 1 to line 77, col 17 of module Finality>: 20:212
+  line 78, col 8 to line 78, col 36 of module Finality: 964
+  |line 78, col 8 to line 78, col 14 of module Finality: 752
+  line 84, col 11 to line 86, col 36 of module Finality: 212
+  |line 84, col 16 to line 86, col 36 of module Finality: 212
+  ||line 84, col 19 to line 84, col 34 of module Finality: 212
+  |||line 84, col 19 to line 84, col 24 of module Finality: 212
+  |||line 84, col 29 to line 84, col 34 of module Finality: 108
+  ||||line 83, col 22 to line 83, col 69 of module Finality: 108
+  |||||line 83, col 22 to line 83, col 26 of module Finality: 108
+  |||||line 83, col 32 to line 83, col 68 of module Finality: 108
+  ||||||line 83, col 32 to line 83, col 44 of module Finality: 108
+  ||||||line 83, col 49 to line 83, col 68 of module Finality: 20
+  ||line 85, col 21 to line 85, col 48 of module Finality: 20
+  ||line 86, col 21 to line 86, col 36 of module Finality: 192
+<Commit line 88, col 1 to line 88, col 6 of module Finality>: 20:20
+  line 89, col 8 to line 89, col 24 of module Finality: 772
+  |line 89, col 8 to line 89, col 14 of module Finality: 752
+  line 89, col 29 to line 89, col 50 of module Finality: 40
+  |line 89, col 29 to line 89, col 43 of module Finality: 20
+  |line 89, col 47 to line 89, col 50 of module Finality: 20
+  line 90, col 8 to line 95, col 44 of module Finality: 20
+<Crash line 97, col 1 to line 97, col 5 of module Finality>: 52:620
+  line 98, col 8 to line 98, col 38 of module Finality: 1372
+  |line 98, col 8 to line 98, col 14 of module Finality: 752
+  |line 98, col 23 to line 98, col 38 of module Finality: 752
+  line 99, col 8 to line 99, col 28 of module Finality: 620
+<TypeOK line 106, col 1 to line 106, col 6 of module Finality>
+  line 107, col 5 to line 121, col 36 of module Finality: 752
+<CanonicalAtCommit line 123, col 1 to line 123, col 17 of module Finality>
+  line 123, col 22 to line 123, col 66 of module Finality: 752
+  |line 123, col 22 to line 123, col 43 of module Finality: 752
+  |line 123, col 48 to line 123, col 66 of module Finality: 20
+<TerminalRequiresFinality line 124, col 1 to line 124, col 24 of module Finality>
+  line 124, col 29 to line 124, col 73 of module Finality: 752
+  |line 124, col 29 to line 124, col 50 of module Finality: 752
+  |line 124, col 55 to line 124, col 73 of module Finality: 20
+<RevertNeedsFinality line 125, col 1 to line 125, col 19 of module Finality>
+  line 125, col 24 to line 125, col 74 of module Finality: 752
+  |line 125, col 24 to line 125, col 51 of module Finality: 752
+  |line 125, col 56 to line 125, col 74 of module Finality: 10
+<TerminalRemainsCanonical line 126, col 1 to line 126, col 24 of module Finality>
+  line 126, col 29 to line 126, col 83 of module Finality: 752
+  |line 126, col 29 to line 126, col 50 of module Finality: 752
+  |line 126, col 55 to line 126, col 83 of module Finality: 20
+<OutcomeMatchesBlock line 127, col 1 to line 127, col 19 of module Finality>
+  line 127, col 24 to line 127, col 93 of module Finality: 752
+  |line 127, col 24 to line 127, col 45 of module Finality: 752
+  |line 127, col 50 to line 127, col 93 of module Finality: 20
+End of statistics.
+2297 states generated, 752 distinct states found, 0 states left on queue.
+The depth of the complete state graph search is 15.
+The average outdegree of the complete state graph is 1 (minimum is 0, the maximum 5 and the 95th percentile is 3).
+Finished in 00s at (2026-09-26 15:22:22)
