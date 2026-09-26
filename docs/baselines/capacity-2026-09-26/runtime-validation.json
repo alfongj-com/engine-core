@@ -1,0 +1,122 @@
+{
+  "schema_version": 1,
+  "recorded_at_utc": "2026-09-26T23:15:52.516457+00:00",
+  "repository": "/Users/alfongj/Code/engine-core",
+  "base_commit": "3a248ac5bd13e16ce682f3e0548a0096a7502fe0",
+  "source_state": "working tree changes; runtime frozen after validation; not a commit-wide qualification",
+  "runtime_source_sha256": {
+    "core/src/finality.rs": "ffdad9f88eb09c4e38c9d3c87978395061753ef5a4b63af7ada6e33c2b3e6aae",
+    "core/src/finality_tests.rs": "32963ae19ae04e72057363e1b41173646a89ae3a29042ef7b1fca3807a3a2a69",
+    "executors/src/finality_tests.rs": "ac8fc6ea5a705c47be3cbc34447f9b6e25ea2ec57c0097661787617f725f22dc",
+    "executors/src/eoa/worker/send.rs": "c775e94afb6fcc7f5ad6ae1417b17cd987c147cd910623f96ec01f64ec8f42ab",
+    "executors/src/solana_executor/worker.rs": "dae8f3219c0170ce1d39872e7ff59d66f3fb37c5bbb56212345121d9200d5657",
+    "executors/src/solana_executor/recovery_tests.rs": "6cc5108cc2950314d5e839e36f4f4daa30d356da196186dd404e441e9e08a8d7",
+    "server/src/config.rs": "f1d4d3a4e99a06e5dfb601c3c1beadce00ff45617284e57a9e622b172aec416f",
+    "server/src/http/server.rs": "a2c8a49ab399830b2777cebbb7721be71cac387534ae30be90a64bae4f0974e4",
+    "server/src/http/server_tests.rs": "65baae70f84c60c7f2abe73faa5e8f651dbbe6f3b1844181033ff4f215dfda6f",
+    "server/src/queue/manager.rs": "672834d8e9a304b3c7711546f231cec5c9a4d38823b3ca1439848c06507dc61c",
+    "server/tests/api_safety.rs": "fe53da7ae934c43c849952b3bbaa5272da1c576627cd3f963e628f11578065c9"
+  },
+  "binary": {
+    "path": "/Users/alfongj/Code/engine-core/target/release/thirdweb-engine",
+    "sha256": "c0014d2aae01a59b78f34d76d0288b9addfe49e2a1ee7d65555d7ff7373bcce4",
+    "profile": "release",
+    "hash_verified_after_build": true
+  },
+  "preserved_baseline": {
+    "path": "/tmp/engine-capacity-baseline-bin/thirdweb-engine",
+    "sha256": "a0b38a6444682de64cc9264f27f826cb14a4913692b5ed8e9cc837d360588ccc",
+    "unchanged_verified": true
+  },
+  "commands_working_directory": "/Users/alfongj/Code/engine-core",
+  "cargo_executable": "/Users/alfongj/.cargo/bin/cargo",
+  "validation": [
+    {
+      "command": "cargo test --locked --workspace --no-run",
+      "status": "pass",
+      "log": "/tmp/engine-security-workspace-no-run.log",
+      "log_sha256": "99fb828d50a03f6bf32517c74f480e54b061389e2fa7e3b9d08d0749a2cd7093",
+      "scope": "compilation only; every workspace test/binary"
+    },
+    {
+      "command": "cargo test --locked -p engine-core --lib finality::tests -- --nocapture",
+      "status": "pass",
+      "log": "/tmp/engine-security-core-finality-tests.log",
+      "log_sha256": "b988e7006fa291dd58122a14c81fabbca2fc4f50dc19b7011a6a7980d243bf81",
+      "passed": 9,
+      "failed": 0,
+      "ignored": 0,
+      "filtered": 31
+    },
+    {
+      "command": "cargo test --locked -p thirdweb-engine --lib -- --test-threads=1",
+      "status": "pass",
+      "log": "/tmp/engine-security-server-lib-tests.log",
+      "log_sha256": "5ce4df76075f92fa153d8f6b6d5a03dc2e6ae566acc6cce715d5cc253da550ee",
+      "passed": 23,
+      "failed": 0,
+      "ignored": 6,
+      "filtered": 0
+    },
+    {
+      "command": "TEST_REDIS_URL=redis://127.0.0.1:26479/ cargo test --locked -p engine-executors --lib -- --ignored --test-threads=1",
+      "status": "pass",
+      "log": "/tmp/engine-security-executor-redis-tests.log",
+      "log_sha256": "3373ca3b82e7cdc5d0cda506a8b84f09fd25900bfbca084f178253a88c1e643a",
+      "passed": 60,
+      "failed": 0,
+      "ignored": 0,
+      "filtered": 37
+    },
+    {
+      "command": "cargo test --locked -p engine-executors --lib",
+      "status": "pass",
+      "log": "/tmp/engine-security-executor-unit-tests.log",
+      "log_sha256": "03b749222dc4e7c73f0020b50822777788f6a5ef9ab93970e3076451184a8d2b",
+      "passed": 37,
+      "failed": 0,
+      "ignored": 60,
+      "filtered": 0
+    },
+    {
+      "command": "cargo build --locked --release --bin thirdweb-engine",
+      "status": "pass",
+      "log": "/tmp/engine-security-release-build.log",
+      "log_sha256": "84c5d995e3a12b2a53a2d736d8de240402d4d24b170b3f9d193641f7b30adc9a",
+      "build_seconds": 41.05
+    }
+  ],
+  "counting_note": "Suites are reported separately. No aggregate unique-test count or ignored-test execution is inferred.",
+  "test_only_repair": "Use let-Ok-else instead of unwrap for an existing non-Debug JobError in the new Solana polling regression; no runtime compile/test repair required.",
+  "disposable_redis": {
+    "port": 26479,
+    "pid": 38859,
+    "directory": "/tmp/engine-security-validation-q0ddcqqh",
+    "state": "stopped after verifying owned process_id; logs retained"
+  },
+  "read_only_review": {
+    "new_safety_blockers": [],
+    "health": "Four owned permits bound started fence tasks. HTTP timeout/disconnect detaches rather than cancels journal work. Only a fresh successful fence returns 200. Stuck storage can hold all four checks indefinitely and yields 503, not cached readiness.",
+    "polling": "Actual EngineConfig accepts integer/string 1..5 seconds, default1. Only ordinary pending/accepted-send delays change; exact identity, journal-before-Redis, finalized receipt, expiry park and finite send/check budgets remain. Longer settings trade confirmation/resend latency and count-budget wall time for reduced polling.",
+    "batching": "New nonce consumption per cycle is min(inflight budget,256), counting uncertain outcomes; concurrency32 and ten-iteration limit unchanged. Not an all-work bound: deterministic preparation failures can repeat, and recovery/recycled work is separate.",
+    "depth": "Positive depth persists qualified boundary latest-depth, not latest tip. Receipt/checkpoint/head rereads and durable continuity checks remain; positive depth adds two block reads. Existing old-tip checkpoints remain conservative until catchup and are not silently rewritten."
+  },
+  "ci": {
+    "patch": "/tmp/engine-capacity-review/ci.patch",
+    "compatibility_command": "git apply --check /tmp/engine-capacity-review/ci.patch",
+    "compatibility_result": "pass",
+    "workflow_mutated": false,
+    "linux_execution_status": "not run for this draft",
+    "recommendation": "Final draft rejects proxy errors, upstream HTTP failures and per-method JSON-RPC errors. Parent applies only after freeze and runs final Linux workflow.",
+    "full_draft": "/tmp/engine-capacity-review/ci-hardening.yaml",
+    "per_method_error_guard_included": true
+  },
+  "not_established_by_this_record": [
+    "End-to-end new-binary reorg recovery (root-coordinated run pending)",
+    "Paired Solana1s/2s sustained throughput comparison",
+    "Sustainable 50/75/100 TPS or shared-chain rate",
+    "Native Nitro qualification of new release",
+    "Full Linux workflow at final committed source",
+    "Unbounded proof or composition between bounded formal models and production runtime"
+  ]
+}

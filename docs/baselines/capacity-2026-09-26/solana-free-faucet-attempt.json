@@ -1,0 +1,24 @@
+{
+  "time": "2026-09-26T23:19:17.319533+00:00",
+  "scope": "Official free Solana Devnet faucet, public test wallet; no paid RPC",
+  "address": "BymPLiErFxJBV47sc31B7VnMoePFnACshrMx3VxkjC69",
+  "response": {
+    "jsonrpc": "2.0",
+    "error": {
+      "code": -32603,
+      "message": "Internal error"
+    },
+    "id": 1
+  },
+  "finalized_balance_after": {
+    "jsonrpc": "2.0",
+    "result": {
+      "context": {
+        "apiVersion": "4.3.0",
+        "slot": 504576813
+      },
+      "value": 7849243
+    },
+    "id": 2
+  }
+}

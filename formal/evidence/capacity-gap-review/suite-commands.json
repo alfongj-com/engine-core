@@ -1,0 +1,61 @@
+[
+  {
+    "name": "executor-redis",
+    "command": [
+      "/Users/alfongj/.cargo/bin/cargo",
+      "test",
+      "--locked",
+      "-p",
+      "engine-executors",
+      "--lib",
+      "--",
+      "--ignored",
+      "--test-threads=1"
+    ],
+    "log": "/tmp/engine-gap-executor-redis-tests.log",
+    "exit_code": 0
+  },
+  {
+    "name": "executor-unit",
+    "command": [
+      "/Users/alfongj/.cargo/bin/cargo",
+      "test",
+      "--locked",
+      "-p",
+      "engine-executors",
+      "--lib"
+    ],
+    "log": "/tmp/engine-gap-executor-unit-tests.log",
+    "exit_code": 0
+  },
+  {
+    "name": "core-journal",
+    "command": [
+      "/Users/alfongj/.cargo/bin/cargo",
+      "test",
+      "--locked",
+      "-p",
+      "engine-core",
+      "--lib",
+      "recovery",
+      "--",
+      "--ignored",
+      "--test-threads=1"
+    ],
+    "log": "/tmp/engine-gap-core-journal-tests.log",
+    "exit_code": 0
+  },
+  {
+    "name": "core-unit",
+    "command": [
+      "/Users/alfongj/.cargo/bin/cargo",
+      "test",
+      "--locked",
+      "-p",
+      "engine-core",
+      "--lib"
+    ],
+    "log": "/tmp/engine-gap-core-unit-tests.log",
+    "exit_code": 0
+  }
+]

@@ -46,3 +46,16 @@ model does not prove nonce recycling, manual reset, u64 exhaustion, external
 signer use, receipt-pagination fairness or throughput. Four nonce values do not
 establish a general population theorem. The separate models' composition is not
 machine-checked.
+
+
+## Gap-recovery high-water review
+
+The later confirmation integration keeps the cached consumed-count high-water
+when `latest` reports a lower value, and replays only original journaled wires.
+This supports `ObservedNonceFloor`; it does not add a modeled rollback action.
+The positive model assumes monotonic `consumed` and `observed <= consumed`, so it
+does not establish availability or all allocator behavior across an actual chain
+rollback. The real confirmation-flow regression preserves cached40 after
+observing latest0, while journal membership and immutable replay keys remain the
+independent safety fence. Cooldown state, ascending replay and mempool eviction
+are implementation obligations, not a new proof from unchanged model states.

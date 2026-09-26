@@ -5,7 +5,17 @@ No paid RPC or blockchain transactions were used. This is finite protocol
 verification plus proofs of the production fee arithmetic, not an end-to-end
 proof of Engine. Trailing blank lines in stored test logs are normalized.
 
-## Latest capacity review candidate
+## Latest gap-recovery candidate
+
+The [gap-recovery review](capacity-gap-review/README.md) passes all 61 expected
+model outcomes and 69 reviewed source hashes. It adds source correspondence for
+the journal's original-wire getter and bounded replay helper, plus an actual
+Redis/HTTP/SQLite regression with 11 isolated scenarios. Models are unchanged:
+repeated same-identity dispatch is a stutter, not a proof of mempool-eviction
+recovery, cooldown, scheduler fairness or elapsed progress. Distinct runtime
+suites, exact source/release hashes and raw traces are preserved there.
+
+## Previous capacity review candidate
 
 The [capacity review record](capacity-review/README.md) passes 61 expected model
 outcomes and all 67 reviewed candidate source hashes. The new DepthCheckpoint

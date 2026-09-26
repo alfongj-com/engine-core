@@ -77,9 +77,9 @@ cycle-local block reuse and receipt concurrency change scheduling, not the
 `Confirm` premise: exact receipt identity, durable sender/nonce/attempt membership
 and finality evidence are still required. The 20k page/churn and 10k isolated-cleanup
 Redis tests and 32-slot real HTTP test check those implementation boundaries.
-New allocation cycles consume at most 128 new reservations, with ordered
+The current measured candidate consumes at most 256 new reservations per allocation cycle, with ordered
 32-task preparation/send concurrency; up to ten preparation refill passes can
-visit 1,280 rejected pending jobs. Borrowed and recycled recovery have separate
+visit 2,560 rejected pending jobs. Borrowed and recycled recovery have separate
 set-sized work. The inflight window is separately configured. These bounds do not
 prove polling fairness, elapsed-time latency, or sustained terminal throughput.
 
@@ -116,7 +116,7 @@ with acknowledged send or reconciled recovery progress and unsigned backlog
 instead rejoins the queue tail immediately. Mixed cycles can therefore retry
 unknown attempts sooner while other intents make progress. A recovery cycle still
 visits every borrowed attempt (potentially the configured 4,096 inflight window); high RTT or an outage can therefore delay
-receipt/send work and consume substantial RPC budget. The 128 new-reservation
+receipt/send work and consume substantial RPC budget. The 256 new-reservation
 cap does not bound this recovery work. Retry lifetime, provider quotas and
 elapsed-time guarantees are not modeled.
 
@@ -139,3 +139,32 @@ This changes how soon existing transitions are scheduled, not their identity,
 finality or durable authorization premises. The TLA+ model already permits those
 steps without wall-clock delays; no new invariant or throughput theorem follows.
 Its conditional fairness assumptions and the unmodeled RPC budget remain explicit.
+
+## Exact-wire gap recovery correspondence
+
+The [gap recovery helper](../executors/src/eoa/worker/gap_replay.rs) and its
+[implementation regression](../executors/src/eoa/worker/gap_replay_tests.rs)
+address a dropped submitted suffix after nonce rollback or a long stall. The
+[journal getter](../core/src/recovery.rs) only reads an already authorized EOA
+attempt. The caller decodes/re-encodes its wire, checks sender/chain/nonce/hash
+membership and executes the existing broadcast fence again. It never creates a
+new signature or changes a replay key. Terminal/quarantined/halted records and
+lost queue ownership prevent subsequent dispatches.
+
+A repeated broadcast of the same durable identity collapses to stuttering in
+this model: `sent` records possible future delivery, not a count of HTTP sends
+or an evictable node mempool. The model therefore **does not prove recovery after
+mempool eviction**, the five-second schedule, the 32-call bound, a recovery-time
+limit, or fairness between send/confirmation phases. The runtime's fixed window
+and cooldown are implementation-test obligations. The existing conditional
+liveness check must not be presented as qualification of this new path.
+
+Retaining the cached consumed-count high-water supports the separate allocator
+floor. NonceAllocator assumes monotonic chain consumption and does not model a
+lower RPC count after reorg; the actual confirmation-flow regression checks that
+integration. The independent journal continues to bind IDs/nonces even when
+Redis observations lag. No composition or source-level refinement is implied.
+
+The 256 scheduling setting remains a measured candidate. The 100/s local sample
+did not demonstrate sustainable capacity or isolate an improvement over 128;
+model safety results imply neither throughput nor latency improvement.

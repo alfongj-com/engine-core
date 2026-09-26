@@ -121,6 +121,9 @@ async fn receipt_candidate_count(
 #[path = "receipt_tests.rs"]
 mod receipt_tests;
 
+#[path = "gap_replay.rs"]
+mod gap_replay;
+
 impl<C: Chain> EoaExecutorWorker<C> {
     // ========== CONFIRM FLOW ==========
     #[tracing::instrument(skip_all, fields(worker_id = self.store.worker_id))]
@@ -170,6 +173,12 @@ impl<C: Chain> EoaExecutorWorker<C> {
         };
 
         let submitted_count = self.store.get_submitted_transactions_count().await?;
+
+        // A rollback or a stalled submitted suffix can contain many nonce gaps.
+        // Recover existing wires on a separate bounded cadence; neither an RPC
+        // error nor an accepted rebroadcast is counted as new useful work.
+        self.replay_submitted_gap(transaction_counts.latest, cached_transaction_count)
+            .await?;
 
         // no nonce progress
         if transaction_counts.preconfirmed <= cached_transaction_count {
@@ -248,19 +257,16 @@ impl<C: Chain> EoaExecutorWorker<C> {
             "Processing confirmations"
         );
 
-        // Always update cached transaction count first, regardless of whether there are transactions to confirm
-        if transaction_counts.latest != cached_transaction_count {
-            if transaction_counts.latest < cached_transaction_count {
-                tracing::error!(
-                    current_chain_transaction_count = transaction_counts.latest,
-                    cached_transaction_count = cached_transaction_count,
-                    "Fresh fetched chain transaction count is lower than cached transaction count. \
-                    This indicates a re-org or RPC block lag. Engine will use the newest fetched transaction count from now (assuming re-org).\
-                    Transactions already confirmed will not be attempted again, even if their nonce was higher than the new chain transaction count.
-                    In case this is RPC misbehaviour not reflective of actual chain state, Engine's nonce management might be affected."
-                );
-            }
-
+        // Keep the consumed-count high-water mark as an allocator floor. A
+        // lower observation activates exact-wire recovery above; it never opens
+        // historical nonce slots for different intents.
+        if transaction_counts.latest < cached_transaction_count {
+            tracing::warn!(
+                latest = transaction_counts.latest,
+                cached_transaction_count,
+                "Observed nonce rollback; preserving allocator floor and replaying retained wires"
+            );
+        } else if transaction_counts.latest > cached_transaction_count {
             self.store
                 .update_cached_transaction_count(transaction_counts.latest)
                 .await?;

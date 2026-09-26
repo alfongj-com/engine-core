@@ -1,0 +1,2811 @@
+{
+  "all_chain_capacity_candidate": false,
+  "arrival_phase_seconds": {
+    "evm2": 0.0
+  },
+  "balances": {
+    "evm2": {
+      "canonical_executions": 225,
+      "nonce_delta": 225,
+      "receipt_fees": 1491322461090000,
+      "recipient_delta": 225,
+      "sender_spent": 1491322461090225
+    }
+  },
+  "campaign_http": {
+    "active": 0,
+    "connection_attempts": 23,
+    "connection_reuses": 837,
+    "connections_opened": 21,
+    "failures": [
+      {
+        "cause_type": "ConnectionRefusedError",
+        "count": 2,
+        "errno": 61,
+        "type": "ConnectionRefusedError"
+      }
+    ],
+    "owned_connections": 0,
+    "peak_active": 16,
+    "requests": 860,
+    "responses": 858,
+    "status_200": 633,
+    "status_202": 225
+  },
+  "campaign_started_utc": "2026-09-26T23:38:46.843215+00:00",
+  "chaos": "reorg",
+  "client_worker_failures": [],
+  "drain": {
+    "client_pending": 0,
+    "http_inflight": 0,
+    "journal_unresolved": 0,
+    "node_pending": 0,
+    "redis_active": 0,
+    "redis_borrowed": 0,
+    "redis_delayed": 0,
+    "redis_pending": 0,
+    "redis_submitted": 0
+  },
+  "durability": {
+    "redis_appendfsync": "everysec",
+    "sqlite": "WAL synchronous=FULL/fullfsync=ON"
+  },
+  "durable_chain_halts": [],
+  "duration_seconds": 45.0,
+  "engine_binary_sha256": "a3d360eba3dc470bd830ec9d3a32e0be8e11b6764f9bbf6efeb319f080eb8515",
+  "eoa_max_inflight_per_wallet": 4096,
+  "errors": [],
+  "events": [
+    {
+      "argv": [
+        "/tmp/redis-7.4.2/src/redis-server",
+        "--bind",
+        "127.0.0.1",
+        "--port",
+        "52262",
+        "--dir",
+        "/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/engine-capacity-nc8to4b2/redis",
+        "--save",
+        "",
+        "--appendonly",
+        "yes",
+        "--appendfsync",
+        "everysec"
+      ],
+      "campaign_elapsed_seconds": 0.041831,
+      "event": "spawn",
+      "load_elapsed_seconds": null,
+      "name": "redis",
+      "phase": "setup",
+      "pid": 41345
+    },
+    {
+      "argv": [
+        "/tmp/engine-finality/anvil",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "52266",
+        "--chain-id",
+        "31338",
+        "--block-time",
+        "2.0",
+        "--gas-limit",
+        "100000000",
+        "--silent"
+      ],
+      "campaign_elapsed_seconds": 0.156188,
+      "event": "spawn",
+      "load_elapsed_seconds": null,
+      "name": "evm2",
+      "phase": "setup",
+      "pid": 41346
+    },
+    {
+      "argv": [
+        "/Users/alfongj/Code/engine-core/target/release/thirdweb-engine"
+      ],
+      "campaign_elapsed_seconds": 0.866897,
+      "event": "spawn",
+      "load_elapsed_seconds": null,
+      "name": "engine",
+      "phase": "setup",
+      "pid": 41348
+    },
+    {
+      "accepted": 10,
+      "campaign_elapsed_seconds": 3.210015,
+      "event": "chaos_trigger",
+      "kind": "reorg",
+      "load_elapsed_seconds": 2.228146,
+      "phase": "load"
+    },
+    {
+      "affected_ids": 5,
+      "anchor_number": 7,
+      "block_hash": "0xafc89051f3cba6cd18f9381a4e0d397d566cded50c7fea9cbad24238a7a35847",
+      "campaign_elapsed_seconds": 13.252833,
+      "chain": "evm2",
+      "event": "reorg_provisional_batch",
+      "load_elapsed_seconds": 12.270967,
+      "parent": 8,
+      "phase": "load",
+      "prior_terminals": 27
+    },
+    {
+      "campaign_elapsed_seconds": 20.416459,
+      "chain": "evm2",
+      "engine_alive": true,
+      "event": "reorg_applied",
+      "load_elapsed_seconds": 19.434591,
+      "orphaned_intents": 5,
+      "phase": "load"
+    },
+    {
+      "campaign_elapsed_seconds": 20.417643,
+      "chain": "evm2",
+      "event": "interval_mining_restored",
+      "load_elapsed_seconds": 19.435773,
+      "phase": "load",
+      "seconds": 2
+    },
+    {
+      "campaign_elapsed_seconds": 30.438374,
+      "event": "reorg_recovery_started",
+      "kind": "reorg",
+      "load_elapsed_seconds": 29.456516,
+      "phase": "load"
+    },
+    {
+      "campaign_elapsed_seconds": 45.998537,
+      "event": "client_drained",
+      "load_elapsed_seconds": 45.016668,
+      "peak_inflight": 1,
+      "phase": "client_drain"
+    },
+    {
+      "campaign_elapsed_seconds": 56.053401,
+      "event": "drain_target_reached",
+      "load_elapsed_seconds": 55.071537,
+      "parked": 0,
+      "phase": "drain"
+    },
+    {
+      "campaign_elapsed_seconds": 56.05893,
+      "event": "engine_stopped_for_consistent_reconciliation",
+      "load_elapsed_seconds": 55.077063,
+      "phase": "reconciliation"
+    }
+  ],
+  "evidence_manifest": {
+    "full_report": "capacity-reorg-gap-fixed.full.json.gz",
+    "full_report_sha256": "9d526e7a4fac573fecbdc0d4b684f5df2d36147309534b8f8b2f7065af59f731",
+    "observations": "capacity-reorg-gap-fixed.observations.jsonl.gz",
+    "observations_sha256": "91ab6a263ddb23fa97ec23f2119bbb4e44d8b6ba65d2fe435bafc12ba08f9834",
+    "uncompressed_report_sha256": "b21e40793b4ae05e44d62b05a9f4e2e646438bcbfd748c186271d1118495b017"
+  },
+  "finality_checkpoint_conflict": false,
+  "harness_sha256": {
+    "capacity_campaign.py": "f7b15da39ef2f958cb113c74045dda0db51be315247b81a0a6b7233e9bfa2804",
+    "capacity_faults.py": "59e2bc4d90bceca2682c27e35c5871ee538d4878a795f990fa90e6d5f90afa13"
+  },
+  "http_concurrency": 64,
+  "initial": {
+    "evm2": {
+      "client_version": "anvil/v1.8.1",
+      "genesis": {
+        "baseFeePerGas": "0x3b9aca00",
+        "gasLimit": "0x5f5e100",
+        "hash": "0x8bb7d053a79225a99c5e7f9771b84e439501bfcee907b772926dd064d7f01d8d",
+        "timestamp": "0x6ab85787"
+      },
+      "recipient_balance": 0,
+      "sender_balance": 10000000000000000000000000,
+      "sender_nonce": 0
+    }
+  },
+  "journal_halted": false,
+  "latency_note": "HTTP service/deadline latency is measured directly; durable attempt/terminal timestamps are observer upper bounds, sampled independently.",
+  "log_directory": "/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/engine-capacity-nc8to4b2",
+  "minimum_late_window_seconds": 60,
+  "mixed": false,
+  "node_pool_observations": {
+    "evm2": {
+      "complete_pool_observation": true,
+      "drain_count": 0,
+      "empty_pool_observed": true,
+      "nonce_pending_delta": 0,
+      "nonce_reference": "pinned reconciliation block",
+      "pending_count": 0,
+      "queued_count": 0,
+      "scope": "All accounts on the caller-owned local Anvil node at observation time.",
+      "source": "txpool_status",
+      "total_pool_count": 0
+    }
+  },
+  "observation_evidence": "/tmp/capacity-reorg-gap-fixed.observations.jsonl.gz",
+  "observer_rpc": {
+    "evm2": {
+      "calls": {
+        "anvil_dropAllTransactions": 1,
+        "anvil_setBalance": 1,
+        "eth_blockNumber": 35,
+        "eth_chainId": 2,
+        "eth_getBalance": 4,
+        "eth_getBlockByNumber": 70,
+        "eth_getTransactionByHash": 225,
+        "eth_getTransactionCount": 41,
+        "eth_getTransactionReceipt": 240,
+        "evm_mine": 4,
+        "evm_revert": 1,
+        "evm_setAutomine": 1,
+        "evm_setIntervalMining": 2,
+        "evm_setNextBlockTimestamp": 1,
+        "evm_snapshot": 1,
+        "txpool_content": 2,
+        "txpool_status": 1,
+        "web3_clientVersion": 1
+      },
+      "errors": {}
+    }
+  },
+  "offered_phase_end_seconds": 45.0027045,
+  "offered_started_utc": "2026-09-26T23:38:47.824393+00:00",
+  "offline_projection_recovered": false,
+  "operator_recovery_required": false,
+  "oracle": {
+    "eligible_for_rate_assessment": true,
+    "expected_parked_intents": 0,
+    "liveness_failures": [],
+    "liveness_failures_count": 0,
+    "liveness_pass": true,
+    "observed_intents": 225,
+    "offered_intents": 225,
+    "outcome": "pass",
+    "safety_failures": [],
+    "safety_failures_count": 0,
+    "safety_pass": true
+  },
+  "outcome": "pass",
+  "owned_children_stopped": true,
+  "per_chain": {
+    "evm2": {
+      "client": {
+        "dispatched": 225
+      },
+      "durable_latency_upper_bounds_ms": {
+        "attempt_observed_upper_ms": {
+          "count": 225,
+          "max": 5614.78,
+          "p50": 3212.902,
+          "p95": 5414.751,
+          "p99": 5614.094
+        },
+        "terminal_observed_upper_ms": {
+          "count": 225,
+          "max": 18611.02,
+          "p50": 12014.495,
+          "p95": 16824.49,
+          "p99": 18204.476
+        }
+      },
+      "http_service_latency_ms": {
+        "count": 225,
+        "max": 20.964,
+        "p50": 7.648,
+        "p95": 10.401,
+        "p99": 17.143
+      },
+      "late_window": {
+        "admission_p99_limit_ms": 1000,
+        "capacity_candidate": false,
+        "disqualifiers": [
+          "rate_or_admission_threshold_not_met"
+        ],
+        "reason": "warmup plus late-window requirement not met",
+        "requires_repeated_confirmation": true,
+        "window_seconds": 44.99
+      },
+      "offered": 225,
+      "offered_tps": 5.0,
+      "responses": {
+        "202": 225
+      },
+      "scheduled_to_response_latency_ms": {
+        "count": 225,
+        "max": 34.543,
+        "p50": 16.01,
+        "p95": 20.794,
+        "p99": 27.714
+      },
+      "transport_errors": []
+    }
+  },
+  "profiles": {
+    "evm2": {
+      "block_seconds": 2.0,
+      "chain_id": 31338,
+      "depth": 2,
+      "family": "evm",
+      "label": "Anvil EVM execution with simulated block cadence; not Nitro or public-chain capacity",
+      "network": "ethereum",
+      "rate": 5.0
+    }
+  },
+  "public_chain_qualification": false,
+  "queue_settings": {
+    "APP__QUEUE__EOA_EXECUTOR_WORKERS": "1",
+    "APP__QUEUE__EOA_MAX_INFLIGHT": "4096",
+    "APP__QUEUE__EXECUTION_NAMESPACE": "3879dc400ff64c2d91ed397b8d96e8ce",
+    "APP__QUEUE__EXTERNAL_BUNDLER_SEND_WORKERS": "1",
+    "APP__QUEUE__LEASE_DURATION_SECONDS": "10",
+    "APP__QUEUE__LOCAL_CONCURRENCY": "4",
+    "APP__QUEUE__POLLING_INTERVAL_MS": "20",
+    "APP__QUEUE__SOLANA_CONFIRMATION_POLL_INTERVAL_SECONDS": "1",
+    "APP__QUEUE__SOLANA_EXECUTOR_WORKERS": "100",
+    "APP__QUEUE__USEROP_CONFIRM_WORKERS": "1",
+    "APP__QUEUE__WEBHOOK_WORKERS": "1"
+  },
+  "reorg": {
+    "affected": {
+      "3879dc400ff64c2d91ed397b8d96e8ce-evm2-57": {
+        "block_hash": "0xafc89051f3cba6cd18f9381a4e0d397d566cded50c7fea9cbad24238a7a35847",
+        "block_number": 9,
+        "identity": "0x03c19518676e94aff82a80b9b46191a78609ecb36c03a9a398652a4a5a93002a",
+        "outcome": "success",
+        "replay_key": "evm:31338:0x7e5f4552091a69125d5dfcb7b8c2659029395bdf:57"
+      },
+      "3879dc400ff64c2d91ed397b8d96e8ce-evm2-58": {
+        "block_hash": "0xafc89051f3cba6cd18f9381a4e0d397d566cded50c7fea9cbad24238a7a35847",
+        "block_number": 9,
+        "identity": "0x84d05861833fef1148d3462e5b70d8414eabdba8436d8a200d69e40ff5fd1813",
+        "outcome": "success",
+        "replay_key": "evm:31338:0x7e5f4552091a69125d5dfcb7b8c2659029395bdf:58"
+      },
+      "3879dc400ff64c2d91ed397b8d96e8ce-evm2-59": {
+        "block_hash": "0xafc89051f3cba6cd18f9381a4e0d397d566cded50c7fea9cbad24238a7a35847",
+        "block_number": 9,
+        "identity": "0xc493c02d4e86c70d13b3b0ea9f8baa851e5780b7c1fd89290f7e5854ad66abd3",
+        "outcome": "success",
+        "replay_key": "evm:31338:0x7e5f4552091a69125d5dfcb7b8c2659029395bdf:59"
+      },
+      "3879dc400ff64c2d91ed397b8d96e8ce-evm2-60": {
+        "block_hash": "0xafc89051f3cba6cd18f9381a4e0d397d566cded50c7fea9cbad24238a7a35847",
+        "block_number": 9,
+        "identity": "0xcc72daf4e9a57da12a65391f2959b2ab71b16971f7a17a2f17be626e26e2ff07",
+        "outcome": "success",
+        "replay_key": "evm:31338:0x7e5f4552091a69125d5dfcb7b8c2659029395bdf:60"
+      },
+      "3879dc400ff64c2d91ed397b8d96e8ce-evm2-61": {
+        "block_hash": "0xafc89051f3cba6cd18f9381a4e0d397d566cded50c7fea9cbad24238a7a35847",
+        "block_number": 9,
+        "identity": "0x53f033db0e27745b9a0ce8cc391a1c4279e1d035cd5dd92a79359725269c21aa",
+        "outcome": "success",
+        "replay_key": "evm:31338:0x7e5f4552091a69125d5dfcb7b8c2659029395bdf:61"
+      }
+    },
+    "all_orphaned_intents_recovered": true,
+    "anchor_block_hash": "0x349b4c50c1871d9b141e03c087eaf9f765e2eb09745a1aa1168da90347b3b278",
+    "anchor_block_number": 7,
+    "chain": "evm2",
+    "engine_process_restarted": false,
+    "engine_receipt_calls_during_hold": 30,
+    "finality_after_rollback": {
+      "checkpoint": {
+        "blockHash": "0xd59f402ae2689304490199fdbff7c1f79a9db7cbe0dc720b8a1509e68ef2f9e5",
+        "blockNumber": 10,
+        "checkpointHash": "0xd59f402ae2689304490199fdbff7c1f79a9db7cbe0dc720b8a1509e68ef2f9e5",
+        "checkpointNumber": 10,
+        "policy": {
+          "confirmations": 2,
+          "mode": "depth"
+        }
+      },
+      "halt_reason": null,
+      "halted": false
+    },
+    "finality_before_rollback": {
+      "checkpoint": {
+        "blockHash": "0xa4cd422bcdf87a9c692ed295a77eeed54348d41d4651362542b6249f63900e77",
+        "blockNumber": 5,
+        "checkpointHash": "0x349b4c50c1871d9b141e03c087eaf9f765e2eb09745a1aa1168da90347b3b278",
+        "checkpointNumber": 7,
+        "policy": {
+          "confirmations": 2,
+          "mode": "depth"
+        }
+      },
+      "halt_reason": null,
+      "halted": false
+    },
+    "manual_signed_wire_replay": false,
+    "orphaned_block_hash": "0xafc89051f3cba6cd18f9381a4e0d397d566cded50c7fea9cbad24238a7a35847",
+    "parent_hash": "0xd7606cbb1d15c019b460f61a1c3f001d6297b8c9501ca8991604a696ee0e5500",
+    "parent_number": 8,
+    "pool_loss": {
+      "after": {
+        "all_entries_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "all_transaction_count": 0,
+        "orphaned_target_hashes_present": 0,
+        "other_signer_hashes_present": 0,
+        "signer_hashes_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "signer_nonce_max": null,
+        "signer_nonce_min": null,
+        "signer_nonce_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "signer_pending_count": 0,
+        "signer_queued_count": 0,
+        "signer_transaction_count": 0
+      },
+      "after_rpc_returned_load_seconds": 19.425019125000002,
+      "atomic_with_drop": false,
+      "before": {
+        "all_entries_sha256": "8034561e5cc01bcde5060eff7fc5fe770de196f719955770f0573d70a43b4ede",
+        "all_transaction_count": 35,
+        "orphaned_target_hashes_present": 0,
+        "other_signer_hashes_present": 35,
+        "signer_hashes_sha256": "5aaa418d0747fa664b2fec218f51628eaa2f7f94aa519da76293a98cfb7e6091",
+        "signer_nonce_max": 96,
+        "signer_nonce_min": 62,
+        "signer_nonce_sha256": "b42162d03832e5d4710e5e47eddd5a155e836b9c9a36fdb96c127678e75fb02d",
+        "signer_pending_count": 35,
+        "signer_queued_count": 0,
+        "signer_transaction_count": 35
+      },
+      "before_rpc_started_load_seconds": 19.414315125,
+      "concurrency_note": "Engine stays live. Separate snapshots cannot prove the exact removed set when broadcasts interleave; counts describe the observed RPC snapshots.",
+      "drop_rpc_returned_load_seconds": 19.423946958000002,
+      "forwarded_sends_after": 97,
+      "forwarded_sends_before": 97,
+      "scope": "all pending and queued node pool transactions, not only orphaned mined batch",
+      "signer_hashes_not_seen_after": 35,
+      "signer_new_hashes_seen_after": 0
+    },
+    "prior_terminal_count": 27,
+    "provisional_hold_seconds": 7.0,
+    "replacement_block_hash": "0xd5168981deb13ab221d112a4b9efdc5b66704708e1aea9c6d118e59f96a729f2",
+    "terminal_anchor_ids": [
+      "3879dc400ff64c2d91ed397b8d96e8ce-evm2-52",
+      "3879dc400ff64c2d91ed397b8d96e8ce-evm2-53",
+      "3879dc400ff64c2d91ed397b8d96e8ce-evm2-54",
+      "3879dc400ff64c2d91ed397b8d96e8ce-evm2-55",
+      "3879dc400ff64c2d91ed397b8d96e8ce-evm2-56"
+    ]
+  },
+  "requested_fault_validated": true,
+  "resources_scope": "Owned Engine/Redis/local nodes plus combined campaign+RPC proxy process; external node/VM CPU and memory require separate observation. ps CPU is its reported lifetime average.",
+  "rpc": {
+    "evm2": {
+      "accepted_responses_lost": 0,
+      "accepted_unique_wires": 225,
+      "active": 0,
+      "active_connections": 0,
+      "audit": {
+        "event_count": 531,
+        "path": "/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/engine-capacity-nc8to4b2/evm2-rpc.jsonl",
+        "tail_truncated": true
+      },
+      "calls": {
+        "eth_blockNumber": 11,
+        "eth_feeHistory": 225,
+        "eth_getBalance": 1,
+        "eth_getBlockByNumber": 151,
+        "eth_getCode": 1,
+        "eth_getTransactionCount": 65,
+        "eth_getTransactionReceipt": 225,
+        "eth_sendRawTransaction": 265
+      },
+      "connection_limit": 256,
+      "dropped_responses": 0,
+      "forwarded_sends": 265,
+      "http_requests": 944,
+      "http_transport": {
+        "active": 0,
+        "connection_attempts": 32,
+        "connection_reuses": 912,
+        "connections_opened": 32,
+        "failures": [],
+        "owned_connections": 0,
+        "peak_active": 28,
+        "requests": 944,
+        "responses": 944,
+        "status_200": 944
+      },
+      "incoming_batches": 0,
+      "injected_preflight_bypass": 0,
+      "lost_http_responses": 0,
+      "methods": {
+        "eth_blockNumber": {
+          "count": 11,
+          "errors": 0,
+          "max_ms": 1.140416000000144,
+          "total_ms": 11.48212700000939
+        },
+        "eth_feeHistory": {
+          "count": 225,
+          "errors": 0,
+          "max_ms": 4.806665999998572,
+          "total_ms": 477.2792230000191
+        },
+        "eth_getBalance": {
+          "count": 1,
+          "errors": 0,
+          "max_ms": 0.8945830000000043,
+          "total_ms": 0.8945830000000043
+        },
+        "eth_getBlockByNumber": {
+          "count": 151,
+          "errors": 0,
+          "max_ms": 3.84166699999966,
+          "total_ms": 188.90867200005346
+        },
+        "eth_getCode": {
+          "count": 1,
+          "errors": 0,
+          "max_ms": 1.1111249999999906,
+          "total_ms": 1.1111249999999906
+        },
+        "eth_getTransactionCount": {
+          "count": 65,
+          "errors": 0,
+          "max_ms": 4.854791999996166,
+          "total_ms": 126.31870799999834
+        },
+        "eth_getTransactionReceipt": {
+          "count": 225,
+          "errors": 0,
+          "max_ms": 35.57700000000352,
+          "total_ms": 2562.3693819999817
+        },
+        "eth_sendRawTransaction": {
+          "count": 265,
+          "errors": 0,
+          "max_ms": 6.196124999999997,
+          "total_ms": 672.4525269999815
+        }
+      },
+      "peak_connections": 32,
+      "peak_inflight": 32,
+      "proxy_failure_count": 0,
+      "proxy_failure_details": [],
+      "proxy_failures": [],
+      "proxy_overloads": 0,
+      "upstream_http_requests": 944
+    }
+  },
+  "rpc_proxy_concurrency": 256,
+  "samples": [
+    {
+      "chains": {
+        "evm2": {
+          "admitted": 0,
+          "attempted": 0,
+          "client": {},
+          "included": 0,
+          "responses": {},
+          "rpc": {
+            "accepted_unique_wires": 0,
+            "active": 0,
+            "calls": {},
+            "dropped_responses": 0,
+            "forwarded_sends": 0,
+            "http_requests": 0,
+            "http_transport": {
+              "failures": [],
+              "owned_connections": 0
+            },
+            "methods": {},
+            "peak_inflight": 0,
+            "proxy_overloads": 0
+          },
+          "terminal": 0
+        }
+      },
+      "observer_duration_ms": 4.967,
+      "phase": "load",
+      "resources": {
+        "free_disk_bytes": 16327888896,
+        "host_load_average": [
+          1.8203125,
+          2.296875,
+          2.1689453125
+        ],
+        "journal_bytes": 90112,
+        "processes": [
+          {
+            "cpu_percent_ps": 2.2,
+            "cpu_time": "0:00.10",
+            "name": "campaign",
+            "pid": 41342,
+            "rss_bytes": 92061696
+          },
+          {
+            "cpu_percent_ps": 0.6,
+            "cpu_time": "0:00.01",
+            "name": "redis",
+            "pid": 41345,
+            "rss_bytes": 5570560
+          },
+          {
+            "cpu_percent_ps": 0.7,
+            "cpu_time": "0:00.04",
+            "name": "evm2",
+            "pid": 41346,
+            "rss_bytes": 23658496
+          },
+          {
+            "cpu_percent_ps": 5.5,
+            "cpu_time": "0:00.03",
+            "name": "engine",
+            "pid": 41348,
+            "rss_bytes": 25559040
+          }
+        ]
+      },
+      "seconds": 0.0
+    },
+    {
+      "chains": {
+        "evm2": {
+          "admitted": 0,
+          "attempted": 0,
+          "client": {
+            "dispatched": 1
+          },
+          "included": 0,
+          "responses": {},
+          "rpc": {
+            "accepted_unique_wires": 0,
+            "active": 0,
+            "calls": {},
+            "dropped_responses": 0,
+            "forwarded_sends": 0,
+            "http_requests": 0,
+            "http_transport": {
+              "failures": [],
+              "owned_connections": 0
+            },
+            "methods": {},
+            "peak_inflight": 0,
+            "proxy_overloads": 0
+          },
+          "terminal": 0
+        }
+      },
+      "observer_duration_ms": 3.806,
+      "phase": "load",
+      "resources": {
+        "free_disk_bytes": 16327884800,
+        "host_load_average": [
+          1.8203125,
+          2.296875,
+          2.1689453125
+        ],
+        "journal_bytes": 106624,
+        "processes": [
+          {
+            "cpu_percent_ps": 2.2,
+            "cpu_time": "0:00.11",
+            "name": "campaign",
+            "pid": 41342,
+            "rss_bytes": 92258304
+          },
+          {
+            "cpu_percent_ps": 0.6,
+            "cpu_time": "0:00.01",
+            "name": "redis",
+            "pid": 41345,
+            "rss_bytes": 5668864
+          },
+          {
+            "cpu_percent_ps": 0.7,
+            "cpu_time": "0:00.04",
+            "name": "evm2",
+            "pid": 41346,
+            "rss_bytes": 23691264
+          },
+          {
+            "cpu_percent_ps": 5.5,
+            "cpu_time": "0:00.03",
+            "name": "engine",
+            "pid": 41348,
+            "rss_bytes": 27492352
+          }
+        ]
+      },
+      "seconds": 0.013
+    },
+    {
+      "chains": {
+        "evm2": {
+          "admitted": 26,
+          "attempted": 22,
+          "client": {
+            "dispatched": 26
+          },
+          "included": 17,
+          "responses": {
+            "202": 26
+          },
+          "rpc": {
+            "accepted_unique_wires": 22,
+            "active": 0,
+            "calls": {
+              "eth_blockNumber": 1,
+              "eth_feeHistory": 22,
+              "eth_getBalance": 1,
+              "eth_getCode": 1,
+              "eth_getTransactionCount": 6,
+              "eth_sendRawTransaction": 22
+            },
+            "dropped_responses": 0,
+            "forwarded_sends": 22,
+            "http_requests": 53,
+            "http_transport": {
+              "active": 0,
+              "connection_attempts": 5,
+              "connection_reuses": 48,
+              "connections_opened": 5,
+              "failures": [],
+              "owned_connections": 5,
+              "peak_active": 5,
+              "requests": 53,
+              "responses": 53,
+              "status_200": 53
+            },
+            "methods": {
+              "eth_blockNumber": {
+                "count": 1,
+                "errors": 0,
+                "max_ms": 1.0672090000001244,
+                "total_ms": 1.0672090000001244
+              },
+              "eth_feeHistory": {
+                "count": 22,
+                "errors": 0,
+                "max_ms": 3.5647499999997834,
+                "total_ms": 47.66699899999893
+              },
+              "eth_getBalance": {
+                "count": 1,
+                "errors": 0,
+                "max_ms": 0.8945830000000043,
+                "total_ms": 0.8945830000000043
+              },
+              "eth_getCode": {
+                "count": 1,
+                "errors": 0,
+                "max_ms": 1.1111249999999906,
+                "total_ms": 1.1111249999999906
+              },
+              "eth_getTransactionCount": {
+                "count": 6,
+                "errors": 0,
+                "max_ms": 3.29025000000005,
+                "total_ms": 9.706708000000175
+              },
+              "eth_sendRawTransaction": {
+                "count": 22,
+                "errors": 0,
+                "max_ms": 6.196124999999997,
+                "total_ms": 72.77758200000117
+              }
+            },
+            "peak_inflight": 5,
+            "proxy_overloads": 0
+          },
+          "terminal": 0
+        }
+      },
+      "observer_duration_ms": 3.749,
+      "phase": "load",
+      "resources": {
+        "free_disk_bytes": 16326647808,
+        "host_load_average": [
+          1.75439453125,
+          2.27490234375,
+          2.16162109375
+        ],
+        "journal_bytes": 1120144,
+        "processes": [
+          {
+            "cpu_percent_ps": 1.7,
+            "cpu_time": "0:00.27",
+            "name": "campaign",
+            "pid": 41342,
+            "rss_bytes": 48119808
+          },
+          {
+            "cpu_percent_ps": 2.1,
+            "cpu_time": "0:00.13",
+            "name": "redis",
+            "pid": 41345,
+            "rss_bytes": 6946816
+          },
+          {
+            "cpu_percent_ps": 0.0,
+            "cpu_time": "0:00.05",
+            "name": "evm2",
+            "pid": 41346,
+            "rss_bytes": 30146560
+          },
+          {
+            "cpu_percent_ps": 5.0,
+            "cpu_time": "0:00.36",
+            "name": "engine",
+            "pid": 41348,
+            "rss_bytes": 33521664
+          }
+        ]
+      },
+      "seconds": 5.023
+    },
+    {
+      "chains": {
+        "evm2": {
+          "admitted": 51,
+          "attempted": 47,
+          "client": {
+            "dispatched": 51
+          },
+          "included": 47,
+          "responses": {
+            "202": 51
+          },
+          "rpc": {
+            "accepted_unique_wires": 47,
+            "active": 0,
+            "calls": {
+              "eth_blockNumber": 2,
+              "eth_feeHistory": 47,
+              "eth_getBalance": 1,
+              "eth_getCode": 1,
+              "eth_getTransactionCount": 12,
+              "eth_sendRawTransaction": 47
+            },
+            "dropped_responses": 0,
+            "forwarded_sends": 47,
+            "http_requests": 110,
+            "http_transport": {
+              "active": 0,
+              "connection_attempts": 5,
+              "connection_reuses": 105,
+              "connections_opened": 5,
+              "failures": [],
+              "owned_connections": 5,
+              "peak_active": 5,
+              "requests": 110,
+              "responses": 110,
+              "status_200": 110
+            },
+            "methods": {
+              "eth_blockNumber": {
+                "count": 2,
+                "errors": 0,
+                "max_ms": 1.0672090000001244,
+                "total_ms": 2.1062500000004203
+              },
+              "eth_feeHistory": {
+                "count": 47,
+                "errors": 0,
+                "max_ms": 4.355416000000112,
+                "total_ms": 97.66379100000155
+              },
+              "eth_getBalance": {
+                "count": 1,
+                "errors": 0,
+                "max_ms": 0.8945830000000043,
+                "total_ms": 0.8945830000000043
+              },
+              "eth_getCode": {
+                "count": 1,
+                "errors": 0,
+                "max_ms": 1.1111249999999906,
+                "total_ms": 1.1111249999999906
+              },
+              "eth_getTransactionCount": {
+                "count": 12,
+                "errors": 0,
+                "max_ms": 4.805708000000131,
+                "total_ms": 21.53041600000161
+              },
+              "eth_sendRawTransaction": {
+                "count": 47,
+                "errors": 0,
+                "max_ms": 6.196124999999997,
+                "total_ms": 135.43249800000342
+              }
+            },
+            "peak_inflight": 5,
+            "proxy_overloads": 0
+          },
+          "terminal": 0
+        }
+      },
+      "observer_duration_ms": 2.982,
+      "phase": "load",
+      "resources": {
+        "free_disk_bytes": 16325509120,
+        "host_load_average": [
+          1.69384765625,
+          2.25341796875,
+          2.15478515625
+        ],
+        "journal_bytes": 2220184,
+        "processes": [
+          {
+            "cpu_percent_ps": 1.6,
+            "cpu_time": "0:00.45",
+            "name": "campaign",
+            "pid": 41342,
+            "rss_bytes": 48201728
+          },
+          {
+            "cpu_percent_ps": 2.2,
+            "cpu_time": "0:00.25",
+            "name": "redis",
+            "pid": 41345,
+            "rss_bytes": 7028736
+          },
+          {
+            "cpu_percent_ps": 0.0,
+            "cpu_time": "0:00.06",
+            "name": "evm2",
+            "pid": 41346,
+            "rss_bytes": 30670848
+          },
+          {
+            "cpu_percent_ps": 5.5,
+            "cpu_time": "0:00.70",
+            "name": "engine",
+            "pid": 41348,
+            "rss_bytes": 33849344
+          }
+        ]
+      },
+      "seconds": 10.02
+    },
+    {
+      "chains": {
+        "evm2": {
+          "admitted": 76,
+          "attempted": 72,
+          "client": {
+            "dispatched": 76
+          },
+          "included": 62,
+          "responses": {
+            "202": 76
+          },
+          "rpc": {
+            "accepted_unique_wires": 72,
+            "active": 0,
+            "calls": {
+              "eth_blockNumber": 3,
+              "eth_feeHistory": 72,
+              "eth_getBalance": 1,
+              "eth_getBlockByNumber": 20,
+              "eth_getCode": 1,
+              "eth_getTransactionCount": 18,
+              "eth_getTransactionReceipt": 27,
+              "eth_sendRawTransaction": 72
+            },
+            "dropped_responses": 0,
+            "forwarded_sends": 72,
+            "http_requests": 214,
+            "http_transport": {
+              "active": 0,
+              "connection_attempts": 27,
+              "connection_reuses": 187,
+              "connections_opened": 27,
+              "failures": [],
+              "owned_connections": 27,
+              "peak_active": 11,
+              "requests": 214,
+              "responses": 214,
+              "status_200": 214
+            },
+            "methods": {
+              "eth_blockNumber": {
+                "count": 3,
+                "errors": 0,
+                "max_ms": 1.140416000000144,
+                "total_ms": 3.2466660000005643
+              },
+              "eth_feeHistory": {
+                "count": 72,
+                "errors": 0,
+                "max_ms": 4.806665999998572,
+                "total_ms": 153.99225099999938
+              },
+              "eth_getBalance": {
+                "count": 1,
+                "errors": 0,
+                "max_ms": 0.8945830000000043,
+                "total_ms": 0.8945830000000043
+              },
+              "eth_getBlockByNumber": {
+                "count": 20,
+                "errors": 0,
+                "max_ms": 3.84166699999966,
+                "total_ms": 32.66037500000252
+              },
+              "eth_getCode": {
+                "count": 1,
+                "errors": 0,
+                "max_ms": 1.1111249999999906,
+                "total_ms": 1.1111249999999906
+              },
+              "eth_getTransactionCount": {
+                "count": 18,
+                "errors": 0,
+                "max_ms": 4.805708000000131,
+                "total_ms": 34.96916499999858
+              },
+              "eth_getTransactionReceipt": {
+                "count": 27,
+                "errors": 0,
+                "max_ms": 13.840333000000982,
+                "total_ms": 149.3528760000018
+              },
+              "eth_sendRawTransaction": {
+                "count": 72,
+                "errors": 0,
+                "max_ms": 6.196124999999997,
+                "total_ms": 206.27362300000289
+              }
+            },
+            "peak_inflight": 11,
+            "proxy_overloads": 0
+          },
+          "terminal": 27
+        }
+      },
+      "observer_duration_ms": 3.595,
+      "phase": "load",
+      "resources": {
+        "free_disk_bytes": 16322928640,
+        "host_load_average": [
+          1.63818359375,
+          2.232421875,
+          2.14794921875
+        ],
+        "journal_bytes": 3843464,
+        "processes": [
+          {
+            "cpu_percent_ps": 1.3,
+            "cpu_time": "0:00.72",
+            "name": "campaign",
+            "pid": 41342,
+            "rss_bytes": 49840128
+          },
+          {
+            "cpu_percent_ps": 2.2,
+            "cpu_time": "0:00.38",
+            "name": "redis",
+            "pid": 41345,
+            "rss_bytes": 7503872
+          },
+          {
+            "cpu_percent_ps": 0.0,
+            "cpu_time": "0:00.09",
+            "name": "evm2",
+            "pid": 41346,
+            "rss_bytes": 33079296
+          },
+          {
+            "cpu_percent_ps": 5.0,
+            "cpu_time": "0:01.04",
+            "name": "engine",
+            "pid": 41348,
+            "rss_bytes": 36077568
+          }
+        ]
+      },
+      "seconds": 15.022
+    },
+    {
+      "chains": {
+        "evm2": {
+          "admitted": 101,
+          "attempted": 97,
+          "client": {
+            "dispatched": 101
+          },
+          "included": 57,
+          "responses": {
+            "202": 101
+          },
+          "rpc": {
+            "accepted_unique_wires": 97,
+            "active": 0,
+            "calls": {
+              "eth_blockNumber": 4,
+              "eth_feeHistory": 97,
+              "eth_getBalance": 1,
+              "eth_getBlockByNumber": 52,
+              "eth_getCode": 1,
+              "eth_getTransactionCount": 24,
+              "eth_getTransactionReceipt": 57,
+              "eth_sendRawTransaction": 97
+            },
+            "dropped_responses": 0,
+            "forwarded_sends": 97,
+            "http_requests": 333,
+            "http_transport": {
+              "active": 0,
+              "connection_attempts": 30,
+              "connection_reuses": 303,
+              "connections_opened": 30,
+              "failures": [],
+              "owned_connections": 30,
+              "peak_active": 23,
+              "requests": 333,
+              "responses": 333,
+              "status_200": 333
+            },
+            "methods": {
+              "eth_blockNumber": {
+                "count": 4,
+                "errors": 0,
+                "max_ms": 1.140416000000144,
+                "total_ms": 4.265583000003792
+              },
+              "eth_feeHistory": {
+                "count": 97,
+                "errors": 0,
+                "max_ms": 4.806665999998572,
+                "total_ms": 198.38658700001346
+              },
+              "eth_getBalance": {
+                "count": 1,
+                "errors": 0,
+                "max_ms": 0.8945830000000043,
+                "total_ms": 0.8945830000000043
+              },
+              "eth_getBlockByNumber": {
+                "count": 52,
+                "errors": 0,
+                "max_ms": 3.84166699999966,
+                "total_ms": 62.37629100001385
+              },
+              "eth_getCode": {
+                "count": 1,
+                "errors": 0,
+                "max_ms": 1.1111249999999906,
+                "total_ms": 1.1111249999999906
+              },
+              "eth_getTransactionCount": {
+                "count": 24,
+                "errors": 0,
+                "max_ms": 4.805708000000131,
+                "total_ms": 46.071830999990794
+              },
+              "eth_getTransactionReceipt": {
+                "count": 57,
+                "errors": 0,
+                "max_ms": 24.97333300000193,
+                "total_ms": 510.21125000001894
+              },
+              "eth_sendRawTransaction": {
+                "count": 97,
+                "errors": 0,
+                "max_ms": 6.196124999999997,
+                "total_ms": 262.3209530000084
+              }
+            },
+            "peak_inflight": 26,
+            "proxy_overloads": 0
+          },
+          "terminal": 57
+        }
+      },
+      "observer_duration_ms": 5.538,
+      "phase": "load",
+      "resources": {
+        "free_disk_bytes": 16321986560,
+        "host_load_average": [
+          1.6669921875,
+          2.228515625,
+          2.14697265625
+        ],
+        "journal_bytes": 4345336,
+        "processes": [
+          {
+            "cpu_percent_ps": 4.8,
+            "cpu_time": "0:00.96",
+            "name": "campaign",
+            "pid": 41342,
+            "rss_bytes": 50905088
+          },
+          {
+            "cpu_percent_ps": 2.8,
+            "cpu_time": "0:00.51",
+            "name": "redis",
+            "pid": 41345,
+            "rss_bytes": 7700480
+          },
+          {
+            "cpu_percent_ps": 0.2,
+            "cpu_time": "0:00.11",
+            "name": "evm2",
+            "pid": 41346,
+            "rss_bytes": 34177024
+          },
+          {
+            "cpu_percent_ps": 6.7,
+            "cpu_time": "0:01.40",
+            "name": "engine",
+            "pid": 41348,
+            "rss_bytes": 36421632
+          }
+        ]
+      },
+      "seconds": 20.013
+    },
+    {
+      "chains": {
+        "evm2": {
+          "admitted": 126,
+          "attempted": 122,
+          "client": {
+            "dispatched": 126
+          },
+          "included": 89,
+          "responses": {
+            "202": 126
+          },
+          "rpc": {
+            "accepted_unique_wires": 122,
+            "active": 0,
+            "calls": {
+              "eth_blockNumber": 5,
+              "eth_feeHistory": 122,
+              "eth_getBalance": 1,
+              "eth_getBlockByNumber": 54,
+              "eth_getCode": 1,
+              "eth_getTransactionCount": 30,
+              "eth_getTransactionReceipt": 57,
+              "eth_sendRawTransaction": 154
+            },
+            "dropped_responses": 0,
+            "forwarded_sends": 154,
+            "http_requests": 424,
+            "http_transport": {
+              "active": 0,
+              "connection_attempts": 30,
+              "connection_reuses": 394,
+              "connections_opened": 30,
+              "failures": [],
+              "owned_connections": 30,
+              "peak_active": 23,
+              "requests": 424,
+              "responses": 424,
+              "status_200": 424
+            },
+            "methods": {
+              "eth_blockNumber": {
+                "count": 5,
+                "errors": 0,
+                "max_ms": 1.140416000000144,
+                "total_ms": 5.321083000003446
+              },
+              "eth_feeHistory": {
+                "count": 122,
+                "errors": 0,
+                "max_ms": 4.806665999998572,
+                "total_ms": 248.26313400001013
+              },
+              "eth_getBalance": {
+                "count": 1,
+                "errors": 0,
+                "max_ms": 0.8945830000000043,
+                "total_ms": 0.8945830000000043
+              },
+              "eth_getBlockByNumber": {
+                "count": 54,
+                "errors": 0,
+                "max_ms": 3.84166699999966,
+                "total_ms": 64.88037500001198
+              },
+              "eth_getCode": {
+                "count": 1,
+                "errors": 0,
+                "max_ms": 1.1111249999999906,
+                "total_ms": 1.1111249999999906
+              },
+              "eth_getTransactionCount": {
+                "count": 30,
+                "errors": 0,
+                "max_ms": 4.805708000000131,
+                "total_ms": 58.51270499999006
+              },
+              "eth_getTransactionReceipt": {
+                "count": 57,
+                "errors": 0,
+                "max_ms": 24.97333300000193,
+                "total_ms": 510.21125000001894
+              },
+              "eth_sendRawTransaction": {
+                "count": 154,
+                "errors": 0,
+                "max_ms": 6.196124999999997,
+                "total_ms": 355.00211799999636
+              }
+            },
+            "peak_inflight": 26,
+            "proxy_overloads": 0
+          },
+          "terminal": 57
+        }
+      },
+      "observer_duration_ms": 3.765,
+      "phase": "load",
+      "resources": {
+        "free_disk_bytes": 16326901760,
+        "host_load_average": [
+          1.693359375,
+          2.224609375,
+          2.14599609375
+        ],
+        "journal_bytes": 4345336,
+        "processes": [
+          {
+            "cpu_percent_ps": 1.8,
+            "cpu_time": "0:01.15",
+            "name": "campaign",
+            "pid": 41342,
+            "rss_bytes": 50954240
+          },
+          {
+            "cpu_percent_ps": 2.7,
+            "cpu_time": "0:00.65",
+            "name": "redis",
+            "pid": 41345,
+            "rss_bytes": 7733248
+          },
+          {
+            "cpu_percent_ps": 0.0,
+            "cpu_time": "0:00.13",
+            "name": "evm2",
+            "pid": 41346,
+            "rss_bytes": 34488320
+          },
+          {
+            "cpu_percent_ps": 6.3,
+            "cpu_time": "0:01.75",
+            "name": "engine",
+            "pid": 41348,
+            "rss_bytes": 36552704
+          }
+        ]
+      },
+      "seconds": 25.018
+    },
+    {
+      "chains": {
+        "evm2": {
+          "admitted": 150,
+          "attempted": 147,
+          "client": {
+            "dispatched": 151
+          },
+          "included": 147,
+          "responses": {
+            "202": 150
+          },
+          "rpc": {
+            "accepted_unique_wires": 147,
+            "active": 0,
+            "calls": {
+              "eth_blockNumber": 6,
+              "eth_feeHistory": 147,
+              "eth_getBalance": 1,
+              "eth_getBlockByNumber": 63,
+              "eth_getCode": 1,
+              "eth_getTransactionCount": 36,
+              "eth_getTransactionReceipt": 89,
+              "eth_sendRawTransaction": 187
+            },
+            "dropped_responses": 0,
+            "forwarded_sends": 187,
+            "http_requests": 530,
+            "http_transport": {
+              "active": 0,
+              "connection_attempts": 32,
+              "connection_reuses": 498,
+              "connections_opened": 32,
+              "failures": [],
+              "owned_connections": 32,
+              "peak_active": 23,
+              "requests": 530,
+              "responses": 530,
+              "status_200": 530
+            },
+            "methods": {
+              "eth_blockNumber": {
+                "count": 6,
+                "errors": 0,
+                "max_ms": 1.140416000000144,
+                "total_ms": 6.345375000003761
+              },
+              "eth_feeHistory": {
+                "count": 147,
+                "errors": 0,
+                "max_ms": 4.806665999998572,
+                "total_ms": 308.878677000004
+              },
+              "eth_getBalance": {
+                "count": 1,
+                "errors": 0,
+                "max_ms": 0.8945830000000043,
+                "total_ms": 0.8945830000000043
+              },
+              "eth_getBlockByNumber": {
+                "count": 63,
+                "errors": 0,
+                "max_ms": 3.84166699999966,
+                "total_ms": 73.27654100000558
+              },
+              "eth_getCode": {
+                "count": 1,
+                "errors": 0,
+                "max_ms": 1.1111249999999906,
+                "total_ms": 1.1111249999999906
+              },
+              "eth_getTransactionCount": {
+                "count": 36,
+                "errors": 0,
+                "max_ms": 4.805708000000131,
+                "total_ms": 69.96753999999572
+              },
+              "eth_getTransactionReceipt": {
+                "count": 89,
+                "errors": 0,
+                "max_ms": 25.212875000001134,
+                "total_ms": 923.6762480000243
+              },
+              "eth_sendRawTransaction": {
+                "count": 187,
+                "errors": 0,
+                "max_ms": 6.196124999999997,
+                "total_ms": 438.6154070000058
+              }
+            },
+            "peak_inflight": 26,
+            "proxy_overloads": 0
+          },
+          "terminal": 89
+        }
+      },
+      "observer_duration_ms": 4.546,
+      "phase": "load",
+      "resources": {
+        "free_disk_bytes": 16326504448,
+        "host_load_average": [
+          1.7177734375,
+          2.220703125,
+          2.14501953125
+        ],
+        "journal_bytes": 4480576,
+        "processes": [
+          {
+            "cpu_percent_ps": 1.1,
+            "cpu_time": "0:01.37",
+            "name": "campaign",
+            "pid": 41342,
+            "rss_bytes": 51183616
+          },
+          {
+            "cpu_percent_ps": 2.5,
+            "cpu_time": "0:00.79",
+            "name": "redis",
+            "pid": 41345,
+            "rss_bytes": 7864320
+          },
+          {
+            "cpu_percent_ps": 0.0,
+            "cpu_time": "0:00.15",
+            "name": "evm2",
+            "pid": 41346,
+            "rss_bytes": 35553280
+          },
+          {
+            "cpu_percent_ps": 6.0,
+            "cpu_time": "0:02.15",
+            "name": "engine",
+            "pid": 41348,
+            "rss_bytes": 36765696
+          }
+        ]
+      },
+      "seconds": 30.013
+    },
+    {
+      "chains": {
+        "evm2": {
+          "admitted": 176,
+          "attempted": 172,
+          "client": {
+            "dispatched": 176
+          },
+          "included": 167,
+          "responses": {
+            "202": 176
+          },
+          "rpc": {
+            "accepted_unique_wires": 172,
+            "active": 0,
+            "calls": {
+              "eth_blockNumber": 7,
+              "eth_feeHistory": 172,
+              "eth_getBalance": 1,
+              "eth_getBlockByNumber": 79,
+              "eth_getCode": 1,
+              "eth_getTransactionCount": 42,
+              "eth_getTransactionReceipt": 137,
+              "eth_sendRawTransaction": 212
+            },
+            "dropped_responses": 0,
+            "forwarded_sends": 212,
+            "http_requests": 651,
+            "http_transport": {
+              "active": 0,
+              "connection_attempts": 32,
+              "connection_reuses": 619,
+              "connections_opened": 32,
+              "failures": [],
+              "owned_connections": 32,
+              "peak_active": 28,
+              "requests": 651,
+              "responses": 651,
+              "status_200": 651
+            },
+            "methods": {
+              "eth_blockNumber": {
+                "count": 7,
+                "errors": 0,
+                "max_ms": 1.140416000000144,
+                "total_ms": 7.430584000006624
+              },
+              "eth_feeHistory": {
+                "count": 172,
+                "errors": 0,
+                "max_ms": 4.806665999998572,
+                "total_ms": 363.27009400000196
+              },
+              "eth_getBalance": {
+                "count": 1,
+                "errors": 0,
+                "max_ms": 0.8945830000000043,
+                "total_ms": 0.8945830000000043
+              },
+              "eth_getBlockByNumber": {
+                "count": 79,
+                "errors": 0,
+                "max_ms": 3.84166699999966,
+                "total_ms": 92.16637700001229
+              },
+              "eth_getCode": {
+                "count": 1,
+                "errors": 0,
+                "max_ms": 1.1111249999999906,
+                "total_ms": 1.1111249999999906
+              },
+              "eth_getTransactionCount": {
+                "count": 42,
+                "errors": 0,
+                "max_ms": 4.805708000000131,
+                "total_ms": 81.42012599999649
+              },
+              "eth_getTransactionReceipt": {
+                "count": 137,
+                "errors": 0,
+                "max_ms": 35.57700000000352,
+                "total_ms": 1626.760627000027
+              },
+              "eth_sendRawTransaction": {
+                "count": 212,
+                "errors": 0,
+                "max_ms": 6.196124999999997,
+                "total_ms": 520.1519020000147
+              }
+            },
+            "peak_inflight": 32,
+            "proxy_overloads": 0
+          },
+          "terminal": 137
+        }
+      },
+      "observer_duration_ms": 3.652,
+      "phase": "load",
+      "resources": {
+        "free_disk_bytes": 16326209536,
+        "host_load_average": [
+          1.740234375,
+          2.216796875,
+          2.14404296875
+        ],
+        "journal_bytes": 4480576,
+        "processes": [
+          {
+            "cpu_percent_ps": 0.7,
+            "cpu_time": "0:01.57",
+            "name": "campaign",
+            "pid": 41342,
+            "rss_bytes": 51380224
+          },
+          {
+            "cpu_percent_ps": 2.3,
+            "cpu_time": "0:00.93",
+            "name": "redis",
+            "pid": 41345,
+            "rss_bytes": 8126464
+          },
+          {
+            "cpu_percent_ps": 0.0,
+            "cpu_time": "0:00.17",
+            "name": "evm2",
+            "pid": 41346,
+            "rss_bytes": 35766272
+          },
+          {
+            "cpu_percent_ps": 5.5,
+            "cpu_time": "0:02.53",
+            "name": "engine",
+            "pid": 41348,
+            "rss_bytes": 37273600
+          }
+        ]
+      },
+      "seconds": 35.023
+    },
+    {
+      "chains": {
+        "evm2": {
+          "admitted": 201,
+          "attempted": 197,
+          "client": {
+            "dispatched": 201
+          },
+          "included": 197,
+          "responses": {
+            "202": 201
+          },
+          "rpc": {
+            "accepted_unique_wires": 197,
+            "active": 0,
+            "calls": {
+              "eth_blockNumber": 8,
+              "eth_feeHistory": 197,
+              "eth_getBalance": 1,
+              "eth_getBlockByNumber": 95,
+              "eth_getCode": 1,
+              "eth_getTransactionCount": 48,
+              "eth_getTransactionReceipt": 157,
+              "eth_sendRawTransaction": 237
+            },
+            "dropped_responses": 0,
+            "forwarded_sends": 237,
+            "http_requests": 744,
+            "http_transport": {
+              "active": 0,
+              "connection_attempts": 32,
+              "connection_reuses": 712,
+              "connections_opened": 32,
+              "failures": [],
+              "owned_connections": 32,
+              "peak_active": 28,
+              "requests": 744,
+              "responses": 744,
+              "status_200": 744
+            },
+            "methods": {
+              "eth_blockNumber": {
+                "count": 8,
+                "errors": 0,
+                "max_ms": 1.140416000000144,
+                "total_ms": 8.461918000003399
+              },
+              "eth_feeHistory": {
+                "count": 197,
+                "errors": 0,
+                "max_ms": 4.806665999998572,
+                "total_ms": 414.63884600000387
+              },
+              "eth_getBalance": {
+                "count": 1,
+                "errors": 0,
+                "max_ms": 0.8945830000000043,
+                "total_ms": 0.8945830000000043
+              },
+              "eth_getBlockByNumber": {
+                "count": 95,
+                "errors": 0,
+                "max_ms": 3.84166699999966,
+                "total_ms": 113.29350200003319
+              },
+              "eth_getCode": {
+                "count": 1,
+                "errors": 0,
+                "max_ms": 1.1111249999999906,
+                "total_ms": 1.1111249999999906
+              },
+              "eth_getTransactionCount": {
+                "count": 48,
+                "errors": 0,
+                "max_ms": 4.805708000000131,
+                "total_ms": 92.77033399999257
+              },
+              "eth_getTransactionReceipt": {
+                "count": 157,
+                "errors": 0,
+                "max_ms": 35.57700000000352,
+                "total_ms": 1838.8839190000067
+              },
+              "eth_sendRawTransaction": {
+                "count": 237,
+                "errors": 0,
+                "max_ms": 6.196124999999997,
+                "total_ms": 589.7526520000282
+              }
+            },
+            "peak_inflight": 32,
+            "proxy_overloads": 0
+          },
+          "terminal": 157
+        }
+      },
+      "observer_duration_ms": 4.504,
+      "phase": "load",
+      "resources": {
+        "free_disk_bytes": 16324956160,
+        "host_load_average": [
+          1.6806640625,
+          2.1962890625,
+          2.13720703125
+        ],
+        "journal_bytes": 4595264,
+        "processes": [
+          {
+            "cpu_percent_ps": 1.1,
+            "cpu_time": "0:01.74",
+            "name": "campaign",
+            "pid": 41342,
+            "rss_bytes": 51412992
+          },
+          {
+            "cpu_percent_ps": 2.4,
+            "cpu_time": "0:01.06",
+            "name": "redis",
+            "pid": 41345,
+            "rss_bytes": 8142848
+          },
+          {
+            "cpu_percent_ps": 0.0,
+            "cpu_time": "0:00.19",
+            "name": "evm2",
+            "pid": 41346,
+            "rss_bytes": 36438016
+          },
+          {
+            "cpu_percent_ps": 6.0,
+            "cpu_time": "0:02.88",
+            "name": "engine",
+            "pid": 41348,
+            "rss_bytes": 37371904
+          }
+        ]
+      },
+      "seconds": 40.023
+    },
+    {
+      "chains": {
+        "evm2": {
+          "admitted": 225,
+          "attempted": 222,
+          "client": {
+            "dispatched": 225
+          },
+          "included": 217,
+          "responses": {
+            "202": 225
+          },
+          "rpc": {
+            "accepted_unique_wires": 222,
+            "active": 0,
+            "calls": {
+              "eth_blockNumber": 9,
+              "eth_feeHistory": 222,
+              "eth_getBalance": 1,
+              "eth_getBlockByNumber": 119,
+              "eth_getCode": 1,
+              "eth_getTransactionCount": 54,
+              "eth_getTransactionReceipt": 187,
+              "eth_sendRawTransaction": 262
+            },
+            "dropped_responses": 0,
+            "forwarded_sends": 262,
+            "http_requests": 855,
+            "http_transport": {
+              "active": 0,
+              "connection_attempts": 32,
+              "connection_reuses": 823,
+              "connections_opened": 32,
+              "failures": [],
+              "owned_connections": 32,
+              "peak_active": 28,
+              "requests": 855,
+              "responses": 855,
+              "status_200": 855
+            },
+            "methods": {
+              "eth_blockNumber": {
+                "count": 9,
+                "errors": 0,
+                "max_ms": 1.140416000000144,
+                "total_ms": 9.42475100000606
+              },
+              "eth_feeHistory": {
+                "count": 222,
+                "errors": 0,
+                "max_ms": 4.806665999998572,
+                "total_ms": 471.051223000019
+              },
+              "eth_getBalance": {
+                "count": 1,
+                "errors": 0,
+                "max_ms": 0.8945830000000043,
+                "total_ms": 0.8945830000000043
+              },
+              "eth_getBlockByNumber": {
+                "count": 119,
+                "errors": 0,
+                "max_ms": 3.84166699999966,
+                "total_ms": 149.12775500004471
+              },
+              "eth_getCode": {
+                "count": 1,
+                "errors": 0,
+                "max_ms": 1.1111249999999906,
+                "total_ms": 1.1111249999999906
+              },
+              "eth_getTransactionCount": {
+                "count": 54,
+                "errors": 0,
+                "max_ms": 4.805708000000131,
+                "total_ms": 103.8107089999929
+              },
+              "eth_getTransactionReceipt": {
+                "count": 187,
+                "errors": 0,
+                "max_ms": 35.57700000000352,
+                "total_ms": 2219.9550040000017
+              },
+              "eth_sendRawTransaction": {
+                "count": 262,
+                "errors": 0,
+                "max_ms": 6.196124999999997,
+                "total_ms": 666.089025999986
+              }
+            },
+            "peak_inflight": 32,
+            "proxy_overloads": 0
+          },
+          "terminal": 187
+        }
+      },
+      "observer_duration_ms": 5.01,
+      "phase": "load",
+      "resources": {
+        "free_disk_bytes": 16324935680,
+        "host_load_average": [
+          1.6259765625,
+          2.17626953125,
+          2.13037109375
+        ],
+        "journal_bytes": 4595264,
+        "processes": [
+          {
+            "cpu_percent_ps": 0.6,
+            "cpu_time": "0:01.92",
+            "name": "campaign",
+            "pid": 41342,
+            "rss_bytes": 51462144
+          },
+          {
+            "cpu_percent_ps": 2.2,
+            "cpu_time": "0:01.19",
+            "name": "redis",
+            "pid": 41345,
+            "rss_bytes": 8241152
+          },
+          {
+            "cpu_percent_ps": 0.0,
+            "cpu_time": "0:00.20",
+            "name": "evm2",
+            "pid": 41346,
+            "rss_bytes": 36552704
+          },
+          {
+            "cpu_percent_ps": 5.2,
+            "cpu_time": "0:03.23",
+            "name": "engine",
+            "pid": 41348,
+            "rss_bytes": 37470208
+          }
+        ]
+      },
+      "seconds": 45.003
+    },
+    {
+      "chains": {
+        "evm2": {
+          "admitted": 225,
+          "attempted": 222,
+          "client": {
+            "dispatched": 225
+          },
+          "included": 217,
+          "responses": {
+            "202": 225
+          },
+          "rpc": {
+            "accepted_unique_wires": 222,
+            "active": 0,
+            "calls": {
+              "eth_blockNumber": 9,
+              "eth_feeHistory": 222,
+              "eth_getBalance": 1,
+              "eth_getBlockByNumber": 119,
+              "eth_getCode": 1,
+              "eth_getTransactionCount": 54,
+              "eth_getTransactionReceipt": 187,
+              "eth_sendRawTransaction": 262
+            },
+            "dropped_responses": 0,
+            "forwarded_sends": 262,
+            "http_requests": 855,
+            "http_transport": {
+              "active": 0,
+              "connection_attempts": 32,
+              "connection_reuses": 823,
+              "connections_opened": 32,
+              "failures": [],
+              "owned_connections": 32,
+              "peak_active": 28,
+              "requests": 855,
+              "responses": 855,
+              "status_200": 855
+            },
+            "methods": {
+              "eth_blockNumber": {
+                "count": 9,
+                "errors": 0,
+                "max_ms": 1.140416000000144,
+                "total_ms": 9.42475100000606
+              },
+              "eth_feeHistory": {
+                "count": 222,
+                "errors": 0,
+                "max_ms": 4.806665999998572,
+                "total_ms": 471.051223000019
+              },
+              "eth_getBalance": {
+                "count": 1,
+                "errors": 0,
+                "max_ms": 0.8945830000000043,
+                "total_ms": 0.8945830000000043
+              },
+              "eth_getBlockByNumber": {
+                "count": 119,
+                "errors": 0,
+                "max_ms": 3.84166699999966,
+                "total_ms": 149.12775500004471
+              },
+              "eth_getCode": {
+                "count": 1,
+                "errors": 0,
+                "max_ms": 1.1111249999999906,
+                "total_ms": 1.1111249999999906
+              },
+              "eth_getTransactionCount": {
+                "count": 54,
+                "errors": 0,
+                "max_ms": 4.805708000000131,
+                "total_ms": 103.8107089999929
+              },
+              "eth_getTransactionReceipt": {
+                "count": 187,
+                "errors": 0,
+                "max_ms": 35.57700000000352,
+                "total_ms": 2219.9550040000017
+              },
+              "eth_sendRawTransaction": {
+                "count": 262,
+                "errors": 0,
+                "max_ms": 6.196124999999997,
+                "total_ms": 666.089025999986
+              }
+            },
+            "peak_inflight": 32,
+            "proxy_overloads": 0
+          },
+          "terminal": 187
+        }
+      },
+      "observer_duration_ms": 3.215,
+      "phase": "drain",
+      "resources": {
+        "free_disk_bytes": 16324931584,
+        "host_load_average": [
+          1.6259765625,
+          2.17626953125,
+          2.13037109375
+        ],
+        "journal_bytes": 4595264,
+        "processes": [
+          {
+            "cpu_percent_ps": 0.0,
+            "cpu_time": "0:01.92",
+            "name": "campaign",
+            "pid": 41342,
+            "rss_bytes": 51396608
+          },
+          {
+            "cpu_percent_ps": 2.2,
+            "cpu_time": "0:01.19",
+            "name": "redis",
+            "pid": 41345,
+            "rss_bytes": 8241152
+          },
+          {
+            "cpu_percent_ps": 0.0,
+            "cpu_time": "0:00.20",
+            "name": "evm2",
+            "pid": 41346,
+            "rss_bytes": 36552704
+          },
+          {
+            "cpu_percent_ps": 5.2,
+            "cpu_time": "0:03.23",
+            "name": "engine",
+            "pid": 41348,
+            "rss_bytes": 37470208
+          }
+        ]
+      },
+      "seconds": 45.017
+    },
+    {
+      "chains": {
+        "evm2": {
+          "admitted": 225,
+          "attempted": 222,
+          "client": {
+            "dispatched": 225
+          },
+          "included": 217,
+          "responses": {
+            "202": 225
+          },
+          "rpc": {
+            "accepted_unique_wires": 222,
+            "active": 0,
+            "calls": {
+              "eth_blockNumber": 9,
+              "eth_feeHistory": 222,
+              "eth_getBalance": 1,
+              "eth_getBlockByNumber": 119,
+              "eth_getCode": 1,
+              "eth_getTransactionCount": 54,
+              "eth_getTransactionReceipt": 187,
+              "eth_sendRawTransaction": 262
+            },
+            "dropped_responses": 0,
+            "forwarded_sends": 262,
+            "http_requests": 855,
+            "http_transport": {
+              "active": 0,
+              "connection_attempts": 32,
+              "connection_reuses": 823,
+              "connections_opened": 32,
+              "failures": [],
+              "owned_connections": 32,
+              "peak_active": 28,
+              "requests": 855,
+              "responses": 855,
+              "status_200": 855
+            },
+            "methods": {
+              "eth_blockNumber": {
+                "count": 9,
+                "errors": 0,
+                "max_ms": 1.140416000000144,
+                "total_ms": 9.42475100000606
+              },
+              "eth_feeHistory": {
+                "count": 222,
+                "errors": 0,
+                "max_ms": 4.806665999998572,
+                "total_ms": 471.051223000019
+              },
+              "eth_getBalance": {
+                "count": 1,
+                "errors": 0,
+                "max_ms": 0.8945830000000043,
+                "total_ms": 0.8945830000000043
+              },
+              "eth_getBlockByNumber": {
+                "count": 119,
+                "errors": 0,
+                "max_ms": 3.84166699999966,
+                "total_ms": 149.12775500004471
+              },
+              "eth_getCode": {
+                "count": 1,
+                "errors": 0,
+                "max_ms": 1.1111249999999906,
+                "total_ms": 1.1111249999999906
+              },
+              "eth_getTransactionCount": {
+                "count": 54,
+                "errors": 0,
+                "max_ms": 4.805708000000131,
+                "total_ms": 103.8107089999929
+              },
+              "eth_getTransactionReceipt": {
+                "count": 187,
+                "errors": 0,
+                "max_ms": 35.57700000000352,
+                "total_ms": 2219.9550040000017
+              },
+              "eth_sendRawTransaction": {
+                "count": 262,
+                "errors": 0,
+                "max_ms": 6.196124999999997,
+                "total_ms": 666.089025999986
+              }
+            },
+            "peak_inflight": 32,
+            "proxy_overloads": 0
+          },
+          "terminal": 187
+        }
+      },
+      "observer_duration_ms": 2.859,
+      "phase": "drain",
+      "resources": {
+        "free_disk_bytes": 16324931584,
+        "host_load_average": [
+          1.6259765625,
+          2.17626953125,
+          2.13037109375
+        ],
+        "journal_bytes": 4595264,
+        "processes": [
+          {
+            "cpu_percent_ps": 0.0,
+            "cpu_time": "0:01.93",
+            "name": "campaign",
+            "pid": 41342,
+            "rss_bytes": 51396608
+          },
+          {
+            "cpu_percent_ps": 2.2,
+            "cpu_time": "0:01.19",
+            "name": "redis",
+            "pid": 41345,
+            "rss_bytes": 8241152
+          },
+          {
+            "cpu_percent_ps": 0.0,
+            "cpu_time": "0:00.20",
+            "name": "evm2",
+            "pid": 41346,
+            "rss_bytes": 36552704
+          },
+          {
+            "cpu_percent_ps": 5.2,
+            "cpu_time": "0:03.23",
+            "name": "engine",
+            "pid": 41348,
+            "rss_bytes": 37470208
+          }
+        ]
+      },
+      "seconds": 45.025
+    },
+    {
+      "chains": {
+        "evm2": {
+          "admitted": 225,
+          "attempted": 225,
+          "client": {
+            "dispatched": 225
+          },
+          "included": 225,
+          "responses": {
+            "202": 225
+          },
+          "rpc": {
+            "accepted_unique_wires": 225,
+            "active": 0,
+            "calls": {
+              "eth_blockNumber": 10,
+              "eth_feeHistory": 225,
+              "eth_getBalance": 1,
+              "eth_getBlockByNumber": 135,
+              "eth_getCode": 1,
+              "eth_getTransactionCount": 60,
+              "eth_getTransactionReceipt": 207,
+              "eth_sendRawTransaction": 265
+            },
+            "dropped_responses": 0,
+            "forwarded_sends": 265,
+            "http_requests": 904,
+            "http_transport": {
+              "active": 0,
+              "connection_attempts": 32,
+              "connection_reuses": 872,
+              "connections_opened": 32,
+              "failures": [],
+              "owned_connections": 30,
+              "peak_active": 28,
+              "requests": 904,
+              "responses": 904,
+              "status_200": 904
+            },
+            "methods": {
+              "eth_blockNumber": {
+                "count": 10,
+                "errors": 0,
+                "max_ms": 1.140416000000144,
+                "total_ms": 10.52121000000894
+              },
+              "eth_feeHistory": {
+                "count": 225,
+                "errors": 0,
+                "max_ms": 4.806665999998572,
+                "total_ms": 477.2792230000191
+              },
+              "eth_getBalance": {
+                "count": 1,
+                "errors": 0,
+                "max_ms": 0.8945830000000043,
+                "total_ms": 0.8945830000000043
+              },
+              "eth_getBlockByNumber": {
+                "count": 135,
+                "errors": 0,
+                "max_ms": 3.84166699999966,
+                "total_ms": 169.02783800004784
+              },
+              "eth_getCode": {
+                "count": 1,
+                "errors": 0,
+                "max_ms": 1.1111249999999906,
+                "total_ms": 1.1111249999999906
+              },
+              "eth_getTransactionCount": {
+                "count": 60,
+                "errors": 0,
+                "max_ms": 4.854791999996166,
+                "total_ms": 116.04716699999673
+              },
+              "eth_getTransactionReceipt": {
+                "count": 207,
+                "errors": 0,
+                "max_ms": 35.57700000000352,
+                "total_ms": 2387.076964000005
+              },
+              "eth_sendRawTransaction": {
+                "count": 265,
+                "errors": 0,
+                "max_ms": 6.196124999999997,
+                "total_ms": 672.4525269999815
+              }
+            },
+            "peak_inflight": 32,
+            "proxy_overloads": 0
+          },
+          "terminal": 207
+        }
+      },
+      "observer_duration_ms": 4.517,
+      "phase": "drain",
+      "resources": {
+        "free_disk_bytes": 16324849664,
+        "host_load_average": [
+          1.57568359375,
+          2.15673828125,
+          2.12353515625
+        ],
+        "journal_bytes": 4595264,
+        "processes": [
+          {
+            "cpu_percent_ps": 0.0,
+            "cpu_time": "0:02.00",
+            "name": "campaign",
+            "pid": 41342,
+            "rss_bytes": 51281920
+          },
+          {
+            "cpu_percent_ps": 1.8,
+            "cpu_time": "0:01.29",
+            "name": "redis",
+            "pid": 41345,
+            "rss_bytes": 8257536
+          },
+          {
+            "cpu_percent_ps": 0.0,
+            "cpu_time": "0:00.21",
+            "name": "evm2",
+            "pid": 41346,
+            "rss_bytes": 37093376
+          },
+          {
+            "cpu_percent_ps": 3.6,
+            "cpu_time": "0:03.46",
+            "name": "engine",
+            "pid": 41348,
+            "rss_bytes": 37519360
+          }
+        ]
+      },
+      "seconds": 50.023
+    },
+    {
+      "chains": {
+        "evm2": {
+          "admitted": 225,
+          "attempted": 225,
+          "client": {
+            "dispatched": 225
+          },
+          "included": 225,
+          "responses": {
+            "202": 225
+          },
+          "rpc": {
+            "accepted_unique_wires": 225,
+            "active": 0,
+            "calls": {
+              "eth_blockNumber": 10,
+              "eth_feeHistory": 225,
+              "eth_getBalance": 1,
+              "eth_getBlockByNumber": 135,
+              "eth_getCode": 1,
+              "eth_getTransactionCount": 60,
+              "eth_getTransactionReceipt": 207,
+              "eth_sendRawTransaction": 265
+            },
+            "dropped_responses": 0,
+            "forwarded_sends": 265,
+            "http_requests": 904,
+            "http_transport": {
+              "active": 0,
+              "connection_attempts": 32,
+              "connection_reuses": 872,
+              "connections_opened": 32,
+              "failures": [],
+              "owned_connections": 30,
+              "peak_active": 28,
+              "requests": 904,
+              "responses": 904,
+              "status_200": 904
+            },
+            "methods": {
+              "eth_blockNumber": {
+                "count": 10,
+                "errors": 0,
+                "max_ms": 1.140416000000144,
+                "total_ms": 10.52121000000894
+              },
+              "eth_feeHistory": {
+                "count": 225,
+                "errors": 0,
+                "max_ms": 4.806665999998572,
+                "total_ms": 477.2792230000191
+              },
+              "eth_getBalance": {
+                "count": 1,
+                "errors": 0,
+                "max_ms": 0.8945830000000043,
+                "total_ms": 0.8945830000000043
+              },
+              "eth_getBlockByNumber": {
+                "count": 135,
+                "errors": 0,
+                "max_ms": 3.84166699999966,
+                "total_ms": 169.02783800004784
+              },
+              "eth_getCode": {
+                "count": 1,
+                "errors": 0,
+                "max_ms": 1.1111249999999906,
+                "total_ms": 1.1111249999999906
+              },
+              "eth_getTransactionCount": {
+                "count": 60,
+                "errors": 0,
+                "max_ms": 4.854791999996166,
+                "total_ms": 116.04716699999673
+              },
+              "eth_getTransactionReceipt": {
+                "count": 207,
+                "errors": 0,
+                "max_ms": 35.57700000000352,
+                "total_ms": 2387.076964000005
+              },
+              "eth_sendRawTransaction": {
+                "count": 265,
+                "errors": 0,
+                "max_ms": 6.196124999999997,
+                "total_ms": 672.4525269999815
+              }
+            },
+            "peak_inflight": 32,
+            "proxy_overloads": 0
+          },
+          "terminal": 207
+        }
+      },
+      "observer_duration_ms": 3.943,
+      "phase": "drain",
+      "resources": {
+        "free_disk_bytes": 16324849664,
+        "host_load_average": [
+          1.57568359375,
+          2.15673828125,
+          2.12353515625
+        ],
+        "journal_bytes": 4595264,
+        "processes": [
+          {
+            "cpu_percent_ps": 0.0,
+            "cpu_time": "0:02.01",
+            "name": "campaign",
+            "pid": 41342,
+            "rss_bytes": 51281920
+          },
+          {
+            "cpu_percent_ps": 1.8,
+            "cpu_time": "0:01.29",
+            "name": "redis",
+            "pid": 41345,
+            "rss_bytes": 8257536
+          },
+          {
+            "cpu_percent_ps": 0.0,
+            "cpu_time": "0:00.21",
+            "name": "evm2",
+            "pid": 41346,
+            "rss_bytes": 37093376
+          },
+          {
+            "cpu_percent_ps": 3.6,
+            "cpu_time": "0:03.46",
+            "name": "engine",
+            "pid": 41348,
+            "rss_bytes": 37519360
+          }
+        ]
+      },
+      "seconds": 50.036
+    },
+    {
+      "chains": {
+        "evm2": {
+          "admitted": 225,
+          "attempted": 225,
+          "client": {
+            "dispatched": 225
+          },
+          "included": 225,
+          "responses": {
+            "202": 225
+          },
+          "rpc": {
+            "accepted_unique_wires": 225,
+            "active": 0,
+            "calls": {
+              "eth_blockNumber": 11,
+              "eth_feeHistory": 225,
+              "eth_getBalance": 1,
+              "eth_getBlockByNumber": 151,
+              "eth_getCode": 1,
+              "eth_getTransactionCount": 65,
+              "eth_getTransactionReceipt": 225,
+              "eth_sendRawTransaction": 265
+            },
+            "dropped_responses": 0,
+            "forwarded_sends": 265,
+            "http_requests": 944,
+            "http_transport": {
+              "active": 0,
+              "connection_attempts": 32,
+              "connection_reuses": 912,
+              "connections_opened": 32,
+              "failures": [],
+              "owned_connections": 30,
+              "peak_active": 28,
+              "requests": 944,
+              "responses": 944,
+              "status_200": 944
+            },
+            "methods": {
+              "eth_blockNumber": {
+                "count": 11,
+                "errors": 0,
+                "max_ms": 1.140416000000144,
+                "total_ms": 11.48212700000939
+              },
+              "eth_feeHistory": {
+                "count": 225,
+                "errors": 0,
+                "max_ms": 4.806665999998572,
+                "total_ms": 477.2792230000191
+              },
+              "eth_getBalance": {
+                "count": 1,
+                "errors": 0,
+                "max_ms": 0.8945830000000043,
+                "total_ms": 0.8945830000000043
+              },
+              "eth_getBlockByNumber": {
+                "count": 151,
+                "errors": 0,
+                "max_ms": 3.84166699999966,
+                "total_ms": 188.90867200005346
+              },
+              "eth_getCode": {
+                "count": 1,
+                "errors": 0,
+                "max_ms": 1.1111249999999906,
+                "total_ms": 1.1111249999999906
+              },
+              "eth_getTransactionCount": {
+                "count": 65,
+                "errors": 0,
+                "max_ms": 4.854791999996166,
+                "total_ms": 126.31870799999834
+              },
+              "eth_getTransactionReceipt": {
+                "count": 225,
+                "errors": 0,
+                "max_ms": 35.57700000000352,
+                "total_ms": 2562.3693819999817
+              },
+              "eth_sendRawTransaction": {
+                "count": 265,
+                "errors": 0,
+                "max_ms": 6.196124999999997,
+                "total_ms": 672.4525269999815
+              }
+            },
+            "peak_inflight": 32,
+            "proxy_overloads": 0
+          },
+          "terminal": 225
+        }
+      },
+      "observer_duration_ms": 4.259,
+      "phase": "drain",
+      "resources": {
+        "free_disk_bytes": 16324743168,
+        "host_load_average": [
+          1.609375,
+          2.15380859375,
+          2.12255859375
+        ],
+        "journal_bytes": 4595264,
+        "processes": [
+          {
+            "cpu_percent_ps": 0.0,
+            "cpu_time": "0:02.07",
+            "name": "campaign",
+            "pid": 41342,
+            "rss_bytes": 51281920
+          },
+          {
+            "cpu_percent_ps": 1.9,
+            "cpu_time": "0:01.39",
+            "name": "redis",
+            "pid": 41345,
+            "rss_bytes": 8339456
+          },
+          {
+            "cpu_percent_ps": 0.0,
+            "cpu_time": "0:00.22",
+            "name": "evm2",
+            "pid": 41346,
+            "rss_bytes": 37208064
+          },
+          {
+            "cpu_percent_ps": 4.4,
+            "cpu_time": "0:03.71",
+            "name": "engine",
+            "pid": 41348,
+            "rss_bytes": 37568512
+          }
+        ]
+      },
+      "seconds": 55.023
+    },
+    {
+      "chains": {
+        "evm2": {
+          "admitted": 225,
+          "attempted": 225,
+          "client": {
+            "dispatched": 225
+          },
+          "included": 225,
+          "responses": {
+            "202": 225
+          },
+          "rpc": {
+            "accepted_unique_wires": 225,
+            "active": 0,
+            "calls": {
+              "eth_blockNumber": 11,
+              "eth_feeHistory": 225,
+              "eth_getBalance": 1,
+              "eth_getBlockByNumber": 151,
+              "eth_getCode": 1,
+              "eth_getTransactionCount": 65,
+              "eth_getTransactionReceipt": 225,
+              "eth_sendRawTransaction": 265
+            },
+            "dropped_responses": 0,
+            "forwarded_sends": 265,
+            "http_requests": 944,
+            "http_transport": {
+              "active": 0,
+              "connection_attempts": 32,
+              "connection_reuses": 912,
+              "connections_opened": 32,
+              "failures": [],
+              "owned_connections": 30,
+              "peak_active": 28,
+              "requests": 944,
+              "responses": 944,
+              "status_200": 944
+            },
+            "methods": {
+              "eth_blockNumber": {
+                "count": 11,
+                "errors": 0,
+                "max_ms": 1.140416000000144,
+                "total_ms": 11.48212700000939
+              },
+              "eth_feeHistory": {
+                "count": 225,
+                "errors": 0,
+                "max_ms": 4.806665999998572,
+                "total_ms": 477.2792230000191
+              },
+              "eth_getBalance": {
+                "count": 1,
+                "errors": 0,
+                "max_ms": 0.8945830000000043,
+                "total_ms": 0.8945830000000043
+              },
+              "eth_getBlockByNumber": {
+                "count": 151,
+                "errors": 0,
+                "max_ms": 3.84166699999966,
+                "total_ms": 188.90867200005346
+              },
+              "eth_getCode": {
+                "count": 1,
+                "errors": 0,
+                "max_ms": 1.1111249999999906,
+                "total_ms": 1.1111249999999906
+              },
+              "eth_getTransactionCount": {
+                "count": 65,
+                "errors": 0,
+                "max_ms": 4.854791999996166,
+                "total_ms": 126.31870799999834
+              },
+              "eth_getTransactionReceipt": {
+                "count": 225,
+                "errors": 0,
+                "max_ms": 35.57700000000352,
+                "total_ms": 2562.3693819999817
+              },
+              "eth_sendRawTransaction": {
+                "count": 265,
+                "errors": 0,
+                "max_ms": 6.196124999999997,
+                "total_ms": 672.4525269999815
+              }
+            },
+            "peak_inflight": 32,
+            "proxy_overloads": 0
+          },
+          "terminal": 225
+        }
+      },
+      "observer_duration_ms": 4.66,
+      "phase": "drain",
+      "resources": {
+        "free_disk_bytes": 16324739072,
+        "host_load_average": [
+          1.609375,
+          2.15380859375,
+          2.12255859375
+        ],
+        "journal_bytes": 4595264,
+        "processes": [
+          {
+            "cpu_percent_ps": 0.0,
+            "cpu_time": "0:02.07",
+            "name": "campaign",
+            "pid": 41342,
+            "rss_bytes": 51281920
+          },
+          {
+            "cpu_percent_ps": 1.9,
+            "cpu_time": "0:01.39",
+            "name": "redis",
+            "pid": 41345,
+            "rss_bytes": 8339456
+          },
+          {
+            "cpu_percent_ps": 0.0,
+            "cpu_time": "0:00.22",
+            "name": "evm2",
+            "pid": 41346,
+            "rss_bytes": 37208064
+          },
+          {
+            "cpu_percent_ps": 4.4,
+            "cpu_time": "0:03.71",
+            "name": "engine",
+            "pid": 41348,
+            "rss_bytes": 37568512
+          }
+        ]
+      },
+      "seconds": 55.057
+    }
+  ],
+  "schema_version": 1,
+  "scope": "local single-host shared Engine/Redis/SQLite capacity experiment",
+  "solana_confirmation_poll_seconds": 1,
+  "solana_workers": 100,
+  "source_commit": "3a248ac5bd13e16ce682f3e0548a0096a7502fe0",
+  "source_status_porcelain": [
+    " M core/src/recovery.rs",
+    " M docs/design/capacity-campaign.md",
+    " M executors/src/eoa/worker/confirm.rs",
+    " M formal/coverage.md",
+    " M formal/eoa.md",
+    " M formal/nonce-allocator.md",
+    " M formal/source-map.json",
+    " M scripts/capacity_campaign.py",
+    "?? docs/baselines/capacity-2026-09-26/capacity-evm12-100-candidate.full.json.gz",
+    "?? docs/baselines/capacity-2026-09-26/capacity-evm12-100-candidate.json",
+    "?? docs/baselines/capacity-2026-09-26/capacity-evm12-100-candidate.observations.jsonl.gz",
+    "?? docs/baselines/capacity-2026-09-26/capacity-reorg-fixed.full.json.gz",
+    "?? docs/baselines/capacity-2026-09-26/capacity-reorg-fixed.json",
+    "?? docs/baselines/capacity-2026-09-26/capacity-reorg-fixed.observations.jsonl.gz",
+    "?? docs/baselines/capacity-2026-09-26/ci-update.md",
+    "?? docs/baselines/capacity-2026-09-26/ci.patch",
+    "?? docs/baselines/capacity-2026-09-26/gap-runtime-validation.json",
+    "?? docs/baselines/capacity-2026-09-26/gap-runtime-validation.md",
+    "?? docs/baselines/capacity-2026-09-26/runtime-validation.json",
+    "?? docs/baselines/capacity-2026-09-26/runtime-validation.md",
+    "?? docs/baselines/capacity-2026-09-26/solana-free-faucet-attempt.json",
+    "?? docs/design/eoa-gap-recovery.md",
+    "?? executors/src/eoa/worker/gap_replay.rs",
+    "?? executors/src/eoa/worker/gap_replay_tests.rs",
+    "?? scripts/capacity_assess.py",
+    "?? scripts/capacity_assess_test.py",
+    "?? scripts/capacity_pool_test.py"
+  ],
+  "summary_note": "Compact report: full wire maps/audit tail omitted and failure examples capped at3; full immutable report and per-ID observations linked by digest.",
+  "warmup_seconds": 60
+}

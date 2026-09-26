@@ -1,0 +1,194 @@
+TLC2 Version 2.19 of 08 August 2024 (rev: 5a47802)
+Running breadth-first search Model-Checking with fp 0 and seed 1 with 1 worker on 10 cores with 1820MB heap and 64MB offheap memory [pid: 41151] (Mac OS X 26.6.2 aarch64, Eclipse Adoptium 21.0.12.1 x86_64, MSBDiskFPSet, DiskStateQueue).
+Parsing file /Users/alfongj/Code/engine-core/formal/tla/Admission.tla
+Parsing file /private/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/Naturals.tla
+Parsing file /private/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/FiniteSets.tla
+Parsing file /private/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/Sequences.tla
+Semantic processing of module Naturals
+Semantic processing of module Sequences
+Semantic processing of module FiniteSets
+Semantic processing of module Admission
+Starting... (2026-09-26 19:35:02)
+Computing initial states...
+Finished computing initial states: 1 distinct state generated at 2026-09-26 19:35:02.
+Error: Invariant LifetimeAtMostOnce is violated.
+Error: The behavior up to this point is:
+State 1: <Initial predicate>
+/\ generation = 0
+/\ effects = {}
+/\ queued = FALSE
+/\ identity = None
+/\ retainedHistory = FALSE
+/\ phase = "absent"
+/\ attempt = None
+/\ accepted = {}
+
+State 2: <Admit line 19, col 5 to line 25, col 54 of module Admission>
+/\ generation = 1
+/\ effects = {}
+/\ queued = TRUE
+/\ identity = a
+/\ retainedHistory = FALSE
+/\ phase = "active"
+/\ attempt = None
+/\ accepted = {[gen |-> 1, fp |-> a]}
+
+State 3: <PersistAttempt line 36, col 5 to line 39, col 39 of module Admission>
+/\ generation = 1
+/\ effects = {}
+/\ queued = TRUE
+/\ identity = a
+/\ retainedHistory = FALSE
+/\ phase = "active"
+/\ attempt = [gen |-> 1, fp |-> a]
+/\ accepted = {[gen |-> 1, fp |-> a]}
+
+State 4: <Execute line 44, col 5 to line 47, col 47 of module Admission>
+/\ generation = 1
+/\ effects = {[gen |-> 1, fp |-> a]}
+/\ queued = TRUE
+/\ identity = a
+/\ retainedHistory = FALSE
+/\ phase = "active"
+/\ attempt = [gen |-> 1, fp |-> a]
+/\ accepted = {[gen |-> 1, fp |-> a]}
+
+State 5: <Complete line 50, col 5 to line 53, col 60 of module Admission>
+/\ generation = 1
+/\ effects = {[gen |-> 1, fp |-> a]}
+/\ queued = FALSE
+/\ identity = a
+/\ retainedHistory = TRUE
+/\ phase = "terminal"
+/\ attempt = None
+/\ accepted = {[gen |-> 1, fp |-> a]}
+
+State 6: <PruneHistory line 61, col 5 to line 62, col 84 of module Admission>
+/\ generation = 1
+/\ effects = {[gen |-> 1, fp |-> a]}
+/\ queued = FALSE
+/\ identity = a
+/\ retainedHistory = FALSE
+/\ phase = "terminal"
+/\ attempt = None
+/\ accepted = {[gen |-> 1, fp |-> a]}
+
+State 7: <ExpireIdentity line 65, col 5 to line 69, col 84 of module Admission>
+/\ generation = 1
+/\ effects = {[gen |-> 1, fp |-> a]}
+/\ queued = FALSE
+/\ identity = None
+/\ retainedHistory = FALSE
+/\ phase = "absent"
+/\ attempt = None
+/\ accepted = {[gen |-> 1, fp |-> a]}
+
+State 8: <Admit line 19, col 5 to line 25, col 54 of module Admission>
+/\ generation = 2
+/\ effects = {[gen |-> 1, fp |-> a]}
+/\ queued = TRUE
+/\ identity = a
+/\ retainedHistory = FALSE
+/\ phase = "active"
+/\ attempt = None
+/\ accepted = {[gen |-> 1, fp |-> a], [gen |-> 2, fp |-> a]}
+
+State 9: <PersistAttempt line 36, col 5 to line 39, col 39 of module Admission>
+/\ generation = 2
+/\ effects = {[gen |-> 1, fp |-> a]}
+/\ queued = TRUE
+/\ identity = a
+/\ retainedHistory = FALSE
+/\ phase = "active"
+/\ attempt = [gen |-> 2, fp |-> a]
+/\ accepted = {[gen |-> 1, fp |-> a], [gen |-> 2, fp |-> a]}
+
+State 10: <Execute line 44, col 5 to line 47, col 47 of module Admission>
+/\ generation = 2
+/\ effects = {[gen |-> 1, fp |-> a], [gen |-> 2, fp |-> a]}
+/\ queued = TRUE
+/\ identity = a
+/\ retainedHistory = FALSE
+/\ phase = "active"
+/\ attempt = [gen |-> 2, fp |-> a]
+/\ accepted = {[gen |-> 1, fp |-> a], [gen |-> 2, fp |-> a]}
+
+The coverage statistics at 2026-09-26 19:35:02
+<Init line 10, col 1 to line 10, col 4 of module Admission>: 2:2
+  line 11, col 5 to line 13, col 36 of module Admission: 2
+<Admit line 18, col 1 to line 18, col 8 of module Admission>: 6:8
+  line 19, col 8 to line 19, col 22 of module Admission: 76
+  |line 19, col 8 to line 19, col 15 of module Admission: 68
+  |line 19, col 19 to line 19, col 22 of module Admission: 68
+  line 19, col 27 to line 19, col 33 of module Admission: 20
+  |line 19, col 28 to line 19, col 33 of module Admission: 12
+  line 19, col 38 to line 19, col 51 of module Admission: 20
+  |line 19, col 38 to line 19, col 44 of module Admission: 12
+  |line 19, col 48 to line 19, col 51 of module Admission: 12
+  line 19, col 56 to line 19, col 71 of module Admission: 20
+  |line 19, col 57 to line 19, col 71 of module Admission: 12
+  line 20, col 8 to line 20, col 33 of module Admission: 8
+  line 21, col 8 to line 21, col 35 of module Admission: 8
+  line 22, col 8 to line 22, col 41 of module Admission: 8
+  line 23, col 8 to line 23, col 32 of module Admission: 8
+  line 24, col 8 to line 24, col 69 of module Admission: 8
+  line 25, col 8 to line 25, col 54 of module Admission: 8
+<ConflictingAdmission line 29, col 1 to line 29, col 23 of module Admission>: 0:0
+  line 31, col 8 to line 31, col 20 of module Admission: 0
+  line 32, col 8 to line 32, col 65 of module Admission: 0
+  line 33, col 8 to line 33, col 81 of module Admission: 0
+<PersistAttempt line 35, col 1 to line 35, col 14 of module Admission>: 6:8
+  line 36, col 8 to line 36, col 23 of module Admission: 41
+  |line 36, col 8 to line 36, col 12 of module Admission: 33
+  line 36, col 28 to line 36, col 33 of module Admission: 8
+  line 36, col 38 to line 36, col 51 of module Admission: 24
+  |line 36, col 38 to line 36, col 44 of module Admission: 16
+  |line 36, col 48 to line 36, col 51 of module Admission: 16
+  line 37, col 8 to line 37, col 55 of module Admission: 8
+  line 38, col 8 to line 39, col 39 of module Admission: 8
+<Execute line 43, col 1 to line 43, col 7 of module Admission>: 3:12
+  line 44, col 8 to line 44, col 21 of module Admission: 42
+  |line 44, col 8 to line 44, col 14 of module Admission: 31
+  |line 44, col 18 to line 44, col 21 of module Admission: 31
+  line 45, col 8 to line 45, col 40 of module Admission: 11
+  |line 45, col 19 to line 45, col 40 of module Admission: 12
+  line 46, col 8 to line 47, col 47 of module Admission: 11
+<Complete line 49, col 1 to line 49, col 8 of module Admission>: 2:3
+  line 50, col 8 to line 50, col 23 of module Admission: 31
+  |line 50, col 8 to line 50, col 12 of module Admission: 28
+  line 50, col 28 to line 50, col 41 of module Admission: 14
+  |line 50, col 28 to line 50, col 34 of module Admission: 11
+  |line 50, col 38 to line 50, col 41 of module Admission: 11
+  line 50, col 46 to line 50, col 64 of module Admission: 8
+  |line 50, col 46 to line 50, col 52 of module Admission: 5
+  |line 50, col 58 to line 50, col 64 of module Admission: 5
+  line 51, col 8 to line 51, col 64 of module Admission: 3
+  line 52, col 8 to line 52, col 30 of module Admission: 3
+  line 53, col 8 to line 53, col 60 of module Admission: 3
+<Cancel line 55, col 1 to line 55, col 6 of module Admission>: 10:10
+  line 56, col 8 to line 56, col 23 of module Admission: 37
+  |line 56, col 8 to line 56, col 12 of module Admission: 27
+  line 56, col 28 to line 56, col 33 of module Admission: 10
+  line 57, col 8 to line 57, col 43 of module Admission: 10
+  line 58, col 8 to line 58, col 86 of module Admission: 10
+<PruneHistory line 60, col 1 to line 60, col 12 of module Admission>: 2:5
+  line 61, col 8 to line 61, col 50 of module Admission: 5
+  line 62, col 8 to line 62, col 84 of module Admission: 5
+<ExpireIdentity line 64, col 1 to line 64, col 14 of module Admission>: 4:5
+  line 65, col 8 to line 65, col 22 of module Admission: 31
+  |line 65, col 8 to line 65, col 15 of module Admission: 26
+  |line 65, col 19 to line 65, col 22 of module Admission: 26
+  line 66, col 8 to line 66, col 25 of module Admission: 26
+  |line 66, col 8 to line 66, col 12 of module Admission: 21
+  line 67, col 8 to line 67, col 23 of module Admission: 5
+  line 68, col 8 to line 68, col 62 of module Admission: 5
+  line 69, col 8 to line 69, col 84 of module Admission: 5
+<TypeOK line 76, col 1 to line 76, col 6 of module Admission>
+  line 77, col 5 to line 83, col 33 of module Admission: 34
+<LifetimeAtMostOnce line 89, col 1 to line 89, col 18 of module Admission>
+  line 89, col 23 to line 89, col 65 of module Admission: 34
+End of statistics.
+42 states generated, 34 distinct states found, 7 states left on queue.
+The depth of the complete state graph search is 10.
+The average outdegree of the complete state graph is 1 (minimum is 0, the maximum 2 and the 95th percentile is 2).
+Finished in 00s at (2026-09-26 19:35:02)

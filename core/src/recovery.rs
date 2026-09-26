@@ -894,6 +894,48 @@ impl RecoveryJournal {
         }
         Ok(())
     }
+    /// Read one already persisted attempt for exact-wire gap recovery. This is
+    /// not broadcast authorization: callers must decode/validate the wire and
+    /// pass before_broadcast again immediately before dispatch.
+    pub async fn latest_eoa_attempt(
+        &self,
+        id: &str,
+        expected_replay_key: &str,
+    ) -> Result<Option<Value>> {
+        identity("eoa", id)?;
+        validate_replay_key("eoa", expected_replay_key)?;
+        self.ensure_healthy().await?;
+        let (id, expected) = (id.to_owned(), expected_replay_key.to_owned());
+        self.db(move |conn| {
+            let record = lookup(conn, &id)?
+                .ok_or(RecoveryError::RecoveryRequired("untracked gap recovery"))?;
+            if record.kind != "eoa" || record.replay_key.as_deref() != Some(expected.as_str()) {
+                return Err(RecoveryError::Conflict);
+            }
+            if record.state != AdmissionState::Admitted {
+                return Err(RecoveryError::RecoveryRequired(
+                    "gap recovery is terminal or quarantined",
+                ));
+            }
+            let chain = expected.split(':').nth(1).ok_or(RecoveryError::Storage)?;
+            ensure_chain_not_halted(conn, chain)?;
+            let row: Option<(String, String)> = conn.query_row(
+                "SELECT replay_key,payload FROM attempts WHERE id=? ORDER BY sequence DESC LIMIT 1",
+                [&id], |r| Ok((r.get(0)?, r.get(1)?)),
+            ).optional()?;
+            let Some((key, payload)) = row else {
+                return Ok(None);
+            };
+            if key != expected {
+                return Err(RecoveryError::Storage);
+            }
+            Ok(Some(
+                serde_json::from_str(&payload).map_err(|_| RecoveryError::Storage)?,
+            ))
+        })
+        .await
+    }
+
     /// Verify that confirmation identity belongs to this admission's durable
     /// attempt history. This can run before network queries, and is repeated in
     /// the terminal transaction so no earlier validation can bypass a halt.

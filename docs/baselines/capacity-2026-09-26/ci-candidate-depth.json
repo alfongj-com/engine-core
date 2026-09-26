@@ -1,0 +1,709 @@
+[
+  {
+    "conclusion": "success",
+    "headSha": "3a248ac5bd13e16ce682f3e0548a0096a7502fe0",
+    "jobs": [
+      {
+        "completedAt": "2026-09-26T23:21:45Z",
+        "conclusion": "success",
+        "databaseId": 108506824158,
+        "name": "protocols",
+        "startedAt": "2026-09-26T23:16:00Z",
+        "status": "completed",
+        "steps": [
+          {
+            "completedAt": "2026-09-26T23:16:03Z",
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "startedAt": "2026-09-26T23:16:01Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-26T23:16:06Z",
+            "conclusion": "success",
+            "name": "Run actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+            "number": 2,
+            "startedAt": "2026-09-26T23:16:03Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-26T23:16:06Z",
+            "conclusion": "success",
+            "name": "Run actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3",
+            "number": 3,
+            "startedAt": "2026-09-26T23:16:06Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-26T23:16:06Z",
+            "conclusion": "success",
+            "name": "Model runner safeguards",
+            "number": 4,
+            "startedAt": "2026-09-26T23:16:06Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-26T23:21:41Z",
+            "conclusion": "success",
+            "name": "Exhaust protocol models and require specific counterexamples",
+            "number": 5,
+            "startedAt": "2026-09-26T23:16:06Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-26T23:21:43Z",
+            "conclusion": "success",
+            "name": "Run actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+            "number": 6,
+            "startedAt": "2026-09-26T23:21:41Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-26T23:21:43Z",
+            "conclusion": "success",
+            "name": "Post Run actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3",
+            "number": 11,
+            "startedAt": "2026-09-26T23:21:43Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-26T23:21:43Z",
+            "conclusion": "success",
+            "name": "Post Run actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+            "number": 12,
+            "startedAt": "2026-09-26T23:21:43Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-26T23:21:43Z",
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 13,
+            "startedAt": "2026-09-26T23:21:43Z",
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/alfongj-com/engine-core/actions/runs/36278893269/job/108506824158"
+      },
+      {
+        "completedAt": "2026-09-26T23:19:45Z",
+        "conclusion": "success",
+        "databaseId": 108506824256,
+        "name": "rust-fees",
+        "startedAt": "2026-09-26T23:16:00Z",
+        "status": "completed",
+        "steps": [
+          {
+            "completedAt": "2026-09-26T23:16:01Z",
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "startedAt": "2026-09-26T23:16:01Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-26T23:16:04Z",
+            "conclusion": "success",
+            "name": "Run actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+            "number": 2,
+            "startedAt": "2026-09-26T23:16:01Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-26T23:16:26Z",
+            "conclusion": "success",
+            "name": "Install pinned verifier",
+            "number": 3,
+            "startedAt": "2026-09-26T23:16:04Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-26T23:16:26Z",
+            "conclusion": "success",
+            "name": "Independent arithmetic reference examples",
+            "number": 4,
+            "startedAt": "2026-09-26T23:16:26Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-26T23:19:43Z",
+            "conclusion": "success",
+            "name": "Prove production arithmetic and reject source mutations",
+            "number": 5,
+            "startedAt": "2026-09-26T23:16:26Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-26T23:19:44Z",
+            "conclusion": "success",
+            "name": "Run actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
+            "number": 6,
+            "startedAt": "2026-09-26T23:19:43Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-26T23:19:44Z",
+            "conclusion": "success",
+            "name": "Post Run actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+            "number": 12,
+            "startedAt": "2026-09-26T23:19:44Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-26T23:19:44Z",
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 13,
+            "startedAt": "2026-09-26T23:19:44Z",
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/alfongj-com/engine-core/actions/runs/36278893269/job/108506824256"
+      }
+    ],
+    "status": "completed",
+    "url": "https://github.com/alfongj-com/engine-core/actions/runs/36278893269",
+    "workflowName": "Formal verification"
+  },
+  {
+    "conclusion": "success",
+    "headSha": "3a248ac5bd13e16ce682f3e0548a0096a7502fe0",
+    "jobs": [
+      {
+        "completedAt": "2026-09-26T23:31:43Z",
+        "conclusion": "success",
+        "databaseId": 108506823796,
+        "name": "test",
+        "startedAt": "2026-09-26T23:16:00Z",
+        "status": "completed",
+        "steps": [
+          {
+            "completedAt": "2026-09-26T23:16:03Z",
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "startedAt": "2026-09-26T23:16:01Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-26T23:16:15Z",
+            "conclusion": "success",
+            "name": "Initialize containers",
+            "number": 2,
+            "startedAt": "2026-09-26T23:16:03Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-26T23:16:19Z",
+            "conclusion": "success",
+            "name": "Run actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+            "number": 3,
+            "startedAt": "2026-09-26T23:16:15Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-26T23:16:38Z",
+            "conclusion": "success",
+            "name": "Native build and test dependencies",
+            "number": 4,
+            "startedAt": "2026-09-26T23:16:19Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-26T23:16:40Z",
+            "conclusion": "success",
+            "name": "Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
+            "number": 5,
+            "startedAt": "2026-09-26T23:16:38Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-26T23:16:41Z",
+            "conclusion": "success",
+            "name": "RPC spending guard and load generator tests",
+            "number": 6,
+            "startedAt": "2026-09-26T23:16:40Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-26T23:16:47Z",
+            "conclusion": "success",
+            "name": "Public transaction harness guards (offline)",
+            "number": 7,
+            "startedAt": "2026-09-26T23:16:41Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-26T23:16:56Z",
+            "conclusion": "success",
+            "name": "Install pinned Rust toolchain",
+            "number": 8,
+            "startedAt": "2026-09-26T23:16:47Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-26T23:18:23Z",
+            "conclusion": "success",
+            "name": "Run actions/cache@5a3ec84eff668545956fd18022155c47e93e2684",
+            "number": 9,
+            "startedAt": "2026-09-26T23:16:56Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-26T23:18:32Z",
+            "conclusion": "success",
+            "name": "Formatting",
+            "number": 10,
+            "startedAt": "2026-09-26T23:18:23Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-26T23:19:08Z",
+            "conclusion": "success",
+            "name": "Compile every test and binary",
+            "number": 11,
+            "startedAt": "2026-09-26T23:18:32Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-26T23:21:56Z",
+            "conclusion": "success",
+            "name": "Unit and hermetic integration suites",
+            "number": 12,
+            "startedAt": "2026-09-26T23:19:08Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-26T23:22:06Z",
+            "conclusion": "success",
+            "name": "Independent journal crash and rollback regressions",
+            "number": 13,
+            "startedAt": "2026-09-26T23:21:56Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-26T23:22:29Z",
+            "conclusion": "success",
+            "name": "EOA and Solana Redis, RPC and deployment regressions",
+            "number": 14,
+            "startedAt": "2026-09-26T23:22:06Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-26T23:22:45Z",
+            "conclusion": "success",
+            "name": "Solana request retention across queue pruning",
+            "number": 15,
+            "startedAt": "2026-09-26T23:22:29Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-26T23:23:00Z",
+            "conclusion": "success",
+            "name": "HTTP authorization and admission integration",
+            "number": 16,
+            "startedAt": "2026-09-26T23:22:45Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-26T23:23:02Z",
+            "conclusion": "success",
+            "name": "Queue lease and acknowledgement race regressions",
+            "number": 17,
+            "startedAt": "2026-09-26T23:23:00Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-26T23:23:04Z",
+            "conclusion": "success",
+            "name": "Install pinned local EVM",
+            "number": 18,
+            "startedAt": "2026-09-26T23:23:02Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-26T23:23:13Z",
+            "conclusion": "success",
+            "name": "Actual server crash recovery and duplicate admission",
+            "number": 19,
+            "startedAt": "2026-09-26T23:23:04Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-26T23:23:22Z",
+            "conclusion": "success",
+            "name": "Redis AOF crash recovery",
+            "number": 20,
+            "startedAt": "2026-09-26T23:23:13Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-26T23:23:33Z",
+            "conclusion": "success",
+            "name": "Reverted execution and Redis crash recovery",
+            "number": 21,
+            "startedAt": "2026-09-26T23:23:22Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-26T23:23:46Z",
+            "conclusion": "success",
+            "name": "Redis data loss and stale-backup quarantine",
+            "number": 22,
+            "startedAt": "2026-09-26T23:23:33Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-26T23:26:22Z",
+            "conclusion": "success",
+            "name": "Pre-finality reorg and same-nonce recovery",
+            "number": 23,
+            "startedAt": "2026-09-26T23:23:46Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-26T23:27:03Z",
+            "conclusion": "success",
+            "name": "Single signer EVM load and finality drain (local debug build)",
+            "number": 24,
+            "startedAt": "2026-09-26T23:26:22Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-26T23:27:11Z",
+            "conclusion": "success",
+            "name": "Install pinned local Solana validator",
+            "number": 25,
+            "startedAt": "2026-09-26T23:27:03Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-26T23:27:57Z",
+            "conclusion": "success",
+            "name": "Solana accepted-send response loss and process recovery",
+            "number": 26,
+            "startedAt": "2026-09-26T23:27:11Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-26T23:29:14Z",
+            "conclusion": "success",
+            "name": "Single payer Solana load and finality drain (local debug build)",
+            "number": 27,
+            "startedAt": "2026-09-26T23:27:57Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-26T23:29:15Z",
+            "conclusion": "success",
+            "name": "Preserve local-chain scenario reports",
+            "number": 28,
+            "startedAt": "2026-09-26T23:29:14Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-26T23:31:39Z",
+            "conclusion": "success",
+            "name": "Dependency advisories",
+            "number": 29,
+            "startedAt": "2026-09-26T23:29:15Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-26T23:31:40Z",
+            "conclusion": "success",
+            "name": "Post Run actions/cache@5a3ec84eff668545956fd18022155c47e93e2684",
+            "number": 55,
+            "startedAt": "2026-09-26T23:31:39Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-26T23:31:40Z",
+            "conclusion": "success",
+            "name": "Post Run actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020",
+            "number": 56,
+            "startedAt": "2026-09-26T23:31:40Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-26T23:31:40Z",
+            "conclusion": "success",
+            "name": "Post Run actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+            "number": 57,
+            "startedAt": "2026-09-26T23:31:40Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-26T23:31:41Z",
+            "conclusion": "success",
+            "name": "Stop containers",
+            "number": 58,
+            "startedAt": "2026-09-26T23:31:40Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-26T23:31:41Z",
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 59,
+            "startedAt": "2026-09-26T23:31:41Z",
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/alfongj-com/engine-core/actions/runs/36278893264/job/108506823796"
+      }
+    ],
+    "status": "completed",
+    "url": "https://github.com/alfongj-com/engine-core/actions/runs/36278893264",
+    "workflowName": "Rust correctness gates"
+  },
+  {
+    "conclusion": "success",
+    "headSha": "3a248ac5bd13e16ce682f3e0548a0096a7502fe0",
+    "jobs": [
+      {
+        "completedAt": "2026-09-26T23:18:23Z",
+        "conclusion": "success",
+        "databaseId": 108506823704,
+        "name": "test",
+        "startedAt": "2026-09-26T23:16:01Z",
+        "status": "completed",
+        "steps": [
+          {
+            "completedAt": "2026-09-26T23:16:03Z",
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "startedAt": "2026-09-26T23:16:02Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-26T23:16:26Z",
+            "conclusion": "success",
+            "name": "Initialize containers",
+            "number": 2,
+            "startedAt": "2026-09-26T23:16:03Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-26T23:16:28Z",
+            "conclusion": "success",
+            "name": "Run actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+            "number": 3,
+            "startedAt": "2026-09-26T23:16:26Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-26T23:16:30Z",
+            "conclusion": "success",
+            "name": "Install CI dependencies",
+            "number": 4,
+            "startedAt": "2026-09-26T23:16:28Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-26T23:16:45Z",
+            "conclusion": "success",
+            "name": "Cache",
+            "number": 5,
+            "startedAt": "2026-09-26T23:16:30Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-26T23:16:58Z",
+            "conclusion": "success",
+            "name": "Build",
+            "number": 6,
+            "startedAt": "2026-09-26T23:16:45Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-26T23:18:18Z",
+            "conclusion": "success",
+            "name": "Run tests",
+            "number": 7,
+            "startedAt": "2026-09-26T23:16:58Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-26T23:18:19Z",
+            "conclusion": "success",
+            "name": "Test Report",
+            "number": 8,
+            "startedAt": "2026-09-26T23:18:18Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-26T23:18:20Z",
+            "conclusion": "success",
+            "name": "Post Cache",
+            "number": 14,
+            "startedAt": "2026-09-26T23:18:19Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-26T23:18:20Z",
+            "conclusion": "success",
+            "name": "Post Run actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+            "number": 15,
+            "startedAt": "2026-09-26T23:18:20Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-26T23:18:20Z",
+            "conclusion": "success",
+            "name": "Stop containers",
+            "number": 16,
+            "startedAt": "2026-09-26T23:18:20Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-26T23:18:20Z",
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 17,
+            "startedAt": "2026-09-26T23:18:20Z",
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/alfongj-com/engine-core/actions/runs/36278893340/job/108506823704"
+      }
+    ],
+    "status": "completed",
+    "url": "https://github.com/alfongj-com/engine-core/actions/runs/36278893340",
+    "workflowName": "twmq Tests"
+  },
+  {
+    "conclusion": "success",
+    "headSha": "3a248ac5bd13e16ce682f3e0548a0096a7502fe0",
+    "jobs": [
+      {
+        "completedAt": "2026-09-26T23:21:10Z",
+        "conclusion": "success",
+        "databaseId": 108506823699,
+        "name": "coverage",
+        "startedAt": "2026-09-26T23:16:01Z",
+        "status": "completed",
+        "steps": [
+          {
+            "completedAt": "2026-09-26T23:16:04Z",
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "startedAt": "2026-09-26T23:16:02Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-26T23:16:15Z",
+            "conclusion": "success",
+            "name": "Pull ghcr.io/irongut/codecoveragesummary:v1.3.0",
+            "number": 2,
+            "startedAt": "2026-09-26T23:16:04Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-26T23:16:32Z",
+            "conclusion": "success",
+            "name": "Initialize containers",
+            "number": 3,
+            "startedAt": "2026-09-26T23:16:15Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-26T23:16:35Z",
+            "conclusion": "success",
+            "name": "Run actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+            "number": 4,
+            "startedAt": "2026-09-26T23:16:32Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-26T23:16:36Z",
+            "conclusion": "success",
+            "name": "Install CI dependencies",
+            "number": 5,
+            "startedAt": "2026-09-26T23:16:35Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-26T23:17:00Z",
+            "conclusion": "success",
+            "name": "Cache",
+            "number": 6,
+            "startedAt": "2026-09-26T23:16:36Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-26T23:21:05Z",
+            "conclusion": "success",
+            "name": "Run coverage",
+            "number": 7,
+            "startedAt": "2026-09-26T23:17:00Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-26T23:21:06Z",
+            "conclusion": "success",
+            "name": "Archive code coverage results",
+            "number": 8,
+            "startedAt": "2026-09-26T23:21:05Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-26T23:21:06Z",
+            "conclusion": "success",
+            "name": "Code Coverage Summary Report",
+            "number": 9,
+            "startedAt": "2026-09-26T23:21:06Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-26T23:21:06Z",
+            "conclusion": "success",
+            "name": "Add Coverage Summary to Job Summary",
+            "number": 10,
+            "startedAt": "2026-09-26T23:21:06Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-26T23:21:07Z",
+            "conclusion": "success",
+            "name": "Post Cache",
+            "number": 18,
+            "startedAt": "2026-09-26T23:21:06Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-26T23:21:07Z",
+            "conclusion": "success",
+            "name": "Post Run actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+            "number": 19,
+            "startedAt": "2026-09-26T23:21:07Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-26T23:21:07Z",
+            "conclusion": "success",
+            "name": "Stop containers",
+            "number": 20,
+            "startedAt": "2026-09-26T23:21:07Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-09-26T23:21:07Z",
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 21,
+            "startedAt": "2026-09-26T23:21:07Z",
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/alfongj-com/engine-core/actions/runs/36278893280/job/108506823699"
+      }
+    ],
+    "status": "completed",
+    "url": "https://github.com/alfongj-com/engine-core/actions/runs/36278893280",
+    "workflowName": "twmq Coverage"
+  }
+]

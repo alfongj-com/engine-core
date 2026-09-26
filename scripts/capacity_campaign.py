@@ -378,6 +378,82 @@ COUNTER_ADDRESS = "0x2222222222222222222222222222222222222222"
 REVERT_ADDRESS = "0x3333333333333333333333333333333333333333"
 
 
+def observe_evm_pool(node, profile, pinned_nonce, pending_nonce):
+    """Count Anvil's whole pool; a native nonce delta cannot see queued gaps."""
+    nonce_delta = max(0, pending_nonce - pinned_nonce)
+    observation = {"nonce_pending_delta": nonce_delta,
+                   "nonce_reference": "pinned reconciliation block",
+                   "pending_count": None, "queued_count": None, "total_pool_count": None}
+    if profile.get("external_url"):
+        # Native Nitro does not expose Anvil's txpool API. Keep this weak
+        # observation distinct from the authoritative per-ID receipt oracle.
+        observation.update({"source": "pending_nonce_minus_pinned_nonce",
+            "drain_count": nonce_delta, "complete_pool_observation": False,
+            "empty_pool_observed": None,
+            "limitation": "Nonce delta excludes queued transactions behind gaps; zero does not prove an empty pool."})
+        return observation
+    status = node.call("txpool_status", [])
+    if not isinstance(status, dict):
+        raise ValueError("Malformed txpool status")
+    counts = {}
+    for field in ("pending", "queued"):
+        value = status.get(field)
+        if isinstance(value, str) and value.startswith("0x"):
+            value = int(value, 16)
+        if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+            raise ValueError("Malformed txpool count")
+        counts[field] = value
+    total = counts["pending"] + counts["queued"]
+    observation.update({"source": "txpool_status", "pending_count": counts["pending"],
+        "queued_count": counts["queued"], "total_pool_count": total, "drain_count": total,
+        "complete_pool_observation": True, "empty_pool_observed": total == 0,
+        "scope": "All accounts on the caller-owned local Anvil node at observation time."})
+    return observation
+
+
+def record_pool_observation(report, drain, chain, observation):
+    """Keep drain's numeric-counter schema separate from explanatory evidence."""
+    drain["node_pending"] += observation["drain_count"]
+    report.setdefault("node_pool_observations", {})[chain] = observation
+
+
+def summarize_pool(pool, sender, orphaned_hashes):
+    """Redacted identity inventory; separate RPC snapshots are not atomic with drop."""
+    selected, all_entries = [], []
+    for state in ("pending", "queued"):
+        accounts = pool.get(state)
+        if not isinstance(accounts, dict): raise ValueError("Malformed pool account map")
+        for address, transactions in accounts.items():
+            if not isinstance(transactions, dict): raise ValueError("Malformed pool nonce map")
+            for _, transaction in transactions.items():
+                if not isinstance(transaction, dict): raise ValueError("Malformed pool transaction")
+                identity, nonce = transaction.get("hash"), transaction.get("nonce")
+                if not isinstance(identity, str) or not identity.startswith("0x") or len(bytes.fromhex(identity[2:])) != 32:
+                    raise ValueError("Malformed pool hash")
+                nonce = int(nonce, 16) if isinstance(nonce, str) else nonce
+                if not isinstance(nonce, int) or isinstance(nonce, bool) or nonce < 0:
+                    raise ValueError("Malformed pool nonce")
+                row = (identity.lower(), nonce, state)
+                all_entries.append(row)
+                if address.lower() == sender.lower(): selected.append(row)
+    hashes = {row[0] for row in selected}
+    if len(hashes) != len(selected): raise ValueError("Duplicate pool hash")
+    nonces = sorted(row[1] for row in selected)
+    orphaned = {h.lower() for h in orphaned_hashes}
+    payload = json.dumps(sorted(all_entries), separators=(",", ":")).encode()
+    summary = {"all_transaction_count": len(all_entries), "signer_transaction_count": len(selected),
+        "signer_pending_count": sum(row[2] == "pending" for row in selected),
+        "signer_queued_count": sum(row[2] == "queued" for row in selected),
+        "signer_nonce_min": min(nonces) if nonces else None,
+        "signer_nonce_max": max(nonces) if nonces else None,
+        "signer_nonce_sha256": hashlib.sha256(json.dumps(nonces, separators=(",", ":")).encode()).hexdigest(),
+        "signer_hashes_sha256": hashlib.sha256(json.dumps(sorted(hashes), separators=(",", ":")).encode()).hexdigest(),
+        "all_entries_sha256": hashlib.sha256(payload).hexdigest(),
+        "orphaned_target_hashes_present": len(hashes & orphaned),
+        "other_signer_hashes_present": len(hashes - orphaned)}
+    return summary, hashes
+
+
 class ScenarioUnqualified(RuntimeError):
     """The requested fixture was not observed; this is not a safety violation."""
 
@@ -847,7 +923,30 @@ class Campaign:
                 "engine_process_restarted": False, "manual_signed_wire_replay": False}
             if node.call("evm_revert", [snapshot]) is not True:
                 raise RuntimeError("Anvil did not restore actual parent snapshot")
+            # The fixture deliberately combines a shallow reorg with total pool
+            # loss. Capture later accepted transactions too; they can create many
+            # more nonce holes than the small orphaned mined batch.
+            before_drop_at = time.monotonic() - self.started
+            sends_before = self.proxies[chain].snapshot()["forwarded_sends"]
+            pool_before, hashes_before = summarize_pool(node.call("txpool_content", []), FROM,
+                [proof["identity"] for proof in affected.values()])
             node.call("anvil_dropAllTransactions", [])
+            drop_returned_at = time.monotonic() - self.started
+            pool_after, hashes_after = summarize_pool(node.call("txpool_content", []), FROM,
+                [proof["identity"] for proof in affected.values()])
+            self.report["reorg"]["pool_loss"] = {
+                "scope": "all pending and queued node pool transactions, not only orphaned mined batch",
+                "before": pool_before, "after": pool_after,
+                "before_rpc_started_load_seconds": before_drop_at,
+                "drop_rpc_returned_load_seconds": drop_returned_at,
+                "after_rpc_returned_load_seconds": time.monotonic() - self.started,
+                "forwarded_sends_before": sends_before,
+                "forwarded_sends_after": self.proxies[chain].snapshot()["forwarded_sends"],
+                "signer_hashes_not_seen_after": len(hashes_before - hashes_after),
+                "signer_new_hashes_seen_after": len(hashes_after - hashes_before),
+                "atomic_with_drop": False,
+                "concurrency_note": "Engine stays live. Separate snapshots cannot prove the exact removed set when broadcasts interleave; counts describe the observed RPC snapshots."}
+
             for proof in affected.values():
                 if node.call("eth_getTransactionReceipt", [proof["identity"]]) is not None:
                     raise RuntimeError("Orphaned receipt remained canonical after rollback")
@@ -1310,7 +1409,8 @@ class Campaign:
             if profile["family"] == "evm":
                 nonce = int(node.call("eth_getTransactionCount", [FROM, self.chain_heads[name]]), 16) - initial["sender_nonce"]
                 pending_nonce = int(node.call("eth_getTransactionCount", [FROM, "pending"]), 16) - initial["sender_nonce"]
-                drain["node_pending"] += max(0, pending_nonce - nonce)
+                pool = observe_evm_pool(node, profile, nonce, pending_nonce)
+                record_pool_observation(self.report, drain, name, pool)
                 sender = int(node.call("eth_getBalance", [FROM, self.chain_heads[name]]), 16)
                 recipient = int(node.call("eth_getBalance", [TO, self.chain_heads[name]]), 16)
                 recipient_delta = recipient - initial["recipient_balance"]

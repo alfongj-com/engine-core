@@ -32,14 +32,19 @@ public-testnet checks and local timing simulations must be labeled separately.
 - Use open-loop arrival schedules. Record missed arrival slots, client queue
   pressure, HTTP errors and overload responses. Do not hide overload by retrying
   requests with new IDs or measuring only the drain.
-- A capacity candidate needs near-offered throughput after startup, bounded
-  admission latency, no unexplained rejection, and no growing unsigned backlog.
-  Block-batched rates fluctuate; examine the series over complete block cycles.
-  A short screening pass requires longer confirmation before selection.
+- A short screening candidate needs near-offered throughput after startup,
+  bounded admission latency, clean intake/RPCs, and no growing unsigned backlog.
+  The harness's 5% rate tolerance is a screening threshold, not evidence that a
+  terminal queue growing at 5% of intake is sustainable. Apply the stricter
+  confirmation assessment below before selecting an operating rate.
 - End the offered-load window before waiting for outstanding HTTP responses.
   Include client queue time in latency. Keep sampling off the producer thread.
 - Report drain separately. Reconcile every admitted or uncertain HTTP request
   using its original ID; distinguish expected execution failures from lost work.
+  Anvil drain counts both pending and queued transactions through `txpool_status`.
+  Native Nitro exposes only a weaker pending-nonce observation: a zero nonce
+  delta cannot prove the pool is empty behind a gap. Each chain's source/counts
+  are recorded separately; exact per-ID evidence remains the execution authority.
 - Successful value transfers, expected reverts and duplicate retries must match
   independent chain balances, contract state, transaction status and durable
   attempts. Aggregate counts alone cannot detect substituted terminal outcomes.
@@ -48,6 +53,47 @@ public-testnet checks and local timing simulations must be labeled separately.
   safety test even if throughput recovers.
 - Only one timed local workload runs at once. Record node versions, binary/source
   hashes, worker/inflight settings, host resources and faults with timestamps.
+
+### Confirmation assessment
+
+Run [`capacity_assess.py`](../../scripts/capacity_assess.py) on the original full
+JSON report, preserving that report and writing a new assessment:
+
+```sh
+python3 scripts/capacity_assess.py /tmp/capacity-run.json \
+  --output /tmp/capacity-run-assessment.json
+```
+
+The assessment records both source hashes and requires:
+
+- At least 180 seconds after the configured warmup and three complete
+  aggregation groups. Choose warmup to cover the chain's finality startup;
+  180 seconds of total offered load is usually only a screen.
+- Admission, unique durable attempt, observed inclusion and durable terminal
+  rates each within one transaction per analyzed window of the offered rate.
+  A durable attempt records permission to send; it does not prove RPC acceptance.
+- Unsigned and terminal backlogs that grow by at most one transaction between
+  endpoints, with aligned mean backlog slopes no greater than 0.01 transaction
+  per second. These are explicit finite measurement tolerances, not permission
+  for continuing queue growth.
+- Clean intake, the configured admission p99 limit, no unexpected RPC or
+  execution errors, and exact final reconciliation. A later successful drain
+  cannot repair an overloaded offered-load window or a missed arrival slot.
+
+Groups span at least 30 seconds and whole nominal block/sample cycles. The
+analyzer integrates observed samples linearly. Existing reports do not record a
+head timestamp at each sample, so alignment is nominal; endpoint disagreement
+without persistent growth remains unconfirmed. Large, sustained unsigned
+growth is overload even when a conservative classification also reports cadence
+ambiguity. Solana's bounded inclusion observer may lag, which requires inspecting
+observer backlog before attributing a deficient observed rate to execution.
+
+A clean result is named `steady_window_evidence_requires_repetition`. Repeat it
+with the same binary, workload and durability settings, bracket a higher failing
+rate, then test the selected rates together. Neither this finite assessment nor
+the highest tested passing rate proves an absolute or indefinitely sustainable
+maximum. Fault runs are assessed for recovery and safety separately from nominal
+capacity.
 
 ## Budget and limits
 

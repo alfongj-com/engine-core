@@ -1,0 +1,7 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.85s
+     Running unittests src/lib.rs (target/debug/deps/engine_executors-961c03e91f9dfd93)
+
+running 1 test
+test eoa::worker::confirm::gap_replay::tests::gap_replay_retains_exact_wires_and_bounded_recovery_across_progress ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 97 filtered out; finished in 8.78s

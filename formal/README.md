@@ -47,10 +47,13 @@ state counts, counterexamples and implementation regressions for that run. The
 manifest now contains **61 configurations**: the prior 56 plus five depth-checkpoint
 regressions. The new family distinguishes observed tip from qualified history,
 a gap not represented by the older height-collapsing Finality model. The
-[new candidate record](evidence/capacity-review/README.md) passes all 61 expected
-outcomes and 67 reviewed source hashes, with 3,164,944 summed positive states.
-It includes targeted implementation regressions; measured capacity remains
-separate evidence. The [previous runtime check](evidence/progress-scheduling/README.md)
+[gap-recovery candidate record](evidence/capacity-gap-review/README.md) passes all
+61 expected outcomes and 69 reviewed source hashes, with 3,164,944 summed
+positive states. Repeated original-wire dispatch preserves the modeled identity;
+fixed-window pacing and mempool-eviction recovery are implementation-test
+obligations, not new liveness proofs. The [preceding capacity record](evidence/capacity-review/README.md)
+retains its pre-gap source scope. Measured capacity remains separate evidence.
+The [previous runtime check](evidence/progress-scheduling/README.md)
 passes all 56 expected outcomes at `f309177`, with 66 reviewed source hashes
 and 3,164,046 summed positive states. It also tests real Redis scheduling after
 useful EOA progress. The [preceding report](evidence/throughput-review/report.json)

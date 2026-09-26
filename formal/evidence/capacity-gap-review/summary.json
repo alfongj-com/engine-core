@@ -1,0 +1,61 @@
+{
+  "date": "2026-09-26",
+  "source_scope": "Reviewed gap-recovery working-tree bytes based on 3a248ac5bd13e16ce682f3e0548a0096a7502fe0; exact runtime/test hashes are in report.json. The base commit is not the modified candidate.",
+  "runtime_release_sha256": "a3d360eba3dc470bd830ec9d3a32e0be8e11b6764f9bbf6efeb319f080eb8515",
+  "runtime_release_hash_source": "Security agent release build result; the model checker verifies mapped source bytes, not machine code.",
+  "model_outcomes_passed": 61,
+  "kind_counts": {
+    "positive": 14,
+    "fault": 31,
+    "boundary": 11,
+    "witness": 5
+  },
+  "mapped_source_files": 69,
+  "positive_distinct_states_sum": 3164944,
+  "elapsed_model_seconds": 199.451,
+  "source_map_sha256": "5c12174b73fc371c8fa15f8c4a9a48ba31bf7716e5a0375b3ba79ce0a57c719c",
+  "model_manifest_sha256": "437106b5cc73de6b0b10202996f0b5ae63a0941803e09e8c729c421f4da9ff95",
+  "report_sha256": "0b4e3a649a798a7dc6a2233d9db8144e6085744c1614cf0a73ffabd82e97e979",
+  "implementation_suites": [
+    {
+      "log": "targeted-tests.log",
+      "passed": 1,
+      "isolated_child_scenarios": 11,
+      "filtered": 97,
+      "seconds": 8.78,
+      "overlap": "This parent test is included in executor-redis-tests.log."
+    },
+    {
+      "log": "executor-redis-tests.log",
+      "passed": 61,
+      "filtered": 37,
+      "seconds": 14.37
+    },
+    {
+      "log": "executor-unit-tests.log",
+      "passed": 37,
+      "ignored": 61,
+      "seconds": 0.26
+    },
+    {
+      "log": "core-journal-tests.log",
+      "passed": 20,
+      "filtered": 20,
+      "seconds": 4.58
+    },
+    {
+      "log": "core-unit-tests.log",
+      "passed": 20,
+      "ignored": 20,
+      "seconds": 0.16
+    }
+  ],
+  "qualification_limits": [
+    "Unchanged finite models, manually reviewed correspondence; no composition or source-level refinement proof.",
+    "Repeated original-wire dispatch collapses to the same identity; the models do not represent an evictable mempool, fixed replay window, cooldown, HTTP-call bound, scheduler fairness or elapsed recovery time.",
+    "NonceAllocator assumes monotonic chain consumption; the lower-latest/cached-high-water integration is tested in Rust, not proved by this model.",
+    "Implementation suite counts are separate and overlap; no aggregate invariant-coverage score is implied.",
+    "Process-level reorg and capacity qualification remain separate evidence, pending when this formal record was written.",
+    "Prior capacity-review evidence retains its pre-gap source and release scope; production fee proofs were not rerun because their mapped implementation is unchanged."
+  ]
+}

@@ -41,10 +41,11 @@
     },
     {
       "path": "core/src/recovery.rs",
-      "sha256": "2fea4aa50c2faae1319d8ad641d5af0d2b44207c8d166b484a216035482842c5",
+      "sha256": "addc886df1912164fed553b3a9a1f8a3233700ca941c16f063582fa11e8d8d6c",
       "models": [
         "DisasterRecovery",
-        "Finality"
+        "Finality",
+        "EoaRecovery"
       ]
     },
     {
@@ -153,11 +154,12 @@
     },
     {
       "path": "executors/src/eoa/worker/confirm.rs",
-      "sha256": "0c7dfdbab68045222d9277347557404c87d9383046657eb5d99062ffaeeb4eb7",
+      "sha256": "5f8a3853c523938122f1eda76659e098a216fc392b76e1df4cdf2db417373af4",
       "models": [
         "DisasterRecovery",
         "EoaRecovery",
-        "Finality"
+        "Finality",
+        "NonceAllocator"
       ]
     },
     {
@@ -179,6 +181,23 @@
       "sha256": "7114fa6e969a445a28b459ecaaa43b5e23ce057b5153c415925fbead584a3e2a",
       "models": [
         "Fees"
+      ]
+    },
+    {
+      "path": "executors/src/eoa/worker/gap_replay.rs",
+      "sha256": "ccbc90a64b319757d195e000dc831ff93d07a8597fbd40a12fb9aea0e44aad92",
+      "models": [
+        "EoaRecovery",
+        "DisasterRecovery"
+      ]
+    },
+    {
+      "path": "executors/src/eoa/worker/gap_replay_tests.rs",
+      "sha256": "b3256d8f956474dd3f623a4dbcaaab0f53e23233f60cfb8328b0058f50e23f93",
+      "models": [
+        "EoaRecovery",
+        "DisasterRecovery",
+        "NonceAllocator"
       ]
     },
     {
@@ -573,6 +592,17 @@
       ],
       "reason": "Whole-second Solana polling configuration 1..5 defaults to the prior effective one-second queue delay. Only accepted-send/provisional-status/throttled observation scheduling changes; wire/signature, finalized evidence and lifetime send/read counters retain their transitions. The test exercises processed, absent/rebroadcast-identical, and finalized history. SolanaRecovery abstracts scheduling without clock bounds and does not prove rate pacing or eventual progress. Public health is separately limited to four independent fence tasks that retain their slots after client cancellation/HTTP timeout, returning healthy only after successful current fencing. Health concurrency and timeout behavior remain implementation tests outside the state models; admission/signing fences are unchanged. Production configuration and queue-manager wiring are reviewed source obligations, not formally proved serialization.",
       "test_compile_repair": "The new Solana regression uses let-Ok-else instead of unwrap because its existing JobError intentionally lacks Debug; only failure diagnostics changed, no runtime transition."
+    },
+    "gap_recovery_followup": {
+      "date": "2026-09-26",
+      "status": "Source reviewed after formatting and passing implementation suites; full model rerun recorded separately.",
+      "paths": [
+        "core/src/recovery.rs",
+        "executors/src/eoa/worker/confirm.rs",
+        "executors/src/eoa/worker/gap_replay.rs",
+        "executors/src/eoa/worker/gap_replay_tests.rs"
+      ],
+      "reason": "The bounded getter reads an existing EOA attempt and rejects mismatched key/kind, terminal/quarantined admission or halted chain; it is not dispatch authorization. Replay decodes/re-encodes original EIP-2718 bytes, checks nonce/hash/sender/chain/attempt membership, rechecks owner and runs before_eoa again. No signing, fee change, replay-key mutation or terminal proof is added. Repeated original transmission collapses to stuttering in EoaRecovery/DisasterRecovery; sent is possible future delivery, not an evictable mempool. Retained cached consumed-count high-water supports the allocator floor, but NonceAllocator assumes monotonic chain consumption and does not model actual rollback. Fixed recovery windows, owner-fenced cooldown reservations, 32 sequential calls, missing-gap stop, actual counter progress and unchanged unknown-response behavior are implementation regression obligations, not newly proved scheduling/liveness properties. The 11-scenario real Redis/HTTP/SQLite parent test and broad executor/core suites passed; process reorg qualification remains separate. NOOP gaps and missing authoritative/projection data can stay unresolved."
     }
   }
 }
