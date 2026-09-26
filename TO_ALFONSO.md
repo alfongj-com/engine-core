@@ -8,7 +8,11 @@ Added **TLA+ models for queue ownership, EVM/Solana recovery and request retenti
 
 **35 model checks pass; five Rust proofs pass all 116 checks.** The model suite includes required counterexamples for broken behavior and unsupported guarantees.
 
+All four Linux CI workflows pass at `1c0bb18`: formal verification, the full Rust/Redis/HTTP/local-chain suite, queue tests and queue coverage. [Exact results](formal/evidence/README.md).
+
 The models also exposed queue cancellation and pruning bugs. Those fixes have real Redis regressions, including checks that fail against the previous behavior.
+
+The correctness fix makes history pruning slower: about **123–127 µs per entry** at default retention in a focused Redis benchmark. A reference index is the next performance improvement; earlier throughput numbers did not exercise pruning. [Measurement and limits](formal/evidence/pruning/README.md).
 
 Start with [formal verification](formal/README.md), [coverage and remaining gaps](formal/coverage.md), and the [verification record](docs/verification.md). These checks do **not** prove the entire service correct. Reorg/finality handling, storage loss and dishonest providers have explicit counterexamples; they remain production work.
 

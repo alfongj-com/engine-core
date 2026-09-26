@@ -1,0 +1,287 @@
+{
+  "source_commit": "1c0bb18acd0f92ecb3fe275202f03517aef68bc5",
+  "run_url": "https://github.com/alfongj-com/engine-core/actions/runs/36247987990",
+  "provenance": "JSON reports and test result lines extracted from the successful GitHub Actions log; repeated/filtered suites overlap and counts must not be summed. ANSI escapes and log timestamp prefixes removed.",
+  "scenarios": [
+    {
+      "step": "Actual server crash recovery and duplicate admission",
+      "report": {
+        "scenario": "local EOA HTTP admission, crash with pending transactions, restart, mine, duplicate admission",
+        "transactions": 24,
+        "log_directory": "/tmp/engine-eoa-recovery-b_he_zmg",
+        "configured_rpc": true,
+        "redis_crash": false,
+        "reverted_execution": false,
+        "outcome": "pass",
+        "unique_chain_effects": 24,
+        "duplicate_chain_effects": 0,
+        "unauthorized_requests_rejected": 2,
+        "successful_transfers": 24,
+        "reverted_transactions": 0,
+        "recipient_value_received_wei": 24,
+        "terminal_status": "confirmed",
+        "elapsed_seconds": 3.429,
+        "redis_persistence": "disabled; Engine process-restart test, not Redis power-loss test"
+      }
+    },
+    {
+      "step": "Redis AOF crash recovery",
+      "report": {
+        "scenario": "local EOA HTTP admission, crash with pending transactions, restart, mine, duplicate admission",
+        "transactions": 24,
+        "log_directory": "/tmp/engine-eoa-recovery-qwjjkc99",
+        "configured_rpc": true,
+        "redis_crash": true,
+        "reverted_execution": false,
+        "outcome": "pass",
+        "unique_chain_effects": 24,
+        "duplicate_chain_effects": 0,
+        "unauthorized_requests_rejected": 2,
+        "successful_transfers": 24,
+        "reverted_transactions": 0,
+        "recipient_value_received_wei": 24,
+        "terminal_status": "confirmed",
+        "elapsed_seconds": 3.717,
+        "redis_persistence": "appendonly=yes, appendfsync=always; Redis SIGKILL and AOF replay, not host power loss or failover"
+      }
+    },
+    {
+      "step": "Reverted execution and Redis crash recovery",
+      "report": {
+        "scenario": "local EOA HTTP admission, crash with pending transactions, restart, mine, duplicate admission",
+        "transactions": 8,
+        "log_directory": "/tmp/engine-eoa-recovery-z9i0crro",
+        "configured_rpc": true,
+        "redis_crash": true,
+        "reverted_execution": true,
+        "outcome": "pass",
+        "unique_chain_effects": 8,
+        "duplicate_chain_effects": 0,
+        "unauthorized_requests_rejected": 2,
+        "successful_transfers": 0,
+        "reverted_transactions": 8,
+        "recipient_value_received_wei": 0,
+        "terminal_status": "failed",
+        "elapsed_seconds": 3.638,
+        "redis_persistence": "appendonly=yes, appendfsync=always; Redis SIGKILL and AOF replay, not host power loss or failover"
+      }
+    },
+    {
+      "step": "Solana accepted-send response loss and process recovery",
+      "report": {
+        "scenario": "Solana accepted-send response loss, Engine crash/restart, identical-byte retransmission, duplicate admission",
+        "transactions": 12,
+        "log_directory": "/tmp/engine-solana-recovery-xufbtghq",
+        "validator_version": {
+          "feature-set": 565236538,
+          "solana-core": "4.2.2"
+        },
+        "outcome": "pass",
+        "unique_chain_effects": 12,
+        "duplicate_chain_effects": 0,
+        "same_wire_retransmissions": 12,
+        "discarded_send_responses": 12,
+        "terminal_attempt_records_remaining": 0,
+        "completed_admission_tombstones": 12,
+        "duplicates_after_queue_pruning": "no new queue jobs or RPC sends",
+        "rpc_url_secret_logged": false,
+        "rust_log": "debug",
+        "payer": "eD5SACfM4JHF5CgTuManJ6v77RYhEFqhkwA5W1rrhRY",
+        "recipient": "2JzAykvZSFmygzXhns3eyt8t92QHBeujSvgt7Zf1z2cG",
+        "lamports_per_transfer": 1000,
+        "total_transaction_fees_lamports": 60000,
+        "wire_sha256": [
+          "121299319d3f263b953f5ec18821b123f701965a9121772408c94187f6f38652",
+          "1681f2ce10d33850f315b85d513072b1a92f5cf56493b84cb6be52b610bc3448",
+          "1cc5ab188c1ca59cc0ca9efe05aee73c8258cad36e133b510a62e65129496c2f",
+          "5ccebfabeea0e69531c1b9bea3436d6bd8833df59193e37df6b00abb887d1f29",
+          "5f14a9ef2fc3ae53c4e7f8a1273e9f45c8c0211723974ba5ab4fa759ea670e17",
+          "7af1e7977baed79ff1654eafcde173ac8fe29bb62c9b0a4d36c7e72fb2f10c63",
+          "843e6c49daa2592b8921fd41143d0221af955bd44ebc08c53e466c29d6740b63",
+          "91c07fab22da064491b529ce7ac9d2e56a87eecd10d48a834529934c40a22c35",
+          "ace16a1b177412185b795cee2f9260a55cd938ec4ca71588aab755a22746a342",
+          "d6dad2c5b1daf57e430264fb3759455e4f0a27678517659cdd3e6446858292ab",
+          "d7bdbd8e8c3c532a34eb97d60a3ef9dfec55a472537825605e68d5b38fa31bf0",
+          "e3d3c9043c01f2ed9a2a1cd49a1a1188ddb8f9f4d65f60f3e745f8df71348763"
+        ],
+        "elapsed_seconds": 43.324,
+        "redis_persistence": "disabled; Engine process-restart test, not Redis power-loss durability"
+      }
+    }
+  ],
+  "suite_summaries": [
+    {
+      "step": "Unit and hermetic integration suites",
+      "result": "test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s"
+    },
+    {
+      "step": "Unit and hermetic integration suites",
+      "result": "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s"
+    },
+    {
+      "step": "Unit and hermetic integration suites",
+      "result": "test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.23s"
+    },
+    {
+      "step": "Unit and hermetic integration suites",
+      "result": "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.19s"
+    },
+    {
+      "step": "Unit and hermetic integration suites",
+      "result": "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.23s"
+    },
+    {
+      "step": "Unit and hermetic integration suites",
+      "result": "test result: ok. 0 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.00s"
+    },
+    {
+      "step": "Unit and hermetic integration suites",
+      "result": "test result: ok. 30 passed; 0 failed; 37 ignored; 0 measured; 0 filtered out; finished in 0.96s"
+    },
+    {
+      "step": "Unit and hermetic integration suites",
+      "result": "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s"
+    },
+    {
+      "step": "Unit and hermetic integration suites",
+      "result": "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 9 filtered out; finished in 0.05s"
+    },
+    {
+      "step": "Unit and hermetic integration suites",
+      "result": "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 9 filtered out; finished in 0.04s"
+    },
+    {
+      "step": "Unit and hermetic integration suites",
+      "result": "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 9 filtered out; finished in 0.04s"
+    },
+    {
+      "step": "Unit and hermetic integration suites",
+      "result": "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 9 filtered out; finished in 0.04s"
+    },
+    {
+      "step": "Unit and hermetic integration suites",
+      "result": "test result: ok. 9 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.57s"
+    },
+    {
+      "step": "Unit and hermetic integration suites",
+      "result": "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s"
+    },
+    {
+      "step": "Unit and hermetic integration suites",
+      "result": "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s"
+    },
+    {
+      "step": "Unit and hermetic integration suites",
+      "result": "test result: ok. 14 passed; 0 failed; 5 ignored; 0 measured; 0 filtered out; finished in 0.57s"
+    },
+    {
+      "step": "Unit and hermetic integration suites",
+      "result": "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s"
+    },
+    {
+      "step": "Unit and hermetic integration suites",
+      "result": "test result: ok. 0 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 0.00s"
+    },
+    {
+      "step": "Unit and hermetic integration suites",
+      "result": "test result: ok. 0 passed; 0 failed; 26 ignored; 0 measured; 0 filtered out; finished in 0.00s"
+    },
+    {
+      "step": "Unit and hermetic integration suites",
+      "result": "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.11s"
+    },
+    {
+      "step": "Unit and hermetic integration suites",
+      "result": "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.31s"
+    },
+    {
+      "step": "Unit and hermetic integration suites",
+      "result": "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.63s"
+    },
+    {
+      "step": "Unit and hermetic integration suites",
+      "result": "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s"
+    },
+    {
+      "step": "Unit and hermetic integration suites",
+      "result": "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.01s"
+    },
+    {
+      "step": "Unit and hermetic integration suites",
+      "result": "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 8.92s"
+    },
+    {
+      "step": "Unit and hermetic integration suites",
+      "result": "test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 120.53s"
+    },
+    {
+      "step": "Unit and hermetic integration suites",
+      "result": "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.53s"
+    },
+    {
+      "step": "Unit and hermetic integration suites",
+      "result": "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 66.51s"
+    },
+    {
+      "step": "Unit and hermetic integration suites",
+      "result": "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.48s"
+    },
+    {
+      "step": "Unit and hermetic integration suites",
+      "result": "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s"
+    },
+    {
+      "step": "Unit and hermetic integration suites",
+      "result": "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s"
+    },
+    {
+      "step": "Unit and hermetic integration suites",
+      "result": "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s"
+    },
+    {
+      "step": "Unit and hermetic integration suites",
+      "result": "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s"
+    },
+    {
+      "step": "Unit and hermetic integration suites",
+      "result": "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s"
+    },
+    {
+      "step": "Unit and hermetic integration suites",
+      "result": "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s"
+    },
+    {
+      "step": "Unit and hermetic integration suites",
+      "result": "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s"
+    },
+    {
+      "step": "Unit and hermetic integration suites",
+      "result": "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s"
+    },
+    {
+      "step": "Unit and hermetic integration suites",
+      "result": "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s"
+    },
+    {
+      "step": "Unit and hermetic integration suites",
+      "result": "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s"
+    },
+    {
+      "step": "EOA and Solana Redis, RPC and deployment regressions",
+      "result": "test result: ok. 37 passed; 0 failed; 0 ignored; 0 measured; 30 filtered out; finished in 3.14s"
+    },
+    {
+      "step": "Solana request retention across queue pruning",
+      "result": "test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 15 filtered out; finished in 0.04s"
+    },
+    {
+      "step": "HTTP authorization and admission integration",
+      "result": "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.34s"
+    },
+    {
+      "step": "Queue lease and acknowledgement race regressions",
+      "result": "test result: ok. 26 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.23s"
+    }
+  ],
+  "dependency_audit": "Passed with 5 allowed informational warnings, as retained in the CI log."
+}

@@ -1,0 +1,2 @@
+# Preserve byte-exact upstream/current Lua extracts for their recorded digests.
+*.lua -whitespace

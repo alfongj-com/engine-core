@@ -5,6 +5,30 @@ No paid RPC or blockchain transactions were used. This is finite protocol
 verification plus proofs of the production fee arithmetic, not an end-to-end
 proof of Engine.
 
+## Final Linux CI
+
+All four workflows passed for source
+`1c0bb18acd0f92ecb3fe275202f03517aef68bc5`:
+
+| Workflow | Result |
+| --- | --- |
+| [Formal verification](https://github.com/alfongj-com/engine-core/actions/runs/36247988038) | Both protocol and production Rust proof jobs pass. |
+| [Rust correctness](https://github.com/alfongj-com/engine-core/actions/runs/36247987990) | Workspace, Redis, HTTP, local Anvil/Solana recovery and dependency audit pass. |
+| [Queue tests](https://github.com/alfongj-com/engine-core/actions/runs/36247988026) | Pass. |
+| [Queue coverage](https://github.com/alfongj-com/engine-core/actions/runs/36247988027) | Pass; execution of a coverage tool is not complete invariant coverage. |
+
+[Workflow metadata](linux-ci/workflows.json) records every step and source commit.
+The [runtime results](linux-ci/runtime-results.json) preserve test summaries and
+four local-chain recovery reports extracted from the successful CI log. The
+dependency audit passes with five informational warnings; compiler warnings
+also remain in the log.
+The downloaded [protocol report](linux-ci/protocol-report.json) and
+[fee summary](linux-ci/fee-summary.json) match the committed model, configuration
+and mapped Rust hashes. Linux reproduces all 35 model checks, 2,463,657 positive
+states, five fee harnesses and 116 checks. Raw Linux logs remain attached to the
+formal workflow. Subsequent commits in this round add documentation and evidence;
+they do not change the runtime, models or proof runners.
+
 ## Protocol models
 
 [Full TLC report](tlc/report.json): **35/35 configured checks pass**. Ten positive
@@ -53,4 +77,7 @@ there is no mechanically checked refinement or composition of all four models.
 Exploratory incomplete searches and solver timeouts are not counted as passes.
 Historical public-network and throughput results retain their earlier source
 scope. In particular, the previous queue benchmark did not exercise pruning;
-the added retained-history scans need a separate throughput measurement.
+the [separate pruning benchmark](pruning/README.md) measures that added cost.
+At default retention, a single-entry prune takes about 123–127 µs of Redis
+service time, compared with 6–7 µs before the correctness fix. Larger histories
+increase it further. This isolated measurement is not end-to-end throughput.

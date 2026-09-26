@@ -29,7 +29,7 @@ Model composition and Rust-to-TLA+ refinement are not machine-checked.
 | Webhook events follow durable transitions; retries preserve event identity | Queue fencing model for hook commit; implementation tests | End-to-end outbox proof; delivery is at least once and consumers must deduplicate |
 | RPC/webhook URLs cannot reach forbidden networks or expose secrets | Transport/policy/redaction tests and audit | DNS/network-policy threat modeling; not represented by protocol models |
 | Shutdown, deadlines and bounded concurrency preserve work | Process/queue tests | Tokio scheduling, wall-clock jumps, resource exhaustion and fairness models |
-| Throughput and resource use meet production targets | Local benchmarks + short public bursts | Sustained load, memory/backpressure, large queues and chain/provider quotas |
+| Throughput and resource use meet production targets | Local benchmarks + short public bursts; [pruning cost](evidence/pruning/README.md) | Retained-history indexing, sustained load, memory/backpressure, large queues and chain/provider quotas |
 | Dependencies, compiler, Redis and operating system behave correctly | Pinned versions, tests and dependency audit | These components remain in the trusted computing base |
 
 ## Next verification work

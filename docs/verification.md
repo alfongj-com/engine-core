@@ -14,6 +14,15 @@ used in this round.
 The final source hashes, checker output and implementation test results are
 recorded in [formal evidence](../formal/evidence/README.md).
 
+Source `1c0bb18acd0f92ecb3fe275202f03517aef68bc5` passes all four Linux
+workflows: formal verification, Rust correctness (including Redis/HTTP and local
+Anvil/Solana recovery), queue tests and queue coverage. The
+[workflow metadata](../formal/evidence/linux-ci/workflows.json) records every
+step. Later documentation/evidence commits in this round leave that runtime and
+formal source unchanged. The [pruning benchmark](../formal/evidence/pruning/README.md)
+records a material cost from retaining reused-ID history correctly; prior queue
+throughput measurements did not exercise that path.
+
 
 ## Environment and scope
 

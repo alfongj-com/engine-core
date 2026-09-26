@@ -177,4 +177,16 @@ Defaults retain 1,000 successes and 10,000 failures; large configured histories
 can therefore delay other Redis commands. This change favors correct retention
 and does not introduce a reference-counting schema. The queue baseline harness
 retains the entire measured workload, so its previous throughput figures do not
-qualify this pruning-heavy case. No new pruning throughput claim is made here.
+qualify this pruning-heavy case.
+
+A [focused benchmark](evidence/pruning/README.md) compares the actual old and new
+single-queue Lua scripts. At default retention, median Redis service time across
+four rounds rises from about 6–7 µs to 123–127 µs per single-entry prune. At
+10,000 successes / 100,000 failures it reaches about 1.2 ms. These fixtures have
+unique IDs, full terminal-list scan misses and no live backlog; they measure
+pruning cost, not queue or transaction throughput. The old implementation's
+faster timing does not provide the corrected retention guarantee for reused IDs.
+
+Before increasing retention or targeting high completion rates, replace repeated
+history scans with a durable reference index, specify its migration and atomic
+update rules, and extend the model and Redis regressions before benchmarking it.
