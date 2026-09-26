@@ -1,0 +1,24 @@
+{
+  "schema": "engine-journal-probe-metadata-v1",
+  "profile": "unoptimized Rust test binary; direct invocation, no build during measurements",
+  "platform": "macOS-26.6.2-arm64-arm-64bit",
+  "countPerRun": 256,
+  "concurrencyOrder": [
+    1,
+    8,
+    8,
+    1
+  ],
+  "binarySha256": "362a9e6dc95a65e963c6f48c2238c03d05306cf9cf7ec07ee7079a0ca516629d",
+  "sourceSha256": {
+    "core/src/recovery.rs": "2fea4aa50c2faae1319d8ad641d5af0d2b44207c8d166b484a216035482842c5",
+    "core/src/recovery/benchmark.rs": "7a5492e8c958761e86401c238b5afca5440502e4deedfb6d0c08d750636da85d",
+    "core/src/recovery/tests.rs": "a8f4e858fc48200e86d00b10482f4ffc20b70c5afd1f8e0c2f8c12e9df61904f",
+    "Cargo.lock": "381f5d42d6ace9c19f05d8bb2834042596f7a6cd436f3975cb221ee32ab93e92"
+  },
+  "gitHead": "5baa70b2f3d57c9bab9fe0163197c5614fe2657f",
+  "workingTreeChanges": true,
+  "redis": "7.4.2, disposable loopback port6385, save disabled, appendonly no",
+  "startedUnix": 1790454435.659552,
+  "finishedUnix": 1790454455.299166
+}

@@ -645,7 +645,7 @@ impl AtomicEoaExecutorStore {
     }
 
     /// Process borrowed transactions with given submission results
-    /// This method moves transactions from borrowed state to submitted/pending/failed states
+    /// This method retains uncertain attempts or moves acknowledged/reconciled attempts to submitted
     /// based on the submission results, and queues appropriate webhook events
     pub async fn process_borrowed_transactions(
         &self,
@@ -657,7 +657,6 @@ impl AtomicEoaExecutorStore {
             keys: &self.keys,
             webhook_queue,
             eoa_metrics: &self.eoa_metrics,
-            completed_transaction_ttl_seconds: self.store.completed_transaction_ttl_seconds,
         })
         .await
     }

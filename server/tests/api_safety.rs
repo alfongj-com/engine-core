@@ -86,6 +86,7 @@ async fn state_with_rpc(
         external_bundler_send_workers: 1,
         userop_confirm_workers: 1,
         eoa_executor_workers: 1,
+        eoa_max_inflight: 50,
         solana_executor_workers: 1,
         execution_namespace: Some("api_safety".into()),
         local_concurrency: 1,
@@ -185,6 +186,28 @@ async fn state_with_rpc(
 #[tokio::test]
 #[ignore = "requires redis-server; starts its own disposable loopback process"]
 async fn public_routes_reject_unauthorized_mutations_and_invalid_execution() {
+    const CHILD: &str = "ENGINE_TEST_PUBLIC_API_ACCESS_CHILD";
+    const TOKEN: &str = "test-engine-access-token-at-least-32-bytes";
+    if std::env::var_os(CHILD).is_none() {
+        let output = Command::new(std::env::current_exe().unwrap())
+            .args([
+                "--exact",
+                "public_routes_reject_unauthorized_mutations_and_invalid_execution",
+                "--ignored",
+                "--nocapture",
+            ])
+            .env(CHILD, "1")
+            .env("ENGINE_ACCESS_TOKEN", TOKEN)
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "{} {}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+        return;
+    }
     let (_redis, redis_client) = start_redis().await;
     let state = state(redis_client.clone()).await;
     let queue = state.queue_manager.external_bundler_send_queue.clone();
@@ -274,6 +297,7 @@ async fn public_routes_reject_unauthorized_mutations_and_invalid_execution() {
             .header("x-thirdweb-client-id", "test")
             .header("x-thirdweb-service-key", "test")
             .header("x-wallet-access-token", "test")
+            .header("x-engine-access-token", TOKEN)
             .json(&body)
             .send()
             .await
@@ -336,6 +360,7 @@ async fn public_routes_reject_unauthorized_mutations_and_invalid_execution() {
             .header("x-thirdweb-client-id", "test")
             .header("x-thirdweb-service-key", "test")
             .header("x-wallet-access-token", "test")
+            .header("x-engine-access-token", TOKEN)
             .json(&body)
             .send()
             .await
@@ -367,41 +392,37 @@ async fn public_routes_reject_unauthorized_mutations_and_invalid_execution() {
             "from":"0x1111111111111111111111111111111111111111", "idempotencyKey":"stable-calls"},
         "params": [{"to":"0x1111111111111111111111111111111111111111"}]
     });
-    let mut admitted_uid = None;
     for _ in 0..2 {
         let response = http
             .post(format!("{base_url}/v1/write/transaction"))
             .header("x-thirdweb-client-id", "test")
             .header("x-thirdweb-service-key", "test")
             .header("x-wallet-access-token", "test")
+            .header("x-engine-access-token", TOKEN)
             .json(&eip_body)
             .send()
             .await
             .unwrap();
-        assert_eq!(response.status(), reqwest::StatusCode::ACCEPTED);
-        let persisted = eip_queue
-            .get_job("stable-calls")
+        assert_eq!(response.status(), reqwest::StatusCode::BAD_REQUEST);
+        assert!(
+            response
+                .text()
+                .await
+                .unwrap()
+                .contains("on-chain attribution")
+        );
+    }
+    assert_eq!(eip_queue.count(JobStatus::Pending).await.unwrap(), 0);
+    assert!(eip_queue.get_job("stable-calls").await.unwrap().is_none());
+    assert!(
+        state
+            .queue_manager
+            .transaction_registry
+            .get_transaction_queue("stable-calls")
             .await
             .unwrap()
-            .unwrap()
-            .data
-            .nonce
-            .expect("UID persisted before broadcast");
-        if let Some(previous) = admitted_uid {
-            assert_eq!(persisted, previous);
-        }
-        admitted_uid = Some(persisted);
-    }
-    assert_eq!(eip_queue.count(JobStatus::Pending).await.unwrap(), 1);
-    let mut legacy = eip_queue.get_job("stable-calls").await.unwrap().unwrap();
-    legacy.data.nonce = None;
-    assert!(matches!(
-        eip_queue
-            .handler
-            .process(&BorrowedJob::new(legacy, "test-lease".into()))
-            .await,
-        Err(JobError::Fail(_))
-    ));
+            .is_none()
+    );
     server.shutdown().await.unwrap();
 }
 
@@ -436,6 +457,10 @@ fn configured_signer_routes_authenticate_and_queue_only_public_identity() {
             .env(CHILD, "1")
             .env("ENGINE_SOLANA_KEYPAIR_FILE", &path)
             .env("ENGINE_PRIVATE_KEY", format!("{:#x}", evm_key.to_bytes()))
+            .env(
+                "ENGINE_ACCESS_TOKEN",
+                "isolated-test-access-token-with-32-bytes",
+            )
             .env(
                 "ENGINE_SIGNING_TOKEN",
                 "isolated-test-operator-token-with-32-bytes",
@@ -545,7 +570,7 @@ fn configured_signer_routes_authenticate_and_queue_only_public_identity() {
         }
         // Caller-supplied Thirdweb headers cannot select the operator's paid RPC.
         let response = http.post(format!("{url}/v1/write/transaction"))
-            .header("x-thirdweb-client-id", "fake").header("x-thirdweb-service-key", "fake").header("x-wallet-access-token", "fake")
+            .header("x-thirdweb-client-id", "fake").header("x-thirdweb-service-key", "fake").header("x-wallet-access-token", "fake").header("x-engine-access-token", "isolated-test-access-token-with-32-bytes")
             .json(&evm_body).send().await.unwrap();
         assert_eq!(response.status(), reqwest::StatusCode::BAD_REQUEST);
         let response = http.post(format!("{url}/v1/write/transaction"))
@@ -572,7 +597,7 @@ fn configured_signer_routes_authenticate_and_queue_only_public_identity() {
             ("/v1/sign/typed-data", json!([{"types":{"EIP712Domain":[],"Test":[{"name":"value","type":"uint256"}]},"primaryType":"Test","domain":{},"message":{"value":"1"}}])),
         ] {
             let response = http.post(format!("{url}{route}"))
-                .header("x-thirdweb-client-id", "fake").header("x-thirdweb-service-key", "fake").header("x-wallet-access-token", "fake")
+                .header("x-thirdweb-client-id", "fake").header("x-thirdweb-service-key", "fake").header("x-wallet-access-token", "fake").header("x-engine-access-token", "isolated-test-access-token-with-32-bytes")
                 .json(&json!({"signingOptions":{"type":"ERC4337","chainId":31337,"signerAddress":evm_address}, "params":params}))
                 .send().await.unwrap();
             assert_eq!(response.status(), reqwest::StatusCode::OK);
@@ -585,4 +610,210 @@ fn configured_signer_routes_authenticate_and_queue_only_public_identity() {
         assert_eq!(response.status(), reqwest::StatusCode::BAD_REQUEST);
         server.shutdown().await.unwrap();
     });
+}
+
+#[tokio::test]
+#[ignore = "requires redis-server; isolated operator credentials and journal"]
+async fn legacy_signers_require_operator_access_before_admission_and_preserve_backend() {
+    const CHILD: &str = "ENGINE_TEST_LEGACY_ACCESS_CHILD";
+    const TOKEN: &str = "test-legacy-access-token-at-least-32-bytes";
+    const LOCAL: &str = "test-local-signing-token-at-least-32-bytes";
+    let Ok(mode) = std::env::var(CHILD) else {
+        for mode in ["unset", "short", "configured"] {
+            let mut command = Command::new(std::env::current_exe().unwrap());
+            command
+                .args([
+                    "--exact",
+                    "legacy_signers_require_operator_access_before_admission_and_preserve_backend",
+                    "--ignored",
+                    "--nocapture",
+                ])
+                .env(CHILD, mode)
+                .env("ENGINE_SIGNING_TOKEN", LOCAL)
+                .env_remove("ENGINE_ACCESS_TOKEN");
+            if mode != "unset" {
+                command.env(
+                    "ENGINE_ACCESS_TOKEN",
+                    if mode == "short" { "short" } else { TOKEN },
+                );
+            }
+            let output = command.output().unwrap();
+            assert!(
+                output.status.success(),
+                "{mode}: {} {}",
+                String::from_utf8_lossy(&output.stdout),
+                String::from_utf8_lossy(&output.stderr)
+            );
+        }
+        return;
+    };
+    let (_redis, client) = start_redis().await;
+    let url = format!("redis://{}/", client.get_connection_info().addr);
+    let directory =
+        std::env::temp_dir().join(format!("engine-legacy-auth-{}", rand::random::<u128>()));
+    let path = directory.join("ledger.sqlite");
+    use engine_core::recovery::{self, RecoveryJournal};
+    RecoveryJournal::initialize(&path, &url, Some("api_safety".into()))
+        .await
+        .unwrap();
+    let journal = RecoveryJournal::open(&path, &url, Some("api_safety".into()))
+        .await
+        .unwrap();
+    recovery::install(journal.clone()).unwrap();
+    let state = state(client).await;
+    let queue = state.queue_manager.external_bundler_send_queue.clone();
+    let registry = state.queue_manager.transaction_registry.clone();
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let base = format!("http://{}", listener.local_addr().unwrap());
+    let mut server = EngineServer::new(state).await;
+    server.start(listener).unwrap();
+    let http = reqwest::Client::builder()
+        .timeout(Duration::from_secs(5))
+        .build()
+        .unwrap();
+    let body = json!({"executionOptions":{"type":"ERC4337","chainId":31337,"signerAddress":"0x1111111111111111111111111111111111111111","idempotencyKey":"denied"},"params":[{"to":"0x1111111111111111111111111111111111111111"}]});
+    let headers = |backend: &str| {
+        let mut h = reqwest::header::HeaderMap::new();
+        h.insert("x-thirdweb-client-id", "test".parse().unwrap());
+        h.insert("x-thirdweb-service-key", "test".parse().unwrap());
+        if backend == "iaw" || backend == "mixed" {
+            h.insert(
+                "x-wallet-access-token",
+                "arbitrary-unverified-wallet-token".parse().unwrap(),
+            );
+        }
+        if backend == "kms" || backend == "mixed" {
+            h.insert(
+                "x-aws-kms-arn",
+                "arn:aws:kms:us-east-1:123456789012:key/12345678-1234-1234-1234-123456789012"
+                    .parse()
+                    .unwrap(),
+            );
+            h.insert(
+                "x-aws-access-key-id",
+                "arbitrary-access-key".parse().unwrap(),
+            );
+            h.insert(
+                "x-aws-secret-access-key",
+                "arbitrary-secret-key".parse().unwrap(),
+            );
+        }
+        h
+    };
+    for backend in ["iaw", "kms"] {
+        for token in [None, Some("wrong")] {
+            let mut request = http
+                .post(format!("{base}/v1/write/transaction"))
+                .headers(headers(backend))
+                .json(&body);
+            if let Some(token) = token {
+                request = request.header("x-engine-access-token", token);
+            }
+            assert!(request.send().await.unwrap().status().is_client_error());
+        }
+        let response = http
+            .post(format!("{base}/v1/write/transaction"))
+            .headers(headers(backend))
+            .header("x-engine-access-token", TOKEN)
+            .header("x-engine-signing-token", LOCAL)
+            .json(&body)
+            .send()
+            .await
+            .unwrap();
+        assert!(response.status().is_client_error());
+        assert!(
+            response
+                .text()
+                .await
+                .unwrap()
+                .contains("Ambiguous signing credentials")
+        );
+    }
+    assert!(
+        http.post(format!("{base}/v1/write/transaction"))
+            .headers(headers("mixed"))
+            .header("x-engine-access-token", TOKEN)
+            .json(&body)
+            .send()
+            .await
+            .unwrap()
+            .status()
+            .is_client_error()
+    );
+    assert_eq!(queue.count(JobStatus::Pending).await.unwrap(), 0);
+    assert_eq!(RecoveryJournal::status(&path).unwrap().admissions, 0);
+    assert!(
+        registry
+            .get_transaction_queue("denied")
+            .await
+            .unwrap()
+            .is_none()
+    );
+    for backend in ["iaw", "kms"] {
+        let mut body = body.clone();
+        body["executionOptions"]["idempotencyKey"] = json!(backend);
+        let response = http
+            .post(format!("{base}/v1/write/transaction"))
+            .headers(headers(backend))
+            .header(
+                "x-engine-access-token",
+                if mode == "short" { "short" } else { TOKEN },
+            )
+            .json(&body)
+            .send()
+            .await
+            .unwrap();
+        if mode != "configured" {
+            assert!(response.status().is_client_error());
+            continue;
+        }
+        assert_eq!(response.status(), reqwest::StatusCode::ACCEPTED);
+        let job = queue.get_job(backend).await.unwrap().unwrap();
+        assert!(
+            matches!(
+                (&job.data.signing_credential, backend),
+                (SigningCredential::Iaw { .. }, "iaw") | (SigningCredential::AwsKms(_), "kms")
+            ),
+            "operator access must not select the local signer"
+        );
+    }
+    if mode == "configured" {
+        assert_eq!(RecoveryJournal::status(&path).unwrap().admissions, 2);
+        let job = queue.get_job("iaw").await.unwrap().unwrap();
+        let replay = format!(
+            "erc4337:31337:{:#x}:{:#x}:{}",
+            job.data
+                .execution_options
+                .entrypoint_details
+                .entrypoint_address,
+            job.data.execution_options.signer_address,
+            job.data.pregenerated_nonce.unwrap()
+        );
+        journal
+            .before_broadcast("erc4337", "iaw", &replay, json!({"uncertainDispatch":true}))
+            .await
+            .unwrap();
+        let response = http
+            .post(format!("{base}/v1/transactions/iaw/cancel"))
+            .header("x-diagnostic-access-password", "test-admin-password")
+            .send()
+            .await
+            .unwrap();
+        assert!(response.status().is_success());
+        assert!(response.text().await.unwrap().contains("CANNOT_CANCEL"));
+        assert!(queue.get_job("iaw").await.unwrap().is_some());
+        assert_eq!(queue.count(JobStatus::Pending).await.unwrap(), 2);
+        assert_eq!(
+            registry
+                .get_transaction_queue("iaw")
+                .await
+                .unwrap()
+                .as_deref(),
+            Some("external_bundler_send")
+        );
+    } else {
+        assert_eq!(RecoveryJournal::status(&path).unwrap().admissions, 0);
+    }
+    server.shutdown().await.unwrap();
+    std::fs::remove_dir_all(directory).unwrap();
 }

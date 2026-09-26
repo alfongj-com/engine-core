@@ -3,9 +3,10 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import {performance} from 'node:perf_hooks';
 import {setTimeout as sleep} from 'node:timers/promises';
 import {Budget,createGateway} from './budget-gateway.mjs';
-import {configuration,gatewayUrl,parseArgs,runProbe} from './load-probe.mjs';
+import {configuration,gatewayUrl,parseArgs,runProbe,runStage} from './load-probe.mjs';
 
 const basicMix=[{method:'eth_blockNumber',params:[]},{method:'eth_getTransactionCount',params:['0x'+'1'.repeat(40),'latest']}];
 const rpc=(payload,result)=>new Response(JSON.stringify({jsonrpc:'2.0',id:payload.id,result}));
@@ -14,7 +15,9 @@ async function fixture(upstream,{ceiling=200,maxInflight=256}={}){
   const budget=new Budget(path.join(dir,'budget.json'),ceiling,1);
   const gateway=createGateway({budget,key:'provider-test-secret',upstream,maxInflight});
   await new Promise(resolve=>gateway.server.listen(0,'127.0.0.1',resolve));
-  return {budget,config:{chain:'11155111',gateway:`http://127.0.0.1:${gateway.server.address().port}`,reserve:0,pauseMs:0,stages:[{rate:100,count:8}]},
+  // HTTP classification fixtures must tolerate concurrent test-process fsyncs.
+  // The production lag cutoff is tested separately with a controlled clock.
+  return {budget,config:{chain:'11155111',gateway:`http://127.0.0.1:${gateway.server.address().port}`,reserve:0,pauseMs:0,maxLagMs:10_000,stages:[{rate:100,count:8}]},
     close:async()=>{await gateway.close();fs.rmSync(dir,{recursive:true,force:true});}};
 }
 test('only literal loopback routes, finite stages, explicit execution, and preserved evidence filenames',()=>{
@@ -28,6 +31,7 @@ test('only literal loopback routes, finite stages, explicit execution, and prese
 test('deterministic bounded request mix, no retries, and saved report excludes raw provider text',async()=>{
   const received=[];
   const f=await fixture(async(_network,payload)=>{
+    assert.equal(Array.isArray(payload),false,'each HTTP request contains one RPC call');
     received.push({id:payload.id,method:payload.method});
     if(received.length===3)return new Response(JSON.stringify({jsonrpc:'2.0',id:payload.id,error:{code:-32005,message:'provider-test-secret unrelated-private-text'}}));
     if(received.length===5)return new Response(JSON.stringify({jsonrpc:'2.0',id:payload.id,error:{code:-32000,message:'unrelated-private-text'}}),{status:429});
@@ -35,17 +39,39 @@ test('deterministic bounded request mix, no retries, and saved report excludes r
   });
   try{
     const report=await runProbe(f.config,{mix:basicMix});
+    assert.deepEqual(received.map(call=>call.id).toSorted((a,b)=>a-b),[1,2,3,4,5,6,7,8]);
     assert.deepEqual(received.toSorted((a,b)=>a.id-b.id).map(call=>call.method),Array.from({length:8},(_,i)=>basicMix[i%2].method));
     assert.equal(report.observedCampaignCallDelta,8);
     assert.deepEqual(report.stages[0].outcomes,{success:6,rpc_error:1,upstream_http_error:1});
     assert.equal(report.stages[0].httpStatuses['429'],1);
     assert.equal(report.stages[0].rpcCodes['-32005'],1);
     assert.equal(report.stages[0].localConcurrencyDrops,0);
+    assert.equal(report.stages[0].localSchedulerDrops,0);
     assert.equal(report.stages[0].methodResults.eth_blockNumber.latencyMs.count,4);
     assert.ok(!JSON.stringify(report).includes('private-text'));
     assert.ok(!JSON.stringify(report).includes('provider-test-secret'));
     assert.ok(!JSON.stringify(report).includes(f.config.gateway));
   }finally{await f.close();}
+});
+test('scheduler drops overdue slots without catch-up requests or retries',async(t)=>{
+  let now=0;
+  t.mock.method(performance,'now',()=>now);
+  const config=configuration({chain:'11155111',maxLagMs:5,stages:[{rate:1000,count:8}]}),received=[];
+  const stage=await runStage(config,config.stages[0],basicMix,async(call)=>{
+    received.push(call.method);
+    // Simulate a synchronous stall after slot zero. All later deadlines have
+    // elapsed; no real timer or host scheduling speed determines the outcome.
+    now=100;
+    return {kind:'success',status:200,ms:100};
+  });
+  assert.deepEqual(received,[basicMix[0].method]);
+  assert.equal(stage.dispatched,1);
+  assert.equal(stage.localSchedulerDrops,7);
+  assert.equal(stage.localConcurrencyDrops,0);
+  assert.equal(stage.notScheduled,0);
+  assert.deepEqual(stage.outcomes,{success:1});
+  assert.equal(stage.dispatched+stage.localSchedulerDrops,stage.scheduled);
+  assert.match(stage.interpretation,/Local scheduling/);
 });
 test('local caller concurrency saturation drops scheduled work instead of unbounded queuing or retry',async()=>{
   let active=0,max=0,received=0;

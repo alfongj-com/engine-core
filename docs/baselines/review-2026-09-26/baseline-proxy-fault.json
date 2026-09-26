@@ -1,0 +1,297 @@
+{
+  "scope": "local EOA; one signer; fixed-cadence Anvil; no public chain qualification",
+  "offered_tps": 50,
+  "duration_seconds": 60,
+  "block_seconds": 1,
+  "finality_depth": 2,
+  "requested_max_inflight": 1024,
+  "durability": "SQLite WAL synchronous=FULL/fullfsync=ON; Redis AOF appendfsync=always",
+  "engine_binary_sha256": "6aaf985d2ab51562f3cad17f309ea223f97be07b3f361a4d716aa525a825ca08",
+  "log_directory": "/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/engine-eoa-throughput-3thcd_s8",
+  "during_load": {
+    "seconds": 60.013,
+    "included": 313,
+    "terminal": 313
+  },
+  "admission_responses": {
+    "202": 3000
+  },
+  "admission_latency_ms": {
+    "p50": 22.063,
+    "p95": 56.722,
+    "p99": 63.179
+  },
+  "rpc_calls_during_load": {
+    "eth_getCode": 1,
+    "eth_getTransactionCount": 11,
+    "eth_getBalance": 1,
+    "eth_feeHistory": 313,
+    "eth_sendRawTransaction": 313,
+    "eth_getTransactionReceipt": 319,
+    "eth_getBlockByNumber": 72
+  },
+  "final": {
+    "seconds": 235.444,
+    "included": 313,
+    "terminal": 313
+  },
+  "recipient_value_wei": 313,
+  "outcome": "incomplete",
+  "rpc_calls_total": {
+    "eth_getCode": 1,
+    "eth_getTransactionCount": 33,
+    "eth_getBalance": 1,
+    "eth_feeHistory": 313,
+    "eth_sendRawTransaction": 313,
+    "eth_getTransactionReceipt": 319,
+    "eth_getBlockByNumber": 94
+  },
+  "samples": [
+    {
+      "seconds": 5.01,
+      "included": 50,
+      "terminal": 0
+    },
+    {
+      "seconds": 10.018,
+      "included": 100,
+      "terminal": 57
+    },
+    {
+      "seconds": 15.032,
+      "included": 157,
+      "terminal": 57
+    },
+    {
+      "seconds": 20.047,
+      "included": 157,
+      "terminal": 147
+    },
+    {
+      "seconds": 25.056,
+      "included": 213,
+      "terminal": 157
+    },
+    {
+      "seconds": 30.062,
+      "included": 313,
+      "terminal": 157
+    },
+    {
+      "seconds": 35.07,
+      "included": 313,
+      "terminal": 194
+    },
+    {
+      "seconds": 40.085,
+      "included": 313,
+      "terminal": 283
+    },
+    {
+      "seconds": 45.093,
+      "included": 313,
+      "terminal": 283
+    },
+    {
+      "seconds": 50.102,
+      "included": 313,
+      "terminal": 313
+    },
+    {
+      "seconds": 55.116,
+      "included": 313,
+      "terminal": 313
+    },
+    {
+      "seconds": 60.013,
+      "included": 313,
+      "terminal": 313
+    },
+    {
+      "seconds": 60.123,
+      "included": 313,
+      "terminal": 313
+    },
+    {
+      "seconds": 65.138,
+      "included": 313,
+      "terminal": 313
+    },
+    {
+      "seconds": 70.146,
+      "included": 313,
+      "terminal": 313
+    },
+    {
+      "seconds": 75.155,
+      "included": 313,
+      "terminal": 313
+    },
+    {
+      "seconds": 80.169,
+      "included": 313,
+      "terminal": 313
+    },
+    {
+      "seconds": 85.178,
+      "included": 313,
+      "terminal": 313
+    },
+    {
+      "seconds": 90.193,
+      "included": 313,
+      "terminal": 313
+    },
+    {
+      "seconds": 95.206,
+      "included": 313,
+      "terminal": 313
+    },
+    {
+      "seconds": 100.221,
+      "included": 313,
+      "terminal": 313
+    },
+    {
+      "seconds": 105.236,
+      "included": 313,
+      "terminal": 313
+    },
+    {
+      "seconds": 110.251,
+      "included": 313,
+      "terminal": 313
+    },
+    {
+      "seconds": 115.262,
+      "included": 313,
+      "terminal": 313
+    },
+    {
+      "seconds": 120.275,
+      "included": 313,
+      "terminal": 313
+    },
+    {
+      "seconds": 125.277,
+      "included": 313,
+      "terminal": 313
+    },
+    {
+      "seconds": 130.285,
+      "included": 313,
+      "terminal": 313
+    },
+    {
+      "seconds": 135.289,
+      "included": 313,
+      "terminal": 313
+    },
+    {
+      "seconds": 140.303,
+      "included": 313,
+      "terminal": 313
+    },
+    {
+      "seconds": 145.318,
+      "included": 313,
+      "terminal": 313
+    },
+    {
+      "seconds": 150.327,
+      "included": 313,
+      "terminal": 313
+    },
+    {
+      "seconds": 155.34,
+      "included": 313,
+      "terminal": 313
+    },
+    {
+      "seconds": 160.348,
+      "included": 313,
+      "terminal": 313
+    },
+    {
+      "seconds": 165.354,
+      "included": 313,
+      "terminal": 313
+    },
+    {
+      "seconds": 170.367,
+      "included": 313,
+      "terminal": 313
+    },
+    {
+      "seconds": 175.381,
+      "included": 313,
+      "terminal": 313
+    },
+    {
+      "seconds": 180.386,
+      "included": 313,
+      "terminal": 313
+    },
+    {
+      "seconds": 185.4,
+      "included": 313,
+      "terminal": 313
+    },
+    {
+      "seconds": 190.405,
+      "included": 313,
+      "terminal": 313
+    },
+    {
+      "seconds": 195.409,
+      "included": 313,
+      "terminal": 313
+    },
+    {
+      "seconds": 200.415,
+      "included": 313,
+      "terminal": 313
+    },
+    {
+      "seconds": 205.422,
+      "included": 313,
+      "terminal": 313
+    },
+    {
+      "seconds": 210.425,
+      "included": 313,
+      "terminal": 313
+    },
+    {
+      "seconds": 215.438,
+      "included": 313,
+      "terminal": 313
+    },
+    {
+      "seconds": 220.444,
+      "included": 313,
+      "terminal": 313
+    },
+    {
+      "seconds": 225.459,
+      "included": 313,
+      "terminal": 313
+    },
+    {
+      "seconds": 230.473,
+      "included": 313,
+      "terminal": 313
+    },
+    {
+      "seconds": 235.487,
+      "included": 313,
+      "terminal": 313
+    },
+    {
+      "seconds": 235.444,
+      "included": 313,
+      "terminal": 313
+    }
+  ],
+  "journal_bytes": 6344328
+}

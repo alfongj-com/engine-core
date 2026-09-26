@@ -353,6 +353,10 @@ pub enum EngineError {
     #[error("Internal error: {message}")]
     InternalError { message: String },
 
+    #[schema(title = "Engine Overloaded")]
+    #[error("Engine admission is overloaded: {message}")]
+    Overloaded { message: String },
+
     #[schema(title = "Recovery Required")]
     #[error("Recovery required: {message}")]
     RecoveryRequired { message: String },

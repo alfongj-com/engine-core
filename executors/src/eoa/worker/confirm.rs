@@ -1,12 +1,14 @@
 use alloy::{
     primitives::B256,
     providers::{Provider, RootProvider},
+    rpc::types::BlockNumberOrTag,
 };
 use engine_core::{
     chain::Chain,
-    error::AlloyRpcErrorToEngineError,
-    finality::{FinalityAssessment, assess_receipt_finality},
+    error::{AlloyRpcErrorToEngineError, EngineError},
+    finality::{FinalityAssessment, FinalityPolicy, assess_receipt_finality},
 };
+use futures::StreamExt;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -25,7 +27,11 @@ use crate::{
 };
 
 const FINALITY_POLL_INTERVAL_MS: u64 = 5_000;
-const MAX_RECEIPTS_PER_POLL: usize = 256;
+// Four times the 50 tx/s target leaves capacity for provisional/absent reads
+// and catch-up. These are read budgets, not a chain throughput guarantee.
+const MAX_RECEIPTS_PER_POLL: usize = 1024;
+const RECEIPT_RPC_CONCURRENCY: usize = 32;
+const FINALITY_RPC_CONCURRENCY: usize = 8;
 
 const NONCE_STALL_LIMIT_MS: u64 = 60_000; // 1 minute in milliseconds - after this time, attempt gas bump
 
@@ -44,7 +50,7 @@ async fn fetch_confirmed_transaction_receipts(
     provider: &RootProvider,
     submitted_txs: Vec<SubmittedTransactionDehydrated>,
 ) -> Vec<ConfirmedTransactionWithRichReceipt> {
-    let receipt_futures = submitted_txs.iter().filter_map(|tx| {
+    let receipt_futures = submitted_txs.into_iter().filter_map(|tx| {
         let hash = match tx.transaction_hash.parse::<B256>() {
             Ok(hash) => hash,
             Err(_) => {
@@ -72,32 +78,43 @@ async fn fetch_confirmed_transaction_receipts(
             }
         })
     });
-    futures::future::join_all(receipt_futures)
-        .await
-        .into_iter()
-        .flatten()
+    futures::stream::iter(receipt_futures)
+        .buffer_unordered(RECEIPT_RPC_CONCURRENCY)
+        .filter_map(|receipt| async move { receipt })
         .collect()
+        .await
 }
 
-/// Rotate a bounded read window so permanently missing receipts cannot starve
-/// later nonces. Cleanup shifts offsets but every retained hash is revisited.
-fn receipt_poll_batch(
-    waiting: Vec<SubmittedTransactionDehydrated>,
-    offset: usize,
-) -> (Vec<SubmittedTransactionDehydrated>, usize) {
-    if waiting.is_empty() {
-        return (Vec::new(), 0);
-    }
-    let count = waiting.len().min(MAX_RECEIPTS_PER_POLL);
-    let start = offset % waiting.len();
-    let selected = waiting
-        .iter()
-        .cycle()
-        .skip(start)
-        .take(count)
-        .cloned()
-        .collect();
-    (selected, (start + count) % waiting.len())
+/// A scheduling hint, never settlement evidence. Avoid querying every receipt
+/// while the policy head still predates its sender nonce. A stale-low answer
+/// delays work; a false-high answer still passes the independent receipt gate.
+/// Unsupported finality tags fail closed instead of silently polling `latest`.
+async fn receipt_candidate_count(
+    chain: &impl Chain,
+    sender: alloy::primitives::Address,
+    latest_count: u64,
+) -> Result<u64, EngineError> {
+    let tag = match chain.finality_policy() {
+        FinalityPolicy::Finalized => BlockNumberOrTag::Finalized,
+        FinalityPolicy::Depth { confirmations: 0 } => return Ok(latest_count),
+        FinalityPolicy::Depth { confirmations } => {
+            let head = chain
+                .provider()
+                .get_block_number()
+                .await
+                .map_err(|error| error.to_engine_error(chain))?;
+            let Some(height) = head.checked_sub(confirmations) else {
+                return Ok(0);
+            };
+            BlockNumberOrTag::Number(height)
+        }
+    };
+    chain
+        .provider()
+        .get_transaction_count(sender)
+        .block_id(tag.into())
+        .await
+        .map_err(|error| error.to_engine_error(chain))
 }
 
 #[cfg(test)]
@@ -267,15 +284,21 @@ impl<C: Chain> EoaExecutorWorker<C> {
                 message: "Finality checkpoint continuity unavailable".into(),
                 inner_error,
             })?;
-        let waiting = self
+        let candidate_count =
+            receipt_candidate_count(&self.chain, self.eoa, transaction_counts.latest)
+                .await
+                .map_err(|inner_error| EoaExecutorWorkerError::RpcError {
+                    message: "Finality candidate nonce unavailable".into(),
+                    inner_error,
+                })?;
+        let (waiting_txs, next_offset) = self
             .store
-            .get_submitted_transactions_below_chain_transaction_count(
-                transaction_counts
-                    .preconfirmed
-                    .max(transaction_counts.latest),
+            .get_submitted_transaction_page(
+                candidate_count,
+                health.finality_scan_offset,
+                MAX_RECEIPTS_PER_POLL,
             )
             .await?;
-        let (waiting_txs, next_offset) = receipt_poll_batch(waiting, health.finality_scan_offset);
         health.finality_scan_offset = next_offset;
         self.store.update_health_data(&health).await?;
         if waiting_txs.is_empty() {
@@ -288,10 +311,34 @@ impl<C: Chain> EoaExecutorWorker<C> {
 
         // Process confirmed transactions
         let mut successes = Vec::new();
-        let mut block_assessments: std::collections::HashMap<
-            _,
-            Result<FinalityAssessment, engine_core::error::EngineError>,
-        > = std::collections::HashMap::new();
+        // Block evidence is shared only within this cycle. Distinct blocks are
+        // checked concurrently with a separate bound; no stale/global cache can
+        // suppress continuity checks or cross endpoint/policy boundaries.
+        let mut blocks = std::collections::HashMap::new();
+        for tx in &confirmed_txs {
+            use alloy::consensus::TxReceipt;
+            if tx
+                .receipt
+                .inner
+                .status_or_post_state()
+                .as_eip658()
+                .is_some()
+            {
+                blocks
+                    .entry((tx.receipt.block_number, tx.receipt.block_hash))
+                    .or_insert_with(|| tx.receipt.clone());
+            }
+        }
+        let block_assessments: std::collections::HashMap<_, _> =
+            futures::stream::iter(blocks.into_iter().map(|(key, receipt)| async move {
+                (
+                    key,
+                    crate::finality::assess(&self.chain, receipt.transaction_hash, &receipt).await,
+                )
+            }))
+            .buffer_unordered(FINALITY_RPC_CONCURRENCY)
+            .collect()
+            .await;
         for tx in confirmed_txs {
             use alloy::consensus::TxReceipt;
             if tx
@@ -305,16 +352,11 @@ impl<C: Chain> EoaExecutorWorker<C> {
             }
             let expected_hash = tx.receipt.transaction_hash;
             let key = (tx.receipt.block_number, tx.receipt.block_hash);
-            let assessment = if let Some(cached) = block_assessments.get(&key) {
-                cached.clone()
-            } else {
-                let assessment =
-                    crate::finality::assess(&self.chain, expected_hash, &tx.receipt).await;
-                block_assessments.insert(key, assessment.clone());
-                assessment
+            let Some(assessment) = block_assessments.get(&key) else {
+                continue;
             };
             let finality = match assessment {
-                Ok(FinalityAssessment::Finalized(evidence)) => evidence,
+                Ok(FinalityAssessment::Finalized(evidence)) => evidence.clone(),
                 Ok(_) => continue, // Inclusion/orphaning never authorizes cleanup or a new nonce.
                 Err(error) => {
                     tracing::warn!(transaction_id = tx.transaction_id, error = %error,
@@ -333,6 +375,20 @@ impl<C: Chain> EoaExecutorWorker<C> {
             } else {
                 ("eoa", tx.transaction_id.clone())
             };
+            if let Err(error) = crate::finality::validate_eoa_confirmation(
+                kind,
+                &id,
+                self.chain_id,
+                self.eoa,
+                tx.nonce,
+                expected_hash,
+            )
+            .await
+            {
+                tracing::warn!(transaction_id = tx.transaction_id, error = %error,
+                    "Receipt does not match the durable reservation; retaining submitted evidence");
+                continue;
+            }
             crate::finality::record_evm_terminal(
                 kind,
                 &id,
@@ -364,6 +420,7 @@ impl<C: Chain> EoaExecutorWorker<C> {
             );
 
             successes.push(ConfirmedTransaction {
+                nonce: tx.nonce,
                 transaction_hash: tx.transaction_hash,
                 transaction_id: tx.transaction_id,
                 receipt: tx.receipt,
@@ -372,6 +429,9 @@ impl<C: Chain> EoaExecutorWorker<C> {
             });
         }
 
+        if successes.is_empty() {
+            return Ok(CleanupReport::default());
+        }
         let report = self
             .store
             .clean_submitted_transactions(

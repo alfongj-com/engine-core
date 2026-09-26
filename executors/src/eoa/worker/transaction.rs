@@ -224,21 +224,30 @@ impl<C: Chain> EoaExecutorWorker<C> {
 
         crate::recovery::before_noop(&recovery_id, self.chain_id, self.eoa, &tx).await?;
 
-        self.chain
+        // The nonce is durably assigned even if dispatch is rejected or its
+        // response is lost. Remove it from recycling before contacting the node.
+        // NOOP has no borrowed retry slot: an absent attempt stays submitted for
+        // finality polling or explicit offline reconciliation using journal bytes.
+        let submitted = SubmittedNoopTransaction {
+            nonce,
+            transaction_hash: tx.hash().to_string(),
+        };
+        self.store
+            .process_noop_transactions(std::slice::from_ref(&submitted))
+            .await?;
+        let _ = self
+            .chain
             .provider()
             .send_tx_envelope(tx.into())
             .await
             .map_err(|e| EoaExecutorWorkerError::TransactionSendError {
                 message: format!(
-                    "Failed to send no-op transaction: {}",
+                    "NOOP broadcast outcome unknown; retaining reserved identity: {}",
                     engine_core::error::rpc_error_diagnostic(&e)
                 ),
                 inner_error: e.to_engine_error(&self.chain),
-            })
-            .map(|pending| SubmittedNoopTransaction {
-                nonce,
-                transaction_hash: pending.tx_hash().to_string(),
-            })
+            })?;
+        Ok(submitted)
     }
 
     async fn estimate_gas_fees(

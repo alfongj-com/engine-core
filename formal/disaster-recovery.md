@@ -43,7 +43,7 @@ durable; this fact is checked afterward, not used to prevent the fault action.
 | `Mirror` | Redis compare-and-set from the old checkpoint, followed by continuity checks; only success releases broadcast authorization. |
 | `Send`, `Execute` | The already-authorized network call may race a halt; the chain may execute an already-sent message after a process crash. |
 | `Enqueue` | A matching unsent retry uses the original payload returned by the authority, not a freshly generated candidate UID. Terminal and quarantined admissions cannot enter this action. |
-| `TerminalCommit` | `record_terminal`: persist a reconciled terminal outcome before updating Redis. Finality and contradictory-proof validation are delegated to runtime tests and the separate finality model. |
+| `TerminalCommit` | `record_terminal`: persist a reconciled terminal outcome before updating Redis. The attempt must belong to the same admitted ID. Finality and contradictory-proof validation are delegated to runtime tests and the separate finality model. |
 | `RedisLoss`, `RedisRollback`, `RedisRestart` | Missing/old marker or a changed Redis process. `DetectMismatch`/`Mirror` durably latch a halt; `RepairMarker` does not clear it. |
 | `Reattach` | Offline, same-namespace, exact-checkpoint reattachment; only an absent halt or the Redis-process-change cause can be cleared. |
 | `RecoverBegin`, `RecoverPublish`, `RecoverFinish` | Offline fresh-namespace recovery: commit a new epoch and quarantine every attempted nonterminal admission; separately publish/verify Redis; clear the recovery halt only after success. |
@@ -75,6 +75,7 @@ liveness result is claimed. `CHECK_DEADLOCK FALSE` permits exhausted/parked stat
 | `DisasterRecovery_fresh_recovery.cfg` | `AtMostOneEffectPerId`: bypassing quarantine and dropping bindings lets a formerly attempted intent execute again under another key. |
 | `DisasterRecovery_retry_uid.cfg` | `OriginalPayloadOnRetry`: returning the new candidate rather than the stored payload changes a retry's generated identity. |
 | `DisasterRecovery_authority_rollback.cfg` | `AtMostOneEffectPerId`: a coherent old copy of the authoritative ledger and Redis can forget an execution and admit another identity. This is an explicit unsupported disaster boundary. |
+| `DisasterRecovery_terminal_attribution.cfg` | `TerminalHasOwnEffect`: attributing another ID's actual execution/attempt to this admission cannot make it terminal. |
 | `DisasterRecovery_late_execution_witness.cfg` | `LateExecutionWitnessNotReached`: an expected counterexample demonstrates actual chain execution after a durable halt. It uses an already-journaled identity and does not violate positive safety checks. |
 
 On 2026-09-26 the complete pinned-TLC run passed all 52 repository configurations
@@ -130,3 +131,45 @@ the abstraction: it does not derive signed-wire validation from payload atoms or
 prove that every runtime call site refines a transition. Existing EOA, Solana,
 admission, finality and queue models remain separate. Their composition is not
 mechanically proved; source hashes are review tripwires, not a refinement relation.
+
+## Throughput/security revision correspondence
+
+The September 26 review additionally maps exact attempt/checkpoint no-ops to
+stuttering: the unchanged identity still passes owner, health, CAS and chain-halt
+checks. Admission overload likewise makes no durable state change.
+`TerminalHasOwnEffect` now checks that a terminal admission has its own actual
+executed attempt; the fault configuration deliberately permits attribution of
+another ID's real execution. The positive model's existing effect/attempt state
+is independent of that observation. The prior recorded state counts above are
+for the earlier model version; the added mutation awaits the final full run.
+
+Runtime tests cover EOA hash/wallet/nonce membership, Solana chain/signature
+membership, and ERC-4337 operation hashes recomputed from the signed request and
+custom EntryPoint. Bundled7702 is now disabled pending independent UID evidence.
+The model treats bytes/hashes as atoms; it cannot establish the correctness of
+these parsing and cryptographic checks. Solana now commits its independent
+signature reservation before the Redis attempt projection, and repeats the exact
+authorization before actual send. A missing projection after that cut parks
+rather than permitting another signature. The Redis-only Solana model does not
+represent this new SQL-to-Redis cut; the real worker regression
+`sql_attempt_precedes_redis_and_unbound_substitution_never_broadcasts` and this
+model's retained-authority assumption cover separate parts, not a composition proof.
+
+### Latest frozen-source correspondence review
+
+The new terminal-attribution mutation checks that a terminal outcome belongs to
+an independently executed attempt of the same admission. Runtime validation also
+binds the exact EOA hash/nonce, Solana chain/signature and computed ERC-4337 hash;
+cryptographic decoding and protocol attribution remain implementation assumptions.
+Exact wire reauthorization and unchanged chain checkpoint are stuttering operations
+after health, ownership, chain-halt and compare-and-set checks. Admission pressure
+rejection has no journal transition. Matching terminal retries may bypass a full
+Redis intake queue without creating work.
+
+EOA `Uncertain` retains its borrowed projection; NOOP submitted reservation now
+precedes dispatch. Both preserve the durable replay binding. The model does not
+promise automated NOOP reconciliation. Solana signature reservation precedes
+Redis insertion; the SQL-before-Redis failure cut parks rather than signs a fresh
+attempt. Bundled EIP-7702 is disabled and legacy jobs park; it is not qualified by
+this model. Streaming snapshot export, API authentication, provider genesis checks
+and semaphore bounds are implementation checks outside the state-machine proof.

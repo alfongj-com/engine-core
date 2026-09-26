@@ -31,6 +31,9 @@ queue:
   external_bundler_send_workers: 100
   userop_confirm_workers: 100
   eoa_executor_workers: 100
+  # Raise only after checking the provider's per-account mempool limit.
+  # A 50 TPS signer with 12 second inclusion needs at least 600 slots.
+  eoa_max_inflight: 50
   solana_executor_workers: 100
   local_concurrency: 100
   polling_interval_ms: 100

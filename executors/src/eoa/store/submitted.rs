@@ -254,7 +254,8 @@ pub struct CleanupReport {
 
 /// This operation takes receipts and RPC transaction counts (exclusive next nonces).
 ///
-/// It fetches submitted transactions with nonce strictly below either transaction count.
+/// It fetches only nonce groups referenced by finalized receipts, below either transaction count.
+/// A bounded group read prevents unrelated retained history from being hydrated.
 /// For each nonce:
 /// - it will go through all the hashes for that nonce
 /// - a receipt ends the intent as success or failure according to its execution status
@@ -295,20 +296,45 @@ impl SafeRedisTransaction for CleanSubmittedTransactions<'_> {
                 });
             }
         }
-        // Fetch transactions up to the latest confirmed nonce for replacements
-        // This includes both transactions that should be confirmed and those that might be replaced
-        let max_count = std::cmp::max(
-            self.transaction_counts.preconfirmed,
-            self.transaction_counts.latest,
+        // Only nonce groups with positive finalized evidence can change. Do not
+        // hydrate an entire retained history while waiting for the chain head.
+        // The zset stays WATCHed through the later EXEC, so membership cannot
+        // change between this read and terminal/replacement cleanup.
+        let max_count = self
+            .transaction_counts
+            .preconfirmed
+            .max(self.transaction_counts.latest);
+        let nonces: std::collections::BTreeSet<_> = self
+            .confirmed_transactions
+            .iter()
+            .map(|tx| tx.nonce)
+            .filter(|nonce| *nonce < max_count)
+            .collect();
+        if nonces.is_empty() {
+            return Ok(Vec::new());
+        }
+        let script = twmq::redis::Script::new(
+            r#"
+            local total = 0
+            for _, nonce in ipairs(ARGV) do
+                total = total + redis.call('ZCOUNT', KEYS[1], nonce, nonce)
+                if total > 4096 then return redis.error_reply('Finality cleanup group budget exceeded') end
+            end
+            local rows = {}
+            for _, nonce in ipairs(ARGV) do
+                local group = redis.call('ZRANGEBYSCORE', KEYS[1], nonce, nonce, 'WITHSCORES')
+                for _, value in ipairs(group) do rows[#rows + 1] = value end
+            end
+            return rows
+        "#,
         );
-        let submitted_txs: Vec<SubmittedTransactionStringWithNonce> = conn
-            .zrangebyscore_withscores(
-                self.keys.submitted_transactions_zset_name(),
-                0,
-                format!("({max_count}"),
-            )
-            .await?;
-
+        let mut query = script.prepare_invoke();
+        query.key(self.keys.submitted_transactions_zset_name());
+        for nonce in nonces {
+            query.arg(nonce);
+        }
+        let submitted_txs: Vec<SubmittedTransactionStringWithNonce> =
+            query.invoke_async(conn).await?;
         let submitted_txs = SubmittedTransactionDehydrated::from_redis_strings(&submitted_txs);
         let hydrated = store.hydrate_all_submitted(submitted_txs).await?;
         Ok(hydrated)
@@ -321,18 +347,32 @@ impl SafeRedisTransaction for CleanSubmittedTransactions<'_> {
     ) -> Self::OperationResult {
         let now = chrono::Utc::now().timestamp_millis().max(0) as u64;
 
-        // Build confirmed lookups
-        let confirmed_hashes: HashSet<&str> = self
+        // Evidence is applicable only to the exact retained hash/ID/nonce.
+        // A repeated terminal receipt has no remaining member and is a no-op.
+        let members: HashSet<_> = submitted_txs
+            .iter()
+            .map(|tx| (tx.hash(), tx.transaction_id(), tx.nonce()))
+            .collect();
+        let confirmed: Vec<_> = self
             .confirmed_transactions
+            .iter()
+            .filter(|tx| {
+                members.contains(&(
+                    tx.transaction_hash.as_str(),
+                    tx.transaction_id.as_str(),
+                    tx.nonce,
+                ))
+            })
+            .collect();
+        let confirmed_hashes: HashSet<&str> = confirmed
             .iter()
             .map(|tx| tx.transaction_hash.as_str())
             .collect();
 
-        let confirmed_ids: BTreeMap<&str, ConfirmedTransaction> = self
-            .confirmed_transactions
+        let confirmed_ids: BTreeMap<&str, ConfirmedTransaction> = confirmed
             .iter()
             .filter(|tx| tx.transaction_id != NO_OP_TRANSACTION_ID)
-            .map(|tx| (tx.transaction_id.as_str(), tx.clone()))
+            .map(|tx| (tx.transaction_id.as_str(), (*tx).clone()))
             .collect();
 
         // Nonce progress alone cannot identify which transaction executed. RPC
@@ -680,22 +720,19 @@ impl SafeRedisTransaction for CleanAndGetRecycledNonces<'_> {
             .map(|tx| tx.1)
             .max(highest_borrowed);
 
-        let highest_submitted_nonce = match highest_submitted_nonce {
-            Some(nonce) => Some(nonce),
-            None => {
-                let cached_tx_count: Option<u64> = conn
-                    .get(self.keys.last_transaction_count_key_name())
-                    .await?;
-
-                let Some(count) = cached_tx_count else {
-                    return Err(TransactionStoreError::NonceSyncRequired {
-                        eoa: self.keys.eoa,
-                        chain_id: self.keys.chain_id,
-                    });
-                };
-                count.checked_sub(1)
-            }
+        // Old unfinalized receipts can outlive newer settled ones. Always
+        // include the observed consumed count, even when old reservations remain;
+        // otherwise cleanup rewinds allocation into already-bound replay keys.
+        let cached_tx_count: Option<u64> = conn
+            .get(self.keys.last_transaction_count_key_name())
+            .await?;
+        let Some(count) = cached_tx_count else {
+            return Err(TransactionStoreError::NonceSyncRequired {
+                eoa: self.keys.eoa,
+                chain_id: self.keys.chain_id,
+            });
         };
+        let highest_submitted_nonce = highest_submitted_nonce.max(count.checked_sub(1));
 
         let recycled_nonces: Vec<u64> = conn
             .zrange(self.keys.recycled_nonces_zset_name(), 0, -1)

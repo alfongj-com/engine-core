@@ -71,6 +71,27 @@ pub async fn cancel_transaction(
         .await
         .map_err(|e| ApiEngineError(e.into()))?;
 
+    if queue_name.as_deref() == Some("external_bundler_send") {
+        if let Some(journal) = engine_core::recovery::global() {
+            let admission = journal
+                .admission("erc4337", &transaction_id)
+                .await
+                .map_err(|error| {
+                    ApiEngineError(engine_core::error::EngineError::RecoveryRequired {
+                        message: error.to_string(),
+                    })
+                })?;
+            if admission.is_some_and(|record| record.replay_key.is_some()) {
+                return Ok((StatusCode::OK, Json(SuccessResponse::new(TransactionCancelResponse {
+                    transaction_id,
+                    result: CancelResult::CannotCancel {
+                        reason: "A broadcast attempt is durably reserved; its on-chain outcome may be unknown. Preserve reconciliation rather than cancelling tracking.".into(),
+                    },
+                }))));
+            }
+        }
+    }
+
     let result = match queue_name.as_deref() {
         Some("external_bundler_send") => {
             // Transaction is in send queue - try to cancel

@@ -133,7 +133,7 @@ impl ExecutionRouter {
 
             SpecificExecutionOptions::Auto(_auto_execution_options) => {
                 Err(EngineError::ValidationError {
-                    message: "Automatic execution is not implemented. Choose EOA, ERC4337, or EIP7702 explicitly.".to_string(),
+                    message: "Automatic execution is not implemented. Choose EOA or ERC4337 explicitly. Bundled EIP7702 is disabled pending on-chain attribution qualification.".to_string(),
                 })
             }
 
@@ -339,16 +339,6 @@ impl ExecutionRouter {
             transaction_type_data: transaction.transaction_type_data.clone(),
         };
 
-        let Some(eoa_transaction_request) = crate::recovery::reserve(
-            "eoa",
-            &base_execution_options.idempotency_key,
-            eoa_transaction_request,
-        )
-        .await?
-        else {
-            return Ok(());
-        };
-
         let eoa_executor_store = EoaExecutorStore::new(
             self.redis.clone(),
             self.namespace.clone(),
@@ -359,11 +349,49 @@ impl ExecutionRouter {
                 .completed_transaction_ttl_seconds,
         );
 
+        if let Err(error) = eoa_executor_store
+            .check_admission_capacity(&base_execution_options.idempotency_key)
+            .await
+        {
+            match error {
+                engine_executors::eoa::store::TransactionStoreError::CapacityExceeded => {
+                    if crate::recovery::terminal_retry(
+                        "eoa",
+                        &base_execution_options.idempotency_key,
+                        &eoa_transaction_request,
+                    )
+                    .await?
+                    {
+                        return Ok(());
+                    }
+                    return Err(EngineError::Overloaded {
+                        message: error.to_string(),
+                    });
+                }
+                other => {
+                    return Err(EngineError::from(TwmqError::Runtime {
+                        message: format!("Cannot check EOA admission capacity: {other}"),
+                    }));
+                }
+            }
+        }
+
+        let Some(eoa_transaction_request) = crate::recovery::reserve(
+            "eoa",
+            &base_execution_options.idempotency_key,
+            eoa_transaction_request,
+        )
+        .await?
+        else {
+            return Ok(());
+        };
+
         // Add transaction to the store
         eoa_executor_store
             .add_transaction(eoa_transaction_request)
             .await
             .map_err(|e| match e {
+                engine_executors::eoa::store::TransactionStoreError::CapacityExceeded => EngineError::Overloaded { message: e.to_string() },
                 engine_executors::eoa::store::TransactionStoreError::TransactionConflict { .. } => EngineError::ValidationError {
                     message: "The idempotency key already belongs to a different or incomplete transaction. Use the original request or reconcile its status.".to_string(),
                 },
@@ -520,8 +548,14 @@ fn validate_execution_request(request: &SendTransactionRequest) -> Result<(), En
         SpecificExecutionOptions::Auto(_)
     ) {
         return Err(EngineError::ValidationError {
-            message: "Automatic execution is not implemented. Choose EOA, ERC4337, or EIP7702 explicitly.".to_string(),
+            message: "Automatic execution is not implemented. Choose EOA or ERC4337 explicitly. Bundled EIP7702 is disabled pending on-chain attribution qualification.".to_string(),
         });
+    }
+    if matches!(
+        request.execution_options.specific,
+        SpecificExecutionOptions::EIP7702(_)
+    ) {
+        engine_executors::eip7702_executor::require_bundled_execution_qualification()?;
     }
     // CALL-based account execution does not implement contract creation. Replacing
     // an absent recipient with address(0) would silently change the user's intent.

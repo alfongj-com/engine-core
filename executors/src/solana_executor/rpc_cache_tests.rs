@@ -213,3 +213,73 @@ async fn typed_client_uses_bounded_sender_and_preserves_null_results() {
     assert_eq!(count.load(Ordering::SeqCst), 1);
     task.abort();
 }
+
+#[tokio::test]
+async fn genesis_validation_caches_only_success_by_endpoint_and_expected_cluster() {
+    let calls = Arc::new(AtomicUsize::new(0));
+    let calls_in = calls.clone();
+    let (url, _, task) = server(move |request| {
+        assert_eq!(request["method"], "getGenesisHash");
+        let n = calls_in.fetch_add(1, Ordering::SeqCst);
+        let body = match n {
+            0 => {
+                json!({"jsonrpc":"2.0","id":request["id"],"error":{"code":-32000,"message":SECRET}})
+            }
+            1 => json!({"jsonrpc":"2.0","id":request["id"],"result":MAINNET_GENESIS}),
+            _ => json!({"jsonrpc":"2.0","id":request["id"],"result":DEVNET_GENESIS}),
+        };
+        response("200 OK", &body.to_string(), "")
+    })
+    .await;
+    let mut cache = SolanaRpcCache::new(SolanaRpcUrls {
+        devnet: url.clone(),
+        mainnet: url.clone(),
+        local: "http://127.0.0.1:1".into(),
+    });
+    for _ in 0..2 {
+        let Err(error) = cache.get_verified(SolanaChainId::SolanaDevnet).await else {
+            panic!("error/wrong genesis must not qualify")
+        };
+        assert!(!format!("{error:?}").contains(SECRET));
+    }
+    let results =
+        futures::future::join_all((0..16).map(|_| cache.get_verified(SolanaChainId::SolanaDevnet)))
+            .await;
+    assert!(results.iter().all(Result::is_ok));
+    assert_eq!(
+        calls.load(Ordering::SeqCst),
+        3,
+        "failures retried; concurrent successes coalesce"
+    );
+    assert!(
+        cache
+            .get_verified(SolanaChainId::SolanaMainnet)
+            .await
+            .is_err(),
+        "same endpoint cannot inherit devnet qualification for mainnet"
+    );
+    assert_eq!(calls.load(Ordering::SeqCst), 4);
+    let (wrong, other_calls, other_task) = server(|request| {
+        response(
+            "200 OK",
+            &json!({"jsonrpc":"2.0","id":request["id"],"result":MAINNET_GENESIS}).to_string(),
+            "",
+        )
+    })
+    .await;
+    cache.urls.devnet = wrong;
+    assert!(
+        cache
+            .get_verified(SolanaChainId::SolanaDevnet)
+            .await
+            .is_err(),
+        "changed endpoint cannot reuse old qualification"
+    );
+    assert_eq!(other_calls.load(Ordering::SeqCst), 1);
+    assert!(
+        cache.get_verified(SolanaChainId::SolanaLocal).await.is_ok(),
+        "local profile is explicitly exempt"
+    );
+    task.abort();
+    other_task.abort();
+}

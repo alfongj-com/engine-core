@@ -101,10 +101,12 @@ failure under the selected policy, with its nonce consumed.
 
 ERC-4337 additionally corroborates the operation's hash, sender, nonce and
 EntryPoint event against the independently fetched canonical outer receipt. An
-outer transaction's success alone is insufficient. EIP-7702 checks finality of
-the outer hash returned by the proprietary bundler, but does not independently
-prove that this hash executed the admitted UID/call. That bundler attribution
-remains an explicit qualification gap; ordinary EOA finality tests do not cover it.
+outer transaction's success alone is insufficient. Durable terminal identity must
+also belong to this admission's recorded broadcast attempts. Bundled EIP-7702
+is disabled at admission and existing send/confirm workers park: the proprietary
+bundler has no qualified independent witness that its outer hash executed the
+admitted UID/call. Direct EOA type-4 execution uses its separate signed-wire and
+receipt gate; ordinary EOA tests do not qualify the disabled bundled protocol.
 
 These cross-checks detect mismatches; they do **not** cryptographically establish
 ancestry across a dishonest or internally inconsistent RPC. The initial design
@@ -118,26 +120,36 @@ completion; independent consensus/parent-chain verification remains separate wor
 | --- | --- |
 | Included receipt, checkpoint has not reached it | Remain provisional; retain attempts. Do not bump fees merely because finality is slow. |
 | Previously observed receipt disappears or its block hash changes before finality | Invalidate that provisional observation, retain its audit history, inspect all attempt hashes, and reconcile the same intent/nonce. No new nonce or second intent follows from absence alone. |
-| RPC error, unavailable tag, stale head or missing historical block | Retry with bounded polling/backoff; preserve evidence. The EOA retained-attempt budget limits new nonce allocation; HTTP admission can still grow pending work. |
+| RPC error, unavailable tag, stale head or missing historical block | Retry with bounded polling/backoff; preserve evidence. The EOA retained-attempt budget limits new nonce allocation; EOA pending admission has its own finite cap; journal history still needs disk management. |
 | Lower latest nonce after reorg or lag | Reconcile retained reservations; never recycle an uncertain nonce or silently reset the reservation ledger from this read. |
 | An observed hash disagreement at the last accepted checkpoint | Durably halt the chain and stop new broadcasts and terminal transitions. Keep previous outcome evidence; require operator reconciliation. Do not automatically compensate or re-sign. |
 
 An unfinalized receipt can guide scheduling, but must not erase the attempt or
 become terminal success. Inclusion/nonce progress frees the ordinary mempool
-window while submitted attempts remain retained. The EOA store applies a 10,000
-retained-attempt ceiling to new nonce allocation, separately from the inflight
-window. This is not a global admission or storage bound; admission, historical
-journal rows and existing recovery work need operational capacity controls.
+window while submitted attempts remain retained. The EOA store applies a 100,000
+retained-hash ceiling to new nonce allocation, separately from the configurable
+inflight window and 25,000 unsigned-pending intake cap per signer/chain. Historical
+journal rows and existing recovery work still need operational capacity controls.
+Nonce cleanup always includes the observed consumed-count floor even if older
+receipts remain; settling newer receipts cannot rewind allocation into old bindings.
 
 EOA receipt polling runs at a five-second cadence with a rotating window of at
-most 256 hashes per wallet. Block assessments are reused only within that worker's
-current batch for identical receipt block identity. There is no global per-chain
-checkpoint polling service or persistent block-assessment cache. AA/7702 retain
-their own bounded retry/backoff schedules. Shared polling is future optimization.
+most 1024 hashes per wallet, fetched directly as bounded Redis rank pages.
+Candidates use the signer count at finalized, or at latest height minus an
+explicit depth (depth zero reuses latest count). This filters likely premature
+receipts; it is never terminal evidence. Low/stale counts delay work, high counts
+only request extra guarded reads, and unsupported reads have no latest fallback. Receipt
+RPC concurrency is 32; distinct-block assessment concurrency is 8. Block evidence
+is reused only within that worker's current batch for identical block identity;
+each receipt still needs its own hash/status/durable reservation checks. Cleanup
+reads only proven nonce groups (4096-record ceiling), preserving unrelated work.
+There is no global per-chain checkpoint service or persistent assessment cache.
+ERC-4337 retains its own retry/backoff; bundled 7702 is parked. See the
+[50 TPS review](throughput-50tps.md) for finite capacity and polling-cost limits.
 
 Checkpoint continuity is checked during active EOA receipt polling, before its
-nonce-filter/empty-result return, and during AA/7702 confirmation polling before
-the bundler lookup. Assessment also checks it for pending/orphaned receipts.
+nonce-filter/empty-result return, and during ERC-4337 confirmation polling before
+the bundler lookup. Bundled 7702 is disabled before that path. Assessment also checks it for pending/orphaned receipts.
 This is **not continuous monitoring** of every previously finalized block: an
 idle chain with no active work has no dedicated watcher. Null history delays
 progress without retracting terminal outcomes. A positive contradiction that is
@@ -231,3 +243,21 @@ cases expose dishonest-provider, post-finality rollback and lost-authority limit
 Final process/Linux gates and frozen-source evidence remain required. Production
 endpoint qualification, immutable admission policy, global backpressure and
 independent 7702 bundler attribution remain open.
+
+## Unknown EOA dispatch outcomes
+
+All post-dispatch RPC errors retain the original signed borrowed attempt and its
+nonce. Recovery first looks for a matching included receipt, then retransmits the
+same wire when unresolved; error text never recycles the nonce. Unknown sends do
+not emit a send-success webhook or terminal failure. The existing worker requeue
+cadence is at least one second, with 32 concurrent recovery RPC tasks; retries can
+continue indefinitely while evidence remains unknown. Admission and inflight
+bounds limit retained work, not lifetime provider spend. Recovery visits all
+borrowed records (potentially 4,096), so slow RPC can delay finality polling; the
+128 new-reservation limit does not cap borrowed or recycled recovery work.
+
+NOOP reserves its submitted hash before network I/O. An actually rejected NOOP
+remains unresolved and may block nonce progress; its exact signed bytes survive
+in the independent journal for explicit offline reconciliation. Automated NOOP
+wire recovery is not implemented. Pre-sign deterministic validation failures
+retain their existing behavior because no network attempt was authorized.

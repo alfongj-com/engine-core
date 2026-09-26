@@ -1,4 +1,4 @@
-use engine_core::execution_options::solana::SolanaChainId;
+use engine_core::{error::EngineError, execution_options::solana::SolanaChainId};
 use moka::future::Cache;
 use serde_json::Value;
 use solana_rpc_client::{
@@ -18,6 +18,11 @@ use std::{
     time::{Duration, Instant},
 };
 use tracing::info;
+
+// Solana SDK ClusterType constants, independently checked against official public
+// RPCs. See docs/design/confirmation-identity.md for provenance and limitations.
+const DEVNET_GENESIS: &str = "EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG";
+const MAINNET_GENESIS: &str = "5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d";
 
 const MAX_RESPONSE_BYTES: usize = 16 * 1024 * 1024;
 
@@ -168,6 +173,7 @@ impl std::fmt::Debug for RpcCacheKey {
 #[derive(Clone)]
 pub struct SolanaRpcCache {
     cache: Cache<RpcCacheKey, Arc<RpcClient>>,
+    verified_clusters: Cache<RpcCacheKey, ()>,
     urls: SolanaRpcUrls,
 }
 
@@ -183,7 +189,14 @@ impl SolanaRpcCache {
     pub fn new(urls: SolanaRpcUrls) -> Self {
         let cache = Cache::new(3);
 
-        Self { cache, urls }
+        Self {
+            cache,
+            urls,
+            verified_clusters: Cache::builder()
+                .max_capacity(3)
+                .time_to_live(Duration::from_secs(300))
+                .build(),
+        }
     }
 
     /// Get or create an RPC client for the given cluster
@@ -213,6 +226,35 @@ impl SolanaRpcCache {
                 ))
             })
             .await
+    }
+
+    /// Verify cluster identity before signing or reconciling named public-cluster
+    /// work. Only successful checks are cached, by endpoint and expected cluster.
+    pub async fn get_verified(
+        &self,
+        chain_id: SolanaChainId,
+    ) -> Result<Arc<RpcClient>, EngineError> {
+        let client = self.get_or_create(chain_id).await;
+        let (expected, rpc_url) = match chain_id {
+            SolanaChainId::SolanaDevnet => (DEVNET_GENESIS, self.urls.devnet.clone()),
+            SolanaChainId::SolanaMainnet => (MAINNET_GENESIS, self.urls.mainnet.clone()),
+            // Local validators have deliberately arbitrary genesis. This profile
+            // is operator-selected, not qualification of an unknown remote cluster.
+            SolanaChainId::SolanaLocal => return Ok(client),
+        };
+        let key = RpcCacheKey { chain_id, rpc_url };
+        self.verified_clusters.try_get_with(key, async {
+            let actual = client.get_genesis_hash().await.map_err(|_| EngineError::ValidationError {
+                message: "Solana cluster identity is unavailable; retry before signing or reconciliation".into(),
+            })?;
+            if actual.to_string() != expected {
+                return Err(EngineError::ValidationError {
+                    message: "Configured Solana endpoint belongs to a different cluster; correct the endpoint before signing or reconciliation".into(),
+                });
+            }
+            Ok::<(),EngineError>(())
+        }).await.map_err(|error| (*error).clone())?;
+        Ok(client)
     }
 
     /// Get the number of cached clients

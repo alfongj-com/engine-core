@@ -22,7 +22,7 @@ absence after an earlier positive read. Both success and revert are explored.
 | Model action | Implementation / real boundary regression |
 |---|---|
 | `Prepare`, `Reserve`, `Discard` | [`pending.rs`](../executors/src/eoa/store/pending.rs), `MovePendingToBorrowedWithIncrementedNonces`; store tests `duplicate_intent_cannot_reserve_two_incremented_nonces`, `removed_pending_request_cannot_be_borrowed_from_a_stale_read` |
-| `Broadcast`, `Crash`, `Restart` | [`send.rs`](../executors/src/eoa/worker/send.rs), persist-before-send; [`error.rs`](../executors/src/eoa/worker/error.rs), transport/unknown errors become `PossiblySent`; actual crash harness [`local_eoa_recovery.py`](../scripts/local_eoa_recovery.py) |
+| `Broadcast`, `Crash`, `Restart` | [`send.rs`](../executors/src/eoa/worker/send.rs), persist-before-send; [`error.rs`](../executors/src/eoa/worker/error.rs), all post-dispatch errors become `Uncertain` and preserve the borrowed signed attempt; actual crash harness [`local_eoa_recovery.py`](../scripts/local_eoa_recovery.py) |
 | `Bump` | [`confirm.rs`](../executors/src/eoa/worker/confirm.rs), `attempt_gas_bump_for_stalled_nonce` → [`transaction.rs`](../executors/src/eoa/worker/transaction.rs), `apply_gas_bump_to_typed_transaction`; numeric caps are separately checked by [Kani](fees.md) |
 | `ReadReceipt`, `MissingReceipt`, `ObserveNonce` | [`confirm.rs`](../executors/src/eoa/worker/confirm.rs), `fetch_confirmed_transaction_receipts`; [`receipt_tests.rs`](../executors/src/eoa/worker/receipt_tests.rs) exercises null, RPC error and wrong hash through HTTP |
 | `Confirm` | [`submitted.rs`](../executors/src/eoa/store/submitted.rs), `CleanSubmittedTransactions`; store regressions `reverted_receipt_fails_once_without_retrying_or_recycling_nonce`, `successful_receipt_still_confirms_once_and_retains_history` |
@@ -58,7 +58,7 @@ terminal inclusion under this stronger environment, **not production liveness
 under arbitrary outages**. No symmetry reduction or state constraint cuts off
 the search. Finite domains bound the model, not a claimed production capacity.
 
-Not modeled: deterministic rejection/nonce recycling, imported conflicting
+Not modeled: pre-dispatch rejection/nonce recycling, imported conflicting
 attempts, external writers using the same key, manual resets, nonce exhaustion,
 pending/preconfirmation ahead of canonical state, contract execution, gas
 estimation, multiple chains/accounts, webhooks, Redis command-level partial
@@ -68,3 +68,50 @@ and remains included unless the explicit reorg boundary is enabled. Runtime
 `Confirm` now consumes evidence from the separate finality layer. The independent
 [recovery authority](disaster-recovery.md) additionally fences replay keys after
 Redis loss; this model's retained-Redis assumption is still explicit.
+
+## Throughput review correspondence (September 26)
+
+The separate [NonceAllocator model](nonce-allocator.md) adds the consumed-count
+floor missing from this model's allocator abstraction. Bounded rank pages,
+cycle-local block reuse and receipt concurrency change scheduling, not the
+`Confirm` premise: exact receipt identity, durable sender/nonce/attempt membership
+and finality evidence are still required. The 20k page/churn and 10k isolated-cleanup
+Redis tests and 32-slot real HTTP test check those implementation boundaries.
+New allocation cycles consume at most 128 new reservations, with ordered
+32-task preparation/send concurrency; up to ten preparation refill passes can
+visit 1,280 rejected pending jobs. Borrowed and recycled recovery have separate
+set-sized work. The inflight window is separately configured. These bounds do not
+prove polling fairness, elapsed-time latency, or sustained terminal throughput.
+
+## Post-dispatch uncertainty review
+
+`Broadcast` records possible network delivery independently from observer state.
+Every RPC error after dispatch now preserves the original borrowed ID, nonce and
+signed wire. Error text (including nonce-high, insufficient funds, invalid
+signature or oversized) cannot prove that a previous dispatch was never accepted.
+An exact included receipt moves borrowed state into the submitted projection
+without a send-success webhook; it still needs the independent finality gate.
+Absent/error/wrong-hash receipt reads retry only the original bytes. A matching
+send acknowledgment may emit the send-attempt webhook, not a terminal event.
+
+The real Redis + HTTP + SQLite regression
+[`rpc_rejection_keeps_original_nonce_wire_and_unknown_webhook_state`](../executors/src/eoa/worker/send_tests.rs)
+uses the normal preparation/reservation/send path and later borrowed recovery. It
+checks eight rejection texts, two independently bound nonces, unchanged wire,
+no uncertain webhook, included-receipt reconciliation, and rejected NOOP retention.
+The model collapses repeated delivery of the same identity and does not parse
+RPC messages or model webhooks. That collapse preserves the safety premise;
+the implementation regression, rather than a new TLC theorem, verifies this mapping.
+
+NOOP now records its submitted hash and removes the recycled nonce before RPC,
+after the independent journal commits its wire. No reply/error can make that
+nonce available to another intent. A rejected or indefinitely absent NOOP has
+no automatic borrowed-wire retry slot: it requires explicit offline journal
+reconciliation. The model's conditional liveness must not be read as proving
+NOOP availability. Normal uncertain borrowed retries occur once per worker cycle,
+with 32 RPC tasks in flight; the 200ms worker requeue delay rounds to one second
+in TWMQ. A recovery cycle still visits every borrowed attempt (potentially the
+configured 4,096 inflight window); high RTT or an outage can therefore delay
+receipt/send work and consume substantial RPC budget. The 128 new-reservation
+cap does not bound this recovery work. Retry lifetime, provider quotas and
+elapsed-time guarantees are not modeled.

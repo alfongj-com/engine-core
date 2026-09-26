@@ -303,3 +303,20 @@ async fn builder_preserves_authorizations_even_when_recipient_is_already_delegat
         }
     }
 }
+
+#[test]
+fn deserialized_cached_hash_cannot_redefine_eoa_or_noop_identity() {
+    let signer = signer();
+    let valid = signed(plain(signer.address()).into(), &signer);
+    let mut encoded = serde_json::to_value(&valid).unwrap();
+    encoded["hash"] = serde_json::json!(alloy::primitives::B256::repeat_byte(99));
+    let tampered: Signed<TypedTransaction> = serde_json::from_value(encoded).unwrap();
+    assert_ne!(
+        tampered.hash(),
+        valid.hash(),
+        "fixture must exercise unchecked cached-hash deserialization"
+    );
+    assert!(validate_eoa_wire(&request(signer.address()), &tampered).is_err());
+    assert!(validate_noop_wire(31337, signer.address(), &tampered).is_err());
+    assert!(validate_eoa_wire(&request(signer.address()), &valid).is_ok());
+}

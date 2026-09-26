@@ -97,6 +97,53 @@ pub(crate) async fn assess<R: TxReceipt>(
     Ok(FinalityAssessment::Pending { canonical: true })
 }
 
+/// A receipt hash alone cannot authorize cleanup of a different Redis nonce.
+/// Bind the projection's wallet/nonce and receipt to the durable reservation.
+pub(crate) async fn validate_eoa_confirmation(
+    kind: &str,
+    id: &str,
+    chain_id: u64,
+    sender: alloy::primitives::Address,
+    nonce: u64,
+    hash: B256,
+) -> Result<(), EngineError> {
+    if let Some(journal) = recovery::global() {
+        validate_eoa_confirmation_with_journal(&journal, kind, id, chain_id, sender, nonce, hash)
+            .await?;
+    }
+    Ok(())
+}
+
+async fn validate_eoa_confirmation_with_journal(
+    journal: &recovery::RecoveryJournal,
+    kind: &str,
+    id: &str,
+    chain_id: u64,
+    sender: alloy::primitives::Address,
+    nonce: u64,
+    hash: B256,
+) -> Result<(), EngineError> {
+    let record = journal
+        .admission(kind, id)
+        .await
+        .map_err(unavailable)?
+        .ok_or_else(|| unavailable("Missing durable confirmation admission"))?;
+    let expected = format!("evm:{chain_id}:{sender:#x}:{nonce}");
+    if record.replay_key.as_deref() != Some(expected.as_str()) {
+        return Err(unavailable(
+            "Confirmation wallet or nonce differs from durable reservation",
+        ));
+    }
+    journal
+        .validate_attempt_identity(
+            kind,
+            id,
+            &json!({"chainId":chain_id,"transactionHash":hash}),
+        )
+        .await
+        .map_err(unavailable)
+}
+
 pub(crate) async fn record_evm_terminal(
     kind: &str,
     id: &str,

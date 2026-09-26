@@ -99,3 +99,17 @@ source/test obligations, not states secretly added to this small one-observer
 gate model. Solana's worker remains mapped to its separate commitment/recovery
 model. Source hashes identify reviewed bytes and force reconsideration after a
 change; they do not prove model composition or implementation refinement.
+
+The later throughput/security review keeps this one-observer model unchanged.
+EOA now reuses block evidence within a bounded cycle with 32 receipt calls and 8
+block assessments in flight, while retaining per-receipt expected-hash, status
+and durable replay-key checks. Checkpoint no-ops still validate CAS and chain
+health. These are source/test obligations; this model does not prove concurrent
+block-cache composition or batch throughput. Bundled7702 is disabled rather than
+claiming its outer receipt independently attributes the admitted UID.
+
+Candidate selection now uses the signer count at the policy head. This only
+restricts when `ReadReceipt` is attempted; it does not weaken `Commit` or replace
+any canonical/finality read. A high-count RPC fixture still produces Pending for
+a provisional receipt; stale-low/unsupported counts can stall availability. No
+scheduling liveness guarantee is claimed by this model.

@@ -310,5 +310,29 @@
     "config": "DisasterRecovery_late_execution_witness.cfg",
     "expected": "invariant:LateExecutionWitnessNotReached",
     "kind": "witness"
+  },
+  {
+    "module": "NonceAllocator",
+    "config": "NonceAllocator.cfg",
+    "expected": "pass",
+    "kind": "positive"
+  },
+  {
+    "module": "NonceAllocator",
+    "config": "NonceAllocator_missing_floor.cfg",
+    "expected": "invariant:ObservedNonceFloor",
+    "kind": "fault"
+  },
+  {
+    "module": "NonceAllocator",
+    "config": "NonceAllocator_old_receipt_witness.cfg",
+    "expected": "invariant:OldReceiptCatchupNotReached",
+    "kind": "witness"
+  },
+  {
+    "module": "DisasterRecovery",
+    "config": "DisasterRecovery_terminal_attribution.cfg",
+    "expected": "invariant:TerminalHasOwnEffect",
+    "kind": "fault"
   }
 ]

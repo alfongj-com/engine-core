@@ -169,7 +169,11 @@ the new namespace, then restart. Old configuration is rejected by ledger metadat
 `engine-recovery quarantine --path ...` records an offline global stop. Mutating
 commands require the same exclusive OS lock as Engine; they fail while it runs.
 Read-only status/export use a consistent SQLite read transaction and remain
-available while Engine runs. Chain-finality conflicts survive namespace recovery;
+available while Engine runs. Export streams one row at a time to a private file,
+syncs it, and publishes it atomically without overwriting an existing destination.
+A failed write leaves no partial destination. Long snapshots can delay WAL
+reclamation, so allow disk headroom for both the export and concurrent journal writes.
+Chain-finality conflicts survive namespace recovery;
 this command is not a way to reset those fences. Contradictory terminal witnesses
 also block namespace recovery until a dedicated reconciliation procedure exists.
 

@@ -92,6 +92,7 @@ fn validate_eoa_wire(
     request: &EoaTransactionRequest,
     tx: &Signed<TypedTransaction>,
 ) -> Result<(), EoaExecutorWorkerError> {
+    validate_signed_hash(tx)?;
     let transaction = tx.tx();
     let expected_authorizations = match &request.transaction_type_data {
         Some(engine_core::transaction::TransactionTypeData::Eip7702(data)) => {
@@ -190,6 +191,7 @@ fn validate_noop_wire(
     sender: alloy::primitives::Address,
     tx: &Signed<TypedTransaction>,
 ) -> Result<(), EoaExecutorWorkerError> {
+    validate_signed_hash(tx)?;
     let transaction = tx.tx();
     if transaction.chain_id() != Some(chain_id)
         || transaction.to() != Some(sender)
@@ -207,6 +209,18 @@ fn validate_noop_wire(
     {
         return Err(eoa_error(
             "Signed NOOP does not match its durable reservation",
+        ));
+    }
+    Ok(())
+}
+
+/// Alloy's Signed deserializer accepts a cached hash without recomputing it.
+/// The durable identity must refer to the bytes we actually authorize/broadcast.
+fn validate_signed_hash(tx: &Signed<TypedTransaction>) -> Result<(), EoaExecutorWorkerError> {
+    let envelope: TxEnvelope = tx.clone().into();
+    if alloy::primitives::keccak256(envelope.encoded_2718()) != *tx.hash() {
+        return Err(eoa_error(
+            "Cached transaction hash does not match signed wire bytes",
         ));
     }
     Ok(())

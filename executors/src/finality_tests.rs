@@ -2,9 +2,7 @@
 use super::*;
 use crate::{
     eip7702_executor::{
-        confirm::{
-            Eip7702ConfirmationError, Eip7702ConfirmationHandler, Eip7702ConfirmationJobData,
-        },
+        confirm::{Eip7702ConfirmationHandler, Eip7702ConfirmationJobData},
         send::Eip7702Sender,
     },
     eoa::{
@@ -447,7 +445,7 @@ async fn eoa_provisional_revert_or_orphan_retains_nonce_and_sending_capacity_unt
 
 #[tokio::test]
 #[ignore = "requires disposable Redis in TEST_REDIS_URL"]
-async fn eip7702_old_jobs_wait_through_inclusion_reorg_and_unsupported_finality() {
+async fn eip7702_unqualified_jobs_park_without_rpc_or_registry_cleanup() {
     let f = Fixture::new().await;
     let handler = Eip7702ConfirmationHandler {
         chain_service: Arc::new(Service(f.chain.clone())),
@@ -484,15 +482,11 @@ async fn eip7702_old_jobs_wait_through_inclusion_reorg_and_unsupported_finality(
     }
     assert_nack(handler.process(&queued).await);
     f.state.lock().unwrap().unsupported = false;
-    assert!(matches!(
-        handler.process(&queued).await,
-        Err(JobError::Fail(
-            Eip7702ConfirmationError::TransactionFailed {
-                finality: Some(_),
-                ..
-            }
-        ))
-    ));
+    assert_nack(handler.process(&queued).await);
+    assert!(
+        f.state.lock().unwrap().calls.is_empty(),
+        "unqualified execution must not query or broadcast"
+    );
     assert_eq!(
         f.registry
             .get_transaction_queue("intent")
@@ -501,6 +495,47 @@ async fn eip7702_old_jobs_wait_through_inclusion_reorg_and_unsupported_finality(
             .as_deref(),
         Some("eip7702_confirm"),
         "process does not clean before durable queue commit"
+    );
+    let confirm_queue = Arc::new(
+        Queue::builder()
+            .redis_connection_manager(f.redis.clone(), f.client.clone())
+            .name(format!("{}:disabled-eip-confirm", f.namespace))
+            .handler(handler)
+            .build()
+            .await
+            .unwrap(),
+    );
+    let sender = crate::eip7702_executor::send::Eip7702SendHandler {
+        chain_service: Arc::new(Service(f.chain.clone())),
+        eoa_signer: Arc::new(EoaSigner::new(
+            thirdweb_core::iaw::IAWClient::new("http://127.0.0.1:1").unwrap(),
+        )),
+        webhook_queue: f.webhooks.clone(),
+        confirm_queue,
+        transaction_registry: f.registry.clone(),
+        delegation_contract_cache:
+            crate::eip7702_executor::delegation_cache::DelegationContractCache::new(
+                moka::future::Cache::new(1),
+            ),
+    };
+    for nonce in [None, Some(U256::from(123))] {
+        let send_job = job(crate::eip7702_executor::send::Eip7702SendJobData {
+            transaction_id: "intent".into(),
+            chain_id: 31337,
+            transactions: vec![],
+            execution_options: serde_json::from_value(json!({"from":Address::ZERO})).unwrap(),
+            signing_credential: SigningCredential::Environment {
+                address: Address::ZERO,
+            },
+            webhook_options: vec![],
+            rpc_credentials: RpcCredentials::Configured,
+            nonce,
+        });
+        assert_nack(sender.process(&send_job).await);
+    }
+    assert!(
+        f.state.lock().unwrap().calls.is_empty(),
+        "legacy send must park without signing or RPC"
     );
     f.cleanup().await;
 }
@@ -641,6 +676,34 @@ async fn terminal_journal_restores_winning_eoa_hash_only_for_original_intent_and
             .await
             .is_err()
     );
+    assert!(
+        validate_eoa_confirmation_with_journal(
+            &journal,
+            "eoa",
+            "intent",
+            31337,
+            Address::ZERO,
+            7,
+            B256::repeat_byte(1)
+        )
+        .await
+        .is_ok()
+    );
+    for (chain, sender, nonce, hash) in [
+        (31337, Address::ZERO, 8, B256::repeat_byte(1)),
+        (1, Address::ZERO, 7, B256::repeat_byte(1)),
+        (31337, Address::repeat_byte(9), 7, B256::repeat_byte(1)),
+        (31337, Address::ZERO, 7, B256::repeat_byte(99)),
+    ] {
+        assert!(
+            validate_eoa_confirmation_with_journal(
+                &journal, "eoa", "intent", chain, sender, nonce, hash
+            )
+            .await
+            .is_err(),
+            "known hash cannot authorize cleanup with a changed nonce/chain/sender, nor can an unrelated hash settle this intent"
+        );
+    }
     let mut changed = request;
     changed.value = U256::from(2);
     assert!(
@@ -670,7 +733,7 @@ async fn active_poll_detects_checkpoint_rollback_without_new_receipt() {
     let Ok(scenario) = std::env::var(CHILD) else {
         // Global journal installation is intentionally process-wide; exercise each
         // real worker and direct pending-assessment path in an isolated process.
-        for scenario in ["eoa", "erc4337", "eip7702", "pending", "policy"] {
+        for scenario in ["eoa", "erc4337", "pending", "policy"] {
             let output = std::process::Command::new(std::env::current_exe().unwrap())
                 .args([
                     "--exact",
@@ -781,7 +844,7 @@ async fn active_poll_detects_checkpoint_rollback_without_new_receipt() {
                 f.webhooks.clone(),
                 f.registry.clone(),
             );
-            let queued = job(UserOpConfirmationJobData {
+            let mut queued = job(UserOpConfirmationJobData {
                 transaction_id: "intent".into(),
                 chain_id: 31337,
                 account_address: Address::ZERO,
@@ -794,6 +857,7 @@ async fn active_poll_detects_checkpoint_rollback_without_new_receipt() {
                 rpc_credentials: RpcCredentials::Configured,
                 original_queued_timestamp: None,
             });
+            seed_userop_journal(&journal, &mut queued.job.data).await;
             assert_nack(handler.process(&queued).await);
         }
         "eip7702" => {
@@ -842,6 +906,212 @@ async fn active_poll_detects_checkpoint_rollback_without_new_receipt() {
             "eth_getBlockByNumber" | "eth_getTransactionCount" | "eth_getBalance"
         )),
         "continuity must run before missing receipt/bundler lookup, without broadcasting"
+    );
+    let _: () = f
+        .redis
+        .clone()
+        .del(format!("{journal_namespace}:recovery:checkpoint"))
+        .await
+        .unwrap();
+    f.cleanup().await;
+    std::fs::remove_dir_all(directory).unwrap();
+}
+
+async fn seed_userop_journal(
+    journal: &recovery::RecoveryJournal,
+    confirmation: &mut UserOpConfirmationJobData,
+) -> crate::external_bundler::send::ExternalBundlerSendJobData {
+    use crate::external_bundler::send::ExternalBundlerSendJobData;
+    use alloy::rpc::types::UserOperation;
+    let entrypoint = confirmation.entrypoint_address.unwrap();
+    let userop = engine_aa_types::VersionedUserOp::V0_6(UserOperation {
+        sender: confirmation.account_address,
+        nonce: confirmation.nonce,
+        init_code: Bytes::new(),
+        call_data: Bytes::new(),
+        call_gas_limit: U256::from(100_000),
+        verification_gas_limit: U256::from(200_000),
+        pre_verification_gas: U256::from(30_000),
+        max_fee_per_gas: U256::from(10),
+        max_priority_fee_per_gas: U256::from(1),
+        paymaster_and_data: Bytes::new(),
+        signature: Bytes::from(vec![1; 65]),
+    });
+    confirmation.user_op_hash = Bytes::copy_from_slice(
+        userop
+            .hash_with_custom_entrypoint(confirmation.chain_id, entrypoint)
+            .unwrap()
+            .as_slice(),
+    );
+    let data=ExternalBundlerSendJobData {
+        transaction_id:confirmation.transaction_id.clone(), chain_id:confirmation.chain_id,
+        transactions:vec![], execution_options:serde_json::from_value(json!({"signerAddress":Address::ZERO,
+            "entrypointAddress":entrypoint,"entrypointVersion":"0.6","smartAccountAddress":confirmation.account_address})).unwrap(),
+        signing_credential:SigningCredential::Environment{address:Address::ZERO}, webhook_options:vec![],
+        rpc_credentials:RpcCredentials::Configured,pregenerated_nonce:Some(confirmation.nonce),
+    };
+    let payload = serde_json::to_value(&data).unwrap();
+    journal
+        .reserve_admission(
+            "erc4337",
+            &data.transaction_id,
+            &recovery::admission_fingerprint("erc4337", &payload).unwrap(),
+            payload,
+        )
+        .await
+        .unwrap();
+    journal.before_broadcast("erc4337",&data.transaction_id,&format!("erc4337:{}:{entrypoint:#x}:{:#x}:{}",data.chain_id,confirmation.account_address,confirmation.nonce),
+        json!({"chainId":data.chain_id,"sender":confirmation.account_address,"entrypoint":entrypoint,"nonce":confirmation.nonce,"userOperation":userop})).await.unwrap();
+    data
+}
+
+#[tokio::test]
+#[ignore = "requires disposable Redis in TEST_REDIS_URL"]
+async fn userop_confirmation_rejects_projection_substitution_before_rpc() {
+    const CHILD: &str = "ENGINE_TEST_USEROP_IDENTITY_CHILD";
+    if std::env::var_os(CHILD).is_none() {
+        let output = std::process::Command::new(std::env::current_exe().unwrap())
+            .args([
+                "--exact",
+                "finality::tests::userop_confirmation_rejects_projection_substitution_before_rpc",
+                "--ignored",
+                "--nocapture",
+            ])
+            .env(CHILD, "1")
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "{} {}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+        return;
+    }
+    let f = Fixture::new().await;
+    let directory = std::env::temp_dir().join(format!("userop-identity-{}", uuid::Uuid::new_v4()));
+    let path = directory.join("ledger.sqlite");
+    let journal_namespace = format!("{}_journal", f.namespace.replace(':', "_"));
+    let url = std::env::var("TEST_REDIS_URL").unwrap();
+    recovery::RecoveryJournal::initialize(&path, &url, Some(journal_namespace.clone()))
+        .await
+        .unwrap();
+    let journal = recovery::RecoveryJournal::open(&path, &url, Some(journal_namespace.clone()))
+        .await
+        .unwrap();
+    recovery::install(journal.clone()).unwrap();
+    let mut queued = job(UserOpConfirmationJobData {
+        transaction_id: "intent".into(),
+        chain_id: 31337,
+        account_address: Address::repeat_byte(5),
+        user_op_hash: Bytes::new(),
+        nonce: U256::from(7),
+        entrypoint_address: Some(Address::repeat_byte(4)),
+        deployment_lock_acquired: false,
+        deployment_lock_id: None,
+        webhook_options: vec![],
+        rpc_credentials: RpcCredentials::Configured,
+        original_queued_timestamp: None,
+    });
+    let admitted = seed_userop_journal(&journal, &mut queued.job.data).await;
+    let handler = UserOpConfirmationHandler::new(
+        Arc::new(Service(f.chain.clone())),
+        RedisDeploymentLock::new(f.client.clone())
+            .await
+            .unwrap()
+            .with_namespace(Some(f.namespace.clone())),
+        f.webhooks.clone(),
+        f.registry.clone(),
+    );
+    let mut variants = vec![];
+    let mut changed = queued.clone();
+    changed.job.data.user_op_hash = Bytes::from(vec![99; 32]);
+    variants.push(changed);
+    let mut changed = queued.clone();
+    changed.job.data.account_address = Address::repeat_byte(99);
+    variants.push(changed);
+    let mut changed = queued.clone();
+    changed.job.data.nonce += U256::from(1);
+    variants.push(changed);
+    let mut changed = queued.clone();
+    changed.job.data.entrypoint_address = Some(Address::repeat_byte(99));
+    variants.push(changed);
+    let mut changed = queued.clone();
+    changed.job.data.chain_id = 1;
+    variants.push(changed);
+    let mut changed = queued.clone();
+    changed.job.id = "different-id".into();
+    variants.push(changed);
+    for changed in variants {
+        assert_nack(handler.process(&changed).await);
+    }
+    assert!(
+        f.state.lock().unwrap().calls.is_empty(),
+        "corrupted confirmation must not even query an unrelated operation"
+    );
+    assert_nack(handler.process(&queued).await);
+    assert_eq!(
+        f.state.lock().unwrap().calls,
+        vec!["eth_getUserOperationReceipt"],
+        "unchanged identity reaches normal reconciliation"
+    );
+
+    // Configuration can disappear after an earlier accepted/unknown send.
+    // It must not convert that already reserved operation into queue failure.
+    #[derive(Clone)]
+    struct OfflineService(TestChain);
+    impl ChainService for OfflineService {
+        fn get_chain(&self, _: u64) -> Result<impl Chain + Clone, EngineError> {
+            let _ = &self.0;
+            Err::<TestChain, _>(EngineError::ValidationError {
+                message: "chain configuration unavailable".into(),
+            })
+        }
+    }
+    use crate::external_bundler::{
+        deployment::RedisDeploymentCache, send::ExternalBundlerSendHandler,
+    };
+    let service = Arc::new(OfflineService(f.chain.clone()));
+    let confirm = Arc::new(
+        Queue::builder()
+            .redis_connection_manager(f.redis.clone(), f.client.clone())
+            .name(format!("{}:confirm", f.namespace))
+            .handler(UserOpConfirmationHandler::new(
+                service.clone(),
+                RedisDeploymentLock::new(f.client.clone()).await.unwrap(),
+                f.webhooks.clone(),
+                f.registry.clone(),
+            ))
+            .build()
+            .await
+            .unwrap(),
+    );
+    let sender = ExternalBundlerSendHandler {
+        chain_service: service,
+        userop_signer: Arc::new(engine_core::userop::UserOpSigner {
+            iaw_client: thirdweb_core::iaw::IAWClient::new("http://127.0.0.1:1").unwrap(),
+        }),
+        deployment_cache: RedisDeploymentCache::new(f.client.clone()).await.unwrap(),
+        deployment_lock: RedisDeploymentLock::new(f.client.clone()).await.unwrap(),
+        webhook_queue: f.webhooks.clone(),
+        confirm_queue: confirm,
+        transaction_registry: f.registry.clone(),
+    };
+    let mut send_job = job(admitted);
+    assert_nack(sender.process(&send_job).await); // old age also parks
+    send_job.job.created_at = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_secs();
+    assert_nack(sender.process(&send_job).await); // later deterministic setup error preserves unknown outcome
+    assert_eq!(
+        journal
+            .admission("erc4337", "intent")
+            .await
+            .unwrap()
+            .unwrap()
+            .state,
+        recovery::AdmissionState::Admitted
     );
     let _: () = f
         .redis

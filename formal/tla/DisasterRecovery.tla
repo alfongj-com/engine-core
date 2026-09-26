@@ -3,7 +3,7 @@ EXTENDS Naturals, FiniteSets
 
 CONSTANTS IDs, Keys, Workers, Payloads, None, MaxWrites, FaultSendBeforeJournal,
           FaultIdBinding, FaultKeyBinding, FaultSharedLock, FaultFreshRecovery,
-          FaultRetryUid, AllowAuthorityRollback
+          FaultRetryUid, FaultTerminalAttribution, AllowAuthorityRollback
 
 Token(epoch, checkpoint) == [epoch |-> epoch, checkpoint |-> checkpoint]
 Attempt(id, key, payload) == [id |-> id, key |-> key, payload |-> payload]
@@ -73,7 +73,7 @@ TerminalCommit(w, id) ==
     /\ s.state[id] \in {"admitted", "quarantined"}
     \* Finality/evidence validation is a separate model: this transition assumes
     \* a matching real execution has been conclusively reconciled.
-    /\ \E a \in s.effects : a.id = id /\ a \in s.attempts
+    /\ \E a \in s.effects : (a.id = id \/ FaultTerminalAttribution) /\ a \in s.attempts
     /\ s' = [s EXCEPT !.state[id] = "terminal", !.terminalEver = @ \cup {id},
          !.checkpoint = @ + 1, !.writes = @ + 1,
          !.pending = [kind |-> "terminal", worker |-> w, id |-> id,
@@ -207,5 +207,7 @@ OriginalPayloadOnRetry == s.retriesUseOriginal
 AtMostOneEffectPerId == \A a,b \in s.effects : a.id = b.id => a.key = b.key
 AttemptedRecoveryIsQuarantined == \A id \in s.recoveryQuarantine :
     s.state[id] \in {"quarantined", "terminal"}
+TerminalHasOwnEffect == \A id \in IDs : s.state[id] = "terminal" =>
+    \E a \in s.effects : a.id = id /\ a \in s.attempts
 LateExecutionWitnessNotReached == ~s.lateExecution
 =============================================================================

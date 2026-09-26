@@ -73,6 +73,12 @@ pub struct QueueConfig {
     pub external_bundler_send_workers: usize,
     pub userop_confirm_workers: usize,
     pub eoa_executor_workers: usize,
+    /// Per signer/chain mempool window. Size for RPC account limits and inclusion latency.
+    #[serde(
+        default = "default_eoa_max_inflight",
+        deserialize_with = "deserialize_eoa_max_inflight"
+    )]
+    pub eoa_max_inflight: u64,
     pub solana_executor_workers: usize,
 
     pub execution_namespace: Option<String>,
@@ -108,6 +114,31 @@ impl Default for MonitoringConfig {
 
 fn default_completed_transaction_ttl_seconds() -> u64 {
     86400 // 1 day in seconds
+}
+
+fn default_eoa_max_inflight() -> u64 {
+    50
+}
+
+fn deserialize_eoa_max_inflight<'de, D: serde::Deserializer<'de>>(
+    deserializer: D,
+) -> Result<u64, D::Error> {
+    #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum Number {
+        Integer(u64),
+        Text(String),
+    }
+    let value = match Number::deserialize(deserializer)? {
+        Number::Integer(value) => value,
+        Number::Text(value) => value.parse().map_err(serde::de::Error::custom)?,
+    };
+    if !(1..=4096).contains(&value) {
+        return Err(serde::de::Error::custom(
+            "eoa_max_inflight must be between 1 and 4096",
+        ));
+    }
+    Ok(value)
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -236,6 +267,48 @@ impl TryFrom<String> for Environment {
             other => Err(format!(
                 "{other} is not a supported environment. Use either `local`, `development`, or `production`."
             )),
+        }
+    }
+}
+
+#[cfg(test)]
+mod throughput_config_tests {
+    use super::*;
+
+    #[derive(Deserialize)]
+    struct Window {
+        #[serde(
+            default = "default_eoa_max_inflight",
+            deserialize_with = "deserialize_eoa_max_inflight"
+        )]
+        eoa_max_inflight: u64,
+    }
+
+    #[test]
+    fn inflight_window_accepts_environment_values_but_rejects_unsafe_bounds() {
+        assert_eq!(
+            serde_json::from_str::<Window>("{}")
+                .unwrap()
+                .eoa_max_inflight,
+            50
+        );
+        for value in [serde_json::json!(1024), serde_json::json!("1024")] {
+            let config: Window =
+                serde_json::from_value(serde_json::json!({"eoa_max_inflight":value})).unwrap();
+            assert_eq!(config.eoa_max_inflight, 1024);
+        }
+        for value in [
+            serde_json::json!(0),
+            serde_json::json!(4097),
+            serde_json::json!(-1),
+            serde_json::json!(1.5),
+            serde_json::json!(true),
+            serde_json::json!("1e3"),
+        ] {
+            assert!(
+                serde_json::from_value::<Window>(serde_json::json!({"eoa_max_inflight":value}))
+                    .is_err()
+            );
         }
     }
 }

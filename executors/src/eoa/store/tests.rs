@@ -645,6 +645,47 @@ fn serializable_request(id: &str) -> EoaTransactionRequest {
 
 #[tokio::test]
 #[ignore = "requires disposable Redis in TEST_REDIS_URL"]
+async fn full_pending_queue_rejects_new_work_but_preserves_identical_retry() {
+    let fixture = Fixture::new().await;
+    let store = fixture.store();
+    let original = serializable_request("existing");
+    store.add_transaction(original.clone()).await.unwrap();
+    let mut fill = twmq::redis::pipe();
+    for index in 1..crate::eoa::store::MAX_PENDING_TRANSACTIONS {
+        fill.zadd(
+            store.pending_transactions_zset_name(),
+            format!("fill-{index}"),
+            index,
+        );
+    }
+    let _: () = fill.query_async(&mut fixture.shared.clone()).await.unwrap();
+    assert!(matches!(
+        store.check_admission_capacity("new").await,
+        Err(TransactionStoreError::CapacityExceeded)
+    ));
+    // Race the actual atomic enqueue independently of the advisory precheck.
+    for result in futures::future::join_all(
+        (0..16).map(|n| store.add_transaction(serializable_request(&format!("new-{n}")))),
+    )
+    .await
+    {
+        assert!(matches!(
+            result,
+            Err(TransactionStoreError::CapacityExceeded)
+        ));
+    }
+    store.check_admission_capacity("existing").await.unwrap();
+    store.add_transaction(original).await.unwrap();
+    assert_eq!(
+        store.get_pending_transactions_count().await.unwrap(),
+        crate::eoa::store::MAX_PENDING_TRANSACTIONS
+    );
+    assert!(store.get_transaction_data("new-0").await.unwrap().is_none());
+    fixture.cleanup().await;
+}
+
+#[tokio::test]
+#[ignore = "requires disposable Redis in TEST_REDIS_URL"]
 async fn repeated_admission_preserves_pending_inflight_and_completed_state() {
     for status in ["pending", "borrowed", "submitted", "confirmed", "failed"] {
         let fixture = Fixture::new().await;
@@ -822,6 +863,7 @@ async fn mined_receipt_is_terminal(succeeded: bool) {
         "type": "0x2"
     });
     let confirmed = ConfirmedTransaction {
+        nonce: 0,
         transaction_id: id.into(),
         transaction_hash: original.hash.clone(),
         receipt: serde_json::from_value(receipt_json.clone()).unwrap(),
@@ -1092,6 +1134,7 @@ async fn noop_cleanup_requires_final_receipt_for_each_nonce_not_shared_noop_id()
     owner
         .clean_submitted_transactions(
             &[ConfirmedTransaction {
+                nonce: 0,
                 transaction_hash: first.transaction_hash,
                 transaction_id: crate::eoa::store::NO_OP_TRANSACTION_ID.into(),
                 receipt: serde_json::from_value(receipt.clone()).unwrap(),
@@ -1106,5 +1149,216 @@ async fn noop_cleanup_requires_final_receipt_for_each_nonce_not_shared_noop_id()
     let remaining = owner.get_all_submitted_transactions().await.unwrap();
     assert_eq!(remaining.len(), 1);
     assert_eq!(remaining[0].nonce, 1);
+    fixture.cleanup().await;
+}
+
+#[tokio::test]
+#[ignore = "requires disposable Redis in TEST_REDIS_URL"]
+async fn retained_old_receipts_never_rewind_below_observed_chain_count() {
+    let fixture = Fixture::new().await;
+    let owner = fixture.owner().await;
+    let old = crate::eoa::store::SubmittedNoopTransaction {
+        nonce: 250,
+        transaction_hash: alloy::primitives::B256::repeat_byte(1).to_string(),
+    };
+    let (member, nonce) = old.to_redis_string_with_nonce();
+    let _: () = twmq::redis::pipe()
+        .zadd(owner.submitted_transactions_zset_name(), member, nonce)
+        .set(owner.last_transaction_count_key_name(), 313)
+        .set(owner.optimistic_transaction_count_key_name(), 313)
+        .query_async(&mut fixture.shared.clone())
+        .await
+        .unwrap();
+    owner.clean_and_get_recycled_nonces().await.unwrap();
+    assert_eq!(
+        owner.get_optimistic_transaction_count().await.unwrap(),
+        313,
+        "retaining an old unfinalized receipt must not reuse a consumed nonce"
+    );
+    assert_eq!(owner.get_submitted_transactions_count().await.unwrap(), 1);
+    fixture.cleanup().await;
+}
+
+#[tokio::test]
+#[ignore = "requires disposable Redis in TEST_REDIS_URL"]
+async fn finality_page_bounds_large_backlog_and_rotates_after_deletion() {
+    use crate::eoa::store::SubmittedNoopTransaction;
+    let fixture = Fixture::new().await;
+    let store = fixture.store();
+    let eligible = 20_003u64;
+    for start in (0..eligible + 20).step_by(1000) {
+        let mut pipe = twmq::redis::pipe();
+        for nonce in start..(start + 1000).min(eligible + 20) {
+            let tx = SubmittedNoopTransaction {
+                nonce,
+                transaction_hash: format!("0x{nonce:064x}"),
+            };
+            let (member, score) = tx.to_redis_string_with_nonce();
+            pipe.zadd(store.submitted_transactions_zset_name(), member, score);
+        }
+        pipe.query_async::<()>(&mut fixture.shared.clone())
+            .await
+            .unwrap();
+    }
+    let mut cursor = 0;
+    let mut seen = std::collections::HashSet::new();
+    for _ in 0..eligible.div_ceil(1024) {
+        let (page, next) = store
+            .get_submitted_transaction_page(eligible, cursor, 1024)
+            .await
+            .unwrap();
+        assert_eq!(page.len(), 1024);
+        assert!(page.iter().all(|tx| tx.nonce < eligible));
+        seen.extend(page.into_iter().map(|tx| tx.nonce));
+        cursor = next;
+    }
+    assert_eq!(seen.len(), eligible as usize);
+    assert!(
+        store
+            .get_submitted_transaction_page(0, cursor, 1024)
+            .await
+            .unwrap()
+            .0
+            .is_empty()
+    );
+    // Rank cursors are advisory; deletions shift them. A full subsequent sweep
+    // must still reach every survivor and newly eligible nonce, without loss.
+    fixture
+        .shared
+        .clone()
+        .zrembyscore::<_, _, _, ()>(store.submitted_transactions_zset_name(), 0, 9000)
+        .await
+        .unwrap();
+    let count = eligible + 20;
+    seen.clear();
+    for _ in 0..(count - 9001).div_ceil(1024) + 1 {
+        let (page, next) = store
+            .get_submitted_transaction_page(count, cursor, 1024)
+            .await
+            .unwrap();
+        assert_eq!(page.len(), 1024);
+        seen.extend(page.into_iter().map(|tx| tx.nonce));
+        cursor = next;
+    }
+    assert_eq!(seen.len(), (count - 9001) as usize);
+    assert!(seen.contains(&(count - 1)));
+    let (page, _) = store
+        .get_submitted_transaction_page(9002, usize::MAX, usize::MAX)
+        .await
+        .unwrap();
+    assert_eq!(
+        page.len(),
+        1,
+        "a wrapped small set must not duplicate its only member"
+    );
+    assert_eq!(page[0].nonce, 9001);
+    let (page, _) = store
+        .get_submitted_transaction_page(count, 0, usize::MAX)
+        .await
+        .unwrap();
+    assert_eq!(
+        page.len(),
+        4096,
+        "store enforces an absolute response bound"
+    );
+    fixture.cleanup().await;
+}
+
+#[tokio::test]
+#[ignore = "requires disposable Redis in TEST_REDIS_URL"]
+async fn cleanup_reads_only_proven_nonce_groups_and_requires_exact_membership() {
+    use crate::eoa::store::SubmittedTransactionDehydrated;
+    use serde_json::json;
+    let fixture = Fixture::new().await;
+    let owner = fixture.owner().await;
+    let webhooks = fixture.webhook_queue().await;
+    let mut conn = fixture.shared.clone();
+    // Unrelated old unresolved records intentionally lack request payloads. A
+    // full-history hydration would fail; their presence cannot block a separate
+    // finalized nonce or cause them to be dropped/requeued.
+    for start in (0..10_000).step_by(1000) {
+        let mut pipe = twmq::redis::pipe();
+        for nonce in start..start + 1000 {
+            pipe.zadd(
+                owner.submitted_transactions_zset_name(),
+                format!("0x{nonce:064x}:unrelated-{nonce}:1:1"),
+                nonce,
+            );
+        }
+        pipe.query_async::<()>(&mut conn).await.unwrap();
+    }
+    let winning_hash = alloy::primitives::B256::repeat_byte(4).to_string();
+    for (id, hash) in [
+        ("winner", winning_hash.clone()),
+        (
+            "competitor",
+            alloy::primitives::B256::repeat_byte(5).to_string(),
+        ),
+    ] {
+        let request = serializable_request(id);
+        let tx = SubmittedTransactionDehydrated {
+            nonce: 10_000,
+            transaction_hash: hash,
+            transaction_id: id.into(),
+            submitted_at: 1,
+            queued_at: 1,
+        };
+        let (member, nonce) = tx.to_redis_string_with_nonce();
+        twmq::redis::pipe()
+            .hset(
+                owner.transaction_data_key_name(id),
+                "user_request",
+                serde_json::to_string(&request).unwrap(),
+            )
+            .hset(owner.transaction_data_key_name(id), "status", "submitted")
+            .zadd(owner.submitted_transactions_zset_name(), member, nonce)
+            .query_async::<()>(&mut conn)
+            .await
+            .unwrap();
+    }
+    let receipt = json!({"transactionHash":winning_hash,"transactionIndex":"0x0","blockNumber":"0xa","blockHash":alloy::primitives::B256::repeat_byte(9),
+        "from":Address::ZERO,"to":Address::ZERO,"cumulativeGasUsed":"0x5208","gasUsed":"0x5208","effectiveGasPrice":"0x1","contractAddress":null,"logs":[],
+        "logsBloom":format!("0x{}","00".repeat(256)),"status":"0x1","type":"0x2"});
+    let mut confirmed = ConfirmedTransaction {
+        nonce: 10_000,
+        transaction_id: "competitor".into(),
+        transaction_hash: winning_hash,
+        receipt: serde_json::from_value(receipt.clone()).unwrap(),
+        receipt_serialized: receipt.to_string(),
+        finality: fixture_finality(),
+    };
+    let counts = crate::TransactionCounts {
+        latest: 10_001,
+        preconfirmed: 10_001,
+    };
+    let report = owner
+        .clean_submitted_transactions(&[confirmed.clone()], counts.clone(), webhooks.clone())
+        .await
+        .unwrap();
+    assert_eq!(
+        report.moved_to_success + report.moved_to_pending,
+        0,
+        "a receipt cannot be attributed to another retained ID"
+    );
+    assert_eq!(
+        owner.get_submitted_transactions_count().await.unwrap(),
+        10_002
+    );
+    confirmed.transaction_id = "winner".into();
+    let report = owner
+        .clean_submitted_transactions(&[confirmed], counts, webhooks)
+        .await
+        .unwrap();
+    assert_eq!(
+        report.total_hashes_processed, 2,
+        "only the proven nonce group may be hydrated"
+    );
+    assert_eq!(report.moved_to_success, 1);
+    assert_eq!(report.moved_to_pending, 1);
+    assert_eq!(
+        owner.get_submitted_transactions_count().await.unwrap(),
+        10_000
+    );
+    assert_eq!(owner.get_pending_transactions_count().await.unwrap(), 1);
     fixture.cleanup().await;
 }

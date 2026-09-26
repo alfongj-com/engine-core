@@ -1064,3 +1064,210 @@ async fn terminal_journal_resumes_cleanup_and_missing_projection_never_signs() {
     // The process owns the installed journal until exit; unlink only its disposable files.
     std::fs::remove_dir_all(directory).unwrap();
 }
+
+#[tokio::test]
+#[ignore = "requires disposable Redis in TEST_REDIS_URL"]
+async fn sql_attempt_precedes_redis_and_unbound_substitution_never_broadcasts() {
+    const CHILD: &str = "ENGINE_TEST_SOLANA_FIRST_ATTEMPT_CHILD";
+    if std::env::var_os(CHILD).is_none() {
+        let output=std::process::Command::new(std::env::current_exe().unwrap())
+            .args(["--exact","solana_executor::worker::recovery_tests::sql_attempt_precedes_redis_and_unbound_substitution_never_broadcasts","--ignored","--nocapture"])
+            .env(CHILD,"1").output().unwrap();
+        assert!(
+            output.status.success(),
+            "{} {}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+        return;
+    }
+    use engine_core::recovery::{self, RecoveryJournal};
+    let f = Fixture::new().await;
+    let directory =
+        std::env::temp_dir().join(format!("solana-first-attempt-{}", uuid::Uuid::new_v4()));
+    let path = directory.join("ledger.sqlite");
+    let namespace = format!("{}_journal", f.namespace.replace(':', "_"));
+    let url = std::env::var("TEST_REDIS_URL").unwrap();
+    RecoveryJournal::initialize(&path, &url, Some(namespace.clone()))
+        .await
+        .unwrap();
+    let journal = RecoveryJournal::open(&path, &url, Some(namespace.clone()))
+        .await
+        .unwrap();
+    let payload = serde_json::to_value(&f.data).unwrap();
+    journal
+        .reserve_admission(
+            "solana",
+            "intent",
+            &recovery::admission_fingerprint("solana", &payload).unwrap(),
+            payload,
+        )
+        .await
+        .unwrap();
+    recovery::install(journal.clone()).unwrap();
+    let lock = f.seed().await; // simulate a valid signed wire injected before durable assignment
+    let (rpc, seen, server) = rpc(vec![]).await;
+    assert_nack(f.handler.execute_transaction(&rpc, &f.data, &lock, 1).await);
+    assert!(seen.lock().unwrap().is_empty());
+    assert!(
+        journal
+            .admission("solana", "intent")
+            .await
+            .unwrap()
+            .unwrap()
+            .replay_key
+            .is_none()
+    );
+    let attempt_key = format!("{}:solana_tx_attempt:intent", f.namespace);
+    let _: () = f.redis.clone().del(&attempt_key).await.unwrap();
+
+    // This is the production boundary immediately after signing, before Redis.
+    f.handler
+        .authorize_attempt(&f.data, &f.attempt)
+        .await
+        .unwrap_or_else(|_| panic!("generated attempt must be durably reserved"));
+    assert!(
+        journal
+            .admission("solana", "intent")
+            .await
+            .unwrap()
+            .unwrap()
+            .replay_key
+            .is_some()
+    );
+    assert!(
+        f.handler
+            .storage
+            .get_attempt("intent", &lock)
+            .await
+            .unwrap()
+            .is_none()
+    );
+    assert_nack(f.handler.execute_transaction(&rpc, &f.data, &lock, 1).await);
+    assert!(
+        seen.lock().unwrap().is_empty(),
+        "SQL-before-Redis crash must not fetch a new blockhash/sign"
+    );
+
+    let mut retried = f.attempt.clone();
+    retried.broadcast_attempts = 3;
+    retried.last_broadcast_at = 123456;
+    retried.reconciliation_checks = 9;
+    f.handler
+        .authorize_attempt(&f.data, &retried)
+        .await
+        .unwrap_or_else(|_| panic!("same wire retry remains authorized"));
+    assert_eq!(
+        RecoveryJournal::status(&path).unwrap().attempts,
+        1,
+        "mutable counters must not duplicate durable wire records"
+    );
+
+    // Another fully valid signed transaction still cannot replace the reservation.
+    let other = Fixture::new().await;
+    assert!(
+        f.handler
+            .storage
+            .store_attempt_if_not_exists("intent", &other.attempt, &lock)
+            .await
+            .unwrap()
+    );
+    assert_nack(f.handler.execute_transaction(&rpc, &f.data, &lock, 1).await);
+    assert!(seen.lock().unwrap().is_empty());
+    let original = journal
+        .admission("solana", "intent")
+        .await
+        .unwrap()
+        .unwrap()
+        .replay_key
+        .unwrap();
+    assert!(original.ends_with(&f.attempt.signature.to_string()));
+    finish(server).await;
+    lock.release().await.unwrap();
+    other.cleanup().await;
+    let _: () = f
+        .redis
+        .clone()
+        .del(format!("{namespace}:recovery:checkpoint"))
+        .await
+        .unwrap();
+    f.cleanup().await;
+    std::fs::remove_dir_all(directory).unwrap();
+}
+
+#[tokio::test]
+#[ignore = "requires disposable Redis in TEST_REDIS_URL"]
+async fn wrong_cluster_or_unavailable_genesis_never_signs_or_sends() {
+    let mut f = Fixture::new().await;
+    f.data.transaction.execution_options.chain_id = SolanaChainId::SolanaDevnet;
+    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let url = format!("http://{}", listener.local_addr().unwrap());
+    let seen = Arc::new(Mutex::new(Vec::new()));
+    let seen_in = seen.clone();
+    let server = tokio::spawn(async move {
+        for body in [
+            json!({"result":"5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d"}),
+            json!({"error":{"code":-32000,"message":"temporary failure"}}),
+        ] {
+            let (mut stream, _) = listener.accept().await.unwrap();
+            let mut bytes = vec![];
+            let (start, len) = loop {
+                let mut b = [0; 4096];
+                let n = stream.read(&mut b).await.unwrap();
+                assert!(n > 0);
+                bytes.extend_from_slice(&b[..n]);
+                if let Some(end) = bytes.windows(4).position(|w| w == b"\r\n\r\n") {
+                    let len = String::from_utf8_lossy(&bytes[..end])
+                        .lines()
+                        .find_map(|l| {
+                            let (k, v) = l.split_once(':')?;
+                            k.eq_ignore_ascii_case("content-length")
+                                .then(|| v.trim().parse::<usize>().unwrap())
+                        })
+                        .unwrap();
+                    break (end + 4, len);
+                }
+            };
+            while bytes.len() < start + len {
+                let mut b = [0; 4096];
+                let n = stream.read(&mut b).await.unwrap();
+                assert!(n > 0);
+                bytes.extend_from_slice(&b[..n]);
+            }
+            let request: Value = serde_json::from_slice(&bytes[start..start + len]).unwrap();
+            assert_eq!(request["method"], "getGenesisHash");
+            seen_in.lock().unwrap().push(request["method"].clone());
+            let mut body = body;
+            body["jsonrpc"] = json!("2.0");
+            body["id"] = request["id"].clone();
+            let body = body.to_string();
+            stream.write_all(format!("HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",body.len(),body).as_bytes()).await.unwrap();
+        }
+    });
+    f.handler.rpc_cache = Arc::new(SolanaRpcCache::new(
+        super::super::rpc_cache::SolanaRpcUrls {
+            devnet: url,
+            mainnet: "http://127.0.0.1:1".into(),
+            local: "http://127.0.0.1:1".into(),
+        },
+    ));
+    for _ in 0..2 {
+        assert!(matches!(
+            assert_nack(f.handler.process(&f.job()).await),
+            SolanaExecutorError::RpcError { .. }
+        ));
+        let lock = f.handler.storage.try_acquire_lock("intent").await.unwrap();
+        assert!(
+            f.handler
+                .storage
+                .get_attempt("intent", &lock)
+                .await
+                .unwrap()
+                .is_none()
+        );
+        lock.release().await.unwrap();
+    }
+    finish(server).await;
+    assert_eq!(seen.lock().unwrap().len(), 2);
+    f.cleanup().await;
+}

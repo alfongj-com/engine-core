@@ -22,6 +22,7 @@ const HEADER_WALLET_ACCESS_TOKEN: &str = "x-wallet-access-token";
 const HEADER_AWS_KMS_ARN: &str = "x-aws-kms-arn";
 const HEADER_AWS_ACCESS_KEY_ID: &str = "x-aws-access-key-id";
 const HEADER_AWS_SECRET_ACCESS_KEY: &str = "x-aws-secret-access-key";
+const HEADER_ENGINE_ACCESS_TOKEN: &str = "x-engine-access-token";
 const HEADER_DIAGNOSTIC_ACCESS_PASSWORD: &str = "x-diagnostic-access-password";
 const HEADER_ECOSYSTEM_ID: &str = "x-ecosystem-id";
 const HEADER_ECOSYSTEM_PARTNER_ID: &str = "x-ecosystem-partner-id";
@@ -140,11 +141,21 @@ impl FromRequestParts<EngineServerState> for SigningCredentialsExtractor {
         parts: &mut Parts,
         state: &EngineServerState,
     ) -> Result<Self, Self::Rejection> {
-        if let Some(provided) = Self::get_header_value(parts, "x-engine-signing-token") {
+        reject_ambiguous_signer_headers(parts)?;
+        if parts.headers.contains_key("x-engine-signing-token") {
+            let provided =
+                Self::get_header_value(parts, "x-engine-signing-token").unwrap_or_default();
             let configured = std::env::var("ENGINE_SIGNING_TOKEN").unwrap_or_default();
             verify_environment_token(&configured, provided)?;
             return Ok(Self(SigningCredential::environment()?));
         }
+
+        // Possessing arbitrary provider header strings is not Engine access.
+        // Gate legacy backends before parsing them or admitting durable work.
+        verify_access_token(
+            &std::env::var("ENGINE_ACCESS_TOKEN").unwrap_or_default(),
+            Self::get_header_value(parts, HEADER_ENGINE_ACCESS_TOKEN).unwrap_or_default(),
+        )?;
 
         // Try AWS KMS credentials first (with cache)
         if let Some(aws_kms) =
@@ -165,7 +176,7 @@ impl FromRequestParts<EngineServerState> for SigningCredentialsExtractor {
 
         // No valid credentials found
         Err(ApiEngineError(EngineError::ValidationError {
-            message: "Missing valid authentication credentials. Provide x-engine-signing-token for the configured local signer, or AWS KMS headers (x-aws-kms-arn, x-aws-access-key-id, x-aws-secret-access-key), IAW credentials (x-wallet-access-token + x-thirdweb-client-id + x-thirdweb-service-key)".to_string(),
+            message: "Missing valid authentication credentials. Provide x-engine-signing-token for the configured local signer, or x-engine-access-token plus AWS KMS headers (x-aws-kms-arn, x-aws-access-key-id, x-aws-secret-access-key), IAW credentials (x-wallet-access-token + x-thirdweb-client-id + x-thirdweb-service-key)".to_string(),
         }))
     }
 }
@@ -178,6 +189,7 @@ impl<S: Send + Sync> FromRequestParts<S> for SolanaSigningCredentialsExtractor {
     type Rejection = ApiEngineError;
 
     async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
+        reject_ambiguous_signer_headers(parts)?;
         let provided =
             SigningCredentialsExtractor::get_header_value(parts, "x-engine-signing-token")
                 .unwrap_or_default();
@@ -397,12 +409,51 @@ impl FromRequestParts<EngineServerState> for DiagnosticAuthExtractor {
 }
 
 /// Authenticate the process-local signer without storing its token or key in Redis.
+fn reject_ambiguous_signer_headers(parts: &Parts) -> Result<(), ApiEngineError> {
+    let local = parts.headers.contains_key("x-engine-signing-token");
+    let kms = [
+        HEADER_AWS_KMS_ARN,
+        HEADER_AWS_ACCESS_KEY_ID,
+        HEADER_AWS_SECRET_ACCESS_KEY,
+    ]
+    .iter()
+    .any(|header| parts.headers.contains_key(*header));
+    let iaw = parts.headers.contains_key(HEADER_WALLET_ACCESS_TOKEN);
+    if (local && (kms || iaw)) || (kms && iaw) {
+        return Err(ApiEngineError(EngineError::ValidationError {
+            message: "Ambiguous signing credentials: choose only the local signer, AWS KMS, or IAW"
+                .into(),
+        }));
+    }
+    Ok(())
+}
+
 fn verify_environment_token(configured: &str, provided: &str) -> Result<(), ApiEngineError> {
+    verify_operator_token(
+        configured,
+        provided,
+        "Invalid or unconfigured environment signing token",
+    )
+}
+
+fn verify_access_token(configured: &str, provided: &str) -> Result<(), ApiEngineError> {
+    verify_operator_token(
+        configured,
+        provided,
+        "Invalid or unconfigured Engine access token for legacy signing",
+    )
+}
+
+fn verify_operator_token(
+    configured: &str,
+    provided: &str,
+    message: &'static str,
+) -> Result<(), ApiEngineError> {
     use hmac::{Hmac, Mac};
     use sha2::Sha256;
     let denied = || {
         ApiEngineError(EngineError::ValidationError {
-            message: "Invalid or unconfigured environment signing token".into(),
+            message: message.into(),
         })
     };
     if configured.len() < 32 {
@@ -410,10 +461,10 @@ fn verify_environment_token(configured: &str, provided: &str) -> Result<(), ApiE
     }
     let mut expected =
         Hmac::<Sha256>::new_from_slice(configured.as_bytes()).map_err(|_| denied())?;
-    expected.update(b"engine-core/local-signing-auth/v1");
+    expected.update(b"engine-core/operator-auth/v1");
     let mut candidate =
         Hmac::<Sha256>::new_from_slice(provided.as_bytes()).map_err(|_| denied())?;
-    candidate.update(b"engine-core/local-signing-auth/v1");
+    candidate.update(b"engine-core/operator-auth/v1");
     candidate
         .verify_slice(&expected.finalize().into_bytes())
         .map_err(|_| denied())

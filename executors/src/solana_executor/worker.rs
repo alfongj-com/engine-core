@@ -291,15 +291,18 @@ impl DurableExecution for SolanaExecutorJobHandler {
 
         info!(transaction_id = %transaction_id, "Acquired lock");
 
-        let rpc_client = self
-            .rpc_cache
-            .get_or_create(data.transaction.execution_options.chain_id)
-            .await;
-
-        let result = tokio::time::timeout(
-            PROCESS_TIMEOUT,
-            self.execute_transaction(&rpc_client, data, &lock, job.job.attempts),
-        )
+        let result = tokio::time::timeout(PROCESS_TIMEOUT, async {
+            let rpc_client = self
+                .rpc_cache
+                .get_verified(data.transaction.execution_options.chain_id)
+                .await
+                .map_err(|inner_error| {
+                    SolanaExecutorError::RpcError { inner_error }
+                        .nack(Some(NETWORK_ERROR_RETRY_DELAY), RequeuePosition::Last)
+                })?;
+            self.execute_transaction(&rpc_client, data, &lock, job.job.attempts)
+                .await
+        })
         .await
         .unwrap_or_else(|_| {
             Err(SolanaExecutorError::InternalError {
@@ -626,6 +629,11 @@ impl SolanaExecutorJobHandler {
             if let Some(admission) = admission {
                 journal_terminal =
                     admission.state == engine_core::recovery::AdmissionState::Terminal;
+                if admission.replay_key.is_none() && stored_attempt.is_some() {
+                    return Err(SolanaExecutorError::InternalError {
+                        message: "Redis contains an attempt without a durable signature reservation; reconcile it before signing or broadcasting".into(),
+                    }.nack(Some(RECOVERY_PARK_DELAY), RequeuePosition::Last));
+                }
                 if let Some(binding) = admission.replay_key {
                     let matches = stored_attempt.as_ref().is_some_and(|attempt| {
                         binding == format!("solana:{}:{}", chain_id_str.as_str(), attempt.signature)
@@ -880,6 +888,9 @@ impl SolanaExecutorJobHandler {
             submission_attempt_number,
             base64::engine::general_purpose::STANDARD.encode(bytes),
         );
+        // The external reservation must precede the Redis projection. A crash
+        // here may park missing Redis state, but cannot authorize a different wire.
+        self.authorize_attempt(job_data, &attempt).await?;
         if !self
             .storage
             .store_attempt_if_not_exists(transaction_id, &attempt, lock)
@@ -1078,26 +1089,7 @@ impl SolanaExecutorJobHandler {
             max_retries: Some(0),
             ..Default::default()
         };
-        if let Some(journal) = engine_core::recovery::global() {
-            let replay_key = format!(
-                "solana:{}:{}",
-                job_data.transaction.execution_options.chain_id.as_str(),
-                attempt.signature
-            );
-            journal
-                .before_broadcast(
-                    "solana",
-                    &job_data.transaction_id,
-                    &replay_key,
-                    json!({"chainId":job_data.transaction.execution_options.chain_id.as_str(),
-                    "signature":attempt.signature.to_string(), "attempt":attempt}),
-                )
-                .await
-                .map_err(|error| SolanaExecutorError::InternalError {
-                    message: error.to_string(),
-                })
-                .map_err_nack(Some(NETWORK_ERROR_RETRY_DELAY), RequeuePosition::Last)?;
-        }
+        self.authorize_attempt(job_data, &attempt).await?;
         let sent: Result<String, _> = rpc_client
             .send(RpcRequest::SendTransaction, json!([wire, config]))
             .await;
@@ -1124,6 +1116,46 @@ impl SolanaExecutorJobHandler {
             }
             .nack(Some(NETWORK_ERROR_RETRY_DELAY), RequeuePosition::Last)),
         }
+    }
+
+    async fn authorize_attempt(
+        &self,
+        job_data: &SolanaExecutorJobData,
+        attempt: &SolanaTransactionAttempt,
+    ) -> JobResult<(), SolanaExecutorError> {
+        if let Some(journal) = engine_core::recovery::global() {
+            crate::recovery::validate("solana", &job_data.transaction_id, job_data)
+                .await
+                .map_err(|error| SolanaExecutorError::InternalError {
+                    message: error.to_string(),
+                })
+                .map_err_nack(Some(RECOVERY_PARK_DELAY), RequeuePosition::Last)?;
+            let replay_key = format!(
+                "solana:{}:{}",
+                job_data.transaction.execution_options.chain_id.as_str(),
+                attempt.signature
+            );
+            // Persist wire identity, not changing polling/send counters. The
+            // pre-Redis reservation and every later authorization are identical.
+            let mut durable_attempt = attempt.clone();
+            durable_attempt.broadcast_attempts = 0;
+            durable_attempt.last_broadcast_at = 0;
+            durable_attempt.reconciliation_checks = 0;
+            journal
+                .before_broadcast(
+                    "solana",
+                    &job_data.transaction_id,
+                    &replay_key,
+                    json!({"chainId":job_data.transaction.execution_options.chain_id.as_str(),
+                "signature":attempt.signature.to_string(), "attempt":durable_attempt}),
+                )
+                .await
+                .map_err(|error| SolanaExecutorError::InternalError {
+                    message: error.to_string(),
+                })
+                .map_err_nack(Some(RECOVERY_PARK_DELAY), RequeuePosition::Last)?;
+        }
+        Ok(())
     }
 
     async fn verify_lock(

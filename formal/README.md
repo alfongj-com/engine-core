@@ -22,6 +22,7 @@ decision, not a claim that Lean cannot verify systems code.
 |---|---|---|
 | Queue ownership | Stale leases cannot commit; aborted EXEC is not success; physical WATCH sessions cannot interfere; ID reuse preserves live data and cancellation | [Queue model and Redis regressions](queue.md) |
 | EVM recovery | One intent per active nonce; crash retains attempts; absent receipts cannot cause a second execution; reverted receipt is failure | [EVM model](eoa.md) |
+| EVM allocator cleanup | Old retained receipts cannot rewind allocation below observed consumed count; outstanding reservations stay below the next nonce | [Allocator model](nonce-allocator.md) |
 | Solana recovery | Persist before send; retries keep signed identity; expiry/absence preserves evidence; bounded send/check budgets; fenced terminal cleanup | [Solana model](solana.md) |
 | Redis admission projection | Immutable request per retained Redis ID; atomic identity/queue admission; active identity survives cancellation; finite Redis retention boundary | [Admission model](admission.md); the server's independent journal adds longer-lived identity protection |
 | Finality | Provisional inclusion, orphaning and re-inclusion; both success and revert wait for canonical finality evidence | [Finality model](finality.md); honest RPC/stable consensus assumptions, explicit depth and catastrophic boundaries |
@@ -42,11 +43,11 @@ machine-checked proof of their composition.
 
 The [recorded run and raw evidence](evidence/README.md) identify the exact source,
 state counts, counterexamples and implementation regressions for that run. The
-manifest now contains **52 configurations** (35 earlier, 8 finality, 9 disaster
-recovery). The full run on 2026-09-26 passed all 52 against the refreshed frozen
-source map: 12 positive, 27 fault, 10 boundary and 3 witness cases; both source
-checks passed all 58 mapped files. Older evidence reports retain their original
-source scope and do not independently attest to these additions.
+manifest contains **56 configurations**: the previous 52, three allocator
+checks and one terminal-attribution mutation. The prior 52-case run remains
+historical evidence for its recorded source. The allocator trio passed targeted
+checks; the new full frozen-source run is pending. These finite models do not
+prove a 50 TPS target or compose automatically into a whole-system proof.
 
 ## Run locally
 

@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use axum::{
     Json, Router,
-    extract::Request,
+    extract::{Request, State},
     http::{Method, StatusCode},
     middleware::{self, Next},
     response::{IntoResponse, Response},
@@ -14,9 +14,13 @@ use engine_core::{
     userop::UserOpSigner,
 };
 use engine_executors::solana_executor::rpc_cache::SolanaRpcCache;
+use http_body_util::BodyExt;
 use serde_json::json;
 use thirdweb_core::abi::ThirdwebAbiService;
-use tokio::{sync::watch, task::JoinHandle};
+use tokio::{
+    sync::{Semaphore, watch},
+    task::JoinHandle,
+};
 use utoipa::OpenApi;
 use utoipa_axum::{router::OpenApiRouter, routes};
 use utoipa_scalar::{Scalar, Servable};
@@ -118,7 +122,12 @@ impl EngineServer {
             // health endpoint with 200 and JSON response {}
             .route("/health", get(recovery_health))
             .route("/api.json", get(|| async { Json(api_clone) }))
-            .layer(middleware::from_fn(recovery_gate));
+            .layer(middleware::from_fn(recovery_gate))
+            // Outer layer rejects pressure before the journal/auth/handler can queue.
+            .layer(middleware::from_fn_with_state(
+                Arc::new(Semaphore::new(MAX_CONCURRENT_MUTATIONS)),
+                mutation_limit,
+            ));
 
         Self {
             handle: None,
@@ -181,11 +190,46 @@ impl EngineServer {
     }
 }
 
+const MAX_CONCURRENT_MUTATIONS: usize = 64;
+
+fn is_mutation(method: &Method) -> bool {
+    !matches!(*method, Method::GET | Method::HEAD | Method::OPTIONS)
+}
+
+async fn mutation_limit(
+    State(slots): State<Arc<Semaphore>>,
+    request: Request,
+    next: Next,
+) -> Response {
+    if !is_mutation(request.method()) {
+        return next.run(request).await;
+    }
+    let Ok(permit) = slots.try_acquire_owned() else {
+        let mut response =
+            super::error::ApiEngineError(engine_core::error::EngineError::Overloaded {
+                message: "Too many concurrent mutation requests; retry the same idempotency key"
+                    .into(),
+            })
+            .into_response();
+        response.headers_mut().insert(
+            axum::http::header::RETRY_AFTER,
+            axum::http::HeaderValue::from_static("1"),
+        );
+        return response;
+    };
+    let response = next.run(request).await;
+    response.map(|body| {
+        // Keep the permit until the response body is consumed or dropped. This
+        // also releases it when a client disconnects or a handler is cancelled.
+        axum::body::Body::new(body.map_frame(move |frame| {
+            let _keep_permit = &permit;
+            frame
+        }))
+    })
+}
+
 async fn recovery_gate(request: Request, next: Next) -> Response {
-    if !matches!(
-        *request.method(),
-        Method::GET | Method::HEAD | Method::OPTIONS
-    ) {
+    if is_mutation(request.method()) {
         if engine_core::recovery::ensure_healthy().await.is_err() {
             return (StatusCode::SERVICE_UNAVAILABLE, Json(json!({
                 "error": "RECOVERY_REQUIRED", "message": "Transaction writes and signing are paused; inspect the recovery journal"
@@ -205,3 +249,7 @@ async fn recovery_health() -> Response {
             .into_response(),
     }
 }
+
+#[cfg(test)]
+#[path = "server_tests.rs"]
+mod tests;

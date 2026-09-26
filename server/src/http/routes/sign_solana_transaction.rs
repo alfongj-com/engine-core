@@ -102,22 +102,21 @@ pub async fn sign_solana_transaction(
             message: "Sign-only Solana requests support an explicit manual priority fee; automatic estimation is available through transaction submission".into(),
         })),
     };
-    // A serialized transaction already carries its blockhash and signatures. No
-    // RPC call or message rewrite is needed to complete the payer's signature.
+    // Public cluster identity is verified even for a supplied message. Local
+    // serialized signing remains offline and never rewrites its blockhash.
+    let rpc_client = state
+        .solana_rpc_cache
+        .get_verified(chain_id)
+        .await
+        .map_err(ApiEngineError)?;
     let recent_blockhash = if serialized {
         solana_sdk::hash::Hash::default()
     } else {
-        state
-            .solana_rpc_cache
-            .get_or_create(chain_id)
-            .await
-            .get_latest_blockhash()
-            .await
-            .map_err(|_| {
-                ApiEngineError(EngineError::ValidationError {
-                    message: "Failed to get recent Solana blockhash".into(),
-                })
-            })?
+        rpc_client.get_latest_blockhash().await.map_err(|_| {
+            ApiEngineError(EngineError::ValidationError {
+                message: "Failed to get recent Solana blockhash".into(),
+            })
+        })?
     };
     let solana_tx = SolanaTransaction {
         input: request.input,

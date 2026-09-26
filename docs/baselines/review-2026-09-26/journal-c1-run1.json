@@ -1,0 +1,66 @@
+{
+  "arch": "aarch64",
+  "concurrency": 1,
+  "count": 256,
+  "durability": {
+    "fullfsync": true,
+    "journalMode": "WAL",
+    "synchronous": "FULL"
+  },
+  "logicalRecordBytesPerIntent": 1178,
+  "os": "macos",
+  "phases": [
+    {
+      "count": 256,
+      "elapsedSeconds": 1.481483875,
+      "latencyIncludesQueueWait": true,
+      "methodCompletionLatencyMs": {
+        "max": 13.46025,
+        "min": 3.9766250000000003,
+        "p50": 5.644334,
+        "p95": 7.123333,
+        "p99": 10.043458
+      },
+      "operationsPerSecond": 172.79972082045106,
+      "phase": "admission"
+    },
+    {
+      "count": 256,
+      "elapsedSeconds": 1.66882725,
+      "latencyIncludesQueueWait": true,
+      "methodCompletionLatencyMs": {
+        "max": 12.129042,
+        "min": 5.440792,
+        "p50": 6.443083,
+        "p95": 7.311625,
+        "p99": 11.018208
+      },
+      "operationsPerSecond": 153.40113843419084,
+      "phase": "attempt"
+    },
+    {
+      "count": 256,
+      "elapsedSeconds": 1.670222291,
+      "latencyIncludesQueueWait": true,
+      "methodCompletionLatencyMs": {
+        "max": 17.669,
+        "min": 4.939667,
+        "p50": 6.462,
+        "p95": 7.36075,
+        "p99": 11.949167000000001
+      },
+      "operationsPerSecond": 153.27301125093175,
+      "phase": "terminal"
+    }
+  ],
+  "reconciliation": {
+    "admissions": 256,
+    "attempts": 256,
+    "checkpoint": 768,
+    "healthy": true,
+    "terminal": 256
+  },
+  "schema": "engine-recovery-journal-probe-v1",
+  "scope": "closed-loop real journal operations; excludes transaction construction, blockchain execution, provider RPC, finality assessment and Redis queue work; not Engine transaction TPS",
+  "threeStageIntentsPerSecond": 53.10615608436641
+}

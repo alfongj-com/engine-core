@@ -261,7 +261,7 @@ impl QueueManager {
             namespace: queue_config.execution_namespace.clone(),
             redis: redis_client.get_connection_manager().await?,
             authorization_cache,
-            max_inflight: 50,
+            max_inflight: queue_config.eoa_max_inflight,
             max_recycled_nonces: 50,
             eoa_metrics,
             kms_client_cache,

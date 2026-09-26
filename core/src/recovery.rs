@@ -7,7 +7,6 @@ use serde_json::Value;
 use sha2::{Digest, Sha256};
 use std::{
     fs::{self, File, OpenOptions},
-    io::Write,
     path::{Path, PathBuf},
     sync::{
         Arc, Mutex, OnceLock,
@@ -15,15 +14,22 @@ use std::{
     },
     time::Duration,
 };
-use tokio::sync::Mutex as AsyncMutex;
+use tokio::sync::{Mutex as AsyncMutex, Semaphore};
 use twmq::redis::{self, aio::ConnectionManager};
 
 static GLOBAL: OnceLock<Arc<RecoveryJournal>> = OnceLock::new();
 const SCHEMA: i64 = 1;
 const MAX_RECORD_BYTES: usize = 16 * 1024 * 1024;
+// Admission waits are bounded; reconciliation and existing broadcasts do not
+// consume these permits and can drain work while intake is overloaded.
+const MAX_CONCURRENT_ADMISSIONS: usize = 64;
 
 #[derive(Debug, thiserror::Error)]
 pub enum RecoveryError {
+    #[error(
+        "Recovery admission is busy; retry the same transaction ID after capacity is available"
+    )]
+    Busy,
     #[error("Recovery ledger storage is unavailable or invalid; transaction execution is blocked")]
     Storage,
     #[error("Recovery ledger is already owned by an active process")]
@@ -128,6 +134,7 @@ pub struct RecoveryJournal {
     _owner: File,
     redis: ConnectionManager,
     serial: AsyncMutex<()>,
+    admission_slots: Semaphore,
     failed: AtomicBool,
 }
 
@@ -329,9 +336,19 @@ fn control(conn: &Connection) -> Result<Control> {
     if schema != SCHEMA {
         return Err(RecoveryError::Invalid("unknown ledger schema"));
     }
-    Ok(conn.query_row("SELECT deployment,epoch,checkpoint,namespace,run_id,halted,reason FROM control WHERE singleton=1", [], |r| Ok(Control {
-        deployment:r.get(0)?,epoch:r.get(1)?,checkpoint:r.get(2)?,namespace:r.get(3)?,run_id:r.get(4)?,halted:r.get(5)?,reason:r.get(6)?,
-    }))?)
+    Ok(conn.query_row(
+        "SELECT deployment,epoch,checkpoint,namespace,run_id,halted,reason FROM control WHERE singleton=1",
+        [],
+        |row| Ok(Control {
+            deployment: row.get(0)?,
+            epoch: row.get(1)?,
+            checkpoint: row.get(2)?,
+            namespace: row.get(3)?,
+            run_id: row.get(4)?,
+            halted: row.get(5)?,
+            reason: row.get(6)?,
+        }),
+    )?)
 }
 fn lookup(conn: &Connection, id: &str) -> Result<Option<AdmissionRecord>> {
     let row = conn
@@ -516,6 +533,7 @@ impl RecoveryJournal {
             _owner: owner,
             redis: redis_connection(redis_url).await?,
             serial: AsyncMutex::new(()),
+            admission_slots: Semaphore::new(MAX_CONCURRENT_ADMISSIONS),
             failed: AtomicBool::new(false),
         });
         this.ensure_healthy().await?;
@@ -585,8 +603,17 @@ impl RecoveryJournal {
     async fn mirror(&self, old: Control) -> Result<()> {
         let mut new = old.clone();
         new.checkpoint += 1;
-        let result: redis::RedisResult<i32>=redis::Script::new("if redis.call('GET',KEYS[1])~=ARGV[1] then return 0 end redis.call('SET',KEYS[1],ARGV[2]);return 1")
-            .key(old.key()).arg(old.token()).arg(new.token()).invoke_async(&mut self.redis.clone()).await;
+        const MIRROR_CHECKPOINT: &str = r#"
+            if redis.call('GET', KEYS[1]) ~= ARGV[1] then return 0 end
+            redis.call('SET', KEYS[1], ARGV[2])
+            return 1
+        "#;
+        let result: redis::RedisResult<i32> = redis::Script::new(MIRROR_CHECKPOINT)
+            .key(old.key())
+            .arg(old.token())
+            .arg(new.token())
+            .invoke_async(&mut self.redis.clone())
+            .await;
         if !matches!(result, Ok(1)) {
             return Err(self.halt("Redis checkpoint mirror failed").await);
         }
@@ -600,6 +627,10 @@ impl RecoveryJournal {
         fingerprint: &str,
         payload: Value,
     ) -> Result<AdmissionReservation> {
+        let _permit = self
+            .admission_slots
+            .try_acquire()
+            .map_err(|_| RecoveryError::Busy)?;
         identity(kind, id)?;
         if admission_fingerprint(kind, &payload)? != fingerprint {
             return Err(RecoveryError::Conflict);
@@ -608,16 +639,27 @@ impl RecoveryJournal {
         let (kind, id, fingerprint) = (kind.to_owned(), id.to_owned(), fingerprint.to_owned());
         let _guard = self.serial.lock().await;
         self.healthy_locked().await?;
-        let result=self.db(move|conn| {
-            let tx=conn.transaction()?;
-            if let Some(old)=lookup(&tx,&id)? {
-                if old.kind!=kind || old.fingerprint!=fingerprint { return Err(RecoveryError::Conflict); }
-                if old.state==AdmissionState::Quarantined { return Err(RecoveryError::RecoveryRequired("transaction is quarantined")); }
-                return Ok((AdmissionReservation { payload:old.payload,terminal:old.state==AdmissionState::Terminal },None));
+        let result = self.db(move |conn| {
+            let tx = conn.transaction()?;
+            if let Some(old) = lookup(&tx, &id)? {
+                if old.kind != kind || old.fingerprint != fingerprint {
+                    return Err(RecoveryError::Conflict);
+                }
+                if old.state == AdmissionState::Quarantined {
+                    return Err(RecoveryError::RecoveryRequired("transaction is quarantined"));
+                }
+                return Ok((AdmissionReservation {
+                    payload: old.payload,
+                    terminal: old.state == AdmissionState::Terminal,
+                }, None));
             }
-            tx.execute("INSERT INTO admissions(id,kind,fingerprint,payload,state) VALUES(?,?,?,?,'admitted')",params![id,kind,fingerprint,encoded])?;
-            let old=advance(&tx)?; tx.commit()?;
-            Ok((AdmissionReservation{payload,terminal:false},Some(old)))
+            tx.execute(
+                "INSERT INTO admissions(id,kind,fingerprint,payload,state) VALUES(?,?,?,?,'admitted')",
+                params![id, kind, fingerprint, encoded],
+            )?;
+            let old = advance(&tx)?;
+            tx.commit()?;
+            Ok((AdmissionReservation { payload, terminal: false }, Some(old)))
         }).await;
         let (reservation, old) = self.storage_result(result).await?;
         if let Some(old) = old {
@@ -814,54 +856,97 @@ impl RecoveryJournal {
                 if owner.as_ref().is_some_and(|owner| owner != &id) {
                     return Err(RecoveryError::Conflict);
                 }
+                // An exact retry already has FULL-committed evidence. Check its
+                // current owner/state/chain above, but do not fsync the same wire
+                // again or advance the checkpoint merely for a retransmission.
+                let existing: Option<(String, String)> = tx
+                    .query_row(
+                        "SELECT replay_key,payload FROM attempts WHERE id=? AND digest=?",
+                        params![id, digest],
+                        |row| Ok((row.get(0)?, row.get(1)?)),
+                    )
+                    .optional()?;
+                if let Some((stored_key, stored_payload)) = existing {
+                    if stored_key != replay_key
+                        || stored_payload != encoded
+                        || record.replay_key.as_deref() != Some(replay_key.as_str())
+                    {
+                        return Err(RecoveryError::Storage);
+                    }
+                    return Ok(None);
+                }
                 tx.execute(
                     "UPDATE admissions SET replay_key=? WHERE id=?",
                     params![replay_key, id],
                 )?;
                 tx.execute(
-                    "INSERT OR IGNORE INTO attempts(id,replay_key,digest,payload) VALUES(?,?,?,?)",
+                    "INSERT INTO attempts(id,replay_key,digest,payload) VALUES(?,?,?,?)",
                     params![id, replay_key, digest, encoded],
                 )?;
                 let old = advance(&tx)?;
                 tx.commit()?;
-                Ok(old)
+                Ok(Some(old))
             })
             .await;
         let old = self.storage_result(result).await?;
-        self.mirror(old).await
+        if let Some(old) = old {
+            self.mirror(old).await?;
+        }
+        Ok(())
+    }
+    /// Verify that confirmation identity belongs to this admission's durable
+    /// attempt history. This can run before network queries, and is repeated in
+    /// the terminal transaction so no earlier validation can bypass a halt.
+    pub async fn validate_attempt_identity(
+        &self,
+        kind: &str,
+        id: &str,
+        identity: &Value,
+    ) -> Result<()> {
+        self.ensure_healthy().await?;
+        let (kind, id, identity) = (kind.to_owned(), id.to_owned(), identity.clone());
+        self.db(move |conn| {
+            let record = lookup(conn, &id)?
+                .ok_or(RecoveryError::RecoveryRequired("untracked confirmation"))?;
+            if record.kind != kind {
+                return Err(RecoveryError::Conflict);
+            }
+            validate_attempt_identity_in_db(conn, &record, &identity)
+        })
+        .await
     }
     /// Only a trusted chain reconciliation path may supply terminal evidence.
-    /// No CLI command fabricates terminality from a transaction count or a null receipt.
+    /// A null receipt or nonce progress cannot supply a terminal outcome.
     pub async fn record_terminal(&self, kind: &str, id: &str, evidence: Value) -> Result<()> {
         identity(kind, id)?;
-        let evidence_chain = evidence.get("chainId").and_then(Value::as_u64);
         let normalized = terminal_identity(&evidence)?;
-        let evidence = canonical(&evidence)?;
+        let encoded = canonical(&evidence)?;
         let (kind, id) = (kind.to_owned(), id.to_owned());
         let _guard = self.serial.lock().await;
         self.healthy_locked().await?;
-        let result=self.db(move|conn| {
-            let tx=conn.transaction()?;
-            let record=lookup(&tx,&id)?.ok_or(RecoveryError::RecoveryRequired("untracked terminal observation"))?;
-            if record.kind!=kind { return Err(RecoveryError::Conflict); }
-            if record.replay_key.is_none() {return Err(RecoveryError::RecoveryRequired("terminal observation has no recorded broadcast attempt"));}
-            if kind!="solana" {
-                let chain=record.replay_key.as_deref().and_then(|key|key.split(':').nth(1)).ok_or(RecoveryError::Storage)?;
-                if chain.parse::<u64>().ok()!=evidence_chain {return Err(RecoveryError::Conflict);}
-                let halted:bool=tx.query_row("SELECT EXISTS(SELECT 1 FROM chain_halts WHERE chain_id=?)",[chain],|r|r.get(0))?;
-                if halted {return Err(RecoveryError::RecoveryRequired("chain finality conflict requires reconciliation"));}
+        let result = self.db(move |conn| {
+            let tx = conn.transaction()?;
+            let record = lookup(&tx, &id)?
+                .ok_or(RecoveryError::RecoveryRequired("untracked terminal observation"))?;
+            if record.kind != kind { return Err(RecoveryError::Conflict); }
+            validate_attempt_identity_in_db(&tx, &record, &evidence)?;
+            if record.state == AdmissionState::Terminal {
+                let previous: String = tx.query_row(
+                    "SELECT evidence FROM terminal_evidence WHERE id=? ORDER BY sequence LIMIT 1",
+                    [&id], |row| row.get(0),
+                )?;
+                let previous: Value = serde_json::from_str(&previous).map_err(|_| RecoveryError::Storage)?;
+                if terminal_identity(&previous)? == normalized { return Ok((None, false)); }
+                tx.execute("INSERT INTO terminal_evidence(id,evidence) VALUES(?,?)", params![id, encoded])?;
+                tx.execute("UPDATE control SET halted=1,reason='terminal evidence conflict' WHERE singleton=1", [])?;
+                tx.commit()?;
+                return Ok((None, true));
             }
-            if record.state==AdmissionState::Terminal {
-                let previous:String=tx.query_row("SELECT evidence FROM terminal_evidence WHERE id=? ORDER BY sequence LIMIT 1",[&id],|r|r.get(0))?;
-                let previous:Value=serde_json::from_str(&previous).map_err(|_|RecoveryError::Storage)?;
-                if terminal_identity(&previous)?==normalized { return Ok((None,false)); }
-                tx.execute("INSERT INTO terminal_evidence(id,evidence) VALUES(?,?)",params![id,evidence])?;
-                tx.execute("UPDATE control SET halted=1,reason='terminal evidence conflict' WHERE singleton=1",[])?;
-                tx.commit()?;return Ok((None,true));
-            }
-            tx.execute("INSERT INTO terminal_evidence(id,evidence) VALUES(?,?)",params![id,evidence])?;
-            tx.execute("UPDATE admissions SET state='terminal' WHERE id=?",[id])?;
-            let old=advance(&tx)?;tx.commit()?;Ok((Some(old),false))
+            tx.execute("INSERT INTO terminal_evidence(id,evidence) VALUES(?,?)", params![id, encoded])?;
+            tx.execute("UPDATE admissions SET state='terminal' WHERE id=?", [id])?;
+            let old = advance(&tx)?;
+            tx.commit()?;
+            Ok((Some(old), false))
         }).await;
         let (old, conflict) = self.storage_result(result).await?;
         if conflict {
@@ -911,22 +996,42 @@ impl RecoveryJournal {
     ) -> Result<bool> {
         let _guard = self.serial.lock().await;
         self.healthy_locked().await?;
-        let result=self.db(move|conn| {
-            let tx=conn.transaction()?;
-            let halted:bool=tx.query_row("SELECT EXISTS(SELECT 1 FROM chain_halts WHERE chain_id=?)",[chain_id.to_string()],|r|r.get(0))?;
-            if halted { return Err(RecoveryError::RecoveryRequired("chain finality conflict requires reconciliation")); }
-            let current=load_chain_checkpoint(&tx,chain_id)?;
-            if current!=expected { return Ok((false,None,false)); }
-            if let Some(previous)=current {
-                if previous.policy!=evidence.policy || (previous.checkpoint_number==evidence.checkpoint_number && previous.checkpoint_hash!=evidence.checkpoint_hash) {
-                    tx.execute("INSERT OR IGNORE INTO chain_halts VALUES(?,'finality checkpoint conflict')",[chain_id.to_string()])?;
-                    let old=advance(&tx)?;tx.commit()?;return Ok((false,Some(old),true));
-                }
-                if evidence.checkpoint_number<previous.checkpoint_number { return Ok((false,None,false)); }
+        let result = self.db(move |conn| {
+            let tx = conn.transaction()?;
+            ensure_chain_not_halted(&tx, &chain_id.to_string())?;
+            let current = load_chain_checkpoint(&tx, chain_id)?;
+            if current != expected {
+                return Ok((false, None, false));
             }
-            let encoded=serde_json::to_string(&evidence).map_err(|_|RecoveryError::Storage)?;
-            tx.execute("INSERT INTO chain_checkpoints(chain_id,evidence) VALUES(?,?) ON CONFLICT(chain_id) DO UPDATE SET evidence=excluded.evidence",params![chain_id.to_string(),encoded])?;
-            let old=advance(&tx)?;tx.commit()?;Ok((true,Some(old),false))
+            if let Some(previous) = current {
+                if previous.policy != evidence.policy
+                    || (previous.checkpoint_number == evidence.checkpoint_number
+                        && previous.checkpoint_hash != evidence.checkpoint_hash) {
+                    tx.execute(
+                        "INSERT OR IGNORE INTO chain_halts VALUES(?,'finality checkpoint conflict')",
+                        [chain_id.to_string()],
+                    )?;
+                    let old = advance(&tx)?;
+                    tx.commit()?;
+                    return Ok((false, Some(old), true));
+                }
+                if evidence.checkpoint_number < previous.checkpoint_number {
+                    return Ok((false, None, false));
+                }
+                if evidence.checkpoint_number == previous.checkpoint_number {
+                    // Receipt block identity belongs to each terminal witness.
+                    // The chain fence is unchanged when policy/head/hash match.
+                    return Ok((true, None, false));
+                }
+            }
+            let encoded = serde_json::to_string(&evidence).map_err(|_| RecoveryError::Storage)?;
+            tx.execute(
+                "INSERT INTO chain_checkpoints(chain_id,evidence) VALUES(?,?) ON CONFLICT(chain_id) DO UPDATE SET evidence=excluded.evidence",
+                params![chain_id.to_string(), encoded],
+            )?;
+            let old = advance(&tx)?;
+            tx.commit()?;
+            Ok((true, Some(old), false))
         }).await;
         let (accepted, old, conflict) = self.storage_result(result).await?;
         if let Some(old) = old {
@@ -969,41 +1074,7 @@ impl RecoveryJournal {
     pub fn export(path: impl AsRef<Path>, output: impl AsRef<Path>) -> Result<()> {
         let conn = connection(path.as_ref(), true)?;
         conn.execute_batch("BEGIN")?;
-        let ids: Vec<String> = conn
-            .prepare("SELECT id FROM admissions ORDER BY id")?
-            .query_map([], |r| r.get(0))?
-            .collect::<std::result::Result<_, _>>()?;
-        let records = ids
-            .iter()
-            .map(|id| lookup(&conn, id)?.ok_or(RecoveryError::Storage))
-            .collect::<Result<Vec<_>>>()?;
-        let attempts = export_records(
-            &conn,
-            "SELECT id,replay_key,digest,payload FROM attempts ORDER BY sequence",
-            true,
-        )?;
-        let terminal = export_records(
-            &conn,
-            "SELECT id,'','',evidence FROM terminal_evidence ORDER BY sequence",
-            false,
-        )?;
-        let checkpoints: Vec<(String, String)> = conn
-            .prepare("SELECT chain_id,evidence FROM chain_checkpoints ORDER BY chain_id")?
-            .query_map([], |r| Ok((r.get(0)?, r.get(1)?)))?
-            .collect::<std::result::Result<_, _>>()?;
-        let halted_chains: Vec<String> = conn
-            .prepare("SELECT chain_id FROM chain_halts ORDER BY chain_id")?
-            .query_map([], |r| r.get(0))?
-            .collect::<std::result::Result<_, _>>()?;
-        let data = serde_json::json!({"format":"engine-recovery-export-v1","status":status(&conn)?,"admissions":records,"attempts":attempts,"terminal_evidence":terminal,"chain_checkpoints":checkpoints,"halted_chains":halted_chains});
-        let output = output.as_ref();
-        prepare_directory(output, false)?;
-        let mut file = private_new_file(output)?;
-        serde_json::to_writer_pretty(&mut file, &data).map_err(|_| RecoveryError::Storage)?;
-        file.write_all(b"\n")?;
-        file.sync_all()?;
-        File::open(output.parent().unwrap())?.sync_all()?;
-        Ok(())
+        export::publish_private(output.as_ref(), |file| export::write_snapshot(&conn, file))
     }
     /// Offline durable stop. There is deliberately no force-clear command.
     pub fn quarantine(path: impl AsRef<Path>) -> Result<()> {
@@ -1102,9 +1173,24 @@ impl RecoveryJournal {
             return Err(RecoveryError::Invalid("Redis must be a writable primary"));
         }
         conn.execute_batch("BEGIN IMMEDIATE")?;
-        conn.execute("UPDATE admissions SET state='quarantined' WHERE state!='terminal' AND EXISTS(SELECT 1 FROM attempts WHERE attempts.id=admissions.id)",[])?;
-        conn.execute("UPDATE control SET namespace=?,epoch=epoch+1,checkpoint=0,run_id=?,halted=1,reason='recovery incomplete' WHERE singleton=1",params![new_namespace,run])?;
-        conn.execute("INSERT INTO recovery_events(event) VALUES(?)",[serde_json::json!({"action":"recover","previous_namespace":old.namespace,"new_namespace":new_namespace,"previous_epoch":old.epoch}).to_string()])?;
+        conn.execute(
+            "UPDATE admissions SET state='quarantined' WHERE state!='terminal' AND EXISTS(SELECT 1 FROM attempts WHERE attempts.id=admissions.id)",
+            [],
+        )?;
+        conn.execute(
+            "UPDATE control SET namespace=?,epoch=epoch+1,checkpoint=0,run_id=?,halted=1,reason='recovery incomplete' WHERE singleton=1",
+            params![new_namespace, run],
+        )?;
+        let event = serde_json::json!({
+            "action": "recover",
+            "previous_namespace": old.namespace,
+            "new_namespace": new_namespace,
+            "previous_epoch": old.epoch,
+        });
+        conn.execute(
+            "INSERT INTO recovery_events(event) VALUES(?)",
+            [event.to_string()],
+        )?;
         conn.execute_batch("COMMIT")?;
         let c = control(&conn)?;
         let set: Option<String> = redis::cmd("SET")
@@ -1133,6 +1219,110 @@ impl RecoveryJournal {
         )?;
         status(&conn)
     }
+}
+
+fn ensure_chain_not_halted(conn: &Connection, chain: &str) -> Result<()> {
+    let halted: bool = conn.query_row(
+        "SELECT EXISTS(SELECT 1 FROM chain_halts WHERE chain_id=?)",
+        [chain],
+        |row| row.get(0),
+    )?;
+    if halted {
+        return Err(RecoveryError::RecoveryRequired(
+            "chain finality conflict requires reconciliation",
+        ));
+    }
+    Ok(())
+}
+
+fn validate_attempt_identity_in_db(
+    conn: &Connection,
+    record: &AdmissionRecord,
+    identity: &Value,
+) -> Result<()> {
+    use alloy::primitives::{Address, B256, U256};
+    fn field<T: serde::de::DeserializeOwned>(value: &Value, name: &str) -> Result<T> {
+        serde_json::from_value(value.get(name).cloned().ok_or(RecoveryError::Conflict)?)
+            .map_err(|_| RecoveryError::Conflict)
+    }
+    if record.state == AdmissionState::Quarantined {
+        return Err(RecoveryError::RecoveryRequired(
+            "transaction is quarantined",
+        ));
+    }
+    let key = record
+        .replay_key
+        .as_deref()
+        .ok_or(RecoveryError::RecoveryRequired(
+            "confirmation has no recorded broadcast attempt",
+        ))?;
+    let chain = key.split(':').nth(1).ok_or(RecoveryError::Storage)?;
+    if record.kind != "solana" {
+        let supplied_chain: u64 = field(identity, "chainId")?;
+        if chain.parse::<u64>().ok() != Some(supplied_chain) {
+            return Err(RecoveryError::Conflict);
+        }
+        ensure_chain_not_halted(conn, chain)?;
+    }
+    if record.kind == "eip7702" {
+        return Err(RecoveryError::RecoveryRequired(
+            "bundled EIP-7702 lacks a qualified canonical UID witness",
+        ));
+    }
+    // The id prefix of UNIQUE(id,digest) bounds the query to this request's
+    // history. Iterate rows instead of materializing every signed payload.
+    let mut statement =
+        conn.prepare("SELECT payload FROM attempts WHERE id=? ORDER BY sequence")?;
+    let mut rows = statement.query([&record.id])?;
+    while let Some(row) = rows.next()? {
+        let payload: String = row.get(0)?;
+        let attempt: Value = serde_json::from_str(&payload).map_err(|_| RecoveryError::Storage)?;
+        let matches = match record.kind.as_str() {
+            "eoa" | "eoa_noop" => {
+                let wanted: B256 = field(identity, "transactionHash")?;
+                field::<B256>(&attempt, "transactionHash").ok() == Some(wanted)
+            }
+            "solana" => {
+                let signature_text: String = field(identity, "signature")?;
+                let signature: solana_sdk::signature::Signature = signature_text
+                    .parse()
+                    .map_err(|_| RecoveryError::Conflict)?;
+                let supplied_chain: String = field(identity, "chainId")?;
+                key == format!("solana:{supplied_chain}:{signature}")
+                    && attempt
+                        .get("signature")
+                        .and_then(Value::as_str)
+                        .and_then(|value| value.parse::<solana_sdk::signature::Signature>().ok())
+                        == Some(signature)
+            }
+            "erc4337" => {
+                let chain_id: u64 = field(identity, "chainId")?;
+                let sender: Address = field(identity, "sender")?;
+                let entrypoint: Address = field(identity, "entrypoint")?;
+                let nonce: U256 = field(identity, "nonce")?;
+                let wanted: B256 = field(identity, "userOperationHash")?;
+                if key != format!("erc4337:{chain_id}:{entrypoint:#x}:{sender:#x}:{nonce}") {
+                    return Err(RecoveryError::Conflict);
+                }
+                let operation: engine_aa_types::VersionedUserOp = field(&attempt, "userOperation")?;
+                field::<u64>(&attempt, "chainId").ok() == Some(chain_id)
+                    && field::<Address>(&attempt, "sender").ok() == Some(sender)
+                    && field::<Address>(&attempt, "entrypoint").ok() == Some(entrypoint)
+                    && field::<U256>(&attempt, "nonce").ok() == Some(nonce)
+                    && operation
+                        .hash_with_custom_entrypoint(chain_id, entrypoint)
+                        .ok()
+                        == Some(wanted)
+            }
+            _ => return Err(RecoveryError::Invalid("unsupported confirmation kind")),
+        };
+        if matches {
+            return Ok(());
+        }
+    }
+    Err(RecoveryError::RecoveryRequired(
+        "confirmation identity is not a recorded broadcast attempt",
+    ))
 }
 
 fn load_chain_checkpoint(
@@ -1184,23 +1374,6 @@ fn status(conn: &Connection) -> Result<RecoveryStatus> {
         )?,
     })
 }
-fn export_records(conn: &Connection, sql: &str, attempt: bool) -> Result<Vec<Value>> {
-    let rows: Vec<(String, String, String, String)> = conn
-        .prepare(sql)?
-        .query_map([], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?)))?
-        .collect::<std::result::Result<_, _>>()?;
-    rows.into_iter()
-        .map(|(id, key, digest, body)| {
-            let body: Value = serde_json::from_str(&body).map_err(|_| RecoveryError::Storage)?;
-            Ok(if attempt {
-                serde_json::json!({"id":id,"replay_key":key,"digest":digest,"attempt":body})
-            } else {
-                serde_json::json!({"id":id,"evidence":body})
-            })
-        })
-        .collect()
-}
-
 /// Canonical keys prevent textual aliases from evading wallet+nonce uniqueness.
 fn validate_replay_key(kind: &str, key: &str) -> Result<()> {
     if key.is_empty() || key.len() > 2048 {
@@ -1239,3 +1412,10 @@ fn validate_replay_key(kind: &str, key: &str) -> Result<()> {
 #[cfg(test)]
 #[path = "recovery/tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "recovery/benchmark.rs"]
+mod benchmark;
+
+#[path = "recovery/export.rs"]
+mod export;

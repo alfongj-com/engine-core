@@ -1,10 +1,11 @@
-use alloy::{consensus::Transaction, providers::Provider};
+use alloy::providers::Provider;
 use engine_core::{chain::Chain, error::AlloyRpcErrorToEngineError};
+use futures::StreamExt;
 
 use crate::{
     eoa::{
         EoaExecutorStore,
-        store::{BorrowedTransaction, PendingTransaction, SubmissionResult, SubmissionResultType},
+        store::{BorrowedTransaction, PendingTransaction, SubmissionResult},
         worker::{
             EoaExecutorWorker,
             error::{
@@ -15,6 +16,11 @@ use crate::{
     },
     metrics::{calculate_duration_seconds, current_timestamp_ms},
 };
+
+// Bound a worker cycle independently from the larger mempool window. A slow
+// durable store must not defer receipt polling behind thousands of signatures.
+const MAX_NEW_TRANSACTIONS_PER_CYCLE: u64 = 128;
+const SEND_CONCURRENCY: usize = 32;
 
 const HEALTH_CHECK_INTERVAL_MS: u64 = 60 * 5 * 1000; // 5 minutes in milliseconds
 
@@ -193,7 +199,10 @@ impl<C: Chain> EoaExecutorWorker<C> {
             }
 
             // Build and sign all transactions in parallel
-            let prepared_results = futures::future::join_all(build_tasks).await;
+            let prepared_results = futures::stream::iter(build_tasks)
+                .buffered(SEND_CONCURRENCY)
+                .collect::<Vec<_>>()
+                .await;
             let prepared_results_with_pending = pending_txs
                 .iter()
                 .take(prepared_results.len())
@@ -244,7 +253,10 @@ impl<C: Chain> EoaExecutorWorker<C> {
                 })
                 .collect();
 
-            let send_results = futures::future::join_all(send_tasks).await;
+            let send_results = futures::stream::iter(send_tasks)
+                .buffered(SEND_CONCURRENCY)
+                .collect::<Vec<_>>()
+                .await;
 
             // Process send results and update states
             let submission_results = send_results
@@ -285,7 +297,10 @@ impl<C: Chain> EoaExecutorWorker<C> {
                 build_tasks.push(self.send_noop_transaction(nonce));
             }
 
-            let send_results = futures::future::join_all(build_tasks).await;
+            let send_results = futures::stream::iter(build_tasks)
+                .buffered(SEND_CONCURRENCY)
+                .collect::<Vec<_>>()
+                .await;
 
             let successful_sends = send_results
                 .into_iter()
@@ -393,7 +408,7 @@ impl<C: Chain> EoaExecutorWorker<C> {
 
         let function_start = current_timestamp_ms();
         let mut total_sent: usize = 0;
-        let mut remaining_budget = budget;
+        let mut remaining_budget = budget.min(MAX_NEW_TRANSACTIONS_PER_CYCLE);
 
         // Fixed number of iterations to avoid infinite loops
         for iteration in 0..10 {
@@ -448,7 +463,10 @@ impl<C: Chain> EoaExecutorWorker<C> {
                 })
                 .collect();
 
-            let prepared_results = futures::future::join_all(build_tasks).await;
+            let prepared_results = futures::stream::iter(build_tasks)
+                .buffered(SEND_CONCURRENCY)
+                .collect::<Vec<_>>()
+                .await;
 
             tracing::info!(
                 duration_seconds = calculate_duration_seconds(build_start, current_timestamp_ms()),
@@ -529,7 +547,10 @@ impl<C: Chain> EoaExecutorWorker<C> {
                 })
                 .collect();
 
-            let send_results = futures::future::join_all(send_tasks).await;
+            let send_results = futures::stream::iter(send_tasks)
+                .buffered(SEND_CONCURRENCY)
+                .collect::<Vec<_>>()
+                .await;
 
             tracing::info!(
                 duration_seconds = calculate_duration_seconds(send_start, current_timestamp_ms()),
@@ -553,17 +574,7 @@ impl<C: Chain> EoaExecutorWorker<C> {
                         &self.chain,
                     );
 
-                    match &result.result {
-                        SubmissionResultType::Success | SubmissionResultType::Reconcile => result,
-                        SubmissionResultType::Nack(e) => {
-                            tracing::error!(error = ?e, transaction_id = borrowed_tx.transaction_id, nonce = borrowed_tx.data.signed_transaction.nonce(), "Transaction nack error during send");
-                            result
-                        }
-                        SubmissionResultType::Fail(e) => {
-                            tracing::error!(error = ?e, transaction_id = borrowed_tx.transaction_id, nonce = borrowed_tx.data.signed_transaction.nonce(), "Transaction failed during send");
-                            result
-                        }
-                    }
+                    result
                 })
                 .collect();
 
@@ -590,8 +601,10 @@ impl<C: Chain> EoaExecutorWorker<C> {
             total_sent += processing_report.moved_to_submitted;
 
             // Update remaining budget by actual nonce consumption
-            remaining_budget =
-                remaining_budget.saturating_sub(processing_report.moved_to_submitted as u64);
+            remaining_budget = remaining_budget.saturating_sub(
+                (processing_report.moved_to_submitted + processing_report.retained_uncertain)
+                    as u64,
+            );
 
             tracing::info!(
                 iteration_duration_seconds = calculate_duration_seconds(iteration_start, current_timestamp_ms()),
@@ -618,3 +631,7 @@ impl<C: Chain> EoaExecutorWorker<C> {
         Ok(total_sent as u32)
     }
 }
+
+#[cfg(test)]
+#[path = "send_tests.rs"]
+mod tests;

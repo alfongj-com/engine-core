@@ -39,15 +39,22 @@
     },
     {
       "path": "core/src/recovery.rs",
-      "sha256": "c8e1498cf6e6b1c0172e322981d29bec2d2cf5dd9f884433909194e2bae1c4e1",
+      "sha256": "2fea4aa50c2faae1319d8ad641d5af0d2b44207c8d166b484a216035482842c5",
       "models": [
         "DisasterRecovery",
         "Finality"
       ]
     },
     {
+      "path": "core/src/recovery/export.rs",
+      "models": [
+        "DisasterRecovery"
+      ],
+      "sha256": "fc8dcd2bc04a2c671c999fa9bd97a05f77796e3c67ae1396631b60e175e7300a"
+    },
+    {
       "path": "core/src/recovery/tests.rs",
-      "sha256": "78040f47d6fb78a7b3abd49701824cbf788a497c957521fa2ca44b92db907894",
+      "sha256": "a8f4e858fc48200e86d00b10482f4ffc20b70c5afd1f8e0c2f8c12e9df61904f",
       "models": [
         "DisasterRecovery",
         "Finality"
@@ -55,15 +62,22 @@
     },
     {
       "path": "executors/src/eip7702_executor/confirm.rs",
-      "sha256": "3fc95bd4c806b941fe6c45216a0ab1a73cdf92933831f51d471aa30ac201010d",
+      "sha256": "262aa5d2bcd4a3ee1b4b0d85fc287fe477384c8831904067dba4659c8f238032",
       "models": [
         "DisasterRecovery",
         "Finality"
       ]
     },
     {
+      "path": "executors/src/eip7702_executor/mod.rs",
+      "models": [
+        "DisasterRecovery"
+      ],
+      "sha256": "e8bc6ba0c547349c1e9bb380b7c7bc0cef88112e0f25b2dc3798744c3b027e8a"
+    },
+    {
       "path": "executors/src/eip7702_executor/send.rs",
-      "sha256": "8a44dd14aadfc7bec71fa5fee77cfb678e9be8ce6781a1bb9ee28f8f73dfbf98",
+      "sha256": "506f5f1438f0b9a672cda32c1e857dc17e97c909436d590bd502922b0ac3b225",
       "models": [
         "DisasterRecovery"
       ]
@@ -77,7 +91,7 @@
     },
     {
       "path": "executors/src/eoa/store/atomic.rs",
-      "sha256": "a11032213733a56e7f8f3801be036f23f3157b309adcfde0b88e2386af550899",
+      "sha256": "d12e1608bfb340f002be92fe6acd2c13b7ac790ca1d5cc5405f335b4835d5de1",
       "models": [
         "DisasterRecovery",
         "EoaRecovery"
@@ -85,7 +99,7 @@
     },
     {
       "path": "executors/src/eoa/store/borrowed.rs",
-      "sha256": "4225a6f4adf9cafb393a12d325ef34812b8021f00d1208cb8347bb6f08c5dcf4",
+      "sha256": "665a02593e533cc49c243b83a52be9ab18cdb2172d40f54c5ac2546d51c0fe22",
       "models": [
         "DisasterRecovery",
         "EoaRecovery"
@@ -100,40 +114,44 @@
     },
     {
       "path": "executors/src/eoa/store/mod.rs",
-      "sha256": "c0d950a56a8efe2630f43084d8a3b98c12b7256cab3bc749a27b582ee13215c9",
+      "sha256": "6c62681914e9c4eedf1f915c37a3d589e5ea828c51c25dd06c38df51e57c2cbb",
       "models": [
         "DisasterRecovery",
         "EoaRecovery",
-        "Finality"
+        "Finality",
+        "NonceAllocator"
       ]
     },
     {
       "path": "executors/src/eoa/store/pending.rs",
       "sha256": "56792080135b85e1f8c3ec60e7a61c38370e730d1fc873b31329bc6a705a49de",
       "models": [
-        "EoaRecovery"
+        "EoaRecovery",
+        "NonceAllocator"
       ]
     },
     {
       "path": "executors/src/eoa/store/submitted.rs",
-      "sha256": "451f7d1fd047354cc9bad9bc3f5d89e8aa69b317bb9b6517f5ebde617ac1057a",
+      "sha256": "f9408dc0ec413c3f909ee00a576a6e8f3c14d352ed818a47d348b5cf16d655c3",
       "models": [
         "EoaRecovery",
-        "Finality"
+        "Finality",
+        "NonceAllocator"
       ]
     },
     {
       "path": "executors/src/eoa/store/tests.rs",
-      "sha256": "71c8a7c7cda5c2a0b612202ddfa4701ae1c128d7a5ad7d57b6ffed1b59eaea12",
+      "sha256": "3d3f02053931cfe1ecb81e74548467c30be27147bebea862e27c06103e1d5487",
       "models": [
         "DisasterRecovery",
         "EoaRecovery",
-        "Finality"
+        "Finality",
+        "NonceAllocator"
       ]
     },
     {
       "path": "executors/src/eoa/worker/confirm.rs",
-      "sha256": "d912459f8b486bb88786cdc16edecf19af8bbb36cb47ec71fdf212aae6482661",
+      "sha256": "0c7dfdbab68045222d9277347557404c87d9383046657eb5d99062ffaeeb4eb7",
       "models": [
         "DisasterRecovery",
         "EoaRecovery",
@@ -142,7 +160,7 @@
     },
     {
       "path": "executors/src/eoa/worker/error.rs",
-      "sha256": "bb63c9009dbc8bd1b149fb2a5e89614e124f74d90449e0f4f014a6ce322cb3c6",
+      "sha256": "ca0ce56add436a9d0640153640763fcdcc3284bbd2e06d40b2a172d3e57c7575",
       "models": [
         "EoaRecovery"
       ]
@@ -163,7 +181,7 @@
     },
     {
       "path": "executors/src/eoa/worker/mod.rs",
-      "sha256": "e85e5b45a8b817785eded06cfb5a0463ef8e3370911ceed488c10cca1c2fe18c",
+      "sha256": "0cd9f52e30246c2f07a4ffc402b5dfc0c8174ec68c4052b2e4f38e7d8f320ca2",
       "models": [
         "DisasterRecovery",
         "EoaRecovery",
@@ -172,7 +190,7 @@
     },
     {
       "path": "executors/src/eoa/worker/receipt_tests.rs",
-      "sha256": "6f837ddbdf5e7682c26fed1d05c0e96a51b3b85ab4cb22625db11966ea1c2aa8",
+      "sha256": "8473009c9a9b8fba6963dd920bc8461a0035ae0316648c49973dff9c5158bab0",
       "models": [
         "EoaRecovery",
         "Finality"
@@ -180,15 +198,25 @@
     },
     {
       "path": "executors/src/eoa/worker/send.rs",
-      "sha256": "5dcc22f34c066bb6b2c7a0342482b4ba29edf910b3bab9c2db6ec6f91b919542",
+      "sha256": "78bd0cd685257fc7c143abae6d39ac9d93cb8b5f9c507ce96c45c1d19920cd9b",
       "models": [
         "DisasterRecovery",
-        "EoaRecovery"
+        "EoaRecovery",
+        "NonceAllocator"
       ]
     },
     {
+      "path": "executors/src/eoa/worker/send_tests.rs",
+      "models": [
+        "EoaRecovery",
+        "DisasterRecovery",
+        "NonceAllocator"
+      ],
+      "sha256": "d1f98d8fb77c242e329b05fc90f6e10d2771760e97dbfd9bfc5fc27e69f1eaea"
+    },
+    {
       "path": "executors/src/eoa/worker/transaction.rs",
-      "sha256": "182bc7fbd96755eef9b2a86240434af7be7066084901bc41fc54055dd7a2336d",
+      "sha256": "d8747d671d2b15f1e32d544dac51e7ad0161c06c5fd99a3e73938fe4d9bcae88",
       "models": [
         "DisasterRecovery",
         "Fees"
@@ -196,7 +224,7 @@
     },
     {
       "path": "executors/src/external_bundler/confirm.rs",
-      "sha256": "337b95ee870955347589ec43a57723d09a5c22e8c8f82626898f4aa5be690789",
+      "sha256": "77b720415f8da17b9296e422632e8c62c642ab67e4cb696739f391c06c0f6f2d",
       "models": [
         "DisasterRecovery",
         "Finality"
@@ -204,14 +232,21 @@
     },
     {
       "path": "executors/src/external_bundler/send.rs",
-      "sha256": "ebf5930e009aadb254e00637b80375c437248b609961db755d8b5ee2c77f1cfd",
+      "sha256": "52eaf767a06935f78122d7f65f263d5e3e8ff5bf1b05c2a4d7c5742d08c4be1e",
       "models": [
         "DisasterRecovery"
       ]
     },
     {
+      "path": "executors/src/external_bundler/send_security_tests.rs",
+      "models": [
+        "DisasterRecovery"
+      ],
+      "sha256": "10c53dfb01f76f223694a1b0df2faa8da62a9bfd2f7b2ea5385d8017128027c7"
+    },
+    {
       "path": "executors/src/finality.rs",
-      "sha256": "4049b5906a37084dea012012fd1ddd5ffda9f589686b741511f46715c62b5ccd",
+      "sha256": "7de8ccaed3bc80cb6da57e094203de3dd89d1d507cb5747044d836ee949514aa",
       "models": [
         "DisasterRecovery",
         "Finality"
@@ -219,7 +254,7 @@
     },
     {
       "path": "executors/src/finality_tests.rs",
-      "sha256": "d79894e94bfb4e2b1e484e9ef17f9338a33b9043ad0ec4451970300b5de4b05e",
+      "sha256": "b17a5eaa98e0e403bed2cce33116d56aa54f1a464e76d2464bd5cd87eefa2faf",
       "models": [
         "DisasterRecovery",
         "Finality"
@@ -235,25 +270,39 @@
     },
     {
       "path": "executors/src/recovery.rs",
-      "sha256": "d3e3ad21f1009edaba80a53adbd82b2e9b9e6c481dda700940ffd168f3994117",
+      "sha256": "7d46dddc788a59be9c40691f3bfe4869cfe957db6c9e6c2a440e2cf307449cb2",
       "models": [
         "DisasterRecovery"
       ]
     },
     {
       "path": "executors/src/recovery_tests.rs",
-      "sha256": "b224d75a939db083411e1ece9d5962b2d35d30981178fa09af0c1baba2f5c5ee",
+      "sha256": "bce8876ea8f00d4ca4ad0deafd94c9c0ed2ced0ce96267a775da47b6a53bf268",
       "models": [
         "DisasterRecovery"
       ]
     },
     {
       "path": "executors/src/solana_executor/recovery_tests.rs",
-      "sha256": "c83e4ea36fc4683037888eaadca644d2f9c951ea2a6ef68b11b79647bd74d297",
+      "sha256": "5621cad92cf2b21a99489271df09659480be43f50fc132fd750cacc01fd97a72",
       "models": [
         "DisasterRecovery",
         "SolanaRecovery"
       ]
+    },
+    {
+      "path": "executors/src/solana_executor/rpc_cache.rs",
+      "models": [
+        "SolanaRecovery"
+      ],
+      "sha256": "bcf46425cabba4b47944bfefa32dac904c82a4c13245b9cebb23e4c1bd7df853"
+    },
+    {
+      "path": "executors/src/solana_executor/rpc_cache_tests.rs",
+      "models": [
+        "SolanaRecovery"
+      ],
+      "sha256": "ef5d585f9dcab56570382438af03bcbb5c5fa44eab3f7be0de3d95ae68940d45"
     },
     {
       "path": "executors/src/solana_executor/storage.rs",
@@ -265,7 +314,7 @@
     },
     {
       "path": "executors/src/solana_executor/worker.rs",
-      "sha256": "e59150ec2f6c7d3bd45d447738f0f01472c57105746a0a6000f40fdaba82d6e8",
+      "sha256": "761ccd48c66fbd7716ab2d7b40c7ab3307f4c9157b0150e5cda1edf536091322",
       "models": [
         "DisasterRecovery",
         "SolanaRecovery"
@@ -324,7 +373,7 @@
     },
     {
       "path": "server/src/config.rs",
-      "sha256": "dd31fe79fd4a45cf450867d769c84da894f5e914717337856dd633661f409bfb",
+      "sha256": "19fcd970b2e47ef1935654e40c2f84baf82e63ceb9a37cf93f7c27e9a61521e7",
       "models": [
         "DisasterRecovery",
         "Finality"
@@ -332,7 +381,7 @@
     },
     {
       "path": "server/src/execution_router/mod.rs",
-      "sha256": "ecb7097c7a725c6cbaf936c3fd90e1b9947a5c060f1ff080739a7040f931cf9e",
+      "sha256": "b3af84acfa69df55c41ba962416dea689cc3f04d568060625708e4ced46b71d4",
       "models": [
         "Admission",
         "DisasterRecovery",
@@ -355,10 +404,17 @@
     },
     {
       "path": "server/src/http/server.rs",
-      "sha256": "abe6b4408a5dcbccb14a1fece747d25763f83403d1ba5a2fc091686543c425ce",
+      "sha256": "3a512e55dd2d622c0af2020bbae0760912826ae076dd61183728d381b722a516",
       "models": [
         "DisasterRecovery"
       ]
+    },
+    {
+      "path": "server/src/http/server_tests.rs",
+      "models": [
+        "DisasterRecovery"
+      ],
+      "sha256": "62346558afc9c287c44d91fb6ebfb661facb9178159965c53c03144d7cd680a7"
     },
     {
       "path": "server/src/lib.rs",
@@ -376,7 +432,7 @@
     },
     {
       "path": "server/src/recovery.rs",
-      "sha256": "058b4f056e0fd5b2eb1aadbc95afc771f853c2bab53cc16a43fef70bddd05b60",
+      "sha256": "85a2ed6a6031f5c82e245f67e1690faea4a9e5b1223a80a91971532724ecd22d",
       "models": [
         "DisasterRecovery"
       ]
@@ -397,7 +453,7 @@
     },
     {
       "path": "server/tests/api_safety.rs",
-      "sha256": "149f94e02494501d6c8ee9cb5ea70eb6d5d6e31dba0cf440beb08203b0037689",
+      "sha256": "0f0180ba2fb6e281dfe92f26dc48fb857245be67ee4ec9fb32cadfef492ca1c8",
       "models": [
         "Admission",
         "DisasterRecovery",
@@ -442,7 +498,15 @@
   ],
   "review": {
     "date": "2026-09-26",
-    "base_commit": "3e96e14ae0d37be794f7b787423f936d168a1d90",
-    "scope": "Reviewed frozen working-tree bytes listed below; finite models are separate abstractions, not a proved composition or Rust/SQLite/Redis/filesystem refinement. The base commit alone does not identify the modified runtime."
+    "base_commit": "5baa70b2f3d57c9bab9fe0163197c5614fe2657f",
+    "scope": "Reviewed frozen working-tree bytes after the throughput/reliability revision. The base commit is the comparison baseline, not the modified runtime. Hashes are review tripwires, not a Rust/SQLite/Redis/filesystem refinement proof.",
+    "correspondence": [
+      "NonceAllocator now models consumed-count floor with out-of-order retained receipt cleanup; separate bounded-page/RPC concurrency tests cover scheduling, not model throughput or fairness.",
+      "EOA Uncertain retains exact borrowed wire on all dispatch errors; same-identity retry stutters in EoaRecovery, included receipt only restores submitted projection. NOOP reserves submitted hash before dispatch; automatic NOOP reconciliation is not modeled or implemented.",
+      "DisasterRecovery terminal attribution requires the same admission independently executed its recorded attempt. Actual hash/signature/UserOperation computation and endpoint/genesis validation remain implementation checks.",
+      "Exact attempt and unchanged checkpoint no-ops retain health/owner/CAS guards; admission overload makes no durable transition. Retained terminal retries do not enqueue new work.",
+      "Solana independent signature reservation precedes Redis attempt storage; missing projection after SQL commit parks. The Redis and authority models are separate and not mechanically composed.",
+      "Bundled EIP-7702 is disabled and legacy work parks; no dedicated protocol qualification is claimed. Streaming export, HTTP authentication/semaphores and provider genesis checks are outside the state-machine proof."
+    ]
   }
 }

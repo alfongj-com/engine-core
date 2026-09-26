@@ -202,6 +202,14 @@ where
         &self,
         job: &BorrowedJob<Self::JobData>,
     ) -> JobResult<Self::Output, Self::ErrorData> {
+        super::require_bundled_execution_qualification()
+            .map_err(|error| Eip7702ConfirmationError::InternalError {
+                message: error.to_string(),
+            })
+            .map_err_nack(
+                Some(Duration::from_secs(3600)),
+                twmq::job::RequeuePosition::Last,
+            )?;
         let job_data = &job.job.data;
         let transaction_hash_delay = transaction_hash_retry_delay(job.attempts());
 

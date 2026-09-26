@@ -29,7 +29,9 @@ pub use submitted::{
 pub const NO_OP_TRANSACTION_ID: &str = "noop";
 /// Separate from the mempool window: retain enough included attempts for finality,
 /// but stop new allocation if settlement stops advancing. Counts fee-bump hashes too.
-pub const MAX_UNFINALIZED_ATTEMPTS: u64 = 10_000;
+pub const MAX_UNFINALIZED_ATTEMPTS: u64 = 100_000;
+/// Waiting unsigned requests per signer/chain. Reject excess intake; never evict evidence.
+pub const MAX_PENDING_TRANSACTIONS: u64 = 25_000;
 
 #[derive(Debug, Clone)]
 pub struct ReplacedTransaction {
@@ -39,6 +41,7 @@ pub struct ReplacedTransaction {
 
 #[derive(Debug, Clone)]
 pub struct ConfirmedTransaction {
+    pub nonce: u64,
     pub transaction_hash: String,
     pub transaction_id: String,
     pub receipt: alloy::rpc::types::TransactionReceipt,
@@ -509,6 +512,56 @@ impl EoaExecutorStore {
         Ok(submitted_txs)
     }
 
+    /// Read a bounded rotating rank page of submitted hashes below the observed
+    /// nonce. Rank ranges avoid ZRANGEBYSCORE LIMIT's linear offset walk; Redis
+    /// returns at most `limit` records even with a large unfinalized backlog.
+    /// Cursor movement is advisory: deletions can shift ranks, so later cycles
+    /// revisit the range; no entry is removed or considered settled by this read.
+    pub async fn get_submitted_transaction_page(
+        &self,
+        count: u64,
+        offset: usize,
+        limit: usize,
+    ) -> Result<(Vec<SubmittedTransactionDehydrated>, usize), TransactionStoreError> {
+        if count == 0 || limit == 0 {
+            return Ok((Vec::new(), 0));
+        }
+        // Bound the read even if a future caller passes an untrusted limit.
+        let limit = limit.min(4096);
+        let script = twmq::redis::Script::new(
+            r#"
+            local eligible = redis.call('ZCOUNT', KEYS[1], '-inf', ARGV[1])
+            if eligible == 0 then return {{}, 0} end
+            local first = tonumber(ARGV[2]) % eligible
+            local take = math.min(tonumber(ARGV[3]), eligible)
+            local head = math.min(take, eligible - first)
+            local rows = redis.call('ZRANGE', KEYS[1], first, first + head - 1, 'WITHSCORES')
+            if head < take then
+                local tail = redis.call('ZRANGE', KEYS[1], 0, take - head - 1, 'WITHSCORES')
+                for _, value in ipairs(tail) do rows[#rows + 1] = value end
+            end
+            return {rows, (first + take) % eligible}
+            "#,
+        );
+        let (rows, next): (Vec<SubmittedTransactionStringWithNonce>, usize) = script
+            .key(self.submitted_transactions_zset_name())
+            .arg(format!("({count}"))
+            // Lua numbers are exact integers only through 2^53. An old/corrupt
+            // cursor outside that domain restarts the advisory scan safely.
+            .arg(if offset as u128 <= (1u128 << 53) - 1 {
+                offset
+            } else {
+                0
+            })
+            .arg(limit)
+            .invoke_async(&mut self.redis.clone())
+            .await?;
+        Ok((
+            SubmittedTransactionDehydrated::from_redis_strings(&rows),
+            next,
+        ))
+    }
+
     /// Get all transaction IDs for a specific nonce
     pub async fn get_submitted_transactions_for_nonce(
         &self,
@@ -871,6 +924,7 @@ impl EoaExecutorStore {
             end
             -- A partial/corrupt record also needs reconciliation, not overwrite.
             if redis.call('EXISTS', KEYS[1]) == 1 then return -1 end
+            if redis.call('ZCARD', KEYS[2]) >= tonumber(ARGV[4]) then return -2 end
             redis.call('HSET', KEYS[1], 'user_request', ARGV[2], 'status', 'pending', 'created_at', ARGV[3])
             redis.call('ZADD', KEYS[2], ARGV[3], ARGV[1])
             return 1
@@ -880,13 +934,34 @@ impl EoaExecutorStore {
         .arg(transaction_id)
         .arg(user_request_json)
         .arg(now)
+        .arg(MAX_PENDING_TRANSACTIONS)
         .invoke_async(&mut self.redis.clone())
         .await?;
 
+        if outcome == -2 {
+            return Err(TransactionStoreError::CapacityExceeded);
+        }
         if outcome == -1 {
             return Err(TransactionStoreError::TransactionConflict {
                 transaction_id: transaction_id.clone(),
             });
+        }
+        Ok(())
+    }
+
+    /// Reject a full queue before writing a new durable admission. The atomic
+    /// enqueue repeats this check to close the race between concurrent callers.
+    pub async fn check_admission_capacity(
+        &self,
+        transaction_id: &str,
+    ) -> Result<(), TransactionStoreError> {
+        let (exists, pending): (bool, u64) = twmq::redis::pipe()
+            .exists(self.transaction_data_key_name(transaction_id))
+            .zcard(self.pending_transactions_zset_name())
+            .query_async(&mut self.redis.clone())
+            .await?;
+        if !exists && pending >= MAX_PENDING_TRANSACTIONS {
+            return Err(TransactionStoreError::CapacityExceeded);
         }
         Ok(())
     }
@@ -1032,6 +1107,8 @@ impl EoaExecutorStore {
 #[derive(Debug, thiserror::Error, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE", tag = "errorCode")]
 pub enum TransactionStoreError {
+    #[error("EOA pending queue is full; retry the original request after capacity is available")]
+    CapacityExceeded,
     #[error("Redis error: {message}")]
     RedisError { message: String },
 

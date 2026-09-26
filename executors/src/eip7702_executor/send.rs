@@ -182,6 +182,14 @@ where
         &self,
         job: &BorrowedJob<Self::JobData>,
     ) -> JobResult<Self::Output, Self::ErrorData> {
+        super::require_bundled_execution_qualification()
+            .map_err(|error| Eip7702SendError::InternalError {
+                message: error.to_string(),
+            })
+            .map_err_nack(
+                Some(Duration::from_secs(3600)),
+                twmq::job::RequeuePosition::Last,
+            )?;
         let job_data = &job.job.data;
         crate::recovery::validate("eip7702", &job_data.transaction_id, job_data)
             .await

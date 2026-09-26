@@ -143,6 +143,55 @@ impl UserCancellable for UserOpConfirmationError {
     }
 }
 
+fn durable_userop_identity(job: &UserOpConfirmationJobData) -> serde_json::Value {
+    serde_json::json!({
+        "chainId": job.chain_id, "userOperationHash": job.user_op_hash,
+        "entrypoint": job.entrypoint_address, "sender": job.account_address, "nonce": job.nonce,
+    })
+}
+
+async fn validate_durable_confirmation(job: &UserOpConfirmationJobData) -> Result<(), EngineError> {
+    let Some(journal) = engine_core::recovery::global() else {
+        return Ok(());
+    };
+    let invalid = || EngineError::InternalError {
+        message: "Confirmation does not match its durable admission and broadcast identity".into(),
+    };
+    let admission = journal
+        .admission("erc4337", &job.transaction_id)
+        .await
+        .map_err(|_| invalid())?
+        .ok_or_else(invalid)?;
+    let admitted: super::send::ExternalBundlerSendJobData =
+        serde_json::from_value(admission.payload).map_err(|_| invalid())?;
+    if admission.state == engine_core::recovery::AdmissionState::Quarantined
+        || admitted.transaction_id != job.transaction_id
+        || admitted.chain_id != job.chain_id
+        || admitted.pregenerated_nonce != Some(job.nonce)
+        || job.entrypoint_address
+            != Some(
+                admitted
+                    .execution_options
+                    .entrypoint_details
+                    .entrypoint_address,
+            )
+        || serde_json::to_value(&admitted.rpc_credentials).map_err(|_| invalid())?
+            != serde_json::to_value(&job.rpc_credentials).map_err(|_| invalid())?
+        || serde_json::to_value(&admitted.webhook_options).map_err(|_| invalid())?
+            != serde_json::to_value(&job.webhook_options).map_err(|_| invalid())?
+    {
+        return Err(invalid());
+    }
+    journal
+        .validate_attempt_identity(
+            "erc4337",
+            &job.transaction_id,
+            &durable_userop_identity(job),
+        )
+        .await
+        .map_err(|_| invalid())
+}
+
 fn userop_identity_matches(
     job: &UserOpConfirmationJobData,
     receipt: &UserOperationReceipt,
@@ -252,6 +301,19 @@ where
             self.confirmation_retry_delay
         };
 
+        if job.job.id != job_data.transaction_id {
+            return Err(UserOpConfirmationError::InternalError {
+                message: "Confirmation queue ID differs from admitted transaction ID".into(),
+            })
+            .map_err_nack(Some(retry_delay), RequeuePosition::Last);
+        }
+        validate_durable_confirmation(job_data)
+            .await
+            .map_err(|error| UserOpConfirmationError::InternalError {
+                message: error.to_string(),
+            })
+            .map_err_nack(Some(retry_delay), RequeuePosition::Last)?;
+
         // 1. Get Chain
         let chain = self
             .chain_service
@@ -355,21 +417,23 @@ where
             })
             .map_err_nack(Some(retry_delay), RequeuePosition::Last);
         };
-        crate::finality::record_evm_terminal(
-            "erc4337",
-            &job_data.transaction_id,
-            job_data.chain_id,
-            canonical.transaction_hash,
-            receipt.success,
-            &finality,
-        )
-        .await
-        .map_err(|e| UserOpConfirmationError::ReceiptQueryFailed {
-            user_op_hash: job_data.user_op_hash.clone(),
-            message: "Cannot persist final settlement".into(),
-            inner_error: Some(e),
-        })
-        .map_err_nack(Some(retry_delay), RequeuePosition::Last)?;
+        if let Some(journal) = engine_core::recovery::global() {
+            let mut proof = durable_userop_identity(job_data);
+            proof["transactionHash"] = serde_json::json!(canonical.transaction_hash);
+            proof["outcome"] = serde_json::json!(if receipt.success {
+                "success"
+            } else {
+                "reverted"
+            });
+            proof["finality"] = serde_json::json!(finality);
+            journal
+                .record_terminal("erc4337", &job_data.transaction_id, proof)
+                .await
+                .map_err(|_| UserOpConfirmationError::InternalError {
+                    message: "Cannot persist verified operation settlement".into(),
+                })
+                .map_err_nack(Some(retry_delay), RequeuePosition::Last)?;
+        }
         if !receipt.success {
             return Err(UserOpConfirmationError::TransactionFailed {
                 receipt: Box::new(receipt),
