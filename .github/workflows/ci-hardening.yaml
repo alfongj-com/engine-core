@@ -53,6 +53,8 @@ jobs:
         run: cargo test --locked --workspace --no-run
       - name: Unit and hermetic integration suites
         run: cargo test --locked --workspace -- --test-threads=1
+      - name: Independent journal crash and rollback regressions
+        run: cargo test --locked -p engine-core --lib recovery -- --ignored --test-threads=1
       - name: EOA and Solana Redis, RPC and deployment regressions
         run: cargo test --locked -p engine-executors --lib -- --ignored --test-threads=1
       - name: Solana request retention across queue pruning
@@ -75,6 +77,14 @@ jobs:
         run: ANVIL_BIN=/tmp/engine-foundry/anvil python3 scripts/local_eoa_recovery.py --redis-crash --report /tmp/local-eoa-redis-crash.json
       - name: Reverted execution and Redis crash recovery
         run: ANVIL_BIN=/tmp/engine-foundry/anvil python3 scripts/local_eoa_recovery.py --transactions 8 --redis-crash --revert --report /tmp/local-eoa-reverted-recovery.json
+      - name: Redis data loss and stale-backup quarantine
+        run: |
+          ANVIL_BIN=/tmp/engine-foundry/anvil python3 scripts/local_redis_disaster.py --loss flush --report /tmp/local-redis-loss.json
+          ANVIL_BIN=/tmp/engine-foundry/anvil python3 scripts/local_redis_disaster.py --loss rollback --report /tmp/local-redis-rollback.json
+      - name: Pre-finality reorg and same-nonce recovery
+        run: |
+          ANVIL_BIN=/tmp/engine-foundry/anvil python3 scripts/local_eoa_reorg.py --report /tmp/local-eoa-reorg.json
+          ANVIL_BIN=/tmp/engine-foundry/anvil python3 scripts/local_eoa_reorg.py --revert --report /tmp/local-eoa-reorg-reverted.json
       - name: Install pinned local Solana validator
         run: |
           curl -fL --retry 3 https://github.com/anza-xyz/agave/releases/download/v4.2.2/solana-release-x86_64-unknown-linux-gnu.tar.bz2 -o /tmp/solana.tar.bz2
@@ -83,6 +93,16 @@ jobs:
           tar xjf /tmp/solana.tar.bz2 -C /tmp/engine-solana
       - name: Solana accepted-send response loss and process recovery
         run: python3 scripts/local_solana_recovery.py --solana-bin-dir /tmp/engine-solana/solana-release/bin --rust-log debug --report /tmp/local-solana-recovery.json
+      - name: Preserve local-chain scenario reports
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: local-chain-recovery-reports
+          path: |
+            /tmp/local-eoa-*.json
+            /tmp/local-redis-*.json
+            /tmp/local-solana-recovery.json
+          if-no-files-found: ignore
       - name: Dependency advisories
         run: |
           cargo install cargo-audit --version 0.22.2 --locked
