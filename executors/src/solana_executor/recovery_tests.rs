@@ -61,6 +61,7 @@ impl Fixture {
                 .unwrap(),
         );
         let handler = SolanaExecutorJobHandler {
+            confirmation_poll_interval: Duration::from_secs(1),
             solana_signer: Arc::new(SolanaSigner::new(
                 thirdweb_core::iaw::IAWClient::new("http://127.0.0.1:1").unwrap(),
             )),
@@ -1269,5 +1270,56 @@ async fn wrong_cluster_or_unavailable_genesis_never_signs_or_sends() {
     }
     finish(server).await;
     assert_eq!(seen.lock().unwrap().len(), 2);
+    f.cleanup().await;
+}
+
+#[tokio::test]
+#[ignore = "requires disposable Redis in TEST_REDIS_URL"]
+async fn configured_confirmation_polling_preserves_wire_and_requires_finalized_receipt() {
+    let mut f = Fixture::new().await;
+    f.handler.confirmation_poll_interval = Duration::from_secs(2);
+    let lock = f.seed().await;
+    let mut provisional = finalized();
+    provisional["confirmations"] = json!(0);
+    provisional["confirmationStatus"] = json!("processed");
+    let (rpc, seen, server) = rpc(vec![
+        status(provisional),
+        status(Value::Null),
+        reply("getBlockHeight", json!(100)),
+        reply("sendTransaction", json!(f.attempt.signature.to_string())),
+        status(finalized()),
+        details(&f.attempt),
+    ])
+    .await;
+    let first = f.handler.execute_transaction(&rpc, &f.data, &lock, 1).await;
+    assert!(matches!(first, Err(JobError::Nack {
+        error: SolanaExecutorError::NotYetConfirmed { .. }, delay: Some(delay), ..
+    }) if delay == Duration::from_secs(2)));
+    assert_eq!(
+        seen.lock().unwrap().len(),
+        1,
+        "provisional inclusion must not broadcast or fetch a terminal receipt"
+    );
+    let second = f.handler.execute_transaction(&rpc, &f.data, &lock, 2).await;
+    assert!(matches!(second, Err(JobError::Nack {
+        error: SolanaExecutorError::TransactionSent { .. }, delay: Some(delay), ..
+    }) if delay == Duration::from_secs(2)));
+    let Ok(last) = f.handler.execute_transaction(&rpc, &f.data, &lock, 3).await else {
+        panic!("matching finalized receipt did not complete the original attempt");
+    };
+    assert_eq!(last.signature, f.attempt.signature.to_string());
+    finish(server).await;
+    let stored = f.stored(&lock).await;
+    assert_eq!(stored.signed_transaction, f.attempt.signed_transaction);
+    assert_eq!(stored.signature, f.attempt.signature);
+    assert_eq!(stored.broadcast_attempts, 1);
+    assert_eq!(stored.reconciliation_checks, 3);
+    let sent = seen.lock().unwrap()[3].clone();
+    assert_eq!(
+        sent["params"][0],
+        f.attempt.signed_transaction.as_ref().unwrap().as_str()
+    );
+    assert_eq!(sent["params"][1]["maxRetries"], 0);
+    lock.release().await.unwrap();
     f.cleanup().await;
 }

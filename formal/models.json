@@ -334,5 +334,35 @@
     "config": "DisasterRecovery_terminal_attribution.cfg",
     "expected": "invariant:TerminalHasOwnEffect",
     "kind": "fault"
+  },
+  {
+    "module": "DepthCheckpoint",
+    "config": "DepthCheckpoint.cfg",
+    "expected": "pass",
+    "kind": "positive"
+  },
+  {
+    "module": "DepthCheckpoint",
+    "config": "DepthCheckpoint_tip_anchor.cfg",
+    "expected": "invariant:NoSpuriousHalt",
+    "kind": "fault"
+  },
+  {
+    "module": "DepthCheckpoint",
+    "config": "DepthCheckpoint_missing_halt.cfg",
+    "expected": "invariant:PositiveConflictHalts",
+    "kind": "fault"
+  },
+  {
+    "module": "DepthCheckpoint",
+    "config": "DepthCheckpoint_shallow_witness.cfg",
+    "expected": "invariant:ShallowReorgSurvivalNotReached",
+    "kind": "witness"
+  },
+  {
+    "module": "DepthCheckpoint",
+    "config": "DepthCheckpoint_rollback_boundary.cfg",
+    "expected": "invariant:AcceptedBoundaryRemainsCanonical",
+    "kind": "boundary"
   }
 ]

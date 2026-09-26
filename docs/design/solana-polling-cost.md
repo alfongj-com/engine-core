@@ -1,11 +1,31 @@
 # Solana polling cost
 
-**Status:** measured recommendation; no polling change implemented.  
-**Scope:** Solana Devnet, file-backed signer, System transfers, finalized commitment. Measurements ran September 17, 2026 EDT (September 18 UTC).
+**Status:** whole-second confirmation pacing is configurable; the default remains
+one queue second. The two-second experiment is not yet qualified.
+**Historical measurements:** Solana Devnet, file-backed signer, System transfers,
+finalized commitment; September 17, 2026 EDT (September 18 UTC).
 
 ## Decision
 
-Keep recovery behavior unchanged. Measure RPC dispatch timing before choosing a polling optimization. A small shared finalized-height cache is suitable for unknown-send recovery, but the successful runs below provide little evidence of savings during ordinary submission. Do not equate the worker's 200 ms retry constant with five polls per second: TWMQ maps positive subsecond delays to one queue second, uses integer timestamps, and RPC execution adds time.
+Preserve recovery guarantees and measure pacing before changing the default.
+`APP__QUEUE__SOLANA_CONFIRMATION_POLL_INTERVAL_SECONDS` accepts whole seconds
+from **1 to 5**, default **1**. The previous 200 ms delay already became one queue
+second in TWMQ; it did not cause five polls per second. Integer timestamps, RPC
+work and queue pressure affect actual dispatch intervals.
+
+The setting changes ordinary retries after an accepted send, a visible provisional
+status, and a pending attempt inside its broadcast throttle. First send remains
+immediate. Network errors retain two seconds, lock retries retain their prior
+queue delay, and unresolved recovery remains parked for one hour. Finalized
+status plus the matching receipt, exact signed identity, journal/lease fences
+and SQL-before-Redis completion are unchanged. No cache or batching is introduced.
+
+The limits remain 500 reconciliation checks and 20 broadcasts, with at least two
+seconds between broadcasts. Slower polling extends the elapsed observation window
+before count-budget parking and can delay retransmission until a blockhash expires.
+Expiry is still based on finalized chain height/validity, followed by historical
+reconciliation; it never authorizes a new signature. Completion/webhook latency
+can increase. These are liveness tradeoffs, not relaxed safety or larger budgets.
 
 ## Observed baseline
 
@@ -42,4 +62,16 @@ A later batch-status coordinator could amortize per-signature requests, but need
 
 ## Next gate
 
-Use local deterministic fault tests to establish cache/coordinator correctness, then repeat a bounded public workload only after setting a fresh transaction and RPC budget. No optimization or extra public run is justified solely by this three-run sample.
+The new Redis/RPC regression follows processed status, same-wire retransmission,
+and matching finalized receipt, checking the configured delay and finite counters.
+The actual configuration and Redis-backed recovery regressions passed locally.
+Actual validator crash/lost-response checks and paired measurements remain
+required before selecting a different default.
+
+Compare one- and two-second settings with the same binary, worker count and
+durability. Start with the existing 50/60 TPS controls and experimental 75/100 TPS;
+compare offered/admitted/attempted/finalized rates, unsigned and confirmation
+backlog trends, RPC counts, p99 and exact effects. A drained workload alone does
+not establish sustainable capacity. Keep the one-second default unless repeated
+measurements support a change. Any further public-chain run needs its own bounded
+transaction/RPC budget; the historical small sample does not justify one.

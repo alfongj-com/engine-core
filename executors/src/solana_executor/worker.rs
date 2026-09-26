@@ -205,6 +205,8 @@ impl SolanaExecutorError {
 
 // ========== HANDLER ==========
 pub struct SolanaExecutorJobHandler {
+    /// Whole-second queue delay for ordinary confirmation observations only.
+    pub confirmation_poll_interval: Duration,
     pub solana_signer: Arc<SolanaSigner>,
     pub rpc_cache: Arc<SolanaRpcCache>,
     pub storage: Arc<SolanaTransactionStorage>,
@@ -962,7 +964,7 @@ impl SolanaExecutorJobHandler {
             return Ok(Some(Err(SolanaExecutorError::NotYetConfirmed {
                 signature: attempt.signature.to_string(),
             }
-            .nack(Some(CONFIRMATION_RETRY_DELAY), RequeuePosition::Last))));
+            .nack(Some(self.confirmation_poll_interval), RequeuePosition::Last))));
         }
         let details = rpc_client
             .get_transaction_with_config(
@@ -1053,7 +1055,7 @@ impl SolanaExecutorJobHandler {
             return Err(SolanaExecutorError::NotYetConfirmed {
                 signature: attempt.signature.to_string(),
             }
-            .nack(Some(CONFIRMATION_RETRY_DELAY), RequeuePosition::Last));
+            .nack(Some(self.confirmation_poll_interval), RequeuePosition::Last));
         }
         let wire = attempt
             .signed_transaction
@@ -1099,7 +1101,7 @@ impl SolanaExecutorJobHandler {
                     signature,
                     submission_attempt_number: attempt.submission_attempt_number,
                 }
-                .nack(Some(CONFIRMATION_RETRY_DELAY), RequeuePosition::Last))
+                .nack(Some(self.confirmation_poll_interval), RequeuePosition::Last))
             }
             Ok(_) => Err(SolanaExecutorError::InternalError {
                 message: "RPC returned a different signature; reconcile persisted transaction"

@@ -1,0 +1,1502 @@
+{
+  "scope": "finite models; not a Rust/Redis refinement proof",
+  "tlc_version": "1.7.4",
+  "tlc_sha256": "936a262061c914694dfd669a543be24573c45d5aa0ff20a8b96b23d01e050e88",
+  "java": "openjdk version \"21.0.12.1\" 2026-08-18 LTS\nOpenJDK Runtime Environment Temurin-21.0.12.1+1 (build 21.0.12.1+1-LTS)\nOpenJDK 64-Bit Server VM Temurin-21.0.12.1+1 (build 21.0.12.1+1-LTS, mixed mode, sharing)",
+  "sources": {
+    "purpose": "Source-change review guard, not a refinement proof. See formal/README.md.",
+    "files": [
+      {
+        "path": "core/src/chain.rs",
+        "sha256": "39ede93dd327f7218ed406f9b7cb04d99b84a4311a6fc4b73274d13c6b4f59f6",
+        "models": [
+          "Finality"
+        ]
+      },
+      {
+        "path": "core/src/execution_options/solana.rs",
+        "sha256": "5b72692caf397365c1a07003258624122994cec0335461753a424a7d01ed1bea",
+        "models": [
+          "SolanaRecovery"
+        ]
+      },
+      {
+        "path": "core/src/finality.rs",
+        "sha256": "ffdad9f88eb09c4e38c9d3c87978395061753ef5a4b63af7ada6e33c2b3e6aae",
+        "models": [
+          "Finality",
+          "DepthCheckpoint"
+        ]
+      },
+      {
+        "path": "core/src/finality_tests.rs",
+        "sha256": "32963ae19ae04e72057363e1b41173646a89ae3a29042ef7b1fca3807a3a2a69",
+        "models": [
+          "Finality",
+          "DepthCheckpoint"
+        ]
+      },
+      {
+        "path": "core/src/lib.rs",
+        "sha256": "5a036570fc7c8af0e118636955ed625a5dc00fa69da230ae317dc999484189cb",
+        "models": [
+          "DisasterRecovery",
+          "Finality"
+        ]
+      },
+      {
+        "path": "core/src/recovery.rs",
+        "sha256": "2fea4aa50c2faae1319d8ad641d5af0d2b44207c8d166b484a216035482842c5",
+        "models": [
+          "DisasterRecovery",
+          "Finality"
+        ]
+      },
+      {
+        "path": "core/src/recovery/export.rs",
+        "models": [
+          "DisasterRecovery"
+        ],
+        "sha256": "fc8dcd2bc04a2c671c999fa9bd97a05f77796e3c67ae1396631b60e175e7300a"
+      },
+      {
+        "path": "core/src/recovery/tests.rs",
+        "sha256": "a8f4e858fc48200e86d00b10482f4ffc20b70c5afd1f8e0c2f8c12e9df61904f",
+        "models": [
+          "DisasterRecovery",
+          "Finality"
+        ]
+      },
+      {
+        "path": "executors/src/eip7702_executor/confirm.rs",
+        "sha256": "262aa5d2bcd4a3ee1b4b0d85fc287fe477384c8831904067dba4659c8f238032",
+        "models": [
+          "DisasterRecovery",
+          "Finality"
+        ]
+      },
+      {
+        "path": "executors/src/eip7702_executor/mod.rs",
+        "models": [
+          "DisasterRecovery"
+        ],
+        "sha256": "e8bc6ba0c547349c1e9bb380b7c7bc0cef88112e0f25b2dc3798744c3b027e8a"
+      },
+      {
+        "path": "executors/src/eip7702_executor/send.rs",
+        "sha256": "506f5f1438f0b9a672cda32c1e857dc17e97c909436d590bd502922b0ac3b225",
+        "models": [
+          "DisasterRecovery"
+        ]
+      },
+      {
+        "path": "executors/src/eoa/events.rs",
+        "sha256": "2b5f8935c11c10b8df177acfa12b6c85ebc49a9ddafcaddfd278ee07f6330b39",
+        "models": [
+          "Finality"
+        ]
+      },
+      {
+        "path": "executors/src/eoa/store/atomic.rs",
+        "sha256": "d12e1608bfb340f002be92fe6acd2c13b7ac790ca1d5cc5405f335b4835d5de1",
+        "models": [
+          "DisasterRecovery",
+          "EoaRecovery"
+        ]
+      },
+      {
+        "path": "executors/src/eoa/store/borrowed.rs",
+        "sha256": "665a02593e533cc49c243b83a52be9ab18cdb2172d40f54c5ac2546d51c0fe22",
+        "models": [
+          "DisasterRecovery",
+          "EoaRecovery"
+        ]
+      },
+      {
+        "path": "executors/src/eoa/store/hydrate.rs",
+        "sha256": "0bfb4397332e0f3b94779caf37f72820da15f96225ed6210d8da8f76c60d8fa6",
+        "models": [
+          "EoaRecovery"
+        ]
+      },
+      {
+        "path": "executors/src/eoa/store/mod.rs",
+        "sha256": "6c62681914e9c4eedf1f915c37a3d589e5ea828c51c25dd06c38df51e57c2cbb",
+        "models": [
+          "DisasterRecovery",
+          "EoaRecovery",
+          "Finality",
+          "NonceAllocator"
+        ]
+      },
+      {
+        "path": "executors/src/eoa/store/pending.rs",
+        "sha256": "56792080135b85e1f8c3ec60e7a61c38370e730d1fc873b31329bc6a705a49de",
+        "models": [
+          "EoaRecovery",
+          "NonceAllocator"
+        ]
+      },
+      {
+        "path": "executors/src/eoa/store/submitted.rs",
+        "sha256": "f9408dc0ec413c3f909ee00a576a6e8f3c14d352ed818a47d348b5cf16d655c3",
+        "models": [
+          "EoaRecovery",
+          "Finality",
+          "NonceAllocator"
+        ]
+      },
+      {
+        "path": "executors/src/eoa/store/tests.rs",
+        "sha256": "c03d99e608dd10ca7dd02f7b259d4829d68c76b76942c84864783aae8f408d30",
+        "models": [
+          "DisasterRecovery",
+          "EoaRecovery",
+          "Finality",
+          "NonceAllocator"
+        ]
+      },
+      {
+        "path": "executors/src/eoa/worker/confirm.rs",
+        "sha256": "0c7dfdbab68045222d9277347557404c87d9383046657eb5d99062ffaeeb4eb7",
+        "models": [
+          "DisasterRecovery",
+          "EoaRecovery",
+          "Finality"
+        ]
+      },
+      {
+        "path": "executors/src/eoa/worker/error.rs",
+        "sha256": "ca0ce56add436a9d0640153640763fcdcc3284bbd2e06d40b2a172d3e57c7575",
+        "models": [
+          "EoaRecovery"
+        ]
+      },
+      {
+        "path": "executors/src/eoa/worker/fee_math.rs",
+        "sha256": "98a27d1919e073ccf8d3ce66ce665bd03a6e6a14671fe371e7c1e2b7006db6f0",
+        "models": [
+          "Fees"
+        ]
+      },
+      {
+        "path": "executors/src/eoa/worker/fee_tests.rs",
+        "sha256": "7114fa6e969a445a28b459ecaaa43b5e23ce057b5153c415925fbead584a3e2a",
+        "models": [
+          "Fees"
+        ]
+      },
+      {
+        "path": "executors/src/eoa/worker/mod.rs",
+        "sha256": "f07e4e51a6c80cbe117ac44fede0ed59983dd9364697047e67b3c769826df4c9",
+        "models": [
+          "DisasterRecovery",
+          "EoaRecovery",
+          "Finality"
+        ]
+      },
+      {
+        "path": "executors/src/eoa/worker/receipt_tests.rs",
+        "sha256": "8473009c9a9b8fba6963dd920bc8461a0035ae0316648c49973dff9c5158bab0",
+        "models": [
+          "EoaRecovery",
+          "Finality"
+        ]
+      },
+      {
+        "path": "executors/src/eoa/worker/scheduling_tests.rs",
+        "models": [
+          "EoaRecovery",
+          "QueueLease"
+        ],
+        "sha256": "e13f61f476c4fe9b1b82f6a7024eed8b5d560225486c48456ea0848dec05a280"
+      },
+      {
+        "path": "executors/src/eoa/worker/send.rs",
+        "sha256": "c775e94afb6fcc7f5ad6ae1417b17cd987c147cd910623f96ec01f64ec8f42ab",
+        "models": [
+          "DisasterRecovery",
+          "EoaRecovery",
+          "NonceAllocator"
+        ]
+      },
+      {
+        "path": "executors/src/eoa/worker/send_tests.rs",
+        "models": [
+          "EoaRecovery",
+          "DisasterRecovery",
+          "NonceAllocator"
+        ],
+        "sha256": "d1f98d8fb77c242e329b05fc90f6e10d2771760e97dbfd9bfc5fc27e69f1eaea"
+      },
+      {
+        "path": "executors/src/eoa/worker/transaction.rs",
+        "sha256": "d8747d671d2b15f1e32d544dac51e7ad0161c06c5fd99a3e73938fe4d9bcae88",
+        "models": [
+          "DisasterRecovery",
+          "Fees"
+        ]
+      },
+      {
+        "path": "executors/src/external_bundler/confirm.rs",
+        "sha256": "77b720415f8da17b9296e422632e8c62c642ab67e4cb696739f391c06c0f6f2d",
+        "models": [
+          "DisasterRecovery",
+          "Finality"
+        ]
+      },
+      {
+        "path": "executors/src/external_bundler/send.rs",
+        "sha256": "52eaf767a06935f78122d7f65f263d5e3e8ff5bf1b05c2a4d7c5742d08c4be1e",
+        "models": [
+          "DisasterRecovery"
+        ]
+      },
+      {
+        "path": "executors/src/external_bundler/send_security_tests.rs",
+        "models": [
+          "DisasterRecovery"
+        ],
+        "sha256": "10c53dfb01f76f223694a1b0df2faa8da62a9bfd2f7b2ea5385d8017128027c7"
+      },
+      {
+        "path": "executors/src/finality.rs",
+        "sha256": "7de8ccaed3bc80cb6da57e094203de3dd89d1d507cb5747044d836ee949514aa",
+        "models": [
+          "DisasterRecovery",
+          "Finality",
+          "DepthCheckpoint"
+        ]
+      },
+      {
+        "path": "executors/src/finality_tests.rs",
+        "sha256": "ac8fc6ea5a705c47be3cbc34447f9b6e25ea2ec57c0097661787617f725f22dc",
+        "models": [
+          "DisasterRecovery",
+          "Finality",
+          "DepthCheckpoint"
+        ]
+      },
+      {
+        "path": "executors/src/lib.rs",
+        "sha256": "fbf2ed1cfed128c415dda41d134222f1f7052888eb009ac49e67a6ae88cf7c7a",
+        "models": [
+          "DisasterRecovery",
+          "Finality"
+        ]
+      },
+      {
+        "path": "executors/src/recovery.rs",
+        "sha256": "7d46dddc788a59be9c40691f3bfe4869cfe957db6c9e6c2a440e2cf307449cb2",
+        "models": [
+          "DisasterRecovery"
+        ]
+      },
+      {
+        "path": "executors/src/recovery_tests.rs",
+        "sha256": "bce8876ea8f00d4ca4ad0deafd94c9c0ed2ced0ce96267a775da47b6a53bf268",
+        "models": [
+          "DisasterRecovery"
+        ]
+      },
+      {
+        "path": "executors/src/solana_executor/recovery_tests.rs",
+        "sha256": "6cc5108cc2950314d5e839e36f4f4daa30d356da196186dd404e441e9e08a8d7",
+        "models": [
+          "DisasterRecovery",
+          "SolanaRecovery"
+        ]
+      },
+      {
+        "path": "executors/src/solana_executor/rpc_cache.rs",
+        "models": [
+          "SolanaRecovery"
+        ],
+        "sha256": "bcf46425cabba4b47944bfefa32dac904c82a4c13245b9cebb23e4c1bd7df853"
+      },
+      {
+        "path": "executors/src/solana_executor/rpc_cache_tests.rs",
+        "models": [
+          "SolanaRecovery"
+        ],
+        "sha256": "ef5d585f9dcab56570382438af03bcbb5c5fa44eab3f7be0de3d95ae68940d45"
+      },
+      {
+        "path": "executors/src/solana_executor/storage.rs",
+        "sha256": "933b657e7751ae63593626c3615d08f249afda3a492464029b21f73e861b1b42",
+        "models": [
+          "Admission",
+          "SolanaRecovery"
+        ]
+      },
+      {
+        "path": "executors/src/solana_executor/worker.rs",
+        "sha256": "dae8f3219c0170ce1d39872e7ff59d66f3fb37c5bbb56212345121d9200d5657",
+        "models": [
+          "DisasterRecovery",
+          "SolanaRecovery"
+        ]
+      },
+      {
+        "path": "scripts/local_eoa_recovery.py",
+        "sha256": "8490e994b9f71da17da632dc8735fdbb0a4bdcfd66242c397d91d701caa90554",
+        "models": [
+          "DisasterRecovery",
+          "EoaRecovery"
+        ]
+      },
+      {
+        "path": "scripts/local_eoa_reorg.py",
+        "sha256": "7e4abc6a383a9baed86c5bcee43bb9dfc5dfbbeeac2fee533a333b71c3df0597",
+        "models": [
+          "Finality"
+        ]
+      },
+      {
+        "path": "scripts/local_redis_disaster.py",
+        "sha256": "bff0e95aea7ab0039d9d5ba395d9627858020d95ddb5be991882db7d8b77901b",
+        "models": [
+          "DisasterRecovery"
+        ]
+      },
+      {
+        "path": "scripts/local_solana_recovery.py",
+        "sha256": "8d62cb1ca1ef6e891e04347767f9adb282d0d19dfe76bdf92e0319e7592cdb14",
+        "models": [
+          "DisasterRecovery",
+          "SolanaRecovery"
+        ]
+      },
+      {
+        "path": "server/src/bin/engine-recovery.rs",
+        "sha256": "61e8e345bd4c987188138d98166f1193cb3880e09c19985770eaf638cfceeaa7",
+        "models": [
+          "DisasterRecovery"
+        ]
+      },
+      {
+        "path": "server/src/chains.rs",
+        "sha256": "cd1390acf370862aaf6dd86e4cb0e2bd4bc796fdf8fbbb728ec6f9a0eab45e82",
+        "models": [
+          "Finality"
+        ]
+      },
+      {
+        "path": "server/src/chains_tests.rs",
+        "sha256": "bccf7a5677b71e4dfa0f0dc3a961515dcde99bcb852f75508a6bf8a45fde1c01",
+        "models": [
+          "Finality"
+        ]
+      },
+      {
+        "path": "server/src/config.rs",
+        "sha256": "f1d4d3a4e99a06e5dfb601c3c1beadce00ff45617284e57a9e622b172aec416f",
+        "models": [
+          "DisasterRecovery",
+          "Finality"
+        ]
+      },
+      {
+        "path": "server/src/execution_router/mod.rs",
+        "sha256": "b3af84acfa69df55c41ba962416dea689cc3f04d568060625708e4ced46b71d4",
+        "models": [
+          "Admission",
+          "DisasterRecovery",
+          "SolanaRecovery"
+        ]
+      },
+      {
+        "path": "server/src/http/routes/admin/eoa_diagnostics.rs",
+        "sha256": "137fedd8cf297c9718e8cf5084ca49f3e9db11081fd56b6dea805deba527603e",
+        "models": [
+          "DisasterRecovery"
+        ]
+      },
+      {
+        "path": "server/src/http/routes/admin/queue.rs",
+        "sha256": "35e9ec4bd381d4225e3fbb80d6fa76614b16e6cab2b6c52160b35112dce88678",
+        "models": [
+          "DisasterRecovery"
+        ]
+      },
+      {
+        "path": "server/src/http/server.rs",
+        "sha256": "a2c8a49ab399830b2777cebbb7721be71cac387534ae30be90a64bae4f0974e4",
+        "models": [
+          "DisasterRecovery"
+        ]
+      },
+      {
+        "path": "server/src/http/server_tests.rs",
+        "models": [
+          "DisasterRecovery"
+        ],
+        "sha256": "65baae70f84c60c7f2abe73faa5e8f651dbbe6f3b1844181033ff4f215dfda6f"
+      },
+      {
+        "path": "server/src/lib.rs",
+        "sha256": "00c234516c2327a6d2e6ba2453e03f674708c7b23a2b4c017a2175cfc171e02f",
+        "models": [
+          "DisasterRecovery"
+        ]
+      },
+      {
+        "path": "server/src/main.rs",
+        "sha256": "d08c3d3ae7d5f273c9ebda178fa2d0e5763bacdc9f0331628399db396391f7fd",
+        "models": [
+          "DisasterRecovery"
+        ]
+      },
+      {
+        "path": "server/src/queue/manager.rs",
+        "sha256": "672834d8e9a304b3c7711546f231cec5c9a4d38823b3ca1439848c06507dc61c",
+        "models": [
+          "SolanaRecovery"
+        ]
+      },
+      {
+        "path": "server/src/recovery.rs",
+        "sha256": "85a2ed6a6031f5c82e245f67e1690faea4a9e5b1223a80a91971532724ecd22d",
+        "models": [
+          "DisasterRecovery"
+        ]
+      },
+      {
+        "path": "server/src/solana_admission.rs",
+        "sha256": "90feede76d416fde5c02617ebd37b373cd4c75e79d2a9c07a1bf61de51829d3a",
+        "models": [
+          "Admission"
+        ]
+      },
+      {
+        "path": "server/src/solana_admission_tests.rs",
+        "sha256": "fa03eb98e10f61c064463b0bd843c17d62a9851b6317fd08a0fe445ec13f046f",
+        "models": [
+          "Admission"
+        ]
+      },
+      {
+        "path": "server/tests/api_safety.rs",
+        "sha256": "fe53da7ae934c43c849952b3bbaa5272da1c576627cd3f963e628f11578065c9",
+        "models": [
+          "Admission",
+          "DisasterRecovery",
+          "SolanaRecovery"
+        ]
+      },
+      {
+        "path": "twmq/src/lease_tests.rs",
+        "sha256": "f47204c1d6dbca88db8f55c22bcfae7a8bda5eef27fe5522155991587ea274fe",
+        "models": [
+          "QueueLease"
+        ]
+      },
+      {
+        "path": "twmq/src/lib.rs",
+        "sha256": "ef23d394d4d03a8b4b46eaf0c9682ed4f29388b3e58fbf8c13eee152f7574a75",
+        "models": [
+          "QueueLease"
+        ]
+      },
+      {
+        "path": "twmq/src/multilane.rs",
+        "sha256": "b2ca7e42df805c9341e34fc3294e3e3eddf3368336da797c6889e86eec30a4ab",
+        "models": [
+          "QueueLease"
+        ]
+      },
+      {
+        "path": "twmq/src/multilane_lease_tests.rs",
+        "sha256": "13c28e2f25f6a12871872fd1e7b869f15487ed6c88515f059abf1bf3154af60b",
+        "models": [
+          "QueueLease"
+        ]
+      },
+      {
+        "path": "twmq/src/transaction.rs",
+        "sha256": "a1cf0ab2152a85b9c20589501870179cd462ce0c7e280fed22eead17b1520484",
+        "models": [
+          "QueueLease"
+        ]
+      }
+    ],
+    "review": {
+      "date": "2026-09-26",
+      "base_commit": "5baa70b2f3d57c9bab9fe0163197c5614fe2657f",
+      "scope": "Reviewed frozen working-tree bytes after the throughput/reliability revision. The base commit is the comparison baseline, not the modified runtime. Hashes are review tripwires, not a Rust/SQLite/Redis/filesystem refinement proof.",
+      "correspondence": [
+        "NonceAllocator now models consumed-count floor with out-of-order retained receipt cleanup; separate bounded-page/RPC concurrency tests cover scheduling, not model throughput or fairness.",
+        "EOA Uncertain retains exact borrowed wire on all dispatch errors; same-identity retry stutters in EoaRecovery, included receipt only restores submitted projection. NOOP reserves submitted hash before dispatch; automatic NOOP reconciliation is not modeled or implemented.",
+        "DisasterRecovery terminal attribution requires the same admission independently executed its recorded attempt. Actual hash/signature/UserOperation computation and endpoint/genesis validation remain implementation checks.",
+        "Exact attempt and unchanged checkpoint no-ops retain health/owner/CAS guards; admission overload makes no durable transition. Retained terminal retries do not enqueue new work.",
+        "Solana independent signature reservation precedes Redis attempt storage; missing projection after SQL commit parks. The Redis and authority models are separate and not mechanically composed.",
+        "Bundled EIP-7702 is disabled and legacy work parks; no dedicated protocol qualification is claimed. Streaming export, HTTP authentication/semaphores and provider genesis checks are outside the state-machine proof."
+      ],
+      "test_fixture_followup": {
+        "date": "2026-09-26",
+        "path": "executors/src/eoa/store/tests.rs",
+        "reason": "Linux CI stalled at the retained-backlog fixture after its predecessor passed. Replace one 100k-command setup pipeline with 1,000-command batches, each with 10s timeout, and assert exact production-cap cardinality before unchanged cap/cap-minus-one budget assertions. No production or model semantics changed; observed buffering pressure is a diagnosis to verify on Linux, not an established Redis library defect."
+      },
+      "progress_scheduling_followup": {
+        "date": "2026-09-26",
+        "paths": [
+          "executors/src/eoa/worker/mod.rs",
+          "executors/src/eoa/worker/scheduling_tests.rs"
+        ],
+        "reason": "Reviewed successful-cycle result construction: sent counts only moved-to-submitted acknowledgments, recovered counts submitted-projection reconciliation/acknowledgment, while uncertain attempts retain borrowed state. Only positive nondelegation plus unsigned backlog plus either positive progress counter skips delay and still rejoins queue tail. Delegated/unknown/no-progress/finality-only/error handling retain existing delays. EoaRecovery already admits transitions without wall-clock waits; QueueLease keeps fenced completion and pending membership. Timing, fairness, mixed-progress unknown-retry RPC costs and throughput remain outside these finite safety models. Real Redis regression exercises actual queue lease completion, tail ordering, ready work and rounded delayed scores."
+      },
+      "depth_checkpoint_followup": {
+        "date": "2026-09-26",
+        "status": "Source correspondence reviewed and formatted candidate fingerprints recorded; implementation and TLC execution pending.",
+        "paths": [
+          "core/src/finality.rs",
+          "core/src/finality_tests.rs",
+          "executors/src/finality.rs",
+          "executors/src/finality_tests.rs"
+        ],
+        "reason": "The former Finality abstraction collapses heights and cannot detect persisting the observed tip above the probabilistic depth-qualified boundary. DepthCheckpoint now separates H, Q=H-depth, persisted anchor, independent canonical history and semantic qualified witness; tip-anchor and ignored-conflict mutations exercise distinct failures. Core and real-journal executor regressions retain within-assessment tip revalidation, allow shallow tip replacement, halt on qualified-boundary conflict, and preserve finalized/legacy conservative behavior. Monotonic journal CAS, multiple advancing checkpoints and composition remain outside this new single-checkpoint model."
+      },
+      "capacity_scheduling_followup": {
+        "date": "2026-09-26",
+        "status": "One-line bounded scheduling experiment reviewed and candidate fingerprint recorded; implementation and measurement pending.",
+        "paths": [
+          "executors/src/eoa/worker/send.rs"
+        ],
+        "reason": "Raise newly consumed nonce batch from 128 to 256 while retaining concurrency 32, configured in-flight/retained headroom, nonce ownership, signed attempt identity and durable authorization. This changes scheduling granularity, not a safety transition in EoaRecovery or NonceAllocator. Ten preparation refill iterations and borrowed/recycled recovery remain separate work bounds. No throughput, fairness or universal 256-work-cap claim follows from the models."
+      },
+      "capacity_polling_health_followup": {
+        "date": "2026-09-26",
+        "status": "Formatted candidate source reviewed; validation pending.",
+        "paths": [
+          "executors/src/solana_executor/worker.rs",
+          "executors/src/solana_executor/recovery_tests.rs",
+          "server/src/config.rs",
+          "server/src/queue/manager.rs",
+          "server/src/http/server.rs",
+          "server/src/http/server_tests.rs",
+          "server/tests/api_safety.rs"
+        ],
+        "reason": "Whole-second Solana polling configuration 1..5 defaults to the prior effective one-second queue delay. Only accepted-send/provisional-status/throttled observation scheduling changes; wire/signature, finalized evidence and lifetime send/read counters retain their transitions. The test exercises processed, absent/rebroadcast-identical, and finalized history. SolanaRecovery abstracts scheduling without clock bounds and does not prove rate pacing or eventual progress. Public health is separately limited to four independent fence tasks that retain their slots after client cancellation/HTTP timeout, returning healthy only after successful current fencing. Health concurrency and timeout behavior remain implementation tests outside the state models; admission/signing fences are unchanged. Production configuration and queue-manager wiring are reviewed source obligations, not formally proved serialization.",
+        "test_compile_repair": "The new Solana regression uses let-Ok-else instead of unwrap because its existing JobError intentionally lacks Debug; only failure diagnostics changed, no runtime transition."
+      }
+    }
+  },
+  "cases": [
+    {
+      "module": "EoaRecovery",
+      "config": "EoaRecovery.cfg",
+      "expected": "pass",
+      "kind": "positive",
+      "passed": true,
+      "exit_code": 0,
+      "seconds": 4.366,
+      "log": "EoaRecovery.log",
+      "generated": 559720,
+      "distinct": 71734,
+      "pending": 0,
+      "model_sha256": "1bbdeec0e47973f5eed575a4adee14ee51ad74a31eba3a6086f85a4a9d439567",
+      "config_sha256": "66908ec49bfcd17cdf135b2f0e852bd87711c1685df8b63dc93fd847696847fb"
+    },
+    {
+      "module": "EoaRecovery",
+      "config": "EoaRecovery_progress.cfg",
+      "expected": "pass",
+      "kind": "positive",
+      "passed": true,
+      "exit_code": 0,
+      "seconds": 31.385,
+      "log": "EoaRecovery_progress.log",
+      "generated": 1590502,
+      "distinct": 150766,
+      "pending": 0,
+      "model_sha256": "1bbdeec0e47973f5eed575a4adee14ee51ad74a31eba3a6086f85a4a9d439567",
+      "config_sha256": "05241e05a1abca4e37c988856a6d4471a15adf184ddefb826e272eb385622ce0"
+    },
+    {
+      "module": "EoaRecovery",
+      "config": "EoaRecovery_stale_reservation.cfg",
+      "expected": "invariant:OneIntentPerNonce",
+      "kind": "fault",
+      "passed": true,
+      "exit_code": 12,
+      "seconds": 0.706,
+      "log": "EoaRecovery_stale_reservation.log",
+      "generated": 96,
+      "distinct": 38,
+      "pending": 22,
+      "model_sha256": "1bbdeec0e47973f5eed575a4adee14ee51ad74a31eba3a6086f85a4a9d439567",
+      "config_sha256": "1eab7b38f73850ffe70f68f935bf04164ad2691032aa8d11b6198aac962d2682"
+    },
+    {
+      "module": "EoaRecovery",
+      "config": "EoaRecovery_missing_receipt.cfg",
+      "expected": "invariant:AtMostOneEffect",
+      "kind": "fault",
+      "passed": true,
+      "exit_code": 12,
+      "seconds": 0.821,
+      "log": "EoaRecovery_missing_receipt.log",
+      "generated": 20063,
+      "distinct": 4941,
+      "pending": 2235,
+      "model_sha256": "1bbdeec0e47973f5eed575a4adee14ee51ad74a31eba3a6086f85a4a9d439567",
+      "config_sha256": "6bdd9fc61ca45fdf2d5555b3b990994a1d6f57175f6b347b50747de640afdcd0"
+    },
+    {
+      "module": "EoaRecovery",
+      "config": "EoaRecovery_reverted_success.cfg",
+      "expected": "invariant:TerminalMatchesExecution",
+      "kind": "fault",
+      "passed": true,
+      "exit_code": 12,
+      "seconds": 0.73,
+      "log": "EoaRecovery_reverted_success.log",
+      "generated": 2164,
+      "distinct": 706,
+      "pending": 384,
+      "model_sha256": "1bbdeec0e47973f5eed575a4adee14ee51ad74a31eba3a6086f85a4a9d439567",
+      "config_sha256": "cb45085f5b6a3058c1e798cd54d2fe17cb6900e5a885976b2d7d3d897ea27ade"
+    },
+    {
+      "module": "EoaRecovery",
+      "config": "EoaRecovery_reorg_boundary.cfg",
+      "expected": "invariant:TerminalMatchesExecution",
+      "kind": "boundary",
+      "passed": true,
+      "exit_code": 12,
+      "seconds": 0.798,
+      "log": "EoaRecovery_reorg_boundary.log",
+      "generated": 5218,
+      "distinct": 1334,
+      "pending": 629,
+      "model_sha256": "1bbdeec0e47973f5eed575a4adee14ee51ad74a31eba3a6086f85a4a9d439567",
+      "config_sha256": "53ea6fbfcf2262748e2b23f3f2c0cb61fe4e46c574bcb14b0f0015bb6cfc43b9"
+    },
+    {
+      "module": "EoaRecovery",
+      "config": "EoaRecovery_unfair_boundary.cfg",
+      "expected": "liveness",
+      "kind": "boundary",
+      "passed": true,
+      "exit_code": 13,
+      "seconds": 3.388,
+      "log": "EoaRecovery_unfair_boundary.log",
+      "generated": 559720,
+      "distinct": 71734,
+      "pending": 0,
+      "model_sha256": "1bbdeec0e47973f5eed575a4adee14ee51ad74a31eba3a6086f85a4a9d439567",
+      "config_sha256": "c0dc581dedd5f198f1ae634d0f34f3d497b936267bfe918b2d17e9faba6e7669"
+    },
+    {
+      "module": "Admission",
+      "config": "Admission.cfg",
+      "expected": "pass",
+      "kind": "positive",
+      "passed": true,
+      "exit_code": 0,
+      "seconds": 0.693,
+      "log": "Admission.log",
+      "generated": 85,
+      "distinct": 61,
+      "pending": 0,
+      "model_sha256": "8553414ef84eb2944f4f2aa71e4dbe0410192bdbb71e536af59054b7fa450d7c",
+      "config_sha256": "f099f26da51798b701689b13e940995b2bb907ffac4d0e59005cdbf040c6f801"
+    },
+    {
+      "module": "Admission",
+      "config": "Admission_conflict.cfg",
+      "expected": "invariant:ImmutableWithinRetention",
+      "kind": "fault",
+      "passed": true,
+      "exit_code": 12,
+      "seconds": 0.695,
+      "log": "Admission_conflict.log",
+      "generated": 4,
+      "distinct": 4,
+      "pending": 1,
+      "model_sha256": "8553414ef84eb2944f4f2aa71e4dbe0410192bdbb71e536af59054b7fa450d7c",
+      "config_sha256": "87fdd90aef2c34c65f777efd5fea551db77b2818b17d4562a89f89d0e9d2aa55"
+    },
+    {
+      "module": "Admission",
+      "config": "Admission_active_expiry.cfg",
+      "expected": "invariant:ActiveIdentityRetained",
+      "kind": "fault",
+      "passed": true,
+      "exit_code": 12,
+      "seconds": 0.693,
+      "log": "Admission_active_expiry.log",
+      "generated": 6,
+      "distinct": 6,
+      "pending": 3,
+      "model_sha256": "8553414ef84eb2944f4f2aa71e4dbe0410192bdbb71e536af59054b7fa450d7c",
+      "config_sha256": "523f08df582f4e9d25e05bcc2fc2ee61674367a7f3c246d63494a65d6b7267cf"
+    },
+    {
+      "module": "Admission",
+      "config": "Admission_partial_commit.cfg",
+      "expected": "invariant:AdmissionIsAtomic",
+      "kind": "fault",
+      "passed": true,
+      "exit_code": 12,
+      "seconds": 0.695,
+      "log": "Admission_partial_commit.log",
+      "generated": 2,
+      "distinct": 2,
+      "pending": 0,
+      "model_sha256": "8553414ef84eb2944f4f2aa71e4dbe0410192bdbb71e536af59054b7fa450d7c",
+      "config_sha256": "be7a12578e18536120acf2bdab5e2ccdc91d0259b103276b992e07864b4b67d4"
+    },
+    {
+      "module": "Admission",
+      "config": "Admission_retention_boundary.cfg",
+      "expected": "invariant:LifetimeAtMostOnce",
+      "kind": "boundary",
+      "passed": true,
+      "exit_code": 12,
+      "seconds": 0.67,
+      "log": "Admission_retention_boundary.log",
+      "generated": 42,
+      "distinct": 34,
+      "pending": 7,
+      "model_sha256": "8553414ef84eb2944f4f2aa71e4dbe0410192bdbb71e536af59054b7fa450d7c",
+      "config_sha256": "59c56a71ca8a75a2bc387f1ba67710da605f6854df3fee0e72fab550c3c7c539"
+    },
+    {
+      "module": "SolanaRecovery",
+      "config": "SolanaRecovery.cfg",
+      "expected": "pass",
+      "kind": "positive",
+      "passed": true,
+      "exit_code": 0,
+      "seconds": 21.528,
+      "log": "SolanaRecovery.log",
+      "generated": 4839761,
+      "distinct": 686724,
+      "pending": 0,
+      "model_sha256": "c3a6801106b95beba60465f95d3e1206136632628ccd164ca4c3b1417a06d6f1",
+      "config_sha256": "2b05d993623d13b16d1630eb8c53f29d3fe5ed36ce342e555931562d0acb9dfd"
+    },
+    {
+      "module": "SolanaRecovery",
+      "config": "SolanaRecoveryBudget.cfg",
+      "expected": "pass",
+      "kind": "positive",
+      "passed": true,
+      "exit_code": 0,
+      "seconds": 31.401,
+      "log": "SolanaRecoveryBudget.log",
+      "generated": 7197323,
+      "distinct": 1000540,
+      "pending": 0,
+      "model_sha256": "c3a6801106b95beba60465f95d3e1206136632628ccd164ca4c3b1417a06d6f1",
+      "config_sha256": "de5bb13b8639cbca6f30619971896cb977078b9f1eaac5a778306641e8760055"
+    },
+    {
+      "module": "SolanaRecovery",
+      "config": "SolanaRecoveryLimit20.cfg",
+      "expected": "pass",
+      "kind": "positive",
+      "passed": true,
+      "exit_code": 0,
+      "seconds": 2.503,
+      "log": "SolanaRecoveryLimit20.log",
+      "generated": 178310,
+      "distinct": 102029,
+      "pending": 0,
+      "model_sha256": "c3a6801106b95beba60465f95d3e1206136632628ccd164ca4c3b1417a06d6f1",
+      "config_sha256": "c1de739deed93e29b400860386e862eeb9fbf4b3d6035ecc224fb152dbb6d9af"
+    },
+    {
+      "module": "SolanaRecovery",
+      "config": "SolanaRecoveryRefreshFault.cfg",
+      "expected": "invariant:AtMostOneEffect",
+      "kind": "fault",
+      "passed": true,
+      "exit_code": 12,
+      "seconds": 5.188,
+      "log": "SolanaRecoveryRefreshFault.log",
+      "generated": 1013429,
+      "distinct": 195881,
+      "pending": 45716,
+      "model_sha256": "c3a6801106b95beba60465f95d3e1206136632628ccd164ca4c3b1417a06d6f1",
+      "config_sha256": "1fbd80fe37fec1f6443f0ec04e6708425f3acf13d43aa7c255d5dc01bf7bb1c6"
+    },
+    {
+      "module": "SolanaRecovery",
+      "config": "SolanaRecoveryPersistFault.cfg",
+      "expected": "invariant:EverySendDurable",
+      "kind": "fault",
+      "passed": true,
+      "exit_code": 12,
+      "seconds": 0.737,
+      "log": "SolanaRecoveryPersistFault.log",
+      "generated": 479,
+      "distinct": 213,
+      "pending": 114,
+      "model_sha256": "c3a6801106b95beba60465f95d3e1206136632628ccd164ca4c3b1417a06d6f1",
+      "config_sha256": "4d68a4c3792b9891ec674e3c55906f29f8c63fe661d69d0cc4580e67b14e3d17"
+    },
+    {
+      "module": "SolanaRecovery",
+      "config": "SolanaRecoveryLeaseFault.cfg",
+      "expected": "invariant:TerminalCommitOwned",
+      "kind": "fault",
+      "passed": true,
+      "exit_code": 12,
+      "seconds": 2.125,
+      "log": "SolanaRecoveryLeaseFault.log",
+      "generated": 284487,
+      "distinct": 61797,
+      "pending": 17900,
+      "model_sha256": "c3a6801106b95beba60465f95d3e1206136632628ccd164ca4c3b1417a06d6f1",
+      "config_sha256": "272117ca28537d65d2eff88a407bf5ed3529c40963a9f0c173e335f9d71965f6"
+    },
+    {
+      "module": "SolanaRecovery",
+      "config": "SolanaRecoveryProviderBoundary.cfg",
+      "expected": "invariant:TerminalHasChainProof",
+      "kind": "boundary",
+      "passed": true,
+      "exit_code": 12,
+      "seconds": 1.125,
+      "log": "SolanaRecoveryProviderBoundary.log",
+      "generated": 61014,
+      "distinct": 15797,
+      "pending": 5787,
+      "model_sha256": "c3a6801106b95beba60465f95d3e1206136632628ccd164ca4c3b1417a06d6f1",
+      "config_sha256": "0301bffb77d0975ea227a66c4d63c288942d850d441f5ba4c7c0e94286ba502a"
+    },
+    {
+      "module": "SolanaRecovery",
+      "config": "SolanaRecoveryRedisBoundary.cfg",
+      "expected": "invariant:UnresolvedEvidenceRetained",
+      "kind": "boundary",
+      "passed": true,
+      "exit_code": 12,
+      "seconds": 0.767,
+      "log": "SolanaRecoveryRedisBoundary.log",
+      "generated": 2189,
+      "distinct": 761,
+      "pending": 360,
+      "model_sha256": "c3a6801106b95beba60465f95d3e1206136632628ccd164ca4c3b1417a06d6f1",
+      "config_sha256": "fd21f25547f75c9db9fe1182e9383466eae65c46cf77de014de3523f43ab2e1f"
+    },
+    {
+      "module": "SolanaRecovery",
+      "config": "SolanaRecoveryReorgBoundary.cfg",
+      "expected": "invariant:TerminalHasChainProof",
+      "kind": "boundary",
+      "passed": true,
+      "exit_code": 12,
+      "seconds": 2.237,
+      "log": "SolanaRecoveryReorgBoundary.log",
+      "generated": 310311,
+      "distinct": 67286,
+      "pending": 20551,
+      "model_sha256": "c3a6801106b95beba60465f95d3e1206136632628ccd164ca4c3b1417a06d6f1",
+      "config_sha256": "d3c8639475bfdb2a231e0641374c08d5a447321ed4d34aa560ebbb6d24638f4b"
+    },
+    {
+      "module": "SolanaRecovery",
+      "config": "SolanaRecoveryLimit20Witness.cfg",
+      "expected": "invariant:BroadcastLimitWitnessNotReached",
+      "kind": "witness",
+      "passed": true,
+      "exit_code": 12,
+      "seconds": 2.186,
+      "log": "SolanaRecoveryLimit20Witness.log",
+      "generated": 174446,
+      "distinct": 100081,
+      "pending": 243,
+      "model_sha256": "c3a6801106b95beba60465f95d3e1206136632628ccd164ca4c3b1417a06d6f1",
+      "config_sha256": "b7e16eff87d022bb462f8cb033fb7ee13addf16d96c913c0acee0c000c5087c4"
+    },
+    {
+      "module": "QueueLease",
+      "config": "QueueLease.cfg",
+      "expected": "pass",
+      "kind": "positive",
+      "passed": true,
+      "exit_code": 0,
+      "seconds": 2.629,
+      "log": "QueueLease.log",
+      "generated": 275501,
+      "distinct": 44440,
+      "pending": 0,
+      "model_sha256": "2ffc25e1106d6ce21c3f5a92e729a922fa2b6e23284cb0c4d8e03fa9b744893e",
+      "config_sha256": "7f798fd082709ee4a7d4e251353ede4cd3dfbf2674360329a5fcf8f3575152f6"
+    },
+    {
+      "module": "QueueLease",
+      "config": "QueueLease_delayed_prune_bug.cfg",
+      "expected": "invariant:LiveRecordIntegrity",
+      "kind": "fault",
+      "passed": true,
+      "exit_code": 12,
+      "seconds": 0.764,
+      "log": "QueueLease_delayed_prune_bug.log",
+      "generated": 1052,
+      "distinct": 325,
+      "pending": 133,
+      "model_sha256": "2ffc25e1106d6ce21c3f5a92e729a922fa2b6e23284cb0c4d8e03fa9b744893e",
+      "config_sha256": "eee8d8fd81a9723d59b4692ead113d158fa6fca636c222693aeee44a0b5be09c"
+    },
+    {
+      "module": "QueueLease",
+      "config": "QueueLease_exec_abort_bug.cfg",
+      "expected": "invariant:NoFalseCommit",
+      "kind": "fault",
+      "passed": true,
+      "exit_code": 12,
+      "seconds": 0.934,
+      "log": "QueueLease_exec_abort_bug.log",
+      "generated": 14808,
+      "distinct": 4381,
+      "pending": 2938,
+      "model_sha256": "2ffc25e1106d6ce21c3f5a92e729a922fa2b6e23284cb0c4d8e03fa9b744893e",
+      "config_sha256": "1de4e32939d145ba8e75c7049228ef499e1cd29a5d254c7910a7582b996800f5"
+    },
+    {
+      "module": "QueueLease",
+      "config": "QueueLease_historical_cancel_bug.cfg",
+      "expected": "invariant:CancellationNoReborrow",
+      "kind": "fault",
+      "passed": true,
+      "exit_code": 12,
+      "seconds": 0.824,
+      "log": "QueueLease_historical_cancel_bug.log",
+      "generated": 3693,
+      "distinct": 923,
+      "pending": 404,
+      "model_sha256": "2ffc25e1106d6ce21c3f5a92e729a922fa2b6e23284cb0c4d8e03fa9b744893e",
+      "config_sha256": "6dda2dc512ece54aa75d264f6dee18e82a31ea01d8050fe4a2e014cacb4415a2"
+    },
+    {
+      "module": "QueueLease",
+      "config": "QueueLease_id_reuse_bug.cfg",
+      "expected": "invariant:FencedEffects",
+      "kind": "fault",
+      "passed": true,
+      "exit_code": 12,
+      "seconds": 0.766,
+      "log": "QueueLease_id_reuse_bug.log",
+      "generated": 805,
+      "distinct": 253,
+      "pending": 105,
+      "model_sha256": "2ffc25e1106d6ce21c3f5a92e729a922fa2b6e23284cb0c4d8e03fa9b744893e",
+      "config_sha256": "81c0fbe32e22b44bb31c925c78628b93aa3bd079b460d3bcc977974ba5e6e5a6"
+    },
+    {
+      "module": "QueueLease",
+      "config": "QueueLease_prune_live_bug.cfg",
+      "expected": "invariant:LiveRecordIntegrity",
+      "kind": "fault",
+      "passed": true,
+      "exit_code": 12,
+      "seconds": 0.767,
+      "log": "QueueLease_prune_live_bug.log",
+      "generated": 1043,
+      "distinct": 320,
+      "pending": 129,
+      "model_sha256": "2ffc25e1106d6ce21c3f5a92e729a922fa2b6e23284cb0c4d8e03fa9b744893e",
+      "config_sha256": "b7dd24852da02db3e2c576e2962d0e2e9d8c9a64b1d721acaf9974d4486b8c5c"
+    },
+    {
+      "module": "QueueLease",
+      "config": "QueueLease_reuse.cfg",
+      "expected": "pass",
+      "kind": "positive",
+      "passed": true,
+      "exit_code": 0,
+      "seconds": 1.079,
+      "log": "QueueLease_reuse.log",
+      "generated": 42021,
+      "distinct": 8603,
+      "pending": 0,
+      "model_sha256": "2ffc25e1106d6ce21c3f5a92e729a922fa2b6e23284cb0c4d8e03fa9b744893e",
+      "config_sha256": "fff2a015fb1a68fa138ac6f68ee0632d26ba0571a7fe0cd6db8ae394db6b541c"
+    },
+    {
+      "module": "QueueLease",
+      "config": "QueueLease_shared_session_bug.cfg",
+      "expected": "invariant:FencedEffects",
+      "kind": "fault",
+      "passed": true,
+      "exit_code": 12,
+      "seconds": 2.051,
+      "log": "QueueLease_shared_session_bug.log",
+      "generated": 228540,
+      "distinct": 43046,
+      "pending": 15613,
+      "model_sha256": "2ffc25e1106d6ce21c3f5a92e729a922fa2b6e23284cb0c4d8e03fa9b744893e",
+      "config_sha256": "5b248a3b374c4f00fce63b729b564b1d2021c9e70d615ddc06778703120bce3b"
+    },
+    {
+      "module": "QueueLease",
+      "config": "QueueLease_stale_owner_bug.cfg",
+      "expected": "invariant:FencedEffects",
+      "kind": "fault",
+      "passed": true,
+      "exit_code": 12,
+      "seconds": 0.905,
+      "log": "QueueLease_stale_owner_bug.log",
+      "generated": 14075,
+      "distinct": 4115,
+      "pending": 2714,
+      "model_sha256": "2ffc25e1106d6ce21c3f5a92e729a922fa2b6e23284cb0c4d8e03fa9b744893e",
+      "config_sha256": "23a83ec71e2e48d7f7ff770e2793322e441f411470eec7d46e680b14233570dd"
+    },
+    {
+      "module": "QueueLease",
+      "config": "QueueLease_permanent.cfg",
+      "expected": "pass",
+      "kind": "positive",
+      "passed": true,
+      "exit_code": 0,
+      "seconds": 7.472,
+      "log": "QueueLease_permanent.log",
+      "generated": 1031650,
+      "distinct": 190228,
+      "pending": 0,
+      "model_sha256": "2ffc25e1106d6ce21c3f5a92e729a922fa2b6e23284cb0c4d8e03fa9b744893e",
+      "config_sha256": "e217f9c10b722e2ae333418bd887fed36f076e2bcb4818639ec58208accdc04e"
+    },
+    {
+      "module": "QueueLease",
+      "config": "QueueLease_combined.cfg",
+      "expected": "pass",
+      "kind": "positive",
+      "passed": true,
+      "exit_code": 0,
+      "seconds": 8.021,
+      "log": "QueueLease_combined.log",
+      "generated": 1157886,
+      "distinct": 208532,
+      "pending": 0,
+      "model_sha256": "2ffc25e1106d6ce21c3f5a92e729a922fa2b6e23284cb0c4d8e03fa9b744893e",
+      "config_sha256": "314e6e21b1795c64d079d6beadbee676fa3bc326d947dc9541a6419cbd4ee2bf"
+    },
+    {
+      "module": "QueueLease",
+      "config": "QueueLease_retained_history_bug.cfg",
+      "expected": "invariant:RetainedHistoryIntegrity",
+      "kind": "fault",
+      "passed": true,
+      "exit_code": 12,
+      "seconds": 0.788,
+      "log": "QueueLease_retained_history_bug.log",
+      "generated": 4221,
+      "distinct": 1077,
+      "pending": 486,
+      "model_sha256": "2ffc25e1106d6ce21c3f5a92e729a922fa2b6e23284cb0c4d8e03fa9b744893e",
+      "config_sha256": "f8a3c4efdf8b475d630b738c174e91fd18b76d8bca13cdaf779ade2409db27fd"
+    },
+    {
+      "module": "QueueLease",
+      "config": "QueueLease_orphan_cancel_bug.cfg",
+      "expected": "invariant:RetainedHistoryIntegrity",
+      "kind": "fault",
+      "passed": true,
+      "exit_code": 12,
+      "seconds": 0.77,
+      "log": "QueueLease_orphan_cancel_bug.log",
+      "generated": 1864,
+      "distinct": 409,
+      "pending": 76,
+      "model_sha256": "2ffc25e1106d6ce21c3f5a92e729a922fa2b6e23284cb0c4d8e03fa9b744893e",
+      "config_sha256": "8dd379d55f9a9ee71826870fab5bf784e964bf644275f5fb3dfc609cff603c14"
+    },
+    {
+      "module": "Finality",
+      "config": "Finality.cfg",
+      "expected": "pass",
+      "kind": "positive",
+      "passed": true,
+      "exit_code": 0,
+      "seconds": 0.736,
+      "log": "Finality.log",
+      "generated": 2297,
+      "distinct": 752,
+      "pending": 0,
+      "model_sha256": "b9238878e190c504154856d7ecfae2a6ba655519bdcfa3232394141deb442956",
+      "config_sha256": "893b55df828c0e2d95a4a2c52aa49117ef9d026434b3704bc6b8a1f6e6031309"
+    },
+    {
+      "module": "Finality",
+      "config": "Finality_early_inclusion.cfg",
+      "expected": "invariant:TerminalRequiresFinality",
+      "kind": "fault",
+      "passed": true,
+      "exit_code": 12,
+      "seconds": 0.738,
+      "log": "Finality_early_inclusion.log",
+      "generated": 946,
+      "distinct": 392,
+      "pending": 129,
+      "model_sha256": "b9238878e190c504154856d7ecfae2a6ba655519bdcfa3232394141deb442956",
+      "config_sha256": "77c615972e6e8735721b7680f83e0236a85bd787763b036b3f676543257384c1"
+    },
+    {
+      "module": "Finality",
+      "config": "Finality_missing_hash.cfg",
+      "expected": "invariant:CanonicalAtCommit",
+      "kind": "fault",
+      "passed": true,
+      "exit_code": 12,
+      "seconds": 0.733,
+      "log": "Finality_missing_hash.log",
+      "generated": 1966,
+      "distinct": 773,
+      "pending": 190,
+      "model_sha256": "b9238878e190c504154856d7ecfae2a6ba655519bdcfa3232394141deb442956",
+      "config_sha256": "0f6e27989d9f8a98be22b3fa886d4d49c2409bde8a3942afe17f982bcf4aed09"
+    },
+    {
+      "module": "Finality",
+      "config": "Finality_revert_early.cfg",
+      "expected": "invariant:RevertNeedsFinality",
+      "kind": "fault",
+      "passed": true,
+      "exit_code": 12,
+      "seconds": 0.725,
+      "log": "Finality_revert_early.log",
+      "generated": 1071,
+      "distinct": 428,
+      "pending": 129,
+      "model_sha256": "b9238878e190c504154856d7ecfae2a6ba655519bdcfa3232394141deb442956",
+      "config_sha256": "666823d4db96ad49e5858c2ecae0b88bcced035c0501e1c7296cd7665a098192"
+    },
+    {
+      "module": "Finality",
+      "config": "Finality_dishonest_provider.cfg",
+      "expected": "invariant:TerminalRequiresFinality",
+      "kind": "boundary",
+      "passed": true,
+      "exit_code": 12,
+      "seconds": 0.717,
+      "log": "Finality_dishonest_provider.log",
+      "generated": 1010,
+      "distinct": 428,
+      "pending": 154,
+      "model_sha256": "b9238878e190c504154856d7ecfae2a6ba655519bdcfa3232394141deb442956",
+      "config_sha256": "749d23630e85e80408e77f46b62cd5e9a248d8dc4c579e9d88fda2f3557d61ab"
+    },
+    {
+      "module": "Finality",
+      "config": "Finality_finalized_rollback.cfg",
+      "expected": "invariant:TerminalRemainsCanonical",
+      "kind": "boundary",
+      "passed": true,
+      "exit_code": 12,
+      "seconds": 0.725,
+      "log": "Finality_finalized_rollback.log",
+      "generated": 2370,
+      "distinct": 716,
+      "pending": 193,
+      "model_sha256": "b9238878e190c504154856d7ecfae2a6ba655519bdcfa3232394141deb442956",
+      "config_sha256": "62a0afca77933d02a27d366d2ad92b69892131cf0ea7d429f3368ca0bb1a4a66"
+    },
+    {
+      "module": "Finality",
+      "config": "Finality_depth_boundary.cfg",
+      "expected": "invariant:TerminalRemainsCanonical",
+      "kind": "boundary",
+      "passed": true,
+      "exit_code": 12,
+      "seconds": 0.726,
+      "log": "Finality_depth_boundary.log",
+      "generated": 1850,
+      "distinct": 716,
+      "pending": 193,
+      "model_sha256": "b9238878e190c504154856d7ecfae2a6ba655519bdcfa3232394141deb442956",
+      "config_sha256": "18954fe667f0a5e09b0d410719535408a6876024c227f3ff297130575b707b86"
+    },
+    {
+      "module": "Finality",
+      "config": "Finality_reinclusion_witness.cfg",
+      "expected": "invariant:ReinclusionWitnessNotReached",
+      "kind": "witness",
+      "passed": true,
+      "exit_code": 12,
+      "seconds": 0.723,
+      "log": "Finality_reinclusion_witness.log",
+      "generated": 2148,
+      "distinct": 727,
+      "pending": 41,
+      "model_sha256": "b9238878e190c504154856d7ecfae2a6ba655519bdcfa3232394141deb442956",
+      "config_sha256": "4ccbd4880aaea58049ed91db9f2c3b424c6dc02cc44296ee5e774b58a3062fed"
+    },
+    {
+      "module": "DisasterRecovery",
+      "config": "DisasterRecovery.cfg",
+      "expected": "pass",
+      "kind": "positive",
+      "passed": true,
+      "exit_code": 0,
+      "seconds": 22.037,
+      "log": "DisasterRecovery.log",
+      "generated": 3664561,
+      "distinct": 698992,
+      "pending": 0,
+      "model_sha256": "f719ca7df1852016bc5870ba20c4fdf7668ce8bee12eedbdaa02a07213c27886",
+      "config_sha256": "008d8491f86650c7b75cd7f66ddb4f624272b8f67f97b22e87d50dfc599cc5aa"
+    },
+    {
+      "module": "DisasterRecovery",
+      "config": "DisasterRecovery_send_before_journal.cfg",
+      "expected": "invariant:EverySendJournaled",
+      "kind": "fault",
+      "passed": true,
+      "exit_code": 12,
+      "seconds": 0.711,
+      "log": "DisasterRecovery_send_before_journal.log",
+      "generated": 138,
+      "distinct": 83,
+      "pending": 54,
+      "model_sha256": "f719ca7df1852016bc5870ba20c4fdf7668ce8bee12eedbdaa02a07213c27886",
+      "config_sha256": "db20c320ee301b413166dcef0e361542fadc1602648a1fd0595c303e19b649b6"
+    },
+    {
+      "module": "DisasterRecovery",
+      "config": "DisasterRecovery_id_binding.cfg",
+      "expected": "invariant:ImmutableAdmission",
+      "kind": "fault",
+      "passed": true,
+      "exit_code": 12,
+      "seconds": 0.717,
+      "log": "DisasterRecovery_id_binding.log",
+      "generated": 143,
+      "distinct": 81,
+      "pending": 52,
+      "model_sha256": "f719ca7df1852016bc5870ba20c4fdf7668ce8bee12eedbdaa02a07213c27886",
+      "config_sha256": "00571946d4af1327e29b48822784cc6c165919aabe90f29bc598f08906ed592e"
+    },
+    {
+      "module": "DisasterRecovery",
+      "config": "DisasterRecovery_key_binding.cfg",
+      "expected": "invariant:ReplayKeyUnique",
+      "kind": "fault",
+      "passed": true,
+      "exit_code": 12,
+      "seconds": 0.857,
+      "log": "DisasterRecovery_key_binding.log",
+      "generated": 7080,
+      "distinct": 2743,
+      "pending": 1485,
+      "model_sha256": "f719ca7df1852016bc5870ba20c4fdf7668ce8bee12eedbdaa02a07213c27886",
+      "config_sha256": "d070a7af21f6d17b2962b5e3b54efceaaee61b5b1acaa3c37737a5671116c5dc"
+    },
+    {
+      "module": "DisasterRecovery",
+      "config": "DisasterRecovery_shared_owner.cfg",
+      "expected": "invariant:NoOldEpochAuthorization",
+      "kind": "fault",
+      "passed": true,
+      "exit_code": 12,
+      "seconds": 0.944,
+      "log": "DisasterRecovery_shared_owner.log",
+      "generated": 21042,
+      "distinct": 7100,
+      "pending": 4109,
+      "model_sha256": "f719ca7df1852016bc5870ba20c4fdf7668ce8bee12eedbdaa02a07213c27886",
+      "config_sha256": "d5fff022d0d97d67c7868d9a48ecd8a38aa5e12e76f4eddf0dc610d990d4fa5e"
+    },
+    {
+      "module": "DisasterRecovery",
+      "config": "DisasterRecovery_fresh_recovery.cfg",
+      "expected": "invariant:AtMostOneEffectPerId",
+      "kind": "fault",
+      "passed": true,
+      "exit_code": 12,
+      "seconds": 7.34,
+      "log": "DisasterRecovery_fresh_recovery.log",
+      "generated": 1121815,
+      "distinct": 320244,
+      "pending": 118406,
+      "model_sha256": "f719ca7df1852016bc5870ba20c4fdf7668ce8bee12eedbdaa02a07213c27886",
+      "config_sha256": "2abe2a4eb3fa44ffeedcafec24bcd91956a6546259a46eec3b4b96831865c6d8"
+    },
+    {
+      "module": "DisasterRecovery",
+      "config": "DisasterRecovery_retry_uid.cfg",
+      "expected": "invariant:OriginalPayloadOnRetry",
+      "kind": "fault",
+      "passed": true,
+      "exit_code": 12,
+      "seconds": 0.702,
+      "log": "DisasterRecovery_retry_uid.log",
+      "generated": 134,
+      "distinct": 81,
+      "pending": 52,
+      "model_sha256": "f719ca7df1852016bc5870ba20c4fdf7668ce8bee12eedbdaa02a07213c27886",
+      "config_sha256": "41bb61a57f110230451fc2fc5205f1853891e111f6123ea62f404ac783f3bd6f"
+    },
+    {
+      "module": "DisasterRecovery",
+      "config": "DisasterRecovery_authority_rollback.cfg",
+      "expected": "invariant:AtMostOneEffectPerId",
+      "kind": "boundary",
+      "passed": true,
+      "exit_code": 12,
+      "seconds": 10.94,
+      "log": "DisasterRecovery_authority_rollback.log",
+      "generated": 1731610,
+      "distinct": 529729,
+      "pending": 209138,
+      "model_sha256": "f719ca7df1852016bc5870ba20c4fdf7668ce8bee12eedbdaa02a07213c27886",
+      "config_sha256": "7ec83f502815b359d1519551777700a76b7e995de2526bb6104cfca4afe866f6"
+    },
+    {
+      "module": "DisasterRecovery",
+      "config": "DisasterRecovery_late_execution_witness.cfg",
+      "expected": "invariant:LateExecutionWitnessNotReached",
+      "kind": "witness",
+      "passed": true,
+      "exit_code": 12,
+      "seconds": 0.915,
+      "log": "DisasterRecovery_late_execution_witness.log",
+      "generated": 16602,
+      "distinct": 6274,
+      "pending": 3299,
+      "model_sha256": "f719ca7df1852016bc5870ba20c4fdf7668ce8bee12eedbdaa02a07213c27886",
+      "config_sha256": "305044ef623c520d6ee3c8a016541723ea31ba982c06b1fde04831498aaaaa8f"
+    },
+    {
+      "module": "NonceAllocator",
+      "config": "NonceAllocator.cfg",
+      "expected": "pass",
+      "kind": "positive",
+      "passed": true,
+      "exit_code": 0,
+      "seconds": 0.728,
+      "log": "NonceAllocator.log",
+      "generated": 2882,
+      "distinct": 645,
+      "pending": 0,
+      "model_sha256": "987349dbfc6da4951dab9ee90eb929c11be7bed6428d3d548883be40eb3babf1",
+      "config_sha256": "2c6d245c3a1cd5a7f7c11d3643b8acd5f8ea8caa4667ea48d3af04e70e93c6ba"
+    },
+    {
+      "module": "NonceAllocator",
+      "config": "NonceAllocator_missing_floor.cfg",
+      "expected": "invariant:ObservedNonceFloor",
+      "kind": "fault",
+      "passed": true,
+      "exit_code": 12,
+      "seconds": 0.711,
+      "log": "NonceAllocator_missing_floor.log",
+      "generated": 583,
+      "distinct": 184,
+      "pending": 64,
+      "model_sha256": "987349dbfc6da4951dab9ee90eb929c11be7bed6428d3d548883be40eb3babf1",
+      "config_sha256": "31143669860b8982db188b235beb3268386d3320df39b6c75256c9f803acf3db"
+    },
+    {
+      "module": "NonceAllocator",
+      "config": "NonceAllocator_old_receipt_witness.cfg",
+      "expected": "invariant:OldReceiptCatchupNotReached",
+      "kind": "witness",
+      "passed": true,
+      "exit_code": 12,
+      "seconds": 0.702,
+      "log": "NonceAllocator_old_receipt_witness.log",
+      "generated": 172,
+      "distinct": 69,
+      "pending": 32,
+      "model_sha256": "987349dbfc6da4951dab9ee90eb929c11be7bed6428d3d548883be40eb3babf1",
+      "config_sha256": "2e3381cf6f926f30f75b5a4edf8259a5641748068e5b5fb75686bccfa0f6546e"
+    },
+    {
+      "module": "DisasterRecovery",
+      "config": "DisasterRecovery_terminal_attribution.cfg",
+      "expected": "invariant:TerminalHasOwnEffect",
+      "kind": "fault",
+      "passed": true,
+      "exit_code": 12,
+      "seconds": 1.063,
+      "log": "DisasterRecovery_terminal_attribution.log",
+      "generated": 32857,
+      "distinct": 11865,
+      "pending": 6043,
+      "model_sha256": "f719ca7df1852016bc5870ba20c4fdf7668ce8bee12eedbdaa02a07213c27886",
+      "config_sha256": "3bd52e9f92bf5720371ccf30d1083ebca4a58fcee8cd9024ed7e2668874df257"
+    },
+    {
+      "module": "DepthCheckpoint",
+      "config": "DepthCheckpoint.cfg",
+      "expected": "pass",
+      "kind": "positive",
+      "passed": true,
+      "exit_code": 0,
+      "seconds": 0.742,
+      "log": "DepthCheckpoint.log",
+      "generated": 1731,
+      "distinct": 898,
+      "pending": 0,
+      "model_sha256": "5521e9341907c1c11db9ad74cbc5e40a855cf7bf67ea0b91a79c6d0a4f92f488",
+      "config_sha256": "8337b942d1345a8a2c1c8caae7a9d158a71b54492d7f0214b7726d289f1fd1e2"
+    },
+    {
+      "module": "DepthCheckpoint",
+      "config": "DepthCheckpoint_tip_anchor.cfg",
+      "expected": "invariant:NoSpuriousHalt",
+      "kind": "fault",
+      "passed": true,
+      "exit_code": 12,
+      "seconds": 0.727,
+      "log": "DepthCheckpoint_tip_anchor.log",
+      "generated": 1035,
+      "distinct": 551,
+      "pending": 128,
+      "model_sha256": "5521e9341907c1c11db9ad74cbc5e40a855cf7bf67ea0b91a79c6d0a4f92f488",
+      "config_sha256": "4f728f80d829c9e26c3518b05830ea32914b38e731b90e5168899c80cdf7f1d4"
+    },
+    {
+      "module": "DepthCheckpoint",
+      "config": "DepthCheckpoint_missing_halt.cfg",
+      "expected": "invariant:PositiveConflictHalts",
+      "kind": "fault",
+      "passed": true,
+      "exit_code": 12,
+      "seconds": 0.727,
+      "log": "DepthCheckpoint_missing_halt.log",
+      "generated": 1600,
+      "distinct": 561,
+      "pending": 132,
+      "model_sha256": "5521e9341907c1c11db9ad74cbc5e40a855cf7bf67ea0b91a79c6d0a4f92f488",
+      "config_sha256": "ebb53c883b1d09363f081f6b892d155312f4c8eed9e3532349e0329879c58a5b"
+    },
+    {
+      "module": "DepthCheckpoint",
+      "config": "DepthCheckpoint_shallow_witness.cfg",
+      "expected": "invariant:ShallowReorgSurvivalNotReached",
+      "kind": "witness",
+      "passed": true,
+      "exit_code": 12,
+      "seconds": 0.715,
+      "log": "DepthCheckpoint_shallow_witness.log",
+      "generated": 1060,
+      "distinct": 563,
+      "pending": 133,
+      "model_sha256": "5521e9341907c1c11db9ad74cbc5e40a855cf7bf67ea0b91a79c6d0a4f92f488",
+      "config_sha256": "9f9a8d983280687bfde2c95bf37184c070db3ae854d4ae6aff6023ee6d95f83e"
+    },
+    {
+      "module": "DepthCheckpoint",
+      "config": "DepthCheckpoint_rollback_boundary.cfg",
+      "expected": "invariant:AcceptedBoundaryRemainsCanonical",
+      "kind": "boundary",
+      "passed": true,
+      "exit_code": 12,
+      "seconds": 0.705,
+      "log": "DepthCheckpoint_rollback_boundary.log",
+      "generated": 1242,
+      "distinct": 428,
+      "pending": 121,
+      "model_sha256": "5521e9341907c1c11db9ad74cbc5e40a855cf7bf67ea0b91a79c6d0a4f92f488",
+      "config_sha256": "97120f116746025558c10e25306cb4abbf01ca93788b38b0821d339a631a7656"
+    }
+  ],
+  "passed": true
+}

@@ -72,10 +72,14 @@ evm_rpc:
 
 Depth counts subsequent blocks (`head >= receipt block + confirmations`).
 It must be positive except on local chain ID 31337; integer overflow rejects.
-Depth uses the current `latest` head as its checkpoint, so a later change to that
-head can halt the chain even if the older receipt block survives. This conservative
-behavior does not turn a depth threshold into consensus finality. Numeric and
-unsigned decimal environment-string depths are accepted; invalid values reject.
+For observed latest height `H` and depth `D`, the durable checkpoint is the
+canonical block at `H - D`. Reorganizations confined above that qualified
+boundary do not contradict accepted history. The observed tip is rechecked during
+assessment; a concurrent tip change delays completion without permanently halting
+the chain. A positive conflict at the retained qualified boundary still halts.
+Depth remains probabilistic. Numeric and unsigned decimal environment-string
+depths are accepted; invalid values reject. Existing journals that retained the
+old unqualified tip remain conservatively fenced; see [migration](../replay-migration.md#depth-checkpoint-correction).
 The implementation is [the shared helper](../../core/src/finality.rs), exposed
 through [chain configuration](../../core/src/chain.rs). No provider probe can
 silently change its policy.
@@ -85,12 +89,15 @@ For a stored attempt hash, require all of the following before terminal cleanup:
 1. A matching receipt with a valid execution status, block number and block hash.
 2. A canonical block read at that number whose hash equals the receipt's hash.
 3. A non-null finalized checkpoint `(number, hash)` covering the receipt height;
-   an explicitly configured depth policy instead uses its covering latest head.
-4. Consistency with the last durably accepted checkpoint: a lower returned head
+   an explicitly configured depth policy uses the canonical `latest - depth`
+   boundary and requires that boundary to cover the receipt.
+4. Consistency with the last durably accepted checkpoint: a lower candidate boundary
    cannot move it backward; a changed hash at its height cannot be accepted.
 5. Revalidation of the selected checkpoint by number and of the receipt's block
    before the fenced terminal commit. Concurrent checkpoint updates must compare
    against the persisted predecessor or retry; a stale worker cannot overwrite it.
+   Positive-depth assessments also re-read the observed tip. They use six block
+   reads before executor caching; finalized-tag and local depth-zero use four.
 
 The independent journal persists receipt block identity, checkpoint identity,
 selected policy and outcome before Redis terminal status, retention start and

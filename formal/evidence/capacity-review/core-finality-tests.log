@@ -1,0 +1,22 @@
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on shared package cache
+   Compiling engine-core v0.1.0 (/Users/alfongj/Code/engine-core/core)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.84s
+     Running unittests src/lib.rs (target/debug/deps/engine_core-cc5f92a341c79164)
+
+running 9 tests
+test finality::tests::wrong_receipt_identity_and_missing_block_are_not_finality ... ok
+test finality::tests::persisted_checkpoint_distinguishes_missing_history_from_positive_conflict ... ok
+test finality::tests::local_depth_zero_keeps_tip_as_its_qualified_boundary ... ok
+test finality::tests::absent_or_lagging_finality_never_falls_back_to_latest ... ok
+test finality::tests::success_and_revert_require_identical_canonical_finality_evidence ... ok
+test finality::tests::depth_is_explicit_bounded_and_probabilistic ... ok
+test finality::tests::depth_success_and_revert_checkpoint_the_qualified_boundary_not_tip ... ok
+test finality::tests::reorgs_and_mixed_backend_checkpoints_cannot_complete ... ok
+test finality::tests::depth_unknown_boundary_and_within_assessment_reorgs_cannot_complete ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 31 filtered out; finished in 0.49s
+

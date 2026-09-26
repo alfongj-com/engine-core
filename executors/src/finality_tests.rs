@@ -96,6 +96,7 @@ struct State {
     userop: Option<Value>,
     head: u64,
     block_hash: B256,
+    block_overrides: std::collections::BTreeMap<u64, B256>,
     unsupported: bool,
     calls: Vec<String>,
 }
@@ -132,6 +133,7 @@ impl Fixture {
             userop: None,
             head: 9,
             block_hash: B256::repeat_byte(10),
+            block_overrides: Default::default(),
             unsupported: false,
             calls: vec![],
         }));
@@ -181,18 +183,21 @@ impl Fixture {
                             if tag == "finalized" && state.unsupported {
                                 json!({"error":{"code":-32602,"message":"finalized unsupported"}})
                             } else {
-                                let n = if tag == "finalized" {
+                                let n = if tag == "finalized" || tag == "latest" {
                                     state.head
                                 } else {
                                     u64::from_str_radix(tag.trim_start_matches("0x"), 16).unwrap()
                                 };
                                 let mut block: Block = Block::default();
                                 block.header.number = n;
-                                block.header.hash = if n == 10 {
-                                    state.block_hash
-                                } else {
-                                    B256::repeat_byte(n as u8)
-                                };
+                                block.header.hash =
+                                    state.block_overrides.get(&n).copied().unwrap_or_else(|| {
+                                        if n == 10 {
+                                            state.block_hash
+                                        } else {
+                                            B256::repeat_byte(n as u8)
+                                        }
+                                    });
                                 json!({"result":block})
                             }
                         }
@@ -1113,6 +1118,151 @@ async fn userop_confirmation_rejects_projection_substitution_before_rpc() {
             .state,
         recovery::AdmissionState::Admitted
     );
+    let _: () = f
+        .redis
+        .clone()
+        .del(format!("{journal_namespace}:recovery:checkpoint"))
+        .await
+        .unwrap();
+    f.cleanup().await;
+    std::fs::remove_dir_all(directory).unwrap();
+}
+
+#[tokio::test]
+#[ignore = "requires disposable Redis in TEST_REDIS_URL"]
+async fn depth_continuity_anchors_qualified_history_and_finalized_tip_conflicts_still_halt() {
+    const CHILD: &str = "ENGINE_TEST_DEPTH_BOUNDARY_CHILD";
+    let Ok(scenario) = std::env::var(CHILD) else {
+        for scenario in ["depth-success", "depth-revert", "finalized", "legacy-depth"] {
+            let output = std::process::Command::new(std::env::current_exe().unwrap())
+                .args(["--exact", "finality::tests::depth_continuity_anchors_qualified_history_and_finalized_tip_conflicts_still_halt", "--ignored", "--nocapture"])
+                .env(CHILD, scenario)
+                .output().unwrap();
+            assert!(
+                output.status.success(),
+                "{scenario}: {} {}",
+                String::from_utf8_lossy(&output.stdout),
+                String::from_utf8_lossy(&output.stderr)
+            );
+        }
+        return;
+    };
+    use engine_core::{finality::FinalityPolicy, recovery::RecoveryJournal};
+    let mut f = Fixture::new().await;
+    let directory =
+        std::env::temp_dir().join(format!("depth-boundary-journal-{}", uuid::Uuid::new_v4()));
+    let path = directory.join("ledger.sqlite");
+    let journal_namespace = format!("{}_journal", f.namespace.replace(':', "_"));
+    let namespace = Some(journal_namespace.clone());
+    let url = std::env::var("TEST_REDIS_URL").unwrap();
+    RecoveryJournal::initialize(&path, &url, namespace.clone())
+        .await
+        .unwrap();
+    let journal = RecoveryJournal::open(&path, &url, namespace).await.unwrap();
+    recovery::install(journal.clone()).unwrap();
+    let depth = scenario != "finalized";
+    f.chain.policy = if depth {
+        FinalityPolicy::Depth { confirmations: 2 }
+    } else {
+        FinalityPolicy::Finalized
+    };
+    f.state.lock().unwrap().head = 12;
+    let candidate: TransactionReceipt =
+        serde_json::from_value(receipt(scenario != "depth-revert")).unwrap();
+    if scenario == "legacy-depth" {
+        // Existing deployment records used the unqualified latest tip. They
+        // cannot silently be reinterpreted/downgraded to the new boundary.
+        let old = FinalityEvidence {
+            block_number: 10,
+            block_hash: B256::repeat_byte(10),
+            checkpoint_number: 12,
+            checkpoint_hash: B256::repeat_byte(12),
+            policy: f.chain.policy,
+        };
+        assert!(
+            journal
+                .commit_checkpoint(31337, None, old.clone())
+                .await
+                .unwrap()
+        );
+        assert!(matches!(
+            assess(&f.chain, B256::repeat_byte(1), &candidate)
+                .await
+                .unwrap(),
+            FinalityAssessment::Pending { canonical: true }
+        ));
+        assert_eq!(journal.load_checkpoint(31337).await.unwrap(), Some(old));
+        f.state
+            .lock()
+            .unwrap()
+            .block_overrides
+            .insert(12, B256::repeat_byte(99));
+        assert!(
+            check_continuity(&f.chain).await.is_err(),
+            "legacy tip contradiction must not be silently excused"
+        );
+    } else {
+        let assessment = assess(&f.chain, B256::repeat_byte(1), &candidate)
+            .await
+            .unwrap();
+        let FinalityAssessment::Finalized(proof) = assessment else {
+            panic!("qualified receipt stayed pending");
+        };
+        assert_eq!(proof.checkpoint_number, if depth { 10 } else { 12 });
+        assert_eq!(
+            journal.load_checkpoint(31337).await.unwrap().unwrap(),
+            proof
+        );
+        {
+            let mut state = f.state.lock().unwrap();
+            state.block_overrides.insert(12, B256::repeat_byte(99));
+            state.receipt = None;
+        }
+        if depth {
+            // A two-block tip replacement leaves the qualified block10 intact.
+            assert!(check_continuity(&f.chain).await.is_ok());
+            journal.check_chain_healthy(31337).await.unwrap();
+            assert!(matches!(
+                assess(&f.chain, B256::repeat_byte(1), &candidate)
+                    .await
+                    .unwrap(),
+                FinalityAssessment::Finalized(_)
+            ));
+            f.state.lock().unwrap().head = 13;
+            let FinalityAssessment::Finalized(advanced) =
+                assess(&f.chain, B256::repeat_byte(1), &candidate)
+                    .await
+                    .unwrap()
+            else {
+                panic!("qualified boundary did not advance");
+            };
+            assert_eq!(advanced.checkpoint_number, 11);
+            assert_eq!(
+                journal
+                    .load_checkpoint(31337)
+                    .await
+                    .unwrap()
+                    .unwrap()
+                    .checkpoint_number,
+                11
+            );
+            f.state
+                .lock()
+                .unwrap()
+                .block_overrides
+                .insert(11, B256::repeat_byte(77));
+            assert!(
+                check_continuity(&f.chain).await.is_err(),
+                "changed qualified history must durably halt"
+            );
+        } else {
+            assert!(
+                check_continuity(&f.chain).await.is_err(),
+                "changed finalized-tag checkpoint must still halt"
+            );
+        }
+    }
+    assert!(journal.check_chain_healthy(31337).await.is_err());
     let _: () = f
         .redis
         .clone()

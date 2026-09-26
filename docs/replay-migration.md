@@ -59,3 +59,29 @@ New ERC-4337 send results, errors, and confirmation jobs carry the unique deploy
 Lock and cache keys now follow the configured execution namespace. Stop old workers before upgrade, and reconcile/drain old active deployment work before using the new namespace keys. Redis snapshots remain the rollback boundary; do not run old and new deployment workers simultaneously against the same account. The existing 300-second lease bounds orphaned-lock delay but does not prove a slow bundler operation has stopped.
 
 `executors/src/external_bundler/deployment_tests.rs` simulates lease expiry, acquisition by another worker, and late success/failure cleanup; only the current owner can mutate the lock/cache, and independent execution namespaces do not interfere.
+
+
+## Depth checkpoint correction
+
+New explicit positive-depth assessments retain the canonical block at observed
+`latest height - depth`, rather than the unqualified latest tip. The finalized-tag
+policy is unchanged. This fixes an availability failure where a shallow reorg
+above already qualified history halted the chain after an older receipt completed.
+Missing evidence remains unknown; a changed retained boundary still halts.
+
+The evidence JSON shape is unchanged. Existing depth journals retain their exact
+old checkpoint height/hash: this upgrade never downgrades or rewrites them. A new
+qualified boundary below the old checkpoint stays pending until it naturally
+catches up. If that old tip changes before catch-up, the conservative halt remains
+and requires operator reconciliation. There is no automatic legacy-checkpoint
+migration or force-clear action. Do not discard/reinitialize a journal containing
+prior attempts to bypass it; fresh journals are appropriate only for fresh,
+isolated development chains/runs.
+
+Core RPC regressions cover boundary selection, reorgs and missing/malformed
+responses. The executor regression uses an actual SQLite journal and Redis to
+check shallow-tip continuity, qualified-boundary conflicts, finalized-tag behavior
+and conservative legacy handling. Frozen-source test results belong in
+[verification](verification.md). The targeted core and Redis-backed executor
+regressions passed locally; the process-level reorg scenario and CI remain
+separate gates.

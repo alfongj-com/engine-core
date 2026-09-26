@@ -31,8 +31,10 @@ def post(url, method, params, id=1, headers=None):
 
 
 class Upstream:
-    def __init__(self, result=None, truncated=False):
+    def __init__(self, result=None, truncated=False, idle_close=False):
         self.calls, self.client_ports, self.lock = [], [], threading.Lock()
+        self.close_idle = threading.Event()
+        self.idle_closed = threading.Event()
         self.result = result or (lambda call: "0x" + hashlib.sha256(call["params"][0].encode()).hexdigest()
                                  if call["method"] == "eth_sendRawTransaction" else "0x1")
         owner = self
@@ -57,6 +59,11 @@ class Upstream:
                 self.wfile.write(encoded)
                 if truncated:
                     self.close_connection = True
+                if idle_close:
+                    owner.close_idle.wait(3)
+                    self.connection.shutdown(socket.SHUT_RDWR)
+                    self.close_connection = True
+                    owner.idle_closed.set()
         self.server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
         self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
         self.thread.start()
@@ -399,6 +406,31 @@ class EvmDecoderTests(unittest.TestCase):
 
 
 class KeepAliveTests(unittest.TestCase):
+    def test_idle_server_close_reconnects_before_next_post_without_replaying_it(self):
+        upstream = Upstream(idle_close=True)
+        client = KeepAliveHttp()
+        body = b'{"jsonrpc":"2.0","id":1,"method":"eth_sendRawTransaction","params":["0x1234"]}'
+        try:
+            self.assertEqual(client.request(upstream.url, body)[0], 200)
+            self.assertEqual(len(upstream.calls), 1)
+            # The first POST already received its complete response. The server
+            # then closes an idle keepalive socket without a Connection header.
+            upstream.close_idle.set()
+            self.assertTrue(upstream.idle_closed.wait(2))
+            self.assertEqual(client.request(upstream.url, body)[0], 200)
+            self.assertEqual(len(upstream.calls), 2, "each explicit call must produce exactly one POST")
+            self.assertEqual(len(set(upstream.client_ports)), 2)
+            stats = client.snapshot()
+            self.assertEqual(stats["connections_opened"], 2)
+            self.assertEqual(stats["stale_idle_connections"], 1)
+            self.assertEqual(stats["requests"], 2)
+            self.assertEqual(stats["responses"], 2)
+            self.assertEqual(stats["failures"], [])
+        finally:
+            upstream.close_idle.set()
+            client.close()
+            upstream.close()
+
     def test_valid_json_with_truncated_http_framing_is_not_accepted_or_retried(self):
         upstream = Upstream(truncated=True)
         client = KeepAliveHttp()

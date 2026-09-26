@@ -80,6 +80,12 @@ pub struct QueueConfig {
     )]
     pub eoa_max_inflight: u64,
     pub solana_executor_workers: usize,
+    /// Whole seconds; TWMQ already rounds the prior 200ms delay to one second.
+    #[serde(
+        default = "default_solana_confirmation_poll_interval_seconds",
+        deserialize_with = "deserialize_solana_confirmation_poll_interval_seconds"
+    )]
+    pub solana_confirmation_poll_interval_seconds: u64,
 
     pub execution_namespace: Option<String>,
 
@@ -114,6 +120,31 @@ impl Default for MonitoringConfig {
 
 fn default_completed_transaction_ttl_seconds() -> u64 {
     86400 // 1 day in seconds
+}
+
+fn default_solana_confirmation_poll_interval_seconds() -> u64 {
+    1
+}
+
+fn deserialize_solana_confirmation_poll_interval_seconds<'de, D: serde::Deserializer<'de>>(
+    deserializer: D,
+) -> Result<u64, D::Error> {
+    #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum Number {
+        Integer(u64),
+        Text(String),
+    }
+    let value = match Number::deserialize(deserializer)? {
+        Number::Integer(value) => value,
+        Number::Text(value) => value.parse().map_err(serde::de::Error::custom)?,
+    };
+    if !(1..=5).contains(&value) {
+        return Err(serde::de::Error::custom(
+            "solana_confirmation_poll_interval_seconds must be between 1 and 5",
+        ));
+    }
+    Ok(value)
 }
 
 fn default_eoa_max_inflight() -> u64 {
@@ -275,39 +306,76 @@ impl TryFrom<String> for Environment {
 mod throughput_config_tests {
     use super::*;
 
-    #[derive(Deserialize)]
-    struct Window {
-        #[serde(
-            default = "default_eoa_max_inflight",
-            deserialize_with = "deserialize_eoa_max_inflight"
-        )]
-        eoa_max_inflight: u64,
+    // Exercise the actual production struct and checked-in configuration layer.
+    // No Environment source or process environment mutation enters these tests.
+    fn configured(
+        override_value: Option<(&str, config::Value)>,
+    ) -> Result<EngineConfig, config::ConfigError> {
+        let mut builder = Config::builder()
+            .add_source(File::from_str(
+                include_str!("../configuration/server_base.yaml"),
+                config::FileFormat::Yaml,
+            ))
+            .add_source(File::from_str(
+                include_str!("../configuration/server_production.yaml"),
+                config::FileFormat::Yaml,
+            ));
+        if let Some((key, value)) = override_value {
+            builder = builder.set_override(key, value)?;
+        }
+        builder.build()?.try_deserialize()
     }
 
     #[test]
     fn inflight_window_accepts_environment_values_but_rejects_unsafe_bounds() {
-        assert_eq!(
-            serde_json::from_str::<Window>("{}")
-                .unwrap()
-                .eoa_max_inflight,
-            50
-        );
-        for value in [serde_json::json!(1024), serde_json::json!("1024")] {
-            let config: Window =
-                serde_json::from_value(serde_json::json!({"eoa_max_inflight":value})).unwrap();
-            assert_eq!(config.eoa_max_inflight, 1024);
+        assert_eq!(configured(None).unwrap().queue.eoa_max_inflight, 50);
+        for value in [config::Value::from(1024u64), config::Value::from("1024")] {
+            let config = configured(Some(("queue.eoa_max_inflight", value))).unwrap();
+            assert_eq!(config.queue.eoa_max_inflight, 1024);
         }
         for value in [
-            serde_json::json!(0),
-            serde_json::json!(4097),
-            serde_json::json!(-1),
-            serde_json::json!(1.5),
-            serde_json::json!(true),
-            serde_json::json!("1e3"),
+            config::Value::from(0u64),
+            config::Value::from(4097u64),
+            config::Value::from(-1i64),
+            config::Value::from(1.5f64),
+            config::Value::from(true),
+            config::Value::from("1e3"),
+        ] {
+            assert!(configured(Some(("queue.eoa_max_inflight", value))).is_err());
+        }
+    }
+
+    #[test]
+    fn whole_second_polling_preserves_default_and_rejects_unbounded_or_fractional_input() {
+        assert_eq!(
+            configured(None)
+                .unwrap()
+                .queue
+                .solana_confirmation_poll_interval_seconds,
+            1
+        );
+        for value in [config::Value::from(2u64), config::Value::from("2")] {
+            let config = configured(Some((
+                "queue.solana_confirmation_poll_interval_seconds",
+                value,
+            )))
+            .unwrap();
+            assert_eq!(config.queue.solana_confirmation_poll_interval_seconds, 2);
+        }
+        for value in [
+            config::Value::from(0u64),
+            config::Value::from(6u64),
+            config::Value::from(-1i64),
+            config::Value::from(1.5f64),
+            config::Value::from(true),
+            config::Value::from("2.0"),
         ] {
             assert!(
-                serde_json::from_value::<Window>(serde_json::json!({"eoa_max_inflight":value}))
-                    .is_err()
+                configured(Some((
+                    "queue.solana_confirmation_poll_interval_seconds",
+                    value
+                )))
+                .is_err()
             );
         }
     }

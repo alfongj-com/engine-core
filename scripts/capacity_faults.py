@@ -19,6 +19,7 @@ import ipaddress
 import json
 import os
 from pathlib import Path
+import select
 import socket
 import subprocess
 import struct
@@ -148,6 +149,25 @@ class KeepAliveHttp:
             with self.lock:
                 self.connections.discard(connection)
 
+    @staticmethod
+    def _idle_socket_unusable(sock):
+        # Only inspect between fully consumed responses, before any bytes of
+        # the next request. An idle HTTP/1.1 socket has no expected incoming
+        # bytes: readable EOF, reset, or stray response data all require a fresh
+        # connection. Never retry request()/getresponse() after they start.
+        try:
+            readable, _, exceptional = select.select([sock], [], [sock], 0)
+            if exceptional:
+                return True
+            if not readable:
+                return False
+            sock.recv(1, socket.MSG_PEEK | getattr(socket, "MSG_DONTWAIT", 0))
+            return True
+        except BlockingIOError:
+            return False
+        except (OSError, ValueError):
+            return True
+
     def request(self, url, body=None, headers=None, timeout=10, max_response_bytes=16 * 1024 * 1024):
         loopback_url(url)
         require(body is None or isinstance(body, bytes), "HTTP body must be bytes")
@@ -165,6 +185,11 @@ class KeepAliveHttp:
             self.counters["peak_active"] = max(self.counters["peak_active"], self.counters["active"])
         try:
             connection = cache.get(key)
+            if connection is not None and connection.sock is not None and self._idle_socket_unusable(connection.sock):
+                self._discard(cache, key)
+                connection = None
+                with self.lock:
+                    self.counters["stale_idle_connections"] += 1
             if connection is None:
                 if len(cache) >= self.max_origins:
                     self._discard(cache, next(iter(cache)))

@@ -1,4 +1,7 @@
-use std::sync::Arc;
+use std::{
+    sync::{Arc, LazyLock},
+    time::Duration,
+};
 
 use axum::{
     Json, Router,
@@ -239,12 +242,58 @@ async fn recovery_gate(request: Request, next: Next) -> Response {
     next.run(request).await
 }
 
+const MAX_CONCURRENT_HEALTH_CHECKS: usize = 4;
+const HEALTH_CHECK_TIMEOUT: Duration = Duration::from_secs(5);
+static HEALTH_CHECK_SLOTS: LazyLock<Arc<Semaphore>> =
+    LazyLock::new(|| Arc::new(Semaphore::new(MAX_CONCURRENT_HEALTH_CHECKS)));
+
 async fn recovery_health() -> Response {
-    match engine_core::recovery::ensure_healthy().await {
-        Ok(()) => Json(json!({"status": "ok"})).into_response(),
-        Err(_) => (
+    bounded_recovery_health(
+        HEALTH_CHECK_SLOTS.clone(),
+        HEALTH_CHECK_TIMEOUT,
+        engine_core::recovery::ensure_healthy(),
+    )
+    .await
+}
+
+/// Public probes must not queue unbounded work on the journal's shared mutex.
+/// Admission/signing fences remain independent and uncached. Only a freshly
+/// completed healthy check returns 200; saturation and timeout mean unknown.
+async fn bounded_recovery_health(
+    slots: Arc<Semaphore>,
+    timeout: Duration,
+    check: impl Future<Output = Result<(), engine_core::recovery::RecoveryError>> + Send + 'static,
+) -> Response {
+    let Ok(permit) = slots.try_acquire_owned() else {
+        let mut response = (
+            StatusCode::SERVICE_UNAVAILABLE,
+            Json(json!({"status": "busy"})),
+        )
+            .into_response();
+        response.headers_mut().insert(
+            axum::http::header::RETRY_AFTER,
+            axum::http::HeaderValue::from_static("1"),
+        );
+        return response;
+    };
+    // The journal can await blocking SQLite work and persist a detected halt.
+    // Neither a disconnected client nor this HTTP deadline may cancel it and
+    // free its slot while that work still runs. A detached task owns the slot
+    // until completion; four stuck checks remain four, with no readiness cache.
+    let mut task = tokio::spawn(async move {
+        let _permit = permit;
+        check.await
+    });
+    match tokio::time::timeout(timeout, &mut task).await {
+        Ok(Ok(Ok(()))) => Json(json!({"status": "ok"})).into_response(),
+        Ok(Ok(Err(_))) => (
             StatusCode::SERVICE_UNAVAILABLE,
             Json(json!({"status": "recovery_required"})),
+        )
+            .into_response(),
+        Err(_) | Ok(Err(_)) => (
+            StatusCode::SERVICE_UNAVAILABLE,
+            Json(json!({"status": "unknown"})),
         )
             .into_response(),
     }

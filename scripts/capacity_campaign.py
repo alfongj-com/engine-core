@@ -147,13 +147,36 @@ class Offer:
     scheduled: float
 
 
+def schedule_phases(rates):
+    """A deterministic fraction of each period separates equal-rate arrivals."""
+    return {chain: index / (len(rates) * rates[chain]) for index, chain in enumerate(sorted(rates))}
+
+
+def campaign_outcome(oracle, report, execution_error=False):
+    """Keep a proven safety violation and durable fences visible after faults."""
+    if oracle.get("safety_pass") is False:
+        return "unsafe"
+    if report.get("durable_chain_halts") or report.get("finality_checkpoint_conflict"):
+        return "finality_checkpoint_conflict"
+    if report.get("journal_halted") or report.get("operator_recovery_required"):
+        return "fail_closed_recovery_required"
+    if report.get("offline_projection_recovered") and oracle.get("safety_pass") and not execution_error:
+        return "recovered_with_quarantine"
+    if report.get("chaos_qualification", {}).get("qualified") is False and oracle.get("safety_pass"):
+        return "unqualified_fault_scenario"
+    if execution_error:
+        return "error"
+    return oracle.get("outcome", report.get("outcome", "error"))
+
+
 def open_loop(rates, duration, start, max_lag, dispatch, dropped, clock=time.monotonic, sleep=time.sleep, cancelled=lambda: False):
     """No work queue: one heap item per chain, bounded dispatch, no catch-up burst.
 
     A late slot is discarded. A full client drops the current slot. Neither path
     retries it. Dispatch returns immediately and must enforce a nonblocking bound.
     """
-    heap = [(start, chain, 0) for chain in sorted(rates)]
+    phases = schedule_phases(rates)
+    heap = [(start + phases[chain], chain, 0) for chain in sorted(rates)]
     heapq.heapify(heap)
     counts = {chain: int(math.floor(rate * duration)) for chain, rate in rates.items()}
     while heap:
@@ -163,7 +186,7 @@ def open_loop(rates, duration, start, max_lag, dispatch, dropped, clock=time.mon
         if cancelled():
             dropped(Offer(chain, index, deadline), "campaign_aborted")
             index += 1
-            if index < counts[chain]: heapq.heappush(heap, (start + index / rates[chain], chain, index))
+            if index < counts[chain]: heapq.heappush(heap, (start + phases[chain] + index / rates[chain], chain, index))
             continue
         now = clock()
         if deadline > now:
@@ -176,7 +199,7 @@ def open_loop(rates, duration, start, max_lag, dispatch, dropped, clock=time.mon
             dropped(offer, "client_capacity")
         index += 1
         if index < counts[chain]:
-            heapq.heappush(heap, (start + index / rates[chain], chain, index))
+            heapq.heappush(heap, (start + phases[chain] + index / rates[chain], chain, index))
     # Keep the offered phase at its declared length, including the last interval.
     remaining = start + duration - clock()
     if remaining > 0 and not cancelled():
@@ -276,6 +299,10 @@ def qualify_capacity(assessment, oracle, proxy, execution_error=False):
         reasons.append("rpc_proxy_connection_limit")
     if proxy.get("proxy_failures") or proxy.get("proxy_failure_details") or proxy.get("http_transport", {}).get("failures"):
         reasons.append("rpc_proxy_transport_errors")
+    if any(method.get("errors", 0) for method in proxy.get("methods", {}).values()):
+        reasons.append("rpc_method_errors")
+    if any(proxy.get(field, 0) for field in ("dropped_responses", "lost_http_responses", "accepted_responses_lost", "injected_preflight_bypass")):
+        reasons.append("rpc_fault_injection")
     if execution_error:
         reasons.append("campaign_or_journal_error")
     result["disqualifiers"] = reasons
@@ -351,12 +378,56 @@ COUNTER_ADDRESS = "0x2222222222222222222222222222222222222222"
 REVERT_ADDRESS = "0x3333333333333333333333333333333333333333"
 
 
+class ScenarioUnqualified(RuntimeError):
+    """The requested fixture was not observed; this is not a safety violation."""
+
+
+def evenly_spaced(values, limit):
+    """Bounded deterministic probes include both ends of a large ID inventory."""
+    if len(values) <= limit:
+        return list(values)
+    if limit == 1:
+        return [values[0]]
+    return [values[index * (len(values) - 1) // (limit - 1)] for index in range(limit)]
+
+
+def validate_recovery_inventory(before, after, namespace):
+    """Validate the real CLI transition, not a reconstructed or edited ledger."""
+    old, new = before["control"], after["control"]
+    if (new["deployment"] != old["deployment"] or new["epoch"] != old["epoch"] + 1
+            or new["namespace"] != namespace or new["namespace"] == old["namespace"]
+            or new["checkpoint"] != 0 or new["halted"]):
+        raise RuntimeError("Recovery deployment/epoch/projection metadata mismatch")
+    if set(before["admissions"]) != set(after["admissions"]):
+        raise RuntimeError("Recovery added or lost immutable admissions")
+    if before["attempts"] != after["attempts"] or before["table_sha256"] != after["table_sha256"]:
+        raise RuntimeError("Recovery changed immutable attempts or finality/terminal evidence")
+    attempted = {row["id"] for row in before["attempts"].values()}
+    counts = Counter(terminal=0, quarantined=0, unsent=0)
+    for txid, original in before["admissions"].items():
+        expected = dict(original)
+        if original["state"] == "terminal":
+            counts["terminal"] += 1
+        elif txid in attempted:
+            expected["state"] = "quarantined"
+            counts["quarantined"] += 1
+        else:
+            counts["unsent"] += 1
+        if after["admissions"][txid] != expected:
+            raise RuntimeError("Recovery changed payload/replay identity or failed quarantine")
+    return dict(counts)
+
+
 class Campaign:
     def __init__(self, args, profiles):
         self.args, self.profiles = args, profiles
         self.logs = Path(tempfile.mkdtemp(prefix="engine-capacity-"))
         os.chmod(self.logs, 0o700)
         self.namespace = uuid.uuid4().hex
+        self.projection_namespace = self.namespace
+        self.projection_recovered = False
+        self.orphaned = {}
+        self.finality_halted = False
         self.token = uuid.uuid4().hex + uuid.uuid4().hex
         self.children, self.streams, self.proxies = {}, [], {}
         self.nodes, self.initial = {}, {}
@@ -388,14 +459,16 @@ class Campaign:
             "schema_version": 1, "scope": "local single-host shared Engine/Redis/SQLite capacity experiment",
             "public_chain_qualification": False, "profiles": profiles, "duration_seconds": args.seconds,
             "warmup_seconds": args.warmup_seconds, "minimum_late_window_seconds": args.late_window_seconds,
+            "arrival_phase_seconds": schedule_phases({name: profile["rate"] for name, profile in profiles.items()}),
             "http_concurrency": args.http_concurrency, "rpc_proxy_concurrency": args.proxy_concurrency,
             "eoa_max_inflight_per_wallet": args.max_inflight, "solana_workers": args.solana_workers,
+            "solana_confirmation_poll_seconds": args.solana_confirmation_poll_seconds,
             "mixed": args.mixed, "chaos": args.chaos, "log_directory": str(self.logs),
             "durability": {"sqlite": "WAL synchronous=FULL/fullfsync=ON", "redis_appendfsync": args.redis_fsync},
             "engine_binary_sha256": hashlib.file_digest(args.engine_bin.open("rb"), "sha256").hexdigest() if hasattr(hashlib, "file_digest") else hashlib.sha256(args.engine_bin.read_bytes()).hexdigest(),
             "source_commit": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(),
             "source_status_porcelain": subprocess.check_output(["git", "status", "--porcelain"], cwd=ROOT, text=True).splitlines(),
-            "harness_sha256": {name: hashlib.sha256((ROOT / "scripts" / name).read_bytes()).hexdigest()
+            "harness_sha256": {name: hashlib.sha256((Path(__file__) if name == "capacity_campaign.py" else ROOT / "scripts" / name).read_bytes()).hexdigest()
                                for name in ("capacity_campaign.py", "capacity_faults.py")},
             "resources_scope": "Owned Engine/Redis/local nodes plus combined campaign+RPC proxy process; external node/VM CPU and memory require separate observation. ps CPU is its reported lifetime average.",
             "latency_note": "HTTP service/deadline latency is measured directly; durable attempt/terminal timestamps are observer upper bounds, sampled independently.",
@@ -453,6 +526,7 @@ class Campaign:
             "APP__QUEUE__EOA_MAX_INFLIGHT": str(self.args.max_inflight),
             "APP__QUEUE__EOA_EXECUTOR_WORKERS": str(sum(p["family"] == "evm" for p in self.profiles.values()) or 1),
             "APP__QUEUE__SOLANA_EXECUTOR_WORKERS": str(self.args.solana_workers),
+            "APP__QUEUE__SOLANA_CONFIRMATION_POLL_INTERVAL_SECONDS": str(self.args.solana_confirmation_poll_seconds),
         })
         for name in ("WEBHOOK_WORKERS", "EXTERNAL_BUNDLER_SEND_WORKERS", "USEROP_CONFIRM_WORKERS"):
             self.env[f"APP__QUEUE__{name}"] = "1"
@@ -648,13 +722,266 @@ class Campaign:
             if time.monotonic() - deadline > self.args.sample_seconds:
                 deadline = time.monotonic()
 
+    def verify_nonterminal(self, ids):
+        """Provisional execution may never cross the durable terminal boundary."""
+        with sqlite3.connect(f"file:{self.journal}?mode=ro", uri=True, timeout=2) as db:
+            db.execute("BEGIN")
+            for offset in range(0, len(ids), 500):
+                batch = ids[offset:offset + 500]
+                placeholders = ",".join("?" for _ in batch)
+                rows = dict(db.execute(f"SELECT id,state FROM admissions WHERE id IN ({placeholders})", batch))
+                if len(rows) != len(batch) or any(state != "admitted" for state in rows.values()):
+                    raise RuntimeError("Provisional reorg batch became terminal or lost durable admission")
+                if db.execute(f"SELECT 1 FROM terminal_evidence WHERE id IN ({placeholders}) LIMIT 1", batch).fetchone():
+                    raise RuntimeError("Provisional reorg batch acquired terminal evidence")
+            db.rollback()
+
+    def durable_states(self, ids):
+        states = {}
+        with sqlite3.connect(f"file:{self.journal}?mode=ro", uri=True, timeout=2) as db:
+            db.execute("BEGIN")
+            for offset in range(0, len(ids), 500):
+                batch = ids[offset:offset + 500]
+                placeholders = ",".join("?" for _ in batch)
+                states.update(db.execute(f"SELECT id,state FROM admissions WHERE id IN ({placeholders})", batch))
+            db.rollback()
+        return states
+
+    def chain_finality_inventory(self, chain):
+        with sqlite3.connect(f"file:{self.journal}?mode=ro", uri=True, timeout=2) as db:
+            db.execute("BEGIN")
+            chain_id = self.profiles[chain]["chain_id"]
+            checkpoint = db.execute("SELECT evidence FROM chain_checkpoints WHERE chain_id=?", (chain_id,)).fetchone()
+            halted = db.execute("SELECT reason FROM chain_halts WHERE chain_id=?", (chain_id,)).fetchone()
+            db.rollback()
+        return {"checkpoint": json.loads(checkpoint[0]) if checkpoint else None,
+                "halted": bool(halted), "halt_reason": halted[0] if halted else None}
+
+    def block_attempts(self, chain, block):
+        hashes = set(block["transactions"])
+        found = {}
+        with sqlite3.connect(f"file:{self.journal}?mode=ro", uri=True, timeout=2) as db:
+            for txid, replay, encoded in db.execute("SELECT id,replay_key,payload FROM attempts"):
+                attempt = json.loads(encoded)
+                identity = attempt.get("transactionHash")
+                if identity in hashes and self.id_chain.get(txid) == chain:
+                    found[txid] = {"identity": identity, "replay_key": replay}
+        for proof in found.values():
+            receipt = self.nodes[chain].call("eth_getTransactionReceipt", [proof["identity"]])
+            if not receipt or receipt["blockHash"] != block["hash"]:
+                raise RuntimeError("Actual reorg fixture receipt missing from expected block")
+            proof.update({"block_hash": receipt["blockHash"], "block_number": int(receipt["blockNumber"], 16),
+                          "outcome": "success" if int(receipt["status"], 16) else "revert"})
+        return found
+
+    def reorg(self, chain):
+        """Expose shallow-reorg continuity after real older terminal traffic."""
+        node, profile = self.nodes[chain], self.profiles[chain]
+        interval, depth = int(profile["block_seconds"]), profile["depth"]
+        paused = False
+        # Do not evade tip-pinning by injecting only before the first terminal.
+        def prior_terminal_count():
+            with sqlite3.connect(f"file:{self.journal}?mode=ro", uri=True, timeout=2) as db:
+                return sum(self.id_chain.get(txid) == chain for txid, in db.execute("SELECT id FROM admissions WHERE state='terminal'"))
+        wait_until(lambda: prior_terminal_count() >= self.args.reorg_min_transactions, max(60, self.args.seconds))
+        prior_count = prior_terminal_count()
+        try:
+            node.call("evm_setIntervalMining", [0])
+            node.call("evm_setAutomine", [False])
+            paused = True
+            pending = lambda: int(node.call("eth_getTransactionCount", [FROM, "pending"]), 16) - int(node.call("eth_getTransactionCount", [FROM, "latest"]), 16)
+            wait_until(lambda: pending() >= self.args.reorg_min_transactions, 60)
+            node.call("evm_mine", [])
+            anchor_block = node.call("eth_getBlockByNumber", ["latest", False])
+            anchor_number = int(anchor_block["number"], 16)
+            anchors = self.block_attempts(chain, anchor_block)
+            if len(anchors) < self.args.reorg_min_transactions:
+                raise RuntimeError("Anchor block did not include requested actual intents")
+            # Parent is one block short of granting the anchor depth eligibility.
+            # These manually advanced heights are fault setup, not capacity data.
+            for _ in range(depth - 1):
+                node.call("evm_mine", [])
+            parent = node.call("eth_getBlockByNumber", ["latest", False])
+            parent_number = int(parent["number"], 16)
+            if parent_number != anchor_number + depth - 1:
+                raise RuntimeError("Reorg parent depth setup is inconsistent")
+            self.verify_nonterminal(list(anchors))
+            snapshot = node.call("evm_snapshot", [])
+            wait_until(lambda: pending() >= self.args.reorg_min_transactions, 60)
+            before_receipt_calls = self.proxies[chain].snapshot()["calls"].get("eth_getTransactionReceipt", 0)
+            node.call("evm_mine", [])
+            provisional = node.call("eth_getBlockByNumber", ["latest", False])
+            if int(provisional["number"], 16) != parent_number + 1:
+                raise RuntimeError("Mining pause failed to bound provisional finality head")
+            affected = self.block_attempts(chain, provisional)
+            if len(affected) < self.args.reorg_min_transactions:
+                raise RuntimeError("Reorg did not include requested minimum actual intents")
+            ids = list(affected)
+            self.event("reorg_provisional_batch", chain=chain, prior_terminals=prior_count,
+                       anchor_number=anchor_number, parent=parent_number,
+                       block_hash=provisional["hash"], affected_ids=len(ids))
+            deadline = time.monotonic() + self.args.reorg_hold_seconds
+            while time.monotonic() < deadline:
+                if int(node.call("eth_blockNumber", []), 16) != parent_number + 1:
+                    raise RuntimeError("Provisional head advanced during finality safety check")
+                self.verify_nonterminal(ids)
+                time.sleep(.2)
+            self.verify_nonterminal(ids)
+            # Candidate-nonce filtering can intentionally skip provisional receipt
+            # queries. Older anchors becoming terminal at this held head proves
+            # that a real confirmation cycle ran without forcing such a query.
+            anchor_states = self.durable_states(list(anchors))
+            terminal_anchors = [txid for txid, state in anchor_states.items() if state == "terminal"]
+            if not terminal_anchors:
+                raise ScenarioUnqualified("anchor_terminal_not_observed_during_hold")
+            finality_before = self.chain_finality_inventory(chain)
+            if not finality_before["checkpoint"] or finality_before["halted"]:
+                raise RuntimeError("No healthy durable checkpoint before reorg")
+            self.report["reorg"] = {"chain": chain, "prior_terminal_count": prior_count,
+                "anchor_block_number": anchor_number, "anchor_block_hash": anchor_block["hash"],
+                "terminal_anchor_ids": terminal_anchors, "parent_number": parent_number,
+                "parent_hash": parent["hash"], "orphaned_block_hash": provisional["hash"],
+                "affected": affected, "finality_before_rollback": finality_before,
+                "engine_receipt_calls_during_hold": self.proxies[chain].snapshot()["calls"].get("eth_getTransactionReceipt", 0) - before_receipt_calls,
+                "provisional_hold_seconds": self.args.reorg_hold_seconds,
+                "engine_process_restarted": False, "manual_signed_wire_replay": False}
+            if node.call("evm_revert", [snapshot]) is not True:
+                raise RuntimeError("Anvil did not restore actual parent snapshot")
+            node.call("anvil_dropAllTransactions", [])
+            for proof in affected.values():
+                if node.call("eth_getTransactionReceipt", [proof["identity"]]) is not None:
+                    raise RuntimeError("Orphaned receipt remained canonical after rollback")
+            self.verify_nonterminal(ids)
+            node.call("evm_setNextBlockTimestamp", [int(provisional["timestamp"], 16) + 2])
+            node.call("evm_mine", [])
+            replacement = node.call("eth_getBlockByNumber", [hex(parent_number + 1), False])
+            if replacement["hash"] == provisional["hash"]:
+                raise RuntimeError("Reorg did not produce different canonical branch")
+            self.orphaned.update(affected)
+            self.report["reorg"]["replacement_block_hash"] = replacement["hash"]
+            self.event("reorg_applied", chain=chain, orphaned_intents=len(ids), engine_alive=True)
+        finally:
+            if paused:
+                node.call("evm_setIntervalMining", [interval])
+                self.event("interval_mining_restored", chain=chain, seconds=interval)
+        # Current tip-pinning code is expected to halt conservatively here. Keep
+        # the failure evidence and return promptly; never call it recovered.
+        deadline = time.monotonic() + 10
+        while time.monotonic() < deadline:
+            inventory = self.chain_finality_inventory(chain)
+            if inventory["halted"]:
+                self.finality_halted = True
+                self.abort.set()
+                self.report["reorg"]["finality_after_rollback"] = inventory
+                self.event("reorg_checkpoint_conflict", chain=chain, safety="fail_closed", liveness="blocked")
+                return
+            time.sleep(.2)
+        self.report["reorg"]["finality_after_rollback"] = self.chain_finality_inventory(chain)
+
+    def recovery_inventory_snapshot(self):
+        """Hash full immutable columns; never export stored payload credentials."""
+        with sqlite3.connect(f"file:{self.journal}?mode=ro", uri=True, timeout=2) as db:
+            db.execute("BEGIN")
+            fields = ("deployment", "epoch", "namespace", "checkpoint", "halted")
+            control = dict(zip(fields, db.execute("SELECT deployment,epoch,namespace,checkpoint,halted FROM control").fetchone()))
+            admissions = {txid: {"kind": kind, "fingerprint": fingerprint,
+                "payload_sha256": hashlib.sha256(payload.encode()).hexdigest(), "state": state, "replay_key": replay}
+                for txid, kind, fingerprint, payload, state, replay in db.execute("SELECT id,kind,fingerprint,payload,state,replay_key FROM admissions")}
+            attempts = {sequence: {"id": txid, "replay_key": replay, "digest": digest,
+                "payload_sha256": hashlib.sha256(payload.encode()).hexdigest()}
+                for sequence, txid, replay, digest, payload in db.execute("SELECT sequence,id,replay_key,digest,payload FROM attempts")}
+            tables = {}
+            for table, columns, order in (("terminal_evidence", "sequence,id,evidence", "sequence"),
+                    ("chain_checkpoints", "chain_id,evidence", "chain_id"), ("chain_halts", "chain_id,reason", "chain_id")):
+                digest = hashlib.sha256()
+                for row in db.execute(f"SELECT {columns} FROM {table} ORDER BY {order}"):
+                    digest.update(json.dumps(row, separators=(",", ":")).encode() + b"\n")
+                tables[table] = digest.hexdigest()
+            db.rollback()
+        return {"control": control, "admissions": admissions, "attempts": attempts, "table_sha256": tables}
+
+    def recover_redis_projection(self):
+        """Explicit offline quarantine recovery; never label unknown IDs done."""
+        self.abort.set()  # Further scheduled offers are counted as aborted, not retried.
+        if redis_command(self.redis_port, "FLUSHDB") != "OK":
+            raise RuntimeError("Disposable Redis flush failed")
+        self.event("owned_redis_flushed")
+        wait_until(lambda: request(self.base + "/health", timeout=3)[0] == 503, 30)
+        chain = self.args.chaos_chain or next(iter(self.profiles))
+        payload, _ = self.fixture(chain, 0)
+        path = "/v1/write/transaction" if self.profiles[chain]["family"] == "evm" else "/v1/solana/transaction"
+        status, _ = request(self.base + path, payload, {"x-engine-signing-token": self.token})
+        if status != 503:
+            raise RuntimeError("Live Redis loss did not fence admission")
+        stop(self.children["engine"])
+        before = self.recovery_inventory_snapshot()
+        if not before["control"]["halted"]:
+            raise RuntimeError("Redis loss did not durably latch halt")
+        if self.engine_command("--reattach-recovery", required=False):
+            raise RuntimeError("Unsafe reattach accepted a flushed projection")
+        old_namespace = self.projection_namespace
+        new_namespace = old_namespace + "_recovered"
+        self.env["APP__QUEUE__EXECUTION_NAMESPACE"] = new_namespace
+        self.engine_command("--recover-redis")
+        after = self.recovery_inventory_snapshot()
+        integrity = validate_recovery_inventory(before, after, new_namespace)
+        if integrity["quarantined"] < 1:
+            raise ScenarioUnqualified("no_attempted_nonterminal_intent_quarantined")
+        self.projection_namespace = new_namespace
+        self.report["offline_recovery"] = {"old_namespace": old_namespace, "new_namespace": new_namespace,
+            "unsafe_reattach_rejected": True, "live_health_and_admission_503": True,
+            "inventory_check": integrity, "original_completion_claimed": False,
+            "availability_note": "A quarantined EOA nonce not consumed on-chain can safely block new same-signer execution; recovery does not free or reuse it."}
+        inventory_path = self.args.report.with_suffix(".pre-recovery-inventory.json")
+        private_json(inventory_path, before)
+        self.report["offline_recovery"]["before_inventory"] = str(inventory_path)
+        self.start_engine()
+        self.event("offline_projection_recovered", namespace=new_namespace, **integrity)
+        before_sends = {name: proxy.snapshot()["forwarded_sends"] for name, proxy in self.proxies.items()}
+        probes = []
+        for name in self.profiles:
+            for state, expected_status in (("terminal", 202), ("quarantined", 503)):
+                candidates = sorted(txid for txid, row in after["admissions"].items()
+                                    if row["state"] == state and self.id_chain.get(txid) == name)
+                for txid in evenly_spaced(candidates, self.args.recovery_probe_count):
+                    index = int(txid.rsplit("-", 1)[1])
+                    payload, _ = self.fixture(name, index)
+                    path = "/v1/write/transaction" if self.profiles[name]["family"] == "evm" else "/v1/solana/transaction"
+                    status, _ = request(self.base + path, payload, {"x-engine-signing-token": self.token})
+                    if status != expected_status:
+                        raise RuntimeError("Recovered terminal/quarantine admission guard returned wrong status")
+                    probes.append({"id": txid, "state": state, "status": status})
+        if not any(probe["state"] == "quarantined" for probe in probes):
+            raise ScenarioUnqualified("no_quarantined_original_id_probed")
+        # No unsigned admission is replayed here: it could legitimately allocate
+        # a fresh wire and hide a forbidden send from an unresolved old intent.
+        # Availability is proven by healthy service; signer liveness stays explicit.
+        time.sleep(1)
+        after_sends = {name: proxy.snapshot()["forwarded_sends"] for name, proxy in self.proxies.items()}
+        after_probes = self.recovery_inventory_snapshot()
+        if before_sends != after_sends or after_probes["admissions"] != after["admissions"] or after_probes["attempts"] != after["attempts"]:
+            raise RuntimeError("Guard-only recovered retries created new work or changed immutable inventory")
+        self.report["offline_recovery"].update({"api_probes": probes, "api_probe_count": len(probes),
+            "new_rpc_sends": 0, "immutable_inventory_after_probes": True,
+            "quarantined_count": integrity["quarantined"], "unsent_retained_count": integrity["unsent"]})
+        self.projection_recovered = True
+        self.event("chaos_recovered", kind="redis-recover", quarantined=integrity["quarantined"])
+
     def chaos(self):
-        if self.args.chaos not in ("engine-crash", "redis-restart"):
+        if self.args.chaos not in ("engine-crash", "redis-restart", "redis-recover", "reorg"):
             return
         proxy = self.proxies[self.args.chaos_chain or next(iter(self.profiles))]
         try:
             proxy.wait_for_accepted(self.args.chaos_after, timeout=self.args.seconds)
             self.event("chaos_trigger", kind=self.args.chaos, accepted=proxy.snapshot()["accepted_unique_wires"])
+            if self.args.chaos == "reorg":
+                self.reorg(self.args.chaos_chain or next(iter(self.profiles)))
+                if not self.finality_halted:
+                    self.event("reorg_recovery_started", kind="reorg")
+                return
+            if self.args.chaos == "redis-recover":
+                self.recover_redis_projection()
+                return
             if self.args.chaos == "engine-crash":
                 stop(self.children["engine"], crash=True)
                 self.event("engine_sigkill")
@@ -680,6 +1007,9 @@ class Campaign:
             self.start_engine()
             self.event("chaos_recovered", kind=self.args.chaos)
         except Exception as error:
+            if isinstance(error, ScenarioUnqualified):
+                self.report["chaos_qualification"] = {"qualified": False, "reason": str(error)}
+                self.event("chaos_unqualified", reason=str(error))
             self.errors.append({"phase": "chaos", "error_type": type(error).__name__})
             self.event("chaos_failed", error_type=type(error).__name__)
 
@@ -692,14 +1022,14 @@ class Campaign:
                     # exact Display. Discover this single disposable namespace's
                     # keys rather than guessing its checksum representation.
                     cursor = "0"
-                    pattern = f"{self.namespace}:eoa_executor:{key}:{profile['chain_id']}:*"
+                    pattern = f"{self.projection_namespace}:eoa_executor:{key}:{profile['chain_id']}:*"
                     while True:
                         cursor, keys = redis_command(self.redis_port, "SCAN", cursor, "MATCH", pattern, "COUNT", 1000)
                         for name in keys:
                             result["redis_" + label] += redis_command(self.redis_port, command, name)
                         if cursor == "0": break
         for family in ("eoa_executor", "solana_executor"):
-            prefix = f"twmq:{self.namespace}_{family}"
+            prefix = f"twmq:{self.projection_namespace}_{family}"
             for label, suffix, command in (("pending", "pending", "LLEN"), ("active", "active", "HLEN"), ("delayed", "delayed", "ZCARD")):
                 result["redis_" + label] += redis_command(self.redis_port, command, prefix + ":" + suffix)
         return result
@@ -709,6 +1039,13 @@ class Campaign:
         parked = {txid for txid, expected in self.expected.items() if expected.get("expected_to_park")}
         while time.monotonic() < deadline:
             row = self.sample()
+            if self.args.chaos == "reorg" and self.report.get("reorg"):
+                inventory = self.chain_finality_inventory(self.report["reorg"]["chain"])
+                if inventory["halted"]:
+                    self.finality_halted = True
+                    self.report["reorg"]["finality_after_rollback"] = inventory
+                    self.event("reorg_checkpoint_conflict", safety="fail_closed", liveness="blocked")
+                    return row
             admitted = self.observer.admitted.copy()
             unresolved = admitted - self.observer.terminal
             attempted_parked = parked & self.observer.attempted
@@ -772,7 +1109,7 @@ class Campaign:
                     self.spawn("drain-hook-" + name, profile["drain_hook"])
                     self.event("external_drain_hook_started", chain=name)
             for proxy in self.proxies.values(): proxy.release()
-            if not self.recovery_required:
+            if not self.recovery_required and not self.projection_recovered and not self.finality_halted:
                 self.wait_drain()
                 self.retry_phase()
         finally:
@@ -802,12 +1139,25 @@ class Campaign:
                 "durable_latency_upper_bounds_ms": {key: distribution(value) for key, value in self.observer.latencies[chain].items()},
                 "late_window": assessment}
 
+    def capture_durable_fences(self):
+        """Read durable classifications even if a fault interrupts reconciliation."""
+        if not self.journal.is_file():
+            return
+        with sqlite3.connect(f"file:{self.journal}?mode=ro", uri=True, timeout=2) as db:
+            db.execute("BEGIN")
+            self.report["journal_halted"] = bool(db.execute("SELECT halted FROM control").fetchone()[0])
+            # Identifiers alone are sufficient; raw stored diagnostics may contain
+            # unqualified upstream text and do not belong in public measurements.
+            self.report["durable_chain_halts"] = [row[0] for row in db.execute("SELECT chain_id FROM chain_halts ORDER BY chain_id")]
+            db.rollback()
+
     def read_journal(self):
         observations = {}
         with sqlite3.connect(f"file:{self.journal}?mode=ro", uri=True, timeout=2) as db:
             db.execute("BEGIN")
             control = db.execute("SELECT halted,reason FROM control").fetchone()
             self.report["journal_halted"] = bool(control[0])
+            self.report["durable_chain_halts"] = [row[0] for row in db.execute("SELECT chain_id FROM chain_halts ORDER BY chain_id")]
             for txid, kind, state, replay in db.execute("SELECT id,kind,state,replay_key FROM admissions"):
                 observations[txid] = {"admitted": True, "kind": kind, "state": state, "replay_key": replay, "attempts": [], "executions": []}
             for txid, replay, data in db.execute("SELECT id,replay_key,payload FROM attempts ORDER BY sequence"):
@@ -873,6 +1223,13 @@ class Campaign:
                                "canonical": canonical, "finalized": canonical and latest >= int(receipt["blockNumber"], 16) + profile["depth"],
                                "block_number": int(receipt["blockNumber"], 16), "block_hash": receipt["blockHash"],
                                "nonce": int(transaction["nonce"], 16), "fee_components": components})
+        original = self.orphaned.get(txid)
+        if original:
+            if actual["replay_key"] != original["replay_key"]:
+                raise RuntimeError("Reorg recovery changed immutable replay reservation")
+            if any(e["block_hash"] == original["block_hash"] for e in executions):
+                raise RuntimeError("Orphaned block became terminal execution evidence")
+            actual["orphaned_execution"] = original
         actual["executions"] = executions
 
     def reconcile_solana(self, chain, txid, actual):
@@ -903,12 +1260,12 @@ class Campaign:
                 "effects": effects, "fee": meta["fee"], "canonical": canonical,
                 "finalized": canonical and status.get("confirmationStatus") == "finalized", "slot": transaction["slot"]})
         if self.expected.get(txid, {}).get("expected_to_park"):
-            queue = f"twmq:{self.namespace}_solana_executor"
+            queue = f"twmq:{self.projection_namespace}_solana_executor"
             memberships = [("redis_pending", redis_command(self.redis_port, "LPOS", queue + ":pending", txid)),
                            ("redis_active", redis_command(self.redis_port, "HEXISTS", queue + ":active", txid)),
                            ("redis_delayed", redis_command(self.redis_port, "ZSCORE", queue + ":delayed", txid))]
             queue_state = next((name for name, value in memberships if value is not None and (name != "redis_active" or value == 1)), None)
-            retained = redis_command(self.redis_port, "GET", f"{self.namespace}:solana_tx_attempt:{txid}")
+            retained = redis_command(self.redis_port, "GET", f"{self.projection_namespace}:solana_tx_attempt:{txid}")
             retained = json.loads(retained) if retained else {}
             signed_attempt = bool(retained.get("signed_transaction")) and any(
                 a["identity"] == retained.get("signature") and a["wire_digest"] == hashlib.sha256(
@@ -974,12 +1331,20 @@ class Campaign:
             oracle["safety_failures"].extend(balance_errors)
             oracle.update({"safety_pass": False, "outcome": "unsafe"})
         fault_validated = True
-        if self.args.chaos in ("engine-crash", "redis-restart"):
+        if self.args.chaos in ("engine-crash", "redis-restart", "reorg", "redis-recover"):
             fault_validated = any(event["event"] == "chaos_recovered" for event in self.events) or self.recovery_required
         elif self.args.chaos == "lost-send":
             fault_validated = all(proxy.snapshot()["dropped_responses"] == self.args.fault_count for proxy in self.proxies.values())
         elif self.args.chaos == "rpc-errors":
             fault_validated = all(not any(proxy.errors_left.values()) for proxy in self.proxies.values())
+        if self.args.chaos == "reorg":
+            fault_validated = bool(self.orphaned) and not self.finality_halted and all(
+                (observations.get(txid, {}).get("terminal") or {}).get("identity") in {
+                    item["identity"] for item in observations.get(txid, {}).get("executions", [])
+                    if item["canonical"] and item["finalized"] and item["block_hash"] != proof["block_hash"]}
+                for txid, proof in self.orphaned.items())
+            if self.report.get("reorg"):
+                self.report["reorg"]["all_orphaned_intents_recovered"] = fault_validated
         if not fault_validated:
             oracle["liveness_failures"].append("requested chaos did not fully trigger and recover")
             oracle["liveness_pass"] = False
@@ -1001,14 +1366,13 @@ class Campaign:
                         observation = {"admitted": True, "state": observation["state"], "kind": observation["kind"], "unexpected": True}
                     compressed.write((json.dumps({"id": txid, **observation}, sort_keys=True) + "\n").encode())
         self.report["observation_evidence"] = str(evidence)
-        self.report["outcome"] = oracle["outcome"]
-        if self.recovery_required:
-            self.report["outcome"] = "fail_closed_recovery_required"
-        elif self.errors or self.pool.failures or self.report["journal_halted"]:
-            self.report["outcome"] = "error"
+        self.report["offline_projection_recovered"] = self.projection_recovered
+        self.report["finality_checkpoint_conflict"] = self.finality_halted
+        self.report["outcome"] = campaign_outcome(oracle, self.report, bool(self.errors or self.pool.failures))
         for chain, value in self.report["per_chain"].items():
             value["late_window"] = qualify_capacity(value["late_window"], oracle, self.report["rpc"][chain],
-                bool(self.errors or self.pool.failures or self.report["journal_halted"]))
+                bool(self.errors or self.pool.failures or self.report["journal_halted"] or self.report.get("durable_chain_halts")
+                     or any(event["event"] == "observer_error" for event in self.events)))
         self.report["all_chain_capacity_candidate"] = all(value["late_window"]["capacity_candidate"] for value in self.report["per_chain"].values())
 
     def run(self):
@@ -1025,6 +1389,17 @@ class Campaign:
             self.pool.close()
             for child in reversed(list(self.children.values())):
                 stop(child)
+            # Preserve diagnostic state if the workload/observer failed before
+            # the ordinary reconciliation path could record it.
+            if "rpc" not in self.report:
+                self.report["rpc"] = {name: proxy.snapshot(include_wires=True) for name, proxy in self.proxies.items()}
+            try:
+                self.capture_durable_fences()
+            except (sqlite3.Error, OSError, TypeError):
+                self.report["durable_fence_read_unavailable"] = True
+            self.report["operator_recovery_required"] = self.recovery_required
+            self.report["finality_checkpoint_conflict"] = self.finality_halted
+            self.report["outcome"] = campaign_outcome(self.report.get("oracle", {}), self.report, bool(self.errors or self.pool.failures))
             for proxy in self.proxies.values(): proxy.close()
             LOCAL_HTTP.close()
             self.report["campaign_http"] = LOCAL_HTTP.snapshot()
@@ -1070,6 +1445,7 @@ def arguments(argv=None):
     parser.add_argument("--depth", action="append", default=[], help="PROFILE=BLOCKS (default2); modeled depth finality, per EVM profile")
     parser.add_argument("--max-inflight", type=int, default=4096)
     parser.add_argument("--solana-workers", type=int, default=100)
+    parser.add_argument("--solana-confirmation-poll-seconds", type=int, default=1, help="Experimental runtime setting; accepted-send/status polling interval1..5s")
     parser.add_argument("--http-concurrency", type=int, default=64)
     parser.add_argument("--proxy-concurrency", type=int, default=256)
     parser.add_argument("--reconcile-concurrency", type=int, default=16)
@@ -1080,7 +1456,10 @@ def arguments(argv=None):
     parser.add_argument("--redis-fsync", choices=("always", "everysec"), default="always")
     parser.add_argument("--mixed", action="store_true", help="EVM transfer/storage/revert; Solana transfer/two transfers")
     parser.add_argument("--solana-park-every", type=int, default=0, help="Sparse invalid System instructions; expected retained/parked, never a capacity pass")
-    parser.add_argument("--chaos", choices=("none", "engine-crash", "redis-restart", "rpc-errors", "lost-send"), default="none")
+    parser.add_argument("--chaos", choices=("none", "engine-crash", "redis-restart", "redis-recover", "reorg", "rpc-errors", "lost-send"), default="none")
+    parser.add_argument("--reorg-min-transactions", type=int, default=10, help="Minimum actually included intents orphaned by local Anvil reorg")
+    parser.add_argument("--reorg-hold-seconds", type=float, default=7, help="Observe provisional outcomes withheld for at least one confirmation cycle")
+    parser.add_argument("--recovery-probe-count", type=int, default=20, help="Bounded API terminal/quarantine probes per chain/state; entire ledger verified")
     parser.add_argument("--chaos-chain", help="Accepted-send trigger chain for shared process crash")
     parser.add_argument("--chaos-after", type=int, default=100)
     parser.add_argument("--fault-count", type=int, default=10)
@@ -1120,6 +1499,14 @@ def arguments(argv=None):
         profiles[name] = profile
     if len({p["chain_id"] for p in profiles.values()}) != len(profiles): raise ValueError("Distinct chain IDs required")
     if set(external) - set(profiles) or set(ids) - set(external) or set(networks) - set(profiles) or set(cadences) - set(profiles) or set(depths) - set(profiles) or set(hooks) - set(external): raise ValueError("Unused profile override")
+    if args.chaos == "redis-recover" and any(p["family"] != "evm" for p in profiles.values()):
+        raise ValueError("Offline quarantine reconciliation currently requires EVM pinned block snapshots")
+    if args.chaos == "reorg":
+        target = profiles.get(args.chaos_chain or next(iter(profiles)))
+        if not target or target["family"] != "evm" or target.get("external_url") or target["depth"] < 2:
+            raise ValueError("Reorg requires owned Anvil EVM and explicit depth>=2")
+        if not float(target["block_seconds"]).is_integer():
+            raise ValueError("Reorg restores Anvil whole-second interval RPC; choose evm12/evm2 or override cadence")
     if args.chaos_chain and args.chaos_chain not in profiles: raise ValueError("Unknown chaos chain")
     if args.chaos == "redis-restart" and args.redis_fsync != "always": raise ValueError("Redis crash scenario requires appendfsync=always; no rollback assumption")
     if "solana" in profiles and not args.solana_bin_dir: raise ValueError("Solana binaries required")
@@ -1129,7 +1516,7 @@ def arguments(argv=None):
               (args.http_concurrency, 1, 1024), (args.proxy_concurrency, 1, 1024), (args.reconcile_concurrency, 1, 128),
               (args.chaos_after, 1, 250000), (args.fault_count, 0, 250000),
               (args.duplicate_count, 0, 250000), (args.max_intents, 1, 500000), (args.max_schedule_lag_ms, 0, 1000),
-              (args.max_admission_p99_ms, 1, 60000), (args.solana_park_every, 0, 250000), (args.late_window_seconds, 1, 600), (args.warmup_seconds, 0, 1800)]
+              (args.solana_confirmation_poll_seconds, 1, 5), (args.reorg_min_transactions, 1, 10000), (args.reorg_hold_seconds, 6, 60), (args.recovery_probe_count, 1, 1000), (args.max_admission_p99_ms, 1, 60000), (args.solana_park_every, 0, 250000), (args.late_window_seconds, 1, 600), (args.warmup_seconds, 0, 1800)]
     if any(not low <= value <= high for value, low, high in ranges): raise ValueError("Argument outside bounded range")
     if sum(int(p["rate"] * args.seconds) for p in profiles.values()) > args.max_intents: raise ValueError("Total offered intents exceed explicit bounded memory limit")
     if args.report.exists() or args.report.with_suffix(".observations.jsonl.gz").exists(): raise ValueError("Evidence path already exists")

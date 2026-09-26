@@ -48,6 +48,39 @@ class SchedulingTests(unittest.TestCase):
         self.assertEqual(len(set(offers)), 8)
         self.assertEqual(drops, [("slow", i, "client_capacity") for i in range(3)])
 
+    def test_equal_rate_phases_prevent_alphabetical_capacity_starvation(self):
+        clock = Clock()
+        sent, dropped, offered = [], [], []
+        busy_until = 0
+        def dispatch(offer):
+            nonlocal busy_until
+            offered.append(offer)
+            if clock.now + 1e-12 < busy_until:
+                return False
+            busy_until = clock.now + .05
+            sent.append(offer.chain)
+            return True
+        rates = {"z": 10, "a": 10, "m": 10}
+        campaign.open_loop(rates, .9, 0, .001, dispatch,
+                          lambda offer, why: dropped.append((offer, why)), clock.clock, clock.sleep)
+        # One capacity slot under overload. Simultaneous sorted arrivals would
+        # admit only 'a' each period; phase staggering gives each family service.
+        admitted = {chain: sent.count(chain) for chain in rates}
+        self.assertGreater(min(admitted.values()), 0)
+        self.assertLessEqual(max(admitted.values()) - min(admitted.values()), 1)
+        phases = campaign.schedule_phases(rates)
+        self.assertEqual(len(offered), 27)
+        self.assertEqual(len(sent) + len(dropped), 27)
+        for chain in rates:
+            chain_offers = [offer for offer in offered if offer.chain == chain]
+            self.assertEqual([offer.index for offer in chain_offers], list(range(9)))
+            for offer in chain_offers:
+                self.assertAlmostEqual(offer.scheduled, phases[chain] + offer.index / 10)
+                self.assertLess(offer.scheduled, .9)
+        self.assertTrue(all(why == "client_capacity" for _, why in dropped))
+        self.assertAlmostEqual(clock.now, .9)
+        self.assertEqual(campaign.schedule_phases({"only": 10}), {"only": 0})
+
     def test_pool_is_bounded_and_failure_releases_permit(self):
         pool = campaign.BoundedPool(2)
         blocked, release = threading.Event(), threading.Event()
@@ -96,11 +129,23 @@ class MeasurementTests(unittest.TestCase):
         self.assertTrue(campaign.qualify_capacity(assessment, exact, {})["capacity_candidate"])
         for proxy, reason in (({"proxy_overloads": 1}, "rpc_proxy_connection_limit"),
                               ({"proxy_failures": ["ConnectionResetError"]}, "rpc_proxy_transport_errors"),
+                              ({"methods": {"eth_sendRawTransaction": {"errors": 1}}}, "rpc_method_errors"),
+                              ({"lost_http_responses": 1}, "rpc_fault_injection"),
                               ({"http_transport": {"failures": [{"type": "OSError", "errno": 49, "count": 1}]}}, "rpc_proxy_transport_errors")):
             result = campaign.qualify_capacity(assessment, exact, proxy)
             self.assertFalse(result["capacity_candidate"])
             self.assertIn(reason, result["disqualifiers"])
         self.assertTrue(assessment["capacity_candidate"])
+
+    def test_fault_classification_preserves_safety_and_durable_fences(self):
+        healthy = {"safety_pass": True, "liveness_pass": False, "outcome": "incomplete"}
+        for report, expected in (({"journal_halted": True}, "fail_closed_recovery_required"),
+                                 ({"durable_chain_halts": ["31337"]}, "finality_checkpoint_conflict")):
+            self.assertEqual(campaign.campaign_outcome(healthy, report, execution_error=True), expected)
+            # A genuine unsafe outcome must never become an expected safe halt.
+            self.assertEqual(campaign.campaign_outcome({"safety_pass": False}, report, True), "unsafe")
+        self.assertEqual(campaign.campaign_outcome({}, {"journal_halted": True}, True), "fail_closed_recovery_required")
+        self.assertEqual(campaign.campaign_outcome(healthy, {}, True), "error")
 
     def test_short_window_never_claims_capacity(self):
         result = campaign.rate_assessment(self.samples()[:5], "a", 20, 100)

@@ -26,6 +26,7 @@ decision, not a claim that Lean cannot verify systems code.
 | Solana recovery | Persist before send; retries keep signed identity; expiry/absence preserves evidence; bounded send/check budgets; fenced terminal cleanup | [Solana model](solana.md) |
 | Redis admission projection | Immutable request per retained Redis ID; atomic identity/queue admission; active identity survives cancellation; finite Redis retention boundary | [Admission model](admission.md); the server's independent journal adds longer-lived identity protection |
 | Finality | Provisional inclusion, orphaning and re-inclusion; both success and revert wait for canonical finality evidence | [Finality model](finality.md); honest RPC/stable consensus assumptions, explicit depth and catastrophic boundaries |
+| Depth checkpoint continuity | A shallow tip reorg above the qualified boundary must not halt; a qualified-boundary contradiction must halt | [Depth checkpoint model](depth-checkpoint.md); one checkpoint, explicit rollback boundary |
 | Redis disaster recovery | Durable attempt before authorization; immutable global replay binding; separate SQLite/Redis commits; restart/rollback halt; offline quarantine and original-payload retries | [Recovery authority model](disaster-recovery.md); one host/owner, retained local authority, not SQLite/filesystem refinement |
 | Fee arithmetic | Supplied caps, priority/total ordering, nondecrease when permitted, overflow-safe computation | [Production Rust proofs](fees.md) |
 
@@ -43,14 +44,19 @@ machine-checked proof of their composition.
 
 The [recorded run and raw evidence](evidence/README.md) identify the exact source,
 state counts, counterexamples and implementation regressions for that run. The
-manifest contains **56 configurations**: the previous 52, three allocator
-checks and one terminal-attribution mutation. The prior 52-case run remains
-historical evidence for its recorded source. The [latest runtime check](evidence/progress-scheduling/README.md)
+manifest now contains **61 configurations**: the prior 56 plus five depth-checkpoint
+regressions. The new family distinguishes observed tip from qualified history,
+a gap not represented by the older height-collapsing Finality model. The
+[new candidate record](evidence/capacity-review/README.md) passes all 61 expected
+outcomes and 67 reviewed source hashes, with 3,164,944 summed positive states.
+It includes targeted implementation regressions; measured capacity remains
+separate evidence. The [previous runtime check](evidence/progress-scheduling/README.md)
 passes all 56 expected outcomes at `f309177`, with 66 reviewed source hashes
 and 3,164,046 summed positive states. It also tests real Redis scheduling after
 useful EOA progress. The [preceding report](evidence/throughput-review/report.json)
-retains its `9537ac6` scope. These finite models do not prove a 50 TPS target or
-compose automatically into a whole-system proof.
+retains its `9537ac6` scope. Those runs do not qualify the new candidate. These
+finite models do not prove a TPS target or compose automatically into a
+whole-system proof.
 
 ## Run locally
 

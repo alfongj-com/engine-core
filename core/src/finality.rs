@@ -88,6 +88,8 @@ impl FinalityPolicy {
 pub struct FinalityEvidence {
     pub block_number: u64,
     pub block_hash: B256,
+    /// Highest qualified block: finalized tag, or observed latest minus depth.
+    /// The unqualified tip must never become a durable depth checkpoint.
     pub checkpoint_number: u64,
     pub checkpoint_hash: B256,
     /// A depth policy must be displayed as probabilistic, not consensus finality.
@@ -188,7 +190,7 @@ pub async fn assess_receipt_finality<R: TxReceipt>(
         FinalityPolicy::Finalized => BlockNumberOrTag::Finalized,
         FinalityPolicy::Depth { .. } => BlockNumberOrTag::Latest,
     };
-    let Some(checkpoint) = provider
+    let Some(observed_head) = provider
         .get_block_by_number(tag)
         .await
         .map_err(|error| error.to_engine_error(chain))?
@@ -206,9 +208,35 @@ pub async fn assess_receipt_finality<R: TxReceipt>(
             required
         }
     };
-    if checkpoint.header.number < required_height {
+    if observed_head.header.number < required_height {
         return Ok(FinalityAssessment::Pending { canonical: true });
     }
+    // A depth policy qualifies history only through head - depth. Persisting
+    // the observed tip would turn an ordinary shallow reorg above that boundary
+    // into a contradiction of already accepted history.
+    let checkpoint = match policy {
+        FinalityPolicy::Finalized | FinalityPolicy::Depth { confirmations: 0 } => {
+            observed_head.clone()
+        }
+        FinalityPolicy::Depth { confirmations } => {
+            let Some(boundary) = observed_head.header.number.checked_sub(confirmations) else {
+                return Ok(FinalityAssessment::Pending { canonical: true });
+            };
+            let Some(qualified) = provider
+                .get_block_by_number(BlockNumberOrTag::Number(boundary))
+                .await
+                .map_err(|error| error.to_engine_error(chain))?
+            else {
+                return Ok(FinalityAssessment::Pending { canonical: true });
+            };
+            if qualified.header.number != boundary {
+                return Err(inconsistent(
+                    "RPC returned the wrong depth boundary block number",
+                ));
+            }
+            qualified
+        }
+    };
 
     // The receipt can be orphaned between the first read and the head read.
     let Some(rechecked_block) = provider
@@ -242,6 +270,26 @@ pub async fn assess_receipt_finality<R: TxReceipt>(
         return Err(inconsistent(
             "Finality checkpoint changed during receipt reconciliation",
         ));
+    }
+
+    // Preserve the original within-assessment head consistency check. A tip
+    // replacement causes a transient error, not a durable continuity conflict:
+    // only the depth-qualified boundary is returned for journal persistence.
+    if observed_head.header.number != checkpoint.header.number {
+        let Some(rechecked_head) = provider
+            .get_block_by_number(BlockNumberOrTag::Number(observed_head.header.number))
+            .await
+            .map_err(|error| error.to_engine_error(chain))?
+        else {
+            return Ok(FinalityAssessment::Pending { canonical: true });
+        };
+        if rechecked_head.header.number != observed_head.header.number
+            || rechecked_head.header.hash != observed_head.header.hash
+        {
+            return Err(inconsistent(
+                "Observed head changed during depth reconciliation",
+            ));
+        }
     }
 
     Ok(FinalityAssessment::Finalized(FinalityEvidence {

@@ -295,6 +295,9 @@ impl QueueManager {
         )
         .with_completed_transaction_ttl_seconds(queue_config.completed_transaction_ttl_seconds);
         let solana_executor_handler = SolanaExecutorJobHandler {
+            confirmation_poll_interval: std::time::Duration::from_secs(
+                queue_config.solana_confirmation_poll_interval_seconds,
+            ),
             solana_signer,
             rpc_cache: solana_rpc_cache,
             storage: Arc::new(solana_storage),

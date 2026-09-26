@@ -1,0 +1,8 @@
+{
+  "scope": "Synthetic Nitro development account only; fixed loopback endpoint and chain412346",
+  "measured_executable_path": "/tmp/engine-capacity-tools/nitro-drain-hook.py",
+  "repository_copy": "scripts/local_nitro_drain.py",
+  "sha256": "1c30fb21bc22d3a99f343ff9d05597019401eabad8cc81f76405f70a7007d60e",
+  "source": "https://github.com/OffchainLabs/nitro-devnode",
+  "note": "Public development key is intentionally embedded; never fund this wallet on a public chain."
+}

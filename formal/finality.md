@@ -34,7 +34,11 @@ boundary configurations.
 
 The model collapses block heights to a checkpoint that either covers the
 receipt or does not. It does not model the arithmetic for a configured depth;
-the actual Rust tests cover the threshold and overflow. Both block identities
+the actual Rust tests cover the threshold and overflow. This abstraction missed
+the later discovered depth-tip checkpoint availability defect. The separate
+[DepthCheckpoint model](depth-checkpoint.md) adds explicit observed tip, qualified
+boundary and cross-cycle continuity; all five cases and the corresponding
+implementation regressions pass in the [candidate record](evidence/capacity-review/README.md). Both block identities
 and the weaker depth policy remain explicit.
 
 ## Configurations
@@ -73,7 +77,9 @@ this records finite model results, not whole-service correctness.
 - One transaction identity is fixed throughout. Signature creation, fee
   replacements, nonce allocation and idempotency are not re-proved. Re-inclusion
   can change the outcome because execution state can change across branches.
-- Cross-cycle checkpoint persistence, endpoint identity/chain qualification,
+- Cross-cycle checkpoint selection is now represented separately by
+  [DepthCheckpoint](depth-checkpoint.md); monotonic multi-checkpoint persistence,
+  endpoint identity/chain qualification,
   policy changes, shared polling caches and reorg notification delivery are
   implementation obligations outside this finite gate model. Pending requests
   follow operator policy before the first chain checkpoint. Afterward, a policy

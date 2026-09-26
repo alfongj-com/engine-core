@@ -17,16 +17,18 @@
     },
     {
       "path": "core/src/finality.rs",
-      "sha256": "892b6e7b20ba114754f8699aad8be902fb4c38d0764456d82da6eb4646adefc6",
+      "sha256": "ffdad9f88eb09c4e38c9d3c87978395061753ef5a4b63af7ada6e33c2b3e6aae",
       "models": [
-        "Finality"
+        "Finality",
+        "DepthCheckpoint"
       ]
     },
     {
       "path": "core/src/finality_tests.rs",
-      "sha256": "c0c42972e2b6249187a3ba0a1aa30a28839f92f0e0f3a25103869bcc920ef640",
+      "sha256": "32963ae19ae04e72057363e1b41173646a89ae3a29042ef7b1fca3807a3a2a69",
       "models": [
-        "Finality"
+        "Finality",
+        "DepthCheckpoint"
       ]
     },
     {
@@ -206,7 +208,7 @@
     },
     {
       "path": "executors/src/eoa/worker/send.rs",
-      "sha256": "78bd0cd685257fc7c143abae6d39ac9d93cb8b5f9c507ce96c45c1d19920cd9b",
+      "sha256": "c775e94afb6fcc7f5ad6ae1417b17cd987c147cd910623f96ec01f64ec8f42ab",
       "models": [
         "DisasterRecovery",
         "EoaRecovery",
@@ -257,15 +259,17 @@
       "sha256": "7de8ccaed3bc80cb6da57e094203de3dd89d1d507cb5747044d836ee949514aa",
       "models": [
         "DisasterRecovery",
-        "Finality"
+        "Finality",
+        "DepthCheckpoint"
       ]
     },
     {
       "path": "executors/src/finality_tests.rs",
-      "sha256": "b17a5eaa98e0e403bed2cce33116d56aa54f1a464e76d2464bd5cd87eefa2faf",
+      "sha256": "ac8fc6ea5a705c47be3cbc34447f9b6e25ea2ec57c0097661787617f725f22dc",
       "models": [
         "DisasterRecovery",
-        "Finality"
+        "Finality",
+        "DepthCheckpoint"
       ]
     },
     {
@@ -292,7 +296,7 @@
     },
     {
       "path": "executors/src/solana_executor/recovery_tests.rs",
-      "sha256": "5621cad92cf2b21a99489271df09659480be43f50fc132fd750cacc01fd97a72",
+      "sha256": "6cc5108cc2950314d5e839e36f4f4daa30d356da196186dd404e441e9e08a8d7",
       "models": [
         "DisasterRecovery",
         "SolanaRecovery"
@@ -322,7 +326,7 @@
     },
     {
       "path": "executors/src/solana_executor/worker.rs",
-      "sha256": "761ccd48c66fbd7716ab2d7b40c7ab3307f4c9157b0150e5cda1edf536091322",
+      "sha256": "dae8f3219c0170ce1d39872e7ff59d66f3fb37c5bbb56212345121d9200d5657",
       "models": [
         "DisasterRecovery",
         "SolanaRecovery"
@@ -381,7 +385,7 @@
     },
     {
       "path": "server/src/config.rs",
-      "sha256": "19fcd970b2e47ef1935654e40c2f84baf82e63ceb9a37cf93f7c27e9a61521e7",
+      "sha256": "f1d4d3a4e99a06e5dfb601c3c1beadce00ff45617284e57a9e622b172aec416f",
       "models": [
         "DisasterRecovery",
         "Finality"
@@ -412,7 +416,7 @@
     },
     {
       "path": "server/src/http/server.rs",
-      "sha256": "3a512e55dd2d622c0af2020bbae0760912826ae076dd61183728d381b722a516",
+      "sha256": "a2c8a49ab399830b2777cebbb7721be71cac387534ae30be90a64bae4f0974e4",
       "models": [
         "DisasterRecovery"
       ]
@@ -422,7 +426,7 @@
       "models": [
         "DisasterRecovery"
       ],
-      "sha256": "62346558afc9c287c44d91fb6ebfb661facb9178159965c53c03144d7cd680a7"
+      "sha256": "65baae70f84c60c7f2abe73faa5e8f651dbbe6f3b1844181033ff4f215dfda6f"
     },
     {
       "path": "server/src/lib.rs",
@@ -436,6 +440,13 @@
       "sha256": "d08c3d3ae7d5f273c9ebda178fa2d0e5763bacdc9f0331628399db396391f7fd",
       "models": [
         "DisasterRecovery"
+      ]
+    },
+    {
+      "path": "server/src/queue/manager.rs",
+      "sha256": "672834d8e9a304b3c7711546f231cec5c9a4d38823b3ca1439848c06507dc61c",
+      "models": [
+        "SolanaRecovery"
       ]
     },
     {
@@ -461,7 +472,7 @@
     },
     {
       "path": "server/tests/api_safety.rs",
-      "sha256": "0f0180ba2fb6e281dfe92f26dc48fb857245be67ee4ec9fb32cadfef492ca1c8",
+      "sha256": "fe53da7ae934c43c849952b3bbaa5272da1c576627cd3f963e628f11578065c9",
       "models": [
         "Admission",
         "DisasterRecovery",
@@ -528,6 +539,40 @@
         "executors/src/eoa/worker/scheduling_tests.rs"
       ],
       "reason": "Reviewed successful-cycle result construction: sent counts only moved-to-submitted acknowledgments, recovered counts submitted-projection reconciliation/acknowledgment, while uncertain attempts retain borrowed state. Only positive nondelegation plus unsigned backlog plus either positive progress counter skips delay and still rejoins queue tail. Delegated/unknown/no-progress/finality-only/error handling retain existing delays. EoaRecovery already admits transitions without wall-clock waits; QueueLease keeps fenced completion and pending membership. Timing, fairness, mixed-progress unknown-retry RPC costs and throughput remain outside these finite safety models. Real Redis regression exercises actual queue lease completion, tail ordering, ready work and rounded delayed scores."
+    },
+    "depth_checkpoint_followup": {
+      "date": "2026-09-26",
+      "status": "Source correspondence reviewed and formatted candidate fingerprints recorded; implementation and TLC execution pending.",
+      "paths": [
+        "core/src/finality.rs",
+        "core/src/finality_tests.rs",
+        "executors/src/finality.rs",
+        "executors/src/finality_tests.rs"
+      ],
+      "reason": "The former Finality abstraction collapses heights and cannot detect persisting the observed tip above the probabilistic depth-qualified boundary. DepthCheckpoint now separates H, Q=H-depth, persisted anchor, independent canonical history and semantic qualified witness; tip-anchor and ignored-conflict mutations exercise distinct failures. Core and real-journal executor regressions retain within-assessment tip revalidation, allow shallow tip replacement, halt on qualified-boundary conflict, and preserve finalized/legacy conservative behavior. Monotonic journal CAS, multiple advancing checkpoints and composition remain outside this new single-checkpoint model."
+    },
+    "capacity_scheduling_followup": {
+      "date": "2026-09-26",
+      "status": "One-line bounded scheduling experiment reviewed and candidate fingerprint recorded; implementation and measurement pending.",
+      "paths": [
+        "executors/src/eoa/worker/send.rs"
+      ],
+      "reason": "Raise newly consumed nonce batch from 128 to 256 while retaining concurrency 32, configured in-flight/retained headroom, nonce ownership, signed attempt identity and durable authorization. This changes scheduling granularity, not a safety transition in EoaRecovery or NonceAllocator. Ten preparation refill iterations and borrowed/recycled recovery remain separate work bounds. No throughput, fairness or universal 256-work-cap claim follows from the models."
+    },
+    "capacity_polling_health_followup": {
+      "date": "2026-09-26",
+      "status": "Formatted candidate source reviewed; validation pending.",
+      "paths": [
+        "executors/src/solana_executor/worker.rs",
+        "executors/src/solana_executor/recovery_tests.rs",
+        "server/src/config.rs",
+        "server/src/queue/manager.rs",
+        "server/src/http/server.rs",
+        "server/src/http/server_tests.rs",
+        "server/tests/api_safety.rs"
+      ],
+      "reason": "Whole-second Solana polling configuration 1..5 defaults to the prior effective one-second queue delay. Only accepted-send/provisional-status/throttled observation scheduling changes; wire/signature, finalized evidence and lifetime send/read counters retain their transitions. The test exercises processed, absent/rebroadcast-identical, and finalized history. SolanaRecovery abstracts scheduling without clock bounds and does not prove rate pacing or eventual progress. Public health is separately limited to four independent fence tasks that retain their slots after client cancellation/HTTP timeout, returning healthy only after successful current fencing. Health concurrency and timeout behavior remain implementation tests outside the state models; admission/signing fences are unchanged. Production configuration and queue-manager wiring are reviewed source obligations, not formally proved serialization.",
+      "test_compile_repair": "The new Solana regression uses let-Ok-else instead of unwrap because its existing JobError intentionally lacks Debug; only failure diagnostics changed, no runtime transition."
     }
   }
 }

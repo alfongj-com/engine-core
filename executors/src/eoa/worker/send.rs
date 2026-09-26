@@ -19,7 +19,7 @@ use crate::{
 
 // Bound a worker cycle independently from the larger mempool window. A slow
 // durable store must not defer receipt polling behind thousands of signatures.
-const MAX_NEW_TRANSACTIONS_PER_CYCLE: u64 = 128;
+const MAX_NEW_TRANSACTIONS_PER_CYCLE: u64 = 256;
 const SEND_CONCURRENCY: usize = 32;
 
 const HEALTH_CHECK_INTERVAL_MS: u64 = 60 * 5 * 1000; // 5 minutes in milliseconds

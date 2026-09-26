@@ -5,7 +5,18 @@ No paid RPC or blockchain transactions were used. This is finite protocol
 verification plus proofs of the production fee arithmetic, not an end-to-end
 proof of Engine. Trailing blank lines in stored test logs are normalized.
 
-## Latest scheduling follow-up
+## Latest capacity review candidate
+
+The [capacity review record](capacity-review/README.md) passes 61 expected model
+outcomes and all 67 reviewed candidate source hashes. The new DepthCheckpoint
+family distinguishes observed tip from qualified history: shallow replacement
+must not falsely halt, while a detected qualified-boundary conflict still must.
+The 14 positive configurations exhaust 3,164,944 states across separate state
+spaces. Targeted Rust/Redis/HTTP regressions and exact counterexamples are linked
+there. These results qualify the recorded working-tree bytes, not the earlier
+base commit or a measured throughput maximum. Prior evidence remains unchanged.
+
+## Previous scheduling follow-up
 
 The [progress scheduling record](progress-scheduling/README.md) covers runtime
 `f309177`: 56 expected model outcomes, 66 reviewed source hashes, 40 EOA tests

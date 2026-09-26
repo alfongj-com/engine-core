@@ -318,8 +318,10 @@ async fn depth_is_explicit_bounded_and_probabilistic() {
         vec![
             ("0xa", block(10, 10)),
             ("latest", block(12, 12)),
-            ("0xa", block(10, 10)),
-            ("0xc", block(12, 12)),
+            ("0xa", block(10, 10)), // select head - depth
+            ("0xa", block(10, 10)), // recheck receipt
+            ("0xa", block(10, 10)), // recheck boundary
+            ("0xc", block(12, 12)), // transient head consistency only
         ],
     )
     .await;
@@ -331,6 +333,8 @@ async fn depth_is_explicit_bounded_and_probabilistic() {
         panic!("policy not met")
     };
     assert_eq!(evidence.policy, policy);
+    assert_eq!(evidence.checkpoint_number, 10);
+    assert_eq!(evidence.checkpoint_hash, hash(10));
     assert_eq!(
         serde_json::to_value(evidence).unwrap()["policy"],
         json!({"mode":"depth", "confirmations":2})
@@ -375,4 +379,129 @@ async fn persisted_checkpoint_distinguishes_missing_history_from_positive_confli
         );
         fixture.done().await;
     }
+}
+
+// Receipt at 10, latest at 13 and depth 2: persist boundary 11, not tip 13
+// and not merely receipt 10. Both the boundary and observed head are re-read.
+fn depth_boundary_replies() -> Vec<(&'static str, Value)> {
+    vec![
+        ("0xa", block(10, 10)),
+        ("latest", block(13, 13)),
+        ("0xb", block(11, 11)),
+        ("0xa", block(10, 10)),
+        ("0xb", block(11, 11)),
+        ("0xd", block(13, 13)),
+    ]
+}
+
+#[tokio::test]
+async fn depth_success_and_revert_checkpoint_the_qualified_boundary_not_tip() {
+    let policy = FinalityPolicy::Depth { confirmations: 2 };
+    for success in [true, false] {
+        let fixture = RpcFixture::new(777, policy, depth_boundary_replies()).await;
+        assert_eq!(
+            assess_receipt_finality(&fixture.chain, hash(1), &receipt(success))
+                .await
+                .unwrap(),
+            FinalityAssessment::Finalized(FinalityEvidence {
+                block_number: 10,
+                block_hash: hash(10),
+                checkpoint_number: 11,
+                checkpoint_hash: hash(11),
+                policy,
+            })
+        );
+        fixture.done().await;
+    }
+}
+
+#[tokio::test]
+async fn depth_unknown_boundary_and_within_assessment_reorgs_cannot_complete() {
+    let policy = FinalityPolicy::Depth { confirmations: 2 };
+    // None means a positive inconsistent response must be an error. A missing
+    // response is only unknown; a receipt replacement is explicitly orphaned.
+    for (name, index, response, expected) in [
+        (
+            "missing boundary",
+            2,
+            json!({"result": null}),
+            Some(FinalityAssessment::Pending { canonical: true }),
+        ),
+        ("wrong boundary number", 2, block(12, 11), None),
+        (
+            "orphaned receipt",
+            3,
+            block(10, 99),
+            Some(FinalityAssessment::Orphaned),
+        ),
+        (
+            "missing boundary recheck",
+            4,
+            json!({"result": null}),
+            Some(FinalityAssessment::Pending { canonical: true }),
+        ),
+        ("boundary changed", 4, block(11, 99), None),
+        (
+            "missing observed head",
+            5,
+            json!({"result": null}),
+            Some(FinalityAssessment::Pending { canonical: true }),
+        ),
+        ("observed tip changed", 5, block(13, 99), None),
+        ("wrong observed head number", 5, block(14, 13), None),
+    ] {
+        let mut replies = depth_boundary_replies();
+        replies[index].1 = response;
+        replies.truncate(index + 1);
+        let fixture = RpcFixture::new(777, policy, replies).await;
+        let result = assess_receipt_finality(&fixture.chain, hash(1), &receipt(true)).await;
+        match expected {
+            Some(expected) => assert_eq!(result.unwrap(), expected, "{name}"),
+            None => assert!(result.is_err(), "{name}"),
+        }
+        fixture.done().await;
+    }
+    // A lagging head below depth must not underflow or query an invented block.
+    let fixture = RpcFixture::new(
+        777,
+        policy,
+        vec![("0xa", block(10, 10)), ("latest", block(1, 1))],
+    )
+    .await;
+    assert_eq!(
+        assess_receipt_finality(&fixture.chain, hash(1), &receipt(true))
+            .await
+            .unwrap(),
+        FinalityAssessment::Pending { canonical: true }
+    );
+    fixture.done().await;
+}
+
+#[tokio::test]
+async fn local_depth_zero_keeps_tip_as_its_qualified_boundary() {
+    let policy = FinalityPolicy::Depth { confirmations: 0 };
+    let fixture = RpcFixture::new(
+        31337,
+        policy,
+        vec![
+            ("0xa", block(10, 10)),
+            ("latest", block(12, 12)),
+            ("0xa", block(10, 10)),
+            ("0xc", block(12, 12)),
+        ],
+    )
+    .await;
+    assert_eq!(
+        assess_receipt_finality(&fixture.chain, hash(1), &receipt(false))
+            .await
+            .unwrap(),
+        FinalityAssessment::Finalized(FinalityEvidence {
+            block_number: 10,
+            block_hash: hash(10),
+            checkpoint_number: 12,
+            checkpoint_hash: hash(12),
+            policy,
+        })
+    );
+    fixture.done().await;
 }
