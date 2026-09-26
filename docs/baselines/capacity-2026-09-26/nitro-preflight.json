@@ -1,0 +1,117 @@
+{
+  "observed_at": "2026-09-26T22:08:49.171860+00:00",
+  "rpc": "http://127.0.0.1:18547",
+  "transaction": {
+    "from": "0x7e5f4552091a69125d5dfcb7b8c2659029395bdf",
+    "to": "0x1111111111111111111111111111111111111111",
+    "value": "0x1",
+    "data": "0x"
+  },
+  "observations": {
+    "chain_id": {
+      "jsonrpc": "2.0",
+      "id": 1,
+      "result": "0x64aba"
+    },
+    "client": {
+      "jsonrpc": "2.0",
+      "id": 1,
+      "result": "nitro/v3.11.3-beb2108/linux-arm64/go1.25.12"
+    },
+    "nonce_latest": {
+      "jsonrpc": "2.0",
+      "id": 1,
+      "result": "0x0"
+    },
+    "nonce_pending": {
+      "jsonrpc": "2.0",
+      "id": 1,
+      "result": "0x0"
+    },
+    "balance": {
+      "jsonrpc": "2.0",
+      "id": 1,
+      "result": "0x30ca024f987b900000"
+    },
+    "estimate_plain": {
+      "jsonrpc": "2.0",
+      "id": 1,
+      "result": "0x13bedf"
+    },
+    "gas_price": {
+      "jsonrpc": "2.0",
+      "id": 1,
+      "result": "0x5f5e100"
+    },
+    "max_priority_fee": {
+      "jsonrpc": "2.0",
+      "id": 1,
+      "result": "0x0"
+    },
+    "fee_history": {
+      "jsonrpc": "2.0",
+      "id": 1,
+      "result": {
+        "oldestBlock": "0x3",
+        "reward": [
+          [
+            "0x0",
+            "0x0",
+            "0x0"
+          ]
+        ],
+        "baseFeePerGas": [
+          "0x5f5e100",
+          "0x5f5e100"
+        ],
+        "gasUsedRatio": [
+          0.0015
+        ]
+      }
+    },
+    "latest": {
+      "jsonrpc": "2.0",
+      "id": 1,
+      "result": {
+        "baseFeePerGas": "0x5f5e100",
+        "difficulty": "0x1",
+        "extraData": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "gasLimit": "0x4000000000000",
+        "gasUsed": "0xe1d48",
+        "hash": "0x1328b9f16d79c7b7d7ca97b4f5e49cc63f8241963b85bec134254a32316021f4",
+        "l1BlockNumber": "0x0",
+        "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+        "miner": "0xa4b000000000000000000073657175656e636572",
+        "mixHash": "0x00000000000000000000000000000000000000000000003b0000000000000000",
+        "nonce": "0x0000000000000001",
+        "number": "0x3",
+        "parentHash": "0x1b64da042cb2168abba47fad15c62c718b1f9eaec68f49c6d8288fd7729bdda4",
+        "receiptsRoot": "0xc5728d2510366238dade7ec21a40b013d35267f99d32872250355ffa6d46e91a",
+        "sendCount": "0x0",
+        "sendRoot": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "sha3Uncles": "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
+        "size": "0x327",
+        "stateRoot": "0xd56ba8f8ce1582b6ba0c1143a822388d3f24ae32a2f40adb1d3bbd2078abeb6c",
+        "timestamp": "0x6ab84190",
+        "transactions": [
+          "0xb80e8d6d1e841de7be4ee58c87fe7513207d1579bd8537e280964ba9d623e4d4",
+          "0x1933c66de9779400ce78441b385364faba3ed0d80ab6aed1652e21773adf307a"
+        ],
+        "transactionsRoot": "0xb40d5b66f1ba883d781ef4c9c6323907bbbd9f6bc786cdb47357136ccd58a440",
+        "uncles": []
+      }
+    },
+    "estimate_gasprice": {
+      "jsonrpc": "2.0",
+      "id": 1,
+      "result": "0x13bedf"
+    },
+    "estimate_eip1559": {
+      "jsonrpc": "2.0",
+      "id": 1,
+      "result": "0x13bedf"
+    }
+  },
+  "broadcasts": 0,
+  "funding_receipt_gas_used": 997000
+}

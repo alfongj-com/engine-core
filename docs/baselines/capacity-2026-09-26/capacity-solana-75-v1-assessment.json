@@ -1,0 +1,16 @@
+{
+  "run": "capacity-solana-75-v1.json",
+  "classification": "transport-contaminated; not an Engine capacity limit",
+  "proxy_transport_failures": 667,
+  "client_transport_errors": 267,
+  "client_capacity_drops": 56,
+  "admitted_and_reconciled": 13177,
+  "offered": 13500,
+  "safety_pass": true,
+  "possible_cause": "Per-request connection closure can exhaust local ephemeral ports; no errno was captured in v1, so cause not established. Repeat with keepalive and errno counters.",
+  "host_tcp": {
+    "ephemeral_first": 49152,
+    "ephemeral_last": 65535,
+    "tcp_msl_ms": 15000
+  }
+}
