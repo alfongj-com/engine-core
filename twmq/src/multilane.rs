@@ -682,10 +682,14 @@ impl<H: DurableExecution> MultilaneQueue<H> {
                         -- Still processing, keep in cancellation set
                     else
                         -- Job finished processing, check outcome
-                        local success_count = redis.call('LREM', success_list_name, 0, job_id)
-                        if success_count > 0 then
-                            -- Job succeeded, add it back to success list
-                            redis.call('LPUSH', success_list_name, job_id)
+                        local lane_pending_list = 'twmq_multilane:' .. queue_id .. ':lane:' .. lane_id .. ':pending'
+                        local lane_delayed_zset = 'twmq_multilane:' .. queue_id .. ':lane:' .. lane_id .. ':delayed'
+                        local is_pending = redis.call('LPOS', lane_pending_list, job_id) ~= false
+                        local is_delayed = redis.call('ZSCORE', lane_delayed_zset, job_id) ~= false
+                        -- Historical success entries must not defeat cancellation
+                        -- of a reused ID that is now recovered or delayed.
+                        if not is_pending and not is_delayed and redis.call('LPOS', success_list_name, job_id) then
+                            -- Current work already completed; leave history intact.
                         else
                             redis.call('LREM', 'twmq_multilane:' .. queue_id .. ':lane:' .. lane_id .. ':pending', 0, job_id)
                             redis.call('ZREM', 'twmq_multilane:' .. queue_id .. ':lane:' .. lane_id .. ':delayed', job_id)
@@ -988,18 +992,32 @@ impl<H: DurableExecution> MultilaneQueue<H> {
                 local dedupe_set_name = KEYS[5]
                 local lanes_zset = KEYS[6]
 
+                local other_terminal_list = KEYS[7]
+
+                local pending_cancellations = KEYS[8]
+
                 local max_len = tonumber(ARGV[1])
 
                 local job_ids_to_delete = redis.call('LRANGE', list_name, max_len, -1)
                 local actually_deleted = 0
 
                 if #job_ids_to_delete > 0 then
+                    -- Trim first so LPOS observes only retained references. Keep
+                    -- shared records while either terminal list still names the ID.
+                    -- LTRIM 0 -1 retains everything, so zero retention needs DEL.
+                    if max_len == 0 then
+                        redis.call('DEL', list_name)
+                    else
+                        redis.call('LTRIM', list_name, 0, max_len - 1)
+                    end
                     for _, j_id in ipairs(job_ids_to_delete) do
+                        local has_retained_history = redis.call('LPOS', list_name, j_id) ~= false
+                            or redis.call('LPOS', other_terminal_list, j_id) ~= false
                         -- Get the lane_id for this job to check if it's active/pending/delayed
                         local job_meta_hash = 'twmq_multilane:' .. queue_id .. ':job:' .. j_id .. ':meta'
                         local lane_id = redis.call('HGET', job_meta_hash, 'lane_id')
                         
-                        local should_delete = true
+                        local should_delete = not has_retained_history
                         
                         if lane_id then
                             -- Check if job is in any active state for this lane
@@ -1008,8 +1026,9 @@ impl<H: DurableExecution> MultilaneQueue<H> {
                             local lane_delayed_zset = 'twmq_multilane:' .. queue_id .. ':lane:' .. lane_id .. ':delayed'
                             
                             local is_active = redis.call('HEXISTS', lane_active_hash, j_id) == 1
-                            local is_pending = redis.call('LPOS', lane_pending_list, j_id) ~= nil
-                            local is_delayed = redis.call('ZSCORE', lane_delayed_zset, j_id) ~= nil
+                            -- Redis missing bulk replies become Lua false, not nil.
+                            local is_pending = redis.call('LPOS', lane_pending_list, j_id) ~= false
+                            local is_delayed = redis.call('ZSCORE', lane_delayed_zset, j_id) ~= false
                             
                             -- Don't delete if job is currently in the system
                             if is_active or is_pending or is_delayed then
@@ -1021,6 +1040,8 @@ impl<H: DurableExecution> MultilaneQueue<H> {
                             local errors_list_name = 'twmq_multilane:' .. queue_id .. ':job:' .. j_id .. ':errors'
 
                             redis.call('SREM', dedupe_set_name, j_id)
+                            -- No retained/live record remains for this cancellation.
+                            redis.call('SREM', pending_cancellations, j_id)
                             redis.call('HDEL', job_data_hash, j_id)
                             redis.call('DEL', job_meta_hash)
                             redis.call('HDEL', results_hash, j_id)
@@ -1028,7 +1049,6 @@ impl<H: DurableExecution> MultilaneQueue<H> {
                             actually_deleted = actually_deleted + 1
                         end
                     end
-                    redis.call('LTRIM', list_name, 0, max_len - 1)
                 end
                 return actually_deleted
             "#,
@@ -1041,6 +1061,8 @@ impl<H: DurableExecution> MultilaneQueue<H> {
             .key(self.job_result_hash_name())
             .key(self.dedupe_set_name())
             .key(self.lanes_zset_name()) // Need to check lanes
+            .key(self.failed_list_name())
+            .key(self.pending_cancellation_set_name())
             .arg(self.options.max_success)
             .invoke_async(&mut self.redis.clone())
             .await?;
@@ -1136,18 +1158,33 @@ impl<H: DurableExecution> MultilaneQueue<H> {
                 local job_data_hash = KEYS[3]
                 local dedupe_set_name = KEYS[4]
 
+                local other_terminal_list = KEYS[5]
+                local results_hash = KEYS[6]
+
+                local pending_cancellations = KEYS[7]
+
                 local max_len = tonumber(ARGV[1])
 
                 local job_ids_to_delete = redis.call('LRANGE', list_name, max_len, -1)
                 local actually_deleted = 0
 
                 if #job_ids_to_delete > 0 then
+                    -- Trim first so LPOS observes only retained references. Keep
+                    -- shared records while either terminal list still names the ID.
+                    -- LTRIM 0 -1 retains everything, so zero retention needs DEL.
+                    if max_len == 0 then
+                        redis.call('DEL', list_name)
+                    else
+                        redis.call('LTRIM', list_name, 0, max_len - 1)
+                    end
                     for _, j_id in ipairs(job_ids_to_delete) do
+                        local has_retained_history = redis.call('LPOS', list_name, j_id) ~= false
+                            or redis.call('LPOS', other_terminal_list, j_id) ~= false
                         -- Get the lane_id for this job to check if it's active/pending/delayed
                         local job_meta_hash = 'twmq_multilane:' .. queue_id .. ':job:' .. j_id .. ':meta'
                         local lane_id = redis.call('HGET', job_meta_hash, 'lane_id')
                         
-                        local should_delete = true
+                        local should_delete = not has_retained_history
                         
                         if lane_id then
                             -- Check if job is in any active state for this lane
@@ -1156,8 +1193,9 @@ impl<H: DurableExecution> MultilaneQueue<H> {
                             local lane_delayed_zset = 'twmq_multilane:' .. queue_id .. ':lane:' .. lane_id .. ':delayed'
                             
                             local is_active = redis.call('HEXISTS', lane_active_hash, j_id) == 1
-                            local is_pending = redis.call('LPOS', lane_pending_list, j_id) ~= nil
-                            local is_delayed = redis.call('ZSCORE', lane_delayed_zset, j_id) ~= nil
+                            -- Redis missing bulk replies become Lua false, not nil.
+                            local is_pending = redis.call('LPOS', lane_pending_list, j_id) ~= false
+                            local is_delayed = redis.call('ZSCORE', lane_delayed_zset, j_id) ~= false
                             
                             -- Don't delete if job is currently in the system
                             if is_active or is_pending or is_delayed then
@@ -1169,13 +1207,15 @@ impl<H: DurableExecution> MultilaneQueue<H> {
                             local errors_list_name = 'twmq_multilane:' .. queue_id .. ':job:' .. j_id .. ':errors'
 
                             redis.call('SREM', dedupe_set_name, j_id)
+                            -- No retained/live record remains for this cancellation.
+                            redis.call('SREM', pending_cancellations, j_id)
                             redis.call('HDEL', job_data_hash, j_id)
+                            redis.call('HDEL', results_hash, j_id)
                             redis.call('DEL', job_meta_hash)
                             redis.call('DEL', errors_list_name)
                             actually_deleted = actually_deleted + 1
                         end
                     end
-                    redis.call('LTRIM', list_name, 0, max_len - 1)
                 end
                 return actually_deleted
             "#,
@@ -1186,6 +1226,9 @@ impl<H: DurableExecution> MultilaneQueue<H> {
             .key(self.failed_list_name())
             .key(self.job_data_hash_name())
             .key(self.dedupe_set_name())
+            .key(self.success_list_name())
+            .key(self.job_result_hash_name())
+            .key(self.pending_cancellation_set_name())
             .arg(self.options.max_failed)
             .invoke_async(&mut self.redis.clone())
             .await?;
