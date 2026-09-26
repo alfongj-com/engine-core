@@ -230,6 +230,7 @@ def main():
             "ENGINE_SIGNING_TOKEN": token, "APP__REDIS__URL": f"redis://127.0.0.1:{redis_port}/",
             "APP__SERVER__HOST": "127.0.0.1", "APP__SERVER__PORT": str(server_port),
             "APP__SERVER__DIAGNOSTIC_ACCESS_PASSWORD": uuid.uuid4().hex,
+            "APP__RECOVERY__JOURNAL_PATH": str(logs / "recovery.sqlite"),
             "APP__QUEUE__EXECUTION_NAMESPACE": run_id, "APP__QUEUE__LOCAL_CONCURRENCY": "4",
             "APP__QUEUE__POLLING_INTERVAL_MS": "20", "APP__QUEUE__LEASE_DURATION_SECONDS": "5"})
         for network in ["LOCAL", "DEVNET", "MAINNET"]:
@@ -241,12 +242,14 @@ def main():
             proc = spawn([str(ROOT / "target/debug/thirdweb-engine")], name, ROOT / "server", env)
             until(lambda: request(base + "/health")[0] == 200, label="Engine startup")
             return proc
+        subprocess.run([str(ROOT / "target/debug/thirdweb-engine"), "--initialize-recovery"],
+            cwd=ROOT / "server", env=env, check=True, capture_output=True)
         process = engine("engine-before.log")
         lamports = 1000
         payloads = [{"idempotencyKey": f"{run_id}-{i}", "instructions": [{"programId": "11111111111111111111111111111111",
             "accounts": [{"pubkey": payer, "isSigner": True, "isWritable": True}, {"pubkey": recipient, "isSigner": False, "isWritable": True}],
             "data": base64.b64encode(struct.pack("<IQ", 2, lamports)).decode(), "encoding": "base64"}],
-            "executionOptions": {"signerAddress": payer, "chainId": "solana:local", "commitment": "confirmed"}}
+            "executionOptions": {"signerAddress": payer, "chainId": "solana:local", "commitment": "finalized"}}
             for i in range(args.transactions)]
         def send(payload):
             status, body = request(base + "/v1/solana/transaction", payload, {"x-engine-signing-token": token})

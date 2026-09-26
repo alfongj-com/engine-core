@@ -227,6 +227,10 @@ impl<C: Chain> EoaExecutorWorker<C> {
             );
 
             // Actually send the transactions to the blockchain
+            for borrowed in &cleaned_results {
+                crate::recovery::before_eoa(&borrowed.user_request, &borrowed.signed_transaction)
+                    .await?;
+            }
             let send_tasks: Vec<_> = cleaned_results
                 .iter()
                 .map(|borrowed_tx| {
@@ -507,6 +511,10 @@ impl<C: Chain> EoaExecutorWorker<C> {
             );
 
             // Send the transactions to the blockchain
+            for borrowed in &cleaned_results {
+                crate::recovery::before_eoa(&borrowed.user_request, &borrowed.signed_transaction)
+                    .await?;
+            }
             let send_start = current_timestamp_ms();
             let send_tasks: Vec<_> = cleaned_results
                 .iter()
@@ -546,7 +554,7 @@ impl<C: Chain> EoaExecutorWorker<C> {
                     );
 
                     match &result.result {
-                        SubmissionResultType::Success => result,
+                        SubmissionResultType::Success | SubmissionResultType::Reconcile => result,
                         SubmissionResultType::Nack(e) => {
                             tracing::error!(error = ?e, transaction_id = borrowed_tx.transaction_id, nonce = borrowed_tx.data.signed_transaction.nonce(), "Transaction nack error during send");
                             result

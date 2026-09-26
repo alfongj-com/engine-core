@@ -1,5 +1,10 @@
 # Request identity and retention model
 
+**Scope:** the Redis admission projection. Since the independent recovery journal
+was added, the actual server also reserves IDs there before this Lua operation.
+The journal retains terminal IDs beyond Redis TTLs. See [DisasterRecovery](disaster-recovery.md)
+for that layer; the two model abstractions are not mechanically composed.
+
 ## Contract
 
 A request ID identifies one immutable request while its identity is retained.
@@ -41,9 +46,12 @@ equivalent to the Solana Lua script.
 The runner requires counterexamples for overwriting an existing fingerprint,
 expiring an active identity, and returning from a split identity/queue commit.
 It also disproves `LifetimeAtMostOnce`: after **both** terminal identity and job
-history expire, a later resubmission can run again. This is the documented API
-boundary in [replay migration](../docs/replay-migration.md), not a forever
-exactly-once guarantee.
+history expire, this Redis-only protocol can admit a later resubmission. This
+remains a valid projection boundary, but is no longer the server's full API
+contract: a retained terminal ID in the mandatory independent journal blocks
+another admission. See [replay migration](../docs/replay-migration.md) for the
+cutover scope. Loss or rollback of that authoritative ledger remains outside
+the supported guarantee.
 
 Not modeled: the one-time 20,000-record migration scan, hash collisions, TTL
 clock behavior, retention configuration parsing, Redis OOM/wrong-type partial

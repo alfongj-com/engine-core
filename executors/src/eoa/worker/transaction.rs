@@ -13,9 +13,8 @@ use alloy::{
         SignableTransaction, Signed, Transaction, TxEip4844Variant, TxEip4844WithSidecar,
         TypedTransaction,
     },
-    eips::eip7702::SignedAuthorization,
     network::{TransactionBuilder, TransactionBuilder7702},
-    primitives::{Address, Bytes, U256},
+    primitives::{Bytes, U256},
     providers::Provider,
     rpc::types::TransactionRequest as AlloyTransactionRequest,
     signers::Signature,
@@ -28,7 +27,6 @@ use engine_core::{
     signer::{AccountSigner, EoaSigningOptions},
     transaction::TransactionTypeData,
 };
-use engine_eip7702_core::constants::{EIP_7702_DELEGATION_CODE_LENGTH, EIP_7702_DELEGATION_PREFIX};
 
 use crate::eoa::{
     EoaTransactionRequest,
@@ -221,7 +219,10 @@ impl<C: Chain> EoaExecutorWorker<C> {
         &self,
         nonce: u64,
     ) -> Result<SubmittedNoopTransaction, EoaExecutorWorkerError> {
+        let recovery_id = crate::recovery::reserve_noop(self.chain_id, self.eoa, nonce).await?;
         let tx = self.build_and_sign_noop_transaction(nonce).await?;
+
+        crate::recovery::before_noop(&recovery_id, self.chain_id, self.eoa, &tx).await?;
 
         self.chain
             .provider()
@@ -321,68 +322,12 @@ impl<C: Chain> EoaExecutorWorker<C> {
         }
     }
 
-    /// Filter out authorization list entries where the authority is already delegated
-    /// to the target contract. This prevents Etherlink (and potentially other strict chains)
-    /// from rejecting type-4 transactions that include redundant/stale authorizations.
-    ///
-    /// On most chains, a stale authorization is simply skipped. On Etherlink, the entire
-    /// transaction is rejected at the RPC level, causing it to be silently dropped.
-    async fn filter_already_delegated_authorizations(
-        &self,
-        authorization_list: &[SignedAuthorization],
-        to: Option<Address>,
-    ) -> Vec<SignedAuthorization> {
-        // If we have a `to` address, check if it's already delegated to any of the
-        // authorization targets. In the 7702 relayer flow, `to` is the user's smart
-        // account and the authorization targets the delegation contract.
-        if let Some(account_address) = to {
-            match self.chain.provider().get_code_at(account_address).await {
-                Ok(code) => {
-                    let prefix_len = EIP_7702_DELEGATION_PREFIX.len();
-                    if code.len() >= EIP_7702_DELEGATION_CODE_LENGTH
-                        && code.starts_with(&EIP_7702_DELEGATION_PREFIX)
-                    {
-                        let delegated_to = Address::from_slice(&code[prefix_len..prefix_len + 20]);
-
-                        // Filter out any auth entries whose target matches the existing delegation
-                        let filtered: Vec<_> = authorization_list
-                            .iter()
-                            .filter(|auth| {
-                                if auth.address == delegated_to {
-                                    tracing::info!(
-                                        account = ?account_address,
-                                        delegation_target = ?delegated_to,
-                                        "Stripping redundant authorization - account already delegated to target"
-                                    );
-                                    false
-                                } else {
-                                    true
-                                }
-                            })
-                            .cloned()
-                            .collect();
-
-                        return filtered;
-                    }
-                }
-                Err(e) => {
-                    tracing::warn!(
-                        account = ?account_address,
-                        error = %engine_core::error::rpc_error_diagnostic(&e),
-                        "Failed to check delegation status, keeping all authorizations"
-                    );
-                }
-            }
-        }
-
-        authorization_list.to_vec()
-    }
-
     pub async fn build_typed_transaction(
         &self,
         request: &EoaTransactionRequest,
         nonce: u64,
     ) -> Result<TypedTransaction, EoaExecutorWorkerError> {
+        crate::recovery::validate_eoa_nonce(request, nonce).await?;
         // Build transaction request from stored data
         let mut tx_request = AlloyTransactionRequest::default()
             .with_from(request.from)
@@ -430,11 +375,11 @@ impl<C: Chain> EoaExecutorWorker<C> {
                 TransactionTypeData::Eip7702(data) => {
                     let mut req = tx_request;
                     if let Some(authorization_list) = &data.authorization_list {
-                        let filtered = self
-                            .filter_already_delegated_authorizations(authorization_list, request.to)
-                            .await;
-                        if !filtered.is_empty() {
-                            req = req.with_authorization_list(filtered);
+                        // Authorization signatures are admitted intent. Recipient
+                        // code cannot justify deleting entries, including entries
+                        // signed by other authorities in the same transaction.
+                        if !authorization_list.is_empty() {
+                            req = req.with_authorization_list(authorization_list.clone());
                         }
                     }
                     if let Some(max_fee) = data.max_fee_per_gas {
@@ -541,6 +486,9 @@ impl<C: Chain> EoaExecutorWorker<C> {
         typed_tx: TypedTransaction,
         credential: &SigningCredential,
     ) -> Result<Signed<TypedTransaction>, EoaExecutorWorkerError> {
+        engine_core::recovery::ensure_healthy()
+            .await
+            .map_err(crate::recovery::eoa_error)?;
         let signing_options = EoaSigningOptions {
             from: self.eoa,
             chain_id: Some(self.chain_id),
@@ -569,6 +517,9 @@ impl<C: Chain> EoaExecutorWorker<C> {
         request: &EoaTransactionRequest,
         nonce: u64,
     ) -> Result<Signed<TypedTransaction>, EoaExecutorWorkerError> {
+        crate::recovery::validate("eoa", &request.transaction_id, request)
+            .await
+            .map_err(crate::recovery::eoa_error)?;
         let typed_tx = self.build_typed_transaction(request, nonce).await?;
 
         // Inject KMS cache into the signing credential (after deserialization from Redis)

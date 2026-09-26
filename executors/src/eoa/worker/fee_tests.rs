@@ -1,4 +1,5 @@
 use super::*;
+use alloy::primitives::Address;
 use alloy::{
     consensus::{TxEip1559, TxEip7702, TxEnvelope, TxLegacy},
     eips::eip2718::{Decodable2718, Encodable2718},
@@ -189,6 +190,8 @@ async fn stalled_nonce_preserves_capped_unbuildable_and_missing_intents() {
             seen.lock().unwrap().push(method.to_owned());
             let mut reply = if method == "eth_getTransactionCount" {
                 json!({"result":"0x0"})
+            } else if method == "eth_getTransactionReceipt" {
+                json!({"result":null})
             } else if method == "eth_feeHistory" || method == "eth_getBlockByNumber" {
                 json!({"error":{"code":-32601,"message":"method not found"}})
             } else {
@@ -270,6 +273,8 @@ async fn stalled_nonce_preserves_capped_unbuildable_and_missing_intents() {
                 last_confirmation_at: 1,
                 last_nonce_movement_at: 1,
                 nonce_resets: vec![],
+                last_finality_poll_at: 0,
+                finality_scan_offset: 0,
             })
             .await
             .unwrap();
@@ -371,6 +376,7 @@ async fn stalled_nonce_preserves_capped_unbuildable_and_missing_intents() {
             seen.iter().all(|m| matches!(
                 m.as_str(),
                 "eth_getTransactionCount"
+                    | "eth_getTransactionReceipt"
                     | "eth_estimateGas"
                     | "eth_feeHistory"
                     | "eth_getBlockByNumber"

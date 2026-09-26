@@ -78,6 +78,9 @@ pub enum EoaExecutorWorkerError {
     #[error("Internal error: {message}")]
     InternalError { message: String },
 
+    #[error("Recovery required: {message}")]
+    RecoveryRequired { message: String },
+
     #[error("User cancelled")]
     UserCancelled,
 }
@@ -273,11 +276,12 @@ pub fn is_retryable_preparation_error(error: &EoaExecutorWorkerError) -> bool {
         },
         EoaExecutorWorkerError::TransactionNotFound { .. } => false, // Deterministic
         EoaExecutorWorkerError::InternalError { .. } => false,       // Deterministic
-        EoaExecutorWorkerError::UserCancelled => false,              // Deterministic
+        EoaExecutorWorkerError::RecoveryRequired { .. } => true, // Never classify uncertainty as chain failure.
+        EoaExecutorWorkerError::UserCancelled => false,          // Deterministic
         EoaExecutorWorkerError::TransactionSendError { .. } => false, // Different context
         EoaExecutorWorkerError::SignatureParsingFailed { .. } => false, // Deterministic
-        EoaExecutorWorkerError::WorkRemaining { .. } => false,       // Different context
-        EoaExecutorWorkerError::EoaOutOfFunds { .. } => false,       // Deterministic
+        EoaExecutorWorkerError::WorkRemaining { .. } => false,   // Different context
+        EoaExecutorWorkerError::EoaOutOfFunds { .. } => false,   // Deterministic
     }
 }
 

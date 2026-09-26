@@ -1,5 +1,19 @@
 # Replay identity migration
 
+## Independent recovery journal supersedes Redis-only retention
+
+The server now requires a durable local journal before accepting work. Its
+admission IDs and replay bindings do not expire with Redis queue history. The
+Redis-only migration and TTL behavior below describe the embedded queue layer;
+they cannot initialize or reconstruct the new authoritative journal.
+
+For an existing deployment, stop intake and old workers, preserve their evidence,
+and reconcile all potentially sent work before initializing an empty namespace.
+Do not manufacture new admission records for uncertain legacy jobs. Follow the
+[Redis recovery runbook](design/redis-disaster-recovery.md) for the cutover and
+the [finality contract](design/finality-and-recovery.md) for completion changes.
+Previously reported outcomes do not retroactively gain a finalized guarantee.
+
 ## Behavior
 
 New ERC-4337 jobs persist their UserOperation nonce before enqueue. New EIP-7702 jobs persist their wrapped-call UID in the existing `nonce` field. Workers reuse those values across retries. This prevents a lost broadcast response from creating a second operation with fresh replay protection. Different fees or signatures may still produce different UserOperation hashes, so nonce identity is the application safeguard, not a promise of identical raw bytes.

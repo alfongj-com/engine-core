@@ -495,12 +495,22 @@ fn configured_signer_routes_authenticate_and_queue_only_public_identity() {
         assert!(retries.into_iter().all(|response| response.unwrap().status() == reqwest::StatusCode::ACCEPTED));
         assert_eq!(state.queue_manager.solana_executor_queue.count(JobStatus::Pending).await.unwrap(), 1);
         let mut changed_intent = queued.clone();
-        changed_intent["executionOptions"]["commitment"] = json!("confirmed");
+        let different_message = VersionedTransaction { signatures: vec![Signature::default()], message: VersionedMessage::Legacy(Message::new_with_blockhash(&[], Some(&payer), &Hash::new_unique())) };
+        changed_intent["transaction"] = json!(STANDARD.encode(encode_transaction_wire(&different_message).unwrap()));
         let response = http.post(format!("{url}/v1/solana/transaction"))
             .header("x-engine-signing-token", "isolated-test-operator-token-with-32-bytes")
             .json(&changed_intent).send().await.unwrap();
         assert_eq!(response.status(), reqwest::StatusCode::BAD_REQUEST);
         assert!(response.text().await.unwrap().contains("different request"));
+        let mut provisional = queued.clone();
+        provisional["idempotencyKey"] = json!("solana-weak-commitment");
+        provisional["executionOptions"]["commitment"] = json!("confirmed");
+        let response = http.post(format!("{url}/v1/solana/transaction"))
+            .header("x-engine-signing-token", "isolated-test-operator-token-with-32-bytes")
+            .json(&provisional).send().await.unwrap();
+        assert_eq!(response.status(), reqwest::StatusCode::BAD_REQUEST);
+        assert!(response.text().await.unwrap().contains("finalized"));
+        assert!(state.queue_manager.solana_executor_queue.get_job("solana-weak-commitment").await.unwrap().is_none());
         let persisted = state.queue_manager.solana_executor_queue.get_job("solana-authenticated").await.unwrap().unwrap();
         assert!(matches!(persisted.data.signing_credential, SigningCredential::SolanaEnvironment { public_key } if public_key == payer));
         let persisted = serde_json::to_string(&persisted.data).unwrap();

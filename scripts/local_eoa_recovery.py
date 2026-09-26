@@ -90,6 +90,9 @@ def main():
         "APP__SERVER__HOST": "127.0.0.1", "APP__SERVER__PORT": str(server_port),
         "APP__SERVER__DIAGNOSTIC_ACCESS_PASSWORD": diagnostic,
         "APP__EVM_RPC__ENDPOINTS__31337__URL": rpc_url,
+        "APP__EVM_RPC__ENDPOINTS__31337__FINALITY__MODE": "depth",
+        "APP__EVM_RPC__ENDPOINTS__31337__FINALITY__CONFIRMATIONS": "0",
+        "APP__RECOVERY__JOURNAL_PATH": str(logs / "recovery.sqlite"),
         "APP__QUEUE__EXECUTION_NAMESPACE": run_id, "APP__QUEUE__LOCAL_CONCURRENCY": "4",
         "APP__QUEUE__POLLING_INTERVAL_MS": "20", "APP__QUEUE__LEASE_DURATION_SECONDS": "2",
     })
@@ -127,6 +130,8 @@ def main():
             # gas but rolls back the value transfer.
             rpc(rpc_url, "anvil_setCode", [TO, "0x60006000fd"])
         initial_balance = int(rpc(rpc_url, "eth_getBalance", [TO, "latest"]), 16)
+        subprocess.run([str(ROOT / "target/debug/thirdweb-engine"), "--initialize-recovery"],
+            cwd=ROOT / "server", env=env, check=True, capture_output=True)
         process = engine("engine-before.log")
         payloads = [{"executionOptions": {"chainId": 31337, "type": "EOA", "from": FROM, "idempotencyKey": f"{run_id}-{i}"},
             "params": [{"to": TO, "value": "0x1", "data": "0x", "gasLimit": 40000 if args.revert else 21000}]} for i in range(args.transactions)]
@@ -154,6 +159,9 @@ def main():
         if args.redis_crash:
             stop(redis_process, crash=True)
             redis_process = start_redis("redis-after.log")
+            until(lambda: subprocess.run([os.environ.get("REDIS_CLI_BIN", "redis-cli"), "-p", str(redis_port), "PING"], capture_output=True, text=True).stdout.strip() == "PONG")
+            subprocess.run([str(ROOT / "target/debug/thirdweb-engine"), "--reattach-recovery"],
+                cwd=ROOT / "server", env=env, check=True, capture_output=True)
         process = engine("engine-after.log")
         rpc(rpc_url, "evm_mine", [])
         expected_transfer = 0 if args.revert else args.transactions

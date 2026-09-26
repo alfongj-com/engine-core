@@ -27,6 +27,9 @@ pub use submitted::{
 };
 
 pub const NO_OP_TRANSACTION_ID: &str = "noop";
+/// Separate from the mempool window: retain enough included attempts for finality,
+/// but stop new allocation if settlement stops advancing. Counts fee-bump hashes too.
+pub const MAX_UNFINALIZED_ATTEMPTS: u64 = 10_000;
 
 #[derive(Debug, Clone)]
 pub struct ReplacedTransaction {
@@ -40,6 +43,7 @@ pub struct ConfirmedTransaction {
     pub transaction_id: String,
     pub receipt: alloy::rpc::types::TransactionReceipt,
     pub receipt_serialized: String,
+    pub finality: engine_core::finality::FinalityEvidence,
 }
 
 /// (transaction_id, queued_at)
@@ -332,6 +336,10 @@ pub struct EoaHealth {
     pub last_confirmation_at: u64,
     pub last_nonce_movement_at: u64, // Track when nonce last moved for gas bump detection
     pub nonce_resets: Vec<u64>,      // Last 5 reset timestamps
+    #[serde(default)]
+    pub last_finality_poll_at: u64,
+    #[serde(default)]
+    pub finality_scan_offset: usize,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -716,9 +724,16 @@ impl EoaExecutorStore {
         let mut conn = self.redis.clone();
 
         // Read both values atomically to avoid race conditions
-        let (optimistic_nonce, last_tx_count): (Option<u64>, Option<u64>) = twmq::redis::pipe()
+        let (optimistic_nonce, last_tx_count, submitted, borrowed): (
+            Option<u64>,
+            Option<u64>,
+            u64,
+            u64,
+        ) = twmq::redis::pipe()
             .get(&optimistic_key)
             .get(&last_tx_count_key)
+            .zcard(self.submitted_transactions_zset_name())
+            .hlen(self.borrowed_transactions_hashmap_name())
             .query_async(&mut conn)
             .await?;
 
@@ -732,7 +747,9 @@ impl EoaExecutorStore {
         };
 
         let current_inflight = optimistic.saturating_sub(last_count);
-        let available_budget = max_inflight.saturating_sub(current_inflight);
+        let available_budget = max_inflight
+            .saturating_sub(current_inflight)
+            .min(MAX_UNFINALIZED_ATTEMPTS.saturating_sub(submitted.saturating_add(borrowed)));
 
         Ok(available_budget)
     }
@@ -1054,6 +1071,9 @@ pub enum TransactionStoreError {
 
     #[error("Optimistic nonce changed: expected {expected}, found {actual}")]
     OptimisticNonceChanged { expected: u64, actual: u64 },
+
+    #[error("Nonce reset deferred while signed attempts remain unresolved")]
+    UnresolvedNonceReservations,
 
     #[error("WATCH failed - state changed during operation")]
     WatchFailed,

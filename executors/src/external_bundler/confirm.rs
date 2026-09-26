@@ -1,8 +1,12 @@
-use alloy::primitives::{Address, Bytes, U256};
+use alloy::{
+    primitives::{Address, B256, Bytes, U256, keccak256},
+    providers::Provider,
+};
 use engine_core::{
     chain::{Chain, ChainService, RpcCredentials},
     error::{AlloyRpcErrorToEngineError, EngineError},
     execution_options::WebhookOptions,
+    finality::{FinalityAssessment, FinalityEvidence},
     rpc_clients::UserOperationReceipt,
 };
 use serde::{Deserialize, Serialize};
@@ -47,6 +51,9 @@ pub struct UserOpConfirmationJobData {
     pub account_address: Address,
     pub user_op_hash: Bytes,
     pub nonce: U256,
+    /// Persist the intended EntryPoint; legacy confirmation jobs require reconciliation.
+    #[serde(default)]
+    pub entrypoint_address: Option<Address>,
     pub deployment_lock_acquired: bool,
     /// Ownership token from the send attempt. Legacy jobs cannot release newer locks.
     #[serde(default)]
@@ -64,6 +71,8 @@ pub struct UserOpConfirmationJobData {
 pub struct UserOpConfirmationResult {
     pub user_op_hash: Bytes,
     pub receipt: UserOperationReceipt,
+    #[serde(default)]
+    pub finality: Option<FinalityEvidence>,
     /// Unknown until the ownership-checked Redis completion hook commits.
     /// Historical boolean results still deserialize.
     #[serde(default)]
@@ -103,6 +112,15 @@ pub enum UserOpConfirmationError {
         inner_error: Option<EngineError>,
     },
 
+    #[error("Awaiting verified finality: {message}")]
+    FinalityPending { message: String },
+
+    #[error("User operation reverted after final settlement")]
+    TransactionFailed {
+        receipt: Box<UserOperationReceipt>,
+        finality: FinalityEvidence,
+    },
+
     #[error("Internal error: {message}")]
     #[serde(rename_all = "camelCase")]
     InternalError { message: String },
@@ -123,6 +141,51 @@ impl UserCancellable for UserOpConfirmationError {
     fn user_cancelled() -> Self {
         UserOpConfirmationError::UserCancelled
     }
+}
+
+fn userop_identity_matches(
+    job: &UserOpConfirmationJobData,
+    receipt: &UserOperationReceipt,
+) -> bool {
+    job.user_op_hash.len() == 32
+        && receipt.user_op_hash == job.user_op_hash
+        && receipt.sender == job.account_address
+        && receipt.nonce == job.nonce
+        && job.entrypoint_address == Some(receipt.entry_point)
+}
+
+fn userop_event_matches(
+    job: &UserOpConfirmationJobData,
+    receipt: &UserOperationReceipt,
+    canonical: &alloy::rpc::types::TransactionReceipt,
+) -> bool {
+    let topic =
+        keccak256("UserOperationEvent(bytes32,address,address,uint256,bool,uint256,uint256)");
+    let hash = B256::from_slice(&job.user_op_hash);
+    let matching: Vec<_> = canonical
+        .inner
+        .logs()
+        .iter()
+        .filter(|log| {
+            let topics = log.topics();
+            !log.removed
+                && Some(log.address()) == job.entrypoint_address
+                && topics.len() == 4
+                && topics[0] == topic
+                && topics[1] == hash
+                && topics[2].as_slice()[..12] == [0; 12]
+                && Address::from_slice(&topics[2].as_slice()[12..]) == job.account_address
+        })
+        .collect();
+    if matching.len() != 1 {
+        return false;
+    }
+    let data = matching[0].data().data.as_ref();
+    data.len() == 128
+        && U256::from_be_slice(&data[..32]) == job.nonce
+        && U256::from_be_slice(&data[32..64]) == U256::from(u8::from(receipt.success))
+        && U256::from_be_slice(&data[64..96]) == receipt.actual_gas_cost
+        && U256::from_be_slice(&data[96..]) == receipt.actual_gas_used
 }
 
 // --- Handler ---
@@ -180,23 +243,14 @@ where
     ) -> JobResult<Self::Output, Self::ErrorData> {
         let job_data = &job.job.data;
 
-        let age_seconds = job_age_seconds(job);
-        if age_seconds > MAX_CONFIRMATION_JOB_AGE_SECONDS {
-            tracing::error!(
-                transaction_id = job_data.transaction_id,
-                user_op_hash = ?job_data.user_op_hash,
-                attempts = job.job.attempts,
-                age_seconds,
-                max_age_seconds = MAX_CONFIRMATION_JOB_AGE_SECONDS,
-                "User-op confirmation job exceeded max age, failing permanently"
-            );
-            return Err(UserOpConfirmationError::StaleJob {
-                user_op_hash: job_data.user_op_hash.clone(),
-                attempt_number: job.job.attempts,
-                age_seconds,
-            })
-            .map_err_fail();
-        }
+        // A deadline is a polling budget, not evidence of an on-chain failure.
+        let retry_delay = if job_age_seconds(job) > MAX_CONFIRMATION_JOB_AGE_SECONDS {
+            Duration::from_secs(3600)
+        } else if job.job.attempts >= self.max_confirmation_attempts {
+            self.confirmation_retry_delay.max(Duration::from_secs(10))
+        } else {
+            self.confirmation_retry_delay
+        };
 
         // 1. Get Chain
         let chain = self
@@ -206,7 +260,7 @@ where
                 chain_id: job_data.chain_id,
                 message: format!("Failed to get chain instance: {e}"),
             })
-            .map_err_fail()?;
+            .map_err_nack(Some(retry_delay), RequeuePosition::Last)?;
 
         let chain = chain.with_new_default_headers(
             job.job
@@ -216,8 +270,17 @@ where
                 .map_err(|e| UserOpConfirmationError::InternalError {
                     message: format!("Bad RPC Credential values, unserialisable into headers: {e}"),
                 })
-                .map_err_fail()?,
+                .map_err_nack(Some(retry_delay), RequeuePosition::Last)?,
         );
+
+        crate::finality::check_continuity(&chain)
+            .await
+            .map_err(|e| UserOpConfirmationError::ReceiptQueryFailed {
+                user_op_hash: job_data.user_op_hash.clone(),
+                message: "Finality checkpoint continuity unavailable".into(),
+                inner_error: Some(e),
+            })
+            .map_err_nack(Some(retry_delay), RequeuePosition::Last)?;
 
         // 2. Query for User Operation Receipt
         let receipt_option = chain
@@ -229,31 +292,92 @@ where
                 message: engine_core::error::rpc_error_diagnostic(&e),
                 inner_error: Some(e.to_engine_bundler_error(&chain)),
             })
-            .map_err_nack(Some(self.confirmation_retry_delay), RequeuePosition::Last)?;
+            .map_err_nack(Some(retry_delay), RequeuePosition::Last)?;
 
         let receipt = match receipt_option {
             Some(receipt) => receipt,
             None => {
-                // Receipt not available and max attempts reached - permanent failure
-                if job.job.attempts >= self.max_confirmation_attempts {
-                    return Err(UserOpConfirmationError::ReceiptNotAvailable {
-                        user_op_hash: job_data.user_op_hash.clone(),
-                        attempt_number: job.job.attempts,
-                    })
-                    .map_err_fail(); // FAIL - triggers on_fail hook which will release lock
-                }
-
                 return Err(UserOpConfirmationError::ReceiptNotAvailable {
                     user_op_hash: job_data.user_op_hash.clone(),
                     attempt_number: job.job.attempts,
                 })
-                .map_err_nack(Some(self.confirmation_retry_delay), RequeuePosition::Last);
+                .map_err_nack(Some(retry_delay), RequeuePosition::Last);
                 // NACK - triggers on_nack hook which keeps lock for retry
             }
         };
 
-        // 3. We got a receipt - that's confirmation success!
-        // Whether it reverted or not is just information in the receipt
+        if !userop_identity_matches(job_data, &receipt) {
+            return Err(UserOpConfirmationError::FinalityPending {
+                message: "Bundler receipt does not match persisted operation identity".into(),
+            })
+            .map_err_nack(Some(retry_delay), RequeuePosition::Last);
+        }
+        // Independently fetch the chain receipt: bundler success flags and logs are
+        // not execution evidence. Bind the EntryPoint event to the stored operation.
+        let canonical = chain
+            .provider()
+            .get_transaction_receipt(receipt.receipt.transaction_hash)
+            .await
+            .map_err(|e| UserOpConfirmationError::ReceiptQueryFailed {
+                user_op_hash: job_data.user_op_hash.clone(),
+                message: engine_core::error::rpc_error_diagnostic(&e),
+                inner_error: Some(e.to_engine_error(&chain)),
+            })
+            .map_err_nack(Some(retry_delay), RequeuePosition::Last)?;
+        let Some(canonical) = canonical else {
+            return Err(UserOpConfirmationError::FinalityPending {
+                message: "Chain receipt unavailable".into(),
+            })
+            .map_err_nack(Some(retry_delay), RequeuePosition::Last);
+        };
+        if canonical.block_hash != receipt.receipt.block_hash
+            || canonical.block_number != receipt.receipt.block_number
+            || !canonical.status()
+            || !userop_event_matches(job_data, &receipt, &canonical)
+        {
+            return Err(UserOpConfirmationError::FinalityPending {
+                message: "Bundler outcome is not corroborated by the chain receipt".into(),
+            })
+            .map_err_nack(Some(retry_delay), RequeuePosition::Last);
+        }
+        let finality =
+            crate::finality::assess(&chain, receipt.receipt.transaction_hash, &canonical)
+                .await
+                .map_err(|e| UserOpConfirmationError::ReceiptQueryFailed {
+                    user_op_hash: job_data.user_op_hash.clone(),
+                    message: "Finality query failed".into(),
+                    inner_error: Some(e),
+                })
+                .map_err_nack(Some(retry_delay), RequeuePosition::Last)?;
+        let FinalityAssessment::Finalized(finality) = finality else {
+            return Err(UserOpConfirmationError::FinalityPending {
+                message: "Operation is not canonically settled under the configured policy".into(),
+            })
+            .map_err_nack(Some(retry_delay), RequeuePosition::Last);
+        };
+        crate::finality::record_evm_terminal(
+            "erc4337",
+            &job_data.transaction_id,
+            job_data.chain_id,
+            canonical.transaction_hash,
+            receipt.success,
+            &finality,
+        )
+        .await
+        .map_err(|e| UserOpConfirmationError::ReceiptQueryFailed {
+            user_op_hash: job_data.user_op_hash.clone(),
+            message: "Cannot persist final settlement".into(),
+            inner_error: Some(e),
+        })
+        .map_err_nack(Some(retry_delay), RequeuePosition::Last)?;
+        if !receipt.success {
+            return Err(UserOpConfirmationError::TransactionFailed {
+                receipt: Box::new(receipt),
+                finality,
+            })
+            .map_err_fail();
+        }
+
         tracing::info!(
             transaction_id = job_data.transaction_id,
             user_op_hash = ?job_data.user_op_hash,
@@ -278,6 +402,7 @@ where
         Ok(UserOpConfirmationResult {
             user_op_hash: job_data.user_op_hash.clone(),
             receipt,
+            finality: Some(finality),
             deployment_lock_released: None, // Ownership is checked later inside the Redis hook.
         })
     }
@@ -332,6 +457,7 @@ where
         let should_queue_webhook = !matches!(
             nack_data.error,
             UserOpConfirmationError::ReceiptNotAvailable { .. }
+                | UserOpConfirmationError::FinalityPending { .. }
         );
 
         if should_queue_webhook {
@@ -363,7 +489,14 @@ where
         fail_data: FailHookData<'_, Self::ErrorData>,
         tx: &mut TransactionContext<'_>,
     ) {
-        // Remove transaction from registry since it failed permanently
+        // Cancellation/administrative failure does not prove execution outcome.
+        if !matches!(
+            fail_data.error,
+            UserOpConfirmationError::TransactionFailed { .. }
+        ) {
+            return;
+        }
+        // Remove transaction from registry only after a verified final revert.
         self.transaction_registry
             .add_remove_command(tx.pipeline(), &job.job.data.transaction_id);
 

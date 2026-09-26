@@ -826,6 +826,7 @@ async fn mined_receipt_is_terminal(succeeded: bool) {
         transaction_hash: original.hash.clone(),
         receipt: serde_json::from_value(receipt_json.clone()).unwrap(),
         receipt_serialized: receipt_json.to_string(),
+        finality: fixture_finality(),
     };
     let counts = crate::TransactionCounts {
         latest: 1,
@@ -977,4 +978,133 @@ async fn reverted_receipt_fails_once_without_retrying_or_recycling_nonce() {
 #[ignore = "requires disposable Redis in TEST_REDIS_URL"]
 async fn successful_receipt_still_confirms_once_and_retains_history() {
     mined_receipt_is_terminal(true).await;
+}
+
+fn fixture_finality() -> engine_core::finality::FinalityEvidence {
+    engine_core::finality::FinalityEvidence {
+        block_number: 10,
+        block_hash: alloy::primitives::B256::repeat_byte(9),
+        checkpoint_number: 12,
+        checkpoint_hash: alloy::primitives::B256::repeat_byte(12),
+        policy: engine_core::finality::FinalityPolicy::Finalized,
+    }
+}
+
+#[tokio::test]
+#[ignore = "requires disposable Redis in TEST_REDIS_URL"]
+async fn manual_reset_and_recycled_cleanup_preserve_unresolved_nonce_reservations() {
+    let fixture = Fixture::new().await;
+    let owner = fixture.owner().await;
+    let reservation = borrowed("signed-before-crash", 12);
+    let _: () = twmq::redis::pipe()
+        .hset(
+            owner.borrowed_transactions_hashmap_name(),
+            &reservation.transaction_id,
+            serde_json::to_string(&reservation).unwrap(),
+        )
+        .set(owner.optimistic_transaction_count_key_name(), 13)
+        .set(owner.last_transaction_count_key_name(), 0)
+        .set(owner.manual_reset_key_name(), 1)
+        .query_async(&mut fixture.shared.clone())
+        .await
+        .unwrap();
+    assert!(matches!(
+        owner.reset_nonces(0).await,
+        Err(TransactionStoreError::UnresolvedNonceReservations)
+    ));
+    owner.clean_and_get_recycled_nonces().await.unwrap();
+    assert_eq!(owner.get_optimistic_transaction_count().await.unwrap(), 13);
+    assert_eq!(owner.get_borrowed_transactions_count().await.unwrap(), 1);
+    assert!(owner.is_manual_reset_scheduled().await.unwrap());
+    fixture.cleanup().await;
+}
+
+#[tokio::test]
+#[ignore = "requires disposable Redis in TEST_REDIS_URL"]
+async fn retained_finality_backlog_is_bounded_independently_of_mempool_capacity() {
+    let fixture = Fixture::new().await;
+    let owner = fixture.owner().await;
+    let cap = crate::eoa::store::MAX_UNFINALIZED_ATTEMPTS;
+    let mut pipeline = twmq::redis::pipe();
+    pipeline
+        .set(owner.optimistic_transaction_count_key_name(), cap)
+        .set(owner.last_transaction_count_key_name(), cap);
+    for n in 0..cap {
+        pipeline.zadd(
+            owner.submitted_transactions_zset_name(),
+            format!("hash-{n}:intent-{n}:1:1"),
+            n,
+        );
+    }
+    let _: () = pipeline
+        .query_async(&mut fixture.shared.clone())
+        .await
+        .unwrap();
+    assert_eq!(owner.get_inflight_budget(50).await.unwrap(), 0);
+    let _: () = fixture
+        .shared
+        .clone()
+        .zrem(
+            owner.submitted_transactions_zset_name(),
+            "hash-0:intent-0:1:1",
+        )
+        .await
+        .unwrap();
+    assert_eq!(owner.get_inflight_budget(50).await.unwrap(), 1);
+    fixture.cleanup().await;
+}
+
+#[tokio::test]
+#[ignore = "requires disposable Redis in TEST_REDIS_URL"]
+async fn noop_cleanup_requires_final_receipt_for_each_nonce_not_shared_noop_id() {
+    let fixture = Fixture::new().await;
+    let owner = fixture.owner().await;
+    let webhooks = fixture.webhook_queue().await;
+    let first = crate::eoa::store::SubmittedNoopTransaction {
+        nonce: 0,
+        transaction_hash: alloy::primitives::B256::repeat_byte(1).to_string(),
+    };
+    let second = crate::eoa::store::SubmittedNoopTransaction {
+        nonce: 1,
+        transaction_hash: alloy::primitives::B256::repeat_byte(2).to_string(),
+    };
+    let mut pipeline = twmq::redis::pipe();
+    for tx in [&first, &second] {
+        let (member, nonce) = tx.to_redis_string_with_nonce();
+        pipeline.zadd(owner.submitted_transactions_zset_name(), member, nonce);
+    }
+    let _: () = pipeline
+        .query_async(&mut fixture.shared.clone())
+        .await
+        .unwrap();
+    let counts = crate::TransactionCounts {
+        latest: 2,
+        preconfirmed: 2,
+    };
+    owner
+        .clean_submitted_transactions(&[], counts.clone(), webhooks.clone())
+        .await
+        .unwrap();
+    assert_eq!(owner.get_submitted_transactions_count().await.unwrap(), 2);
+    let receipt = serde_json::json!({"transactionHash":first.transaction_hash,"transactionIndex":"0x0","blockNumber":"0xa","blockHash":alloy::primitives::B256::repeat_byte(9),
+        "from":Address::ZERO,"to":Address::ZERO,"cumulativeGasUsed":"0x5208","gasUsed":"0x5208","effectiveGasPrice":"0x1","contractAddress":null,"logs":[],
+        "logsBloom":format!("0x{}","00".repeat(256)),"status":"0x1","type":"0x2"});
+    owner
+        .clean_submitted_transactions(
+            &[ConfirmedTransaction {
+                transaction_hash: first.transaction_hash,
+                transaction_id: crate::eoa::store::NO_OP_TRANSACTION_ID.into(),
+                receipt: serde_json::from_value(receipt.clone()).unwrap(),
+                receipt_serialized: receipt.to_string(),
+                finality: fixture_finality(),
+            }],
+            counts,
+            webhooks,
+        )
+        .await
+        .unwrap();
+    let remaining = owner.get_all_submitted_transactions().await.unwrap();
+    assert_eq!(remaining.len(), 1);
+    assert_eq!(remaining[0].nonce, 1);
+    fixture.cleanup().await;
 }

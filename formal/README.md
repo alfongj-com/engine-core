@@ -23,18 +23,28 @@ decision, not a claim that Lean cannot verify systems code.
 | Queue ownership | Stale leases cannot commit; aborted EXEC is not success; physical WATCH sessions cannot interfere; ID reuse preserves live data and cancellation | [Queue model and Redis regressions](queue.md) |
 | EVM recovery | One intent per active nonce; crash retains attempts; absent receipts cannot cause a second execution; reverted receipt is failure | [EVM model](eoa.md) |
 | Solana recovery | Persist before send; retries keep signed identity; expiry/absence preserves evidence; bounded send/check budgets; fenced terminal cleanup | [Solana model](solana.md) |
-| Admission | Immutable request per retained ID; atomic identity/queue admission; active identity survives cancellation; finite retention boundary | [Admission model](admission.md) |
+| Redis admission projection | Immutable request per retained Redis ID; atomic identity/queue admission; active identity survives cancellation; finite Redis retention boundary | [Admission model](admission.md); the server's independent journal adds longer-lived identity protection |
+| Finality | Provisional inclusion, orphaning and re-inclusion; both success and revert wait for canonical finality evidence | [Finality model](finality.md); honest RPC/stable consensus assumptions, explicit depth and catastrophic boundaries |
+| Redis disaster recovery | Durable attempt before authorization; immutable global replay binding; separate SQLite/Redis commits; restart/rollback halt; offline quarantine and original-payload retries | [Recovery authority model](disaster-recovery.md); one host/owner, retained local authority, not SQLite/filesystem refinement |
 | Fee arithmetic | Supplied caps, priority/total ordering, nondecrease when permitted, overflow-safe computation | [Production Rust proofs](fees.md) |
 
 Every model has negative checks. Fault configurations must fail the **named
 property** and produce a counterexample. Syntax errors, timeouts and out-of-memory
 failures never count as successful verification. Boundary configurations instead
-disprove claims the implementation does **not** provide: finality across reorgs,
-truthful results from a dishonest RPC, safety after Redis data loss, lifetime
-deduplication after retention expiry, or progress during permanent outages.
+disprove claims outside each module's assumptions: consensus finality surviving
+a catastrophic rollback, truthful evidence from a dishonest RPC, the old
+Redis-only projection surviving data loss, that projection deduplicating after
+its retention expires, or progress during permanent outages. The new independent
+journal addresses Redis loss and replay after Redis TTL expiry **while the
+authoritative local ledger is retained**. Rolling back/copying that authority
+remains an explicit failure boundary. These separate models are not a
+machine-checked proof of their composition.
 
-The [verified run and raw evidence](evidence/README.md) record the checked source,
-state counts, counterexamples and implementation regressions.
+The [recorded run and raw evidence](evidence/README.md) identify the exact source,
+state counts, counterexamples and implementation regressions for that run. The
+manifest now contains **52 configurations** (35 earlier, 8 finality, 9 disaster
+recovery); targeted new-family runs do not certify an older evidence report or
+replace the frozen-source full run.
 
 ## Run locally
 
@@ -83,7 +93,10 @@ Redis Lua and MULTI/EXEC are modeled as successful atomic state transitions wher
 stated. [Redis command errors do not roll back earlier writes](https://redis.io/docs/latest/develop/using-commands/transactions/).
 No model turns that into a rollback guarantee. Retained storage, trustworthy
 matching receipts, collision-resistant identities and chain replay rules are
-assumptions with explicit failure-boundary checks where feasible.
+assumptions with explicit failure-boundary checks where feasible. DisasterRecovery
+separates atomic SQLite commit from atomic Redis CAS; it deliberately permits a
+crash between them. Successful durable filesystem writes and exclusive local
+file locking are trusted components, not proved by TLC.
 
 The [coverage map](coverage.md) lists the remaining work. Existing integration,
 fault-injection and public-chain evidence in [verification](../docs/verification.md)

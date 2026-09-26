@@ -486,9 +486,38 @@ impl<C: Chain> EoaExecutorWorker<C> {
         // Sort borrowed transactions by nonce to ensure proper ordering
         borrowed_transactions.sort_by_key(|tx| tx.signed_transaction.nonce());
 
-        // Rebroadcast all transactions in parallel
-        let rebroadcast_futures: Vec<_> = borrowed_transactions
-            .iter()
+        // A crash can leave the Redis projection behind a durable final outcome.
+        // Restore it to submitted and revalidate the final receipt; never rebroadcast.
+        let mut submission_results = Vec::new();
+        let mut to_broadcast = Vec::new();
+        for borrowed in &borrowed_transactions {
+            let terminal_hash = if let Some(journal) = engine_core::recovery::global() {
+                crate::finality::terminal_eoa_projection(
+                    &journal,
+                    &borrowed.user_request,
+                    borrowed.signed_transaction.nonce(),
+                )
+                .await
+                .map_err(crate::recovery::eoa_error)?
+            } else {
+                None
+            };
+            if let Some(hash) = terminal_hash {
+                let mut transaction: crate::eoa::store::SubmittedTransaction =
+                    borrowed.clone().into();
+                transaction.data.transaction_hash = hash.to_string();
+                submission_results.push(SubmissionResult {
+                    transaction,
+                    result: crate::eoa::store::SubmissionResultType::Reconcile,
+                });
+            } else {
+                crate::recovery::before_eoa(&borrowed.user_request, &borrowed.signed_transaction)
+                    .await?;
+                to_broadcast.push(borrowed);
+            }
+        }
+        let rebroadcast_futures: Vec<_> = to_broadcast
+            .into_iter()
             .map(|borrowed| {
                 let tx_envelope = borrowed.signed_transaction.clone().into();
                 let nonce = borrowed.signed_transaction.nonce();
@@ -510,17 +539,16 @@ impl<C: Chain> EoaExecutorWorker<C> {
         let rebroadcast_results = futures::future::join_all(rebroadcast_futures).await;
 
         // Convert results to SubmissionResult for batch processing
-        let submission_results: Vec<SubmissionResult> = rebroadcast_results
-            .into_iter()
-            .map(|(borrowed, send_result)| {
+        submission_results.extend(rebroadcast_results.into_iter().map(
+            |(borrowed, send_result)| {
                 SubmissionResult::from_send_result(
                     borrowed,
                     send_result,
                     SendContext::Rebroadcast,
                     &self.chain,
                 )
-            })
-            .collect();
+            },
+        ));
 
         // TODO: Implement post-processing analysis for balance threshold updates and nonce resets
         // Currently we lose the granular error handling that was in the individual atomic operations.
@@ -585,6 +613,8 @@ impl<C: Chain> EoaExecutorWorker<C> {
                     last_confirmation_at: now,
                     last_nonce_movement_at: now,
                     nonce_resets: Vec::new(),
+                    last_finality_poll_at: 0,
+                    finality_scan_offset: 0,
                 };
 
                 // Save to store

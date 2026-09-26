@@ -11,8 +11,8 @@ Model composition and Rust-to-TLA+ refinement are not machine-checked.
 | WATCH state belongs to one completion transaction | Queue model + shared-session regression | Redis/client implementation is trusted |
 | EXEC conflict is retried; command error is not replayed | Model for conflicts; real Redis partial-error test | Model per-command partial execution and outbox repair |
 | Queue indexes and payload agree across delay, cancel, prune and ID reuse | One-ID queue model + real Redis regressions | Multiple lane IDs, fairness, pruning liveness; cancellation remains ID-scoped |
-| Accepted request has immutable intent and durable queue membership | Admission model + HTTP/Redis tests | Prove full fingerprint canonicalization and migration algorithm |
-| Pending identity never expires; terminal replay protection has a finite lifetime | Admission model + TTL/retention tests | External business idempotency policy beyond retention |
+| Accepted request has immutable intent; queue is its recoverable projection | Redis Admission model + independent DisasterRecovery model + HTTP/Redis/journal tests | Prove canonicalization and composition; offline recovery does not automatically rebuild queues |
+| Identity outlives Redis terminal TTL while the independent ledger is retained | Admission TTL boundary + DisasterRecovery immutable/terminal binding + journal tests | Ledger retention/backup policy; the Redis-only model still permits replay after its own identity expires |
 | EVM nonce reservation validates current pending state | EVM model + batch/stale-read Redis tests | Recycling, imported conflicts, manual reset, external signer use, u64 exhaustion |
 | Ambiguous EVM send does not permit a fresh nonce | EVM model + HTTP receipt tests + process crash tests | Provider-specific error classification and all deterministic rejection paths |
 | A reverted EVM execution cannot be reported as success | EVM model + Redis lifecycle + reverting-contract crash test | Contract/application-level success definitions |
@@ -20,10 +20,10 @@ Model composition and Rust-to-TLA+ refinement are not machine-checked.
 | Solana attempt is persisted before broadcast; retry bytes stay fixed | Solana model + wire/RPC/crash tests | All serialization and cryptographic code is not formally proved |
 | Expired/absent Solana status cannot justify a fresh signature | Solana model + actual stale-history fixtures | Durable nonce intentionally unsupported; provider honesty is an assumption |
 | Solana retry budgets survive crash/resume | Bounded model + real worker tests | All production read-budget counts, rate pacing and clock behavior |
-| Finality survives reorgs / provider disagreement | Expected counterexamples, prior chain research | **Open:** chain-specific finality policy, reorg rollback and independent provider reconciliation |
-| Storage loss cannot duplicate accepted work | Expected counterexample, AOF process-crash tests | **Open:** host power loss, replica failover, backup rollback and disaster recovery protocol |
+| Ordinary pre-finality reorgs cannot produce a terminal outcome | Finality model + canonical RPC fixtures/executor tests + journal checkpoint CAS | Provider/chain qualification, continuous monitoring, independent consensus verification and immutable admission policy; dishonest RPC/finalized rollback remain negative boundaries |
+| Redis loss/rollback cannot authorize a fresh identity when local authority survives | DisasterRecovery model + journal failure-cut/SIGKILL tests + integrated process harness | Real power-loss/fsync assurance, authority loss/rollback, multi-host fencing, projection repair availability; no SQLite/filesystem refinement proof |
 | Every accepted request eventually terminates | Conditional EVM liveness only | Solana parked recovery/operator API, scheduler/lane fairness, bounded outage policy |
-| ERC-4337 / EIP-7702 identifiers remain stable | Implementation regressions and persisted admission IDs | Dedicated nonce/UID, bundler, paymaster, authorization and replay models |
+| ERC-4337 / EIP-7702 identifiers remain stable | Implementation regressions + original-payload retry in DisasterRecovery | Dedicated protocol/bundler/paymaster/authorization models; independent 7702 bundler-result attribution |
 | Authentication binds the allowed signer, chain and request | HTTP/crypto/domain fixtures; prior audit | Formal policy model, key rotation and KMS credential-reference protocol |
 | Signatures, ABI/wire encoding, hashes and randomness are correct | SDK vectors, signed-wire/cosignature tests | Cryptographic proofs and dependency assurance; primitives are trusted here |
 | Webhook events follow durable transitions; retries preserve event identity | Queue fencing model for hook commit; implementation tests | End-to-end outbox proof; delivery is at least once and consumers must deduplicate |
@@ -34,11 +34,12 @@ Model composition and Rust-to-TLA+ refinement are not machine-checked.
 
 ## Next verification work
 
-1. Define the finality contract per chain, then model inclusion, rollback and
-   terminal retention together. The current counterexamples show why this is
-   necessary before claiming final success.
-2. Specify operator recovery across lost Redis state and uncertain transactions.
-   Model the decision before adding an API that can reset identity or nonce.
+1. Qualify actual chain/provider finality semantics, model immutable admission
+   policy/migration, and connect the finality and journal models through executable
+   traces. Do not treat a provider's returned tag as a consensus proof.
+2. Exercise real power-loss/storage failures, specify authoritative-ledger backup
+   and multi-host fencing, and improve safe projection repair. An older ledger
+   copy cannot replace the current authority; quarantined outcomes may stay unknown.
 3. Model ERC-4337/EIP-7702 admission and replay, then authorization/key rotation.
 4. Add trace-driven conformance tests for model transitions with multiple real
    Redis clients. Existing counterexample regressions are a first connection;

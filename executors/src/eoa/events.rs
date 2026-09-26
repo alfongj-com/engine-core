@@ -60,6 +60,8 @@ pub struct EoaSendAttemptSuccessData {
 #[serde(rename_all = "camelCase")]
 pub struct EoaExecutorConfirmedTransaction {
     pub receipt: alloy::rpc::types::TransactionReceipt,
+    #[serde(default)]
+    pub finality: Option<engine_core::finality::FinalityEvidence>,
     pub eoa_address: Address,
     pub transaction_id: String,
     pub transaction_hash: String,
@@ -162,6 +164,7 @@ impl EoaExecutorEvent {
             payload: SerializableSuccessData {
                 result: EoaExecutorConfirmedTransaction {
                     receipt: confirmed_transaction.receipt,
+                    finality: Some(confirmed_transaction.finality),
                     eoa_address: self.address,
                     transaction_id: self.transaction_id.clone(),
                     transaction_hash: confirmed_transaction.transaction_hash,
@@ -183,6 +186,7 @@ impl EoaExecutorEvent {
                 error: EoaConfirmationError::TransactionReverted {
                     transaction: EoaExecutorConfirmedTransaction {
                         receipt: confirmed_transaction.receipt,
+                        finality: Some(confirmed_transaction.finality),
                         eoa_address: self.address,
                         transaction_id: self.transaction_id.clone(),
                         transaction_hash: confirmed_transaction.transaction_hash,

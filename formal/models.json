@@ -208,5 +208,107 @@
     "config": "QueueLease_orphan_cancel_bug.cfg",
     "expected": "invariant:RetainedHistoryIntegrity",
     "kind": "fault"
+  },
+  {
+    "module": "Finality",
+    "config": "Finality.cfg",
+    "expected": "pass",
+    "kind": "positive"
+  },
+  {
+    "module": "Finality",
+    "config": "Finality_early_inclusion.cfg",
+    "expected": "invariant:TerminalRequiresFinality",
+    "kind": "fault"
+  },
+  {
+    "module": "Finality",
+    "config": "Finality_missing_hash.cfg",
+    "expected": "invariant:CanonicalAtCommit",
+    "kind": "fault"
+  },
+  {
+    "module": "Finality",
+    "config": "Finality_revert_early.cfg",
+    "expected": "invariant:RevertNeedsFinality",
+    "kind": "fault"
+  },
+  {
+    "module": "Finality",
+    "config": "Finality_dishonest_provider.cfg",
+    "expected": "invariant:TerminalRequiresFinality",
+    "kind": "boundary"
+  },
+  {
+    "module": "Finality",
+    "config": "Finality_finalized_rollback.cfg",
+    "expected": "invariant:TerminalRemainsCanonical",
+    "kind": "boundary"
+  },
+  {
+    "module": "Finality",
+    "config": "Finality_depth_boundary.cfg",
+    "expected": "invariant:TerminalRemainsCanonical",
+    "kind": "boundary"
+  },
+  {
+    "module": "Finality",
+    "config": "Finality_reinclusion_witness.cfg",
+    "expected": "invariant:ReinclusionWitnessNotReached",
+    "kind": "witness"
+  },
+  {
+    "module": "DisasterRecovery",
+    "config": "DisasterRecovery.cfg",
+    "expected": "pass",
+    "kind": "positive"
+  },
+  {
+    "module": "DisasterRecovery",
+    "config": "DisasterRecovery_send_before_journal.cfg",
+    "expected": "invariant:EverySendJournaled",
+    "kind": "fault"
+  },
+  {
+    "module": "DisasterRecovery",
+    "config": "DisasterRecovery_id_binding.cfg",
+    "expected": "invariant:ImmutableAdmission",
+    "kind": "fault"
+  },
+  {
+    "module": "DisasterRecovery",
+    "config": "DisasterRecovery_key_binding.cfg",
+    "expected": "invariant:ReplayKeyUnique",
+    "kind": "fault"
+  },
+  {
+    "module": "DisasterRecovery",
+    "config": "DisasterRecovery_shared_owner.cfg",
+    "expected": "invariant:NoOldEpochAuthorization",
+    "kind": "fault"
+  },
+  {
+    "module": "DisasterRecovery",
+    "config": "DisasterRecovery_fresh_recovery.cfg",
+    "expected": "invariant:AtMostOneEffectPerId",
+    "kind": "fault"
+  },
+  {
+    "module": "DisasterRecovery",
+    "config": "DisasterRecovery_retry_uid.cfg",
+    "expected": "invariant:OriginalPayloadOnRetry",
+    "kind": "fault"
+  },
+  {
+    "module": "DisasterRecovery",
+    "config": "DisasterRecovery_authority_rollback.cfg",
+    "expected": "invariant:AtMostOneEffectPerId",
+    "kind": "boundary"
+  },
+  {
+    "module": "DisasterRecovery",
+    "config": "DisasterRecovery_late_execution_witness.cfg",
+    "expected": "invariant:LateExecutionWitnessNotReached",
+    "kind": "witness"
   }
 ]

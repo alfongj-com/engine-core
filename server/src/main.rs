@@ -23,6 +23,61 @@ use tracing_subscriber::{filter::EnvFilter, layer::SubscriberExt, util::Subscrib
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let config = config::get_config();
+    let arguments: Vec<_> = std::env::args().skip(1).collect();
+    anyhow::ensure!(
+        arguments.len() <= 1,
+        "Expected at most one recovery command"
+    );
+    if arguments
+        .first()
+        .is_some_and(|arg| arg == "--initialize-recovery")
+    {
+        engine_core::recovery::RecoveryJournal::initialize(
+            &config.recovery.journal_path,
+            &config.redis.url,
+            config.queue.execution_namespace.clone(),
+        )
+        .await?;
+        println!("Recovery journal initialized for an empty Redis namespace.");
+        return Ok(());
+    }
+    if arguments
+        .first()
+        .is_some_and(|arg| arg == "--reattach-recovery")
+    {
+        engine_core::recovery::RecoveryJournal::reattach(
+            &config.recovery.journal_path,
+            &config.redis.url,
+            config.queue.execution_namespace.clone(),
+        )
+        .await?;
+        println!("Intact Redis checkpoint reattached; replay bindings retained.");
+        return Ok(());
+    }
+    if arguments
+        .first()
+        .is_some_and(|arg| arg == "--recover-redis")
+    {
+        engine_core::recovery::RecoveryJournal::recover(
+            &config.recovery.journal_path,
+            &config.redis.url,
+            config.queue.execution_namespace.clone(),
+        )
+        .await?;
+        println!("Fresh Redis namespace activated; uncertain broadcasts remain quarantined.");
+        return Ok(());
+    }
+    anyhow::ensure!(
+        arguments.is_empty(),
+        "Unknown command; expected --initialize-recovery, --reattach-recovery or --recover-redis"
+    );
+    let recovery = engine_core::recovery::RecoveryJournal::open(
+        &config.recovery.journal_path,
+        &config.redis.url,
+        config.queue.execution_namespace.clone(),
+    )
+    .await?;
+    engine_core::recovery::install(recovery.clone())?;
     if std::env::var_os("ENGINE_PRIVATE_KEY").is_some() {
         anyhow::ensure!(
             std::env::var("ENGINE_SIGNING_TOKEN").is_ok_and(|token| token.len() >= 32),
@@ -107,6 +162,17 @@ async fn main() -> anyhow::Result<()> {
     tracing::info!("Starting queue workers...");
     let all_workers = queue_manager.start_workers(&config.queue);
 
+    let recovery_monitor = tokio::spawn(async move {
+        let mut interval = tokio::time::interval(Duration::from_secs(1));
+        loop {
+            interval.tick().await;
+            if let Err(error) = recovery.ensure_healthy().await {
+                tracing::error!(error = %error, "Recovery journal halted transaction admission and broadcast");
+                break;
+            }
+        }
+    });
+
     let abi_service = ThirdwebAbiServiceBuilder::new(
         &config.thirdweb.urls.abi_service,
         ThirdwebAuth::SecretKey(config.thirdweb.secret.clone()),
@@ -166,6 +232,7 @@ async fn main() -> anyhow::Result<()> {
 
     // Orchestrate shutdown with minimal wrapping since internal methods handle their own instrumentation
     tracing::info!("Starting coordinated shutdown");
+    recovery_monitor.abort();
 
     if let Err(e) = server.shutdown().await {
         tracing::error!("Error during coordinated shutdown: {}", e);

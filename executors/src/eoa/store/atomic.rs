@@ -718,14 +718,24 @@ impl SafeRedisTransaction for ResetNoncesTransaction<'_> {
             self.keys.last_transaction_count_key_name(),
             self.keys.recycled_nonces_zset_name(),
             self.keys.manual_reset_key_name(),
+            self.keys.submitted_transactions_zset_name(),
+            self.keys.borrowed_transactions_hashmap_name(),
         ]
     }
 
     async fn validation(
         &self,
-        _conn: &mut MultiplexedConnection,
+        conn: &mut MultiplexedConnection,
         store: &EoaExecutorStore,
     ) -> Result<Self::ValidationData, TransactionStoreError> {
+        let (submitted, borrowed): (u64, u64) = twmq::redis::pipe()
+            .zcard(self.keys.submitted_transactions_zset_name())
+            .hlen(self.keys.borrowed_transactions_hashmap_name())
+            .query_async(conn)
+            .await?;
+        if submitted != 0 || borrowed != 0 {
+            return Err(TransactionStoreError::UnresolvedNonceReservations);
+        }
         let now = chrono::Utc::now().timestamp_millis().max(0) as u64;
 
         // Get current health data to prepare update

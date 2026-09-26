@@ -12,6 +12,8 @@ pub struct EngineConfig {
     pub evm_rpc: EvmRpcConfig,
     pub queue: QueueConfig,
     pub redis: RedisConfig,
+    #[serde(default)]
+    pub recovery: RecoveryConfig,
     pub solana: SolanaConfig,
 }
 
@@ -111,6 +113,21 @@ fn default_completed_transaction_ttl_seconds() -> u64 {
 #[derive(Debug, Clone, Deserialize)]
 pub struct RedisConfig {
     pub url: String,
+}
+
+/// Independent durable state. Ordinary startup never creates a missing ledger.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+pub struct RecoveryConfig {
+    pub journal_path: std::path::PathBuf,
+}
+
+impl Default for RecoveryConfig {
+    fn default() -> Self {
+        Self {
+            journal_path: "data/recovery.sqlite".into(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Deserialize)]

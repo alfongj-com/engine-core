@@ -6,7 +6,10 @@ For one `(chain, sender)`, reserve a nonce and persist the signed attempt before
 sending it. A lost reply retains that identity. A fee replacement keeps the same
 intent and nonce. A missing receipt, including a read after the account nonce
 advanced, never authorizes repeating the intent at a new nonce. A mined revert
-consumes its nonce and is terminal failure.
+consumes its nonce and is terminal failure **after the configured finality gate**.
+This older nonce/receipt model collapses receipt observation and settlement;
+the separate [Finality model](finality.md) adds provisional inclusion, orphaning,
+and checkpoint reads. Their composition is not mechanically proved.
 
 `EoaRecovery` checks two intents, two independent preparation contexts, two
 nonces and two fee versions. The chain ledger, possibly accepted broadcasts,
@@ -37,9 +40,11 @@ mapping, **not an automatically proved refinement of Rust or Redis**.
   intent execute successfully at two nonces (`AtMostOneEffect`).
 - `reverted_success`: treating status-zero as success violates
   `TerminalMatchesExecution`.
-- `reorg_boundary`: removing an included block invalidates the terminal result.
-  This is an **open implementation limit**, not an intentionally broken model of
-  a guarantee Engine already supplies.
+- `reorg_boundary`: removing the included block invalidates the terminal result
+  in this inclusion-only abstraction. The new Finality model checks the actual
+  pre-finality gate separately and retains a catastrophic finalized-rollback
+  boundary. This older counterexample no longer describes immediate completion
+  on any receipt in the current runtime.
 - `unfair_boundary`: a scheduler/RPC that never makes progress defeats eventual
   completion. Safety does not imply availability.
 
@@ -59,6 +64,7 @@ pending/preconfirmation ahead of canonical state, contract execution, gas
 estimation, multiple chains/accounts, webhooks, Redis command-level partial
 failure, storage loss or malicious receipts. The fee-version abstraction does
 not establish economic replacement rules. A matching receipt is assumed truthful
-and remains included unless the explicit reorg boundary is enabled. A chain with
-reorganizations needs a separate finality policy before this inclusion property
-can be described as final success.
+and remains included unless the explicit reorg boundary is enabled. Runtime
+`Confirm` now consumes evidence from the separate finality layer. The independent
+[recovery authority](disaster-recovery.md) additionally fences replay keys after
+Redis loss; this model's retained-Redis assumption is still explicit.

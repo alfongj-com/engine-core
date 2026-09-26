@@ -8,6 +8,8 @@ Rust transaction infrastructure forked from [thirdweb-dev/engine-core](https://g
 
 - [Chain compatibility design](docs/design/chain-compatibility.md): Ethereum, Arbitrum, OP Stack/Base, finality, fees, sequencing and capabilities.
 - [Configured RPCs and Solana recovery](docs/design/rpc-and-solana-recovery.md): setup, authentication, retry rules and operational limits.
+- [Finality and reorg handling](docs/design/finality-and-recovery.md): completion policies and chain assumptions.
+- [Redis disaster recovery](docs/design/redis-disaster-recovery.md): required independent journal, initialization, restart and quarantine procedures.
 - [RPC test plan and prices](docs/design/rpc-test-plan.md): EVM testnets, Solana Devnet, request estimates, provider limits and first-round budget.
 - [UserOperation signing profiles](docs/design/userop-signing.md): supported default accounts, rejection rules and remaining qualification.
 - [Test and benchmark design](docs/design/testing-and-benchmarks.md): safety invariants, failure injection, local versus network evidence.
@@ -33,14 +35,23 @@ Set `ENGINE_PRIVATE_KEY` to a dedicated test key and `ENGINE_SIGNING_TOKEN` to a
 Run Redis and an Anvil node locally. Chain ID `31337` routes to `http://127.0.0.1:8545`. From the `server` directory:
 
 ```sh
-APP_ENVIRONMENT=production \
-APP__REDIS__URL=redis://127.0.0.1:16379 \
-APP__SERVER__HOST=127.0.0.1 \
-APP__SERVER__DIAGNOSTIC_ACCESS_PASSWORD="$ENGINE_DIAGNOSTIC_PASSWORD" \
+export APP_ENVIRONMENT=production
+export APP__REDIS__URL=redis://127.0.0.1:16379
+export APP__SERVER__HOST=127.0.0.1
+export APP__SERVER__DIAGNOSTIC_ACCESS_PASSWORD="$ENGINE_DIAGNOSTIC_PASSWORD"
+export APP__EVM_RPC__ENDPOINTS__31337__URL=http://127.0.0.1:8545
+export APP__EVM_RPC__ENDPOINTS__31337__FINALITY__MODE=depth
+export APP__EVM_RPC__ENDPOINTS__31337__FINALITY__CONFIRMATIONS=0
+export APP__QUEUE__EXECUTION_NAMESPACE=local-test
+export APP__RECOVERY__JOURNAL_PATH=data/recovery.sqlite
+# Once, for a new deployment with an empty namespace:
+cargo run --locked --bin thirdweb-engine -- --initialize-recovery
 cargo run --locked --bin thirdweb-engine
 ```
 
-Configure `APP__EVM_RPC__ENDPOINTS__31337__URL=http://127.0.0.1:8545` to use the operator token alone. Each public EVM chain accepts its own endpoint and headers using the same setting. Provider clients reuse connections and refuse redirects. Unconfigured chains retain the legacy Thirdweb routing; bundlers and paymasters are separate integrations. For the legacy local adapter only, `x-thirdweb-secret-key: local-test` remains accepted.
+The journal is mandatory for the server and supports one active process on one host. Store it on a persistent local volume independent of Redis; normal startup refuses a missing journal. Never initialize a replacement journal over existing work. Use the [recovery runbook](docs/design/redis-disaster-recovery.md) for upgrades and Redis restarts. The zero-depth policy above is restricted to local chain 31337; public chains default to `finalized` with no automatic downgrade.
+
+The configured endpoint lets local requests use the operator token alone. Each public EVM chain accepts its own endpoint and headers using the same setting. Provider clients reuse connections and refuse redirects. Unconfigured chains retain the legacy Thirdweb routing; bundlers and paymasters are separate integrations. For the legacy local adapter only, `x-thirdweb-secret-key: local-test` remains accepted.
 
 AWS KMS request headers remain `x-aws-kms-arn`, `x-aws-access-key-id`, and `x-aws-secret-access-key`. The inherited KMS flow serializes credentials into queue state; replacing it with workload identity and key references is a release blocker. Prefer the environment reference for local experiments.
 

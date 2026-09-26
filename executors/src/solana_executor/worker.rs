@@ -32,7 +32,7 @@ use twmq::{
     DurableExecution, FailHookData, NackHookData, Queue, SuccessHookData, UserCancellable,
     error::TwmqError,
     hooks::TransactionContext,
-    job::{BorrowedJob, JobError, JobResult, RequeuePosition, ToJobError},
+    job::{BorrowedJob, JobError, JobResult, RequeuePosition, ToJobError, ToJobResult},
 };
 
 use crate::{
@@ -247,6 +247,26 @@ impl DurableExecution for SolanaExecutorJobHandler {
         // let queued_at_ms = job.job.created_at * 1000;
         let data = &job.job.data;
         let transaction_id = &data.transaction_id;
+
+        if let Some(journal) = engine_core::recovery::global() {
+            let payload = serde_json::to_value(data).map_err(|_| {
+                SolanaExecutorError::InternalError {
+                    message: "Cannot encode reconciliation payload".into(),
+                }
+                .nack(Some(RECOVERY_PARK_DELAY), RequeuePosition::Last)
+            })?;
+            crate::finality::validate_reconciliation_payload(
+                &journal,
+                "solana",
+                transaction_id,
+                &payload,
+            )
+            .await
+            .map_err(|inner_error| {
+                SolanaExecutorError::RpcError { inner_error }
+                    .nack(Some(RECOVERY_PARK_DELAY), RequeuePosition::Last)
+            })?;
+        }
 
         info!("Starting to process Solana transaction");
 
@@ -581,14 +601,10 @@ impl SolanaExecutorJobHandler {
         let transaction_id = &job_data.transaction_id;
         let chain_id_str = &job_data.transaction.execution_options.chain_id;
         let signer_address = job_data.transaction.execution_options.signer_address;
-        let commitment_level = job_data
-            .transaction
-            .execution_options
-            .commitment
-            .to_commitment_level();
-        let commitment = CommitmentConfig {
-            commitment: commitment_level,
-        };
+        // A request's observation preference cannot lower durable settlement.
+        // This also protects already queued jobs that requested `confirmed`.
+        let commitment_level = CommitmentLevel::Finalized;
+        let commitment = CommitmentConfig::finalized();
         self.verify_lock(lock, transaction_id).await?;
         let stored_attempt = self
             .storage
@@ -596,14 +612,41 @@ impl SolanaExecutorJobHandler {
             .await
             .map_err(|e| self.handle_redis_error(e, transaction_id))?;
 
+        let mut journal_terminal = false;
+        if let Some(journal) = engine_core::recovery::global() {
+            let admission = journal
+                .admission("solana", transaction_id)
+                .await
+                .map_err(|error| {
+                    SolanaExecutorError::InternalError {
+                        message: error.to_string(),
+                    }
+                    .nack(Some(RECOVERY_PARK_DELAY), RequeuePosition::Last)
+                })?;
+            if let Some(admission) = admission {
+                journal_terminal =
+                    admission.state == engine_core::recovery::AdmissionState::Terminal;
+                if let Some(binding) = admission.replay_key {
+                    let matches = stored_attempt.as_ref().is_some_and(|attempt| {
+                        binding == format!("solana:{}:{}", chain_id_str.as_str(), attempt.signature)
+                    });
+                    if !matches {
+                        return Err(SolanaExecutorError::InternalError {
+                            message: "Durable signature binding exists but Redis attempt is missing or changed; restore and reconcile before signing".into(),
+                        }.nack(Some(RECOVERY_PARK_DELAY), RequeuePosition::Last));
+                    }
+                }
+            }
+        }
+
         if let Some(mut attempt) = stored_attempt.clone() {
-            if attempt.reconciliation_checks >= MAX_RECONCILIATION_CHECKS {
+            if attempt.reconciliation_checks >= MAX_RECONCILIATION_CHECKS && !journal_terminal {
                 return Err(Self::park(
                     &attempt,
                     "reconciliation budget exhausted; resume explicitly",
                 ));
             }
-            attempt.reconciliation_checks += 1;
+            attempt.reconciliation_checks = attempt.reconciliation_checks.saturating_add(1);
             self.storage
                 .update_attempt(transaction_id, &attempt, lock)
                 .await
@@ -615,6 +658,13 @@ impl SolanaExecutorJobHandler {
                 .await?
             {
                 return result;
+            }
+
+            if journal_terminal {
+                return Err(Self::park(
+                    &attempt,
+                    "Durable final outcome awaits matching RPC evidence before Redis cleanup",
+                ));
             }
 
             // Legacy records have no reproducible signed bytes and historically stored the
@@ -869,7 +919,7 @@ impl SolanaExecutorJobHandler {
         rpc_client: &RpcClient,
         job_data: &SolanaExecutorJobData,
         attempt: &SolanaTransactionAttempt,
-        commitment: CommitmentConfig,
+        _commitment: CommitmentConfig,
     ) -> JobResult<Option<JobResult<SolanaExecutorResult, SolanaExecutorError>>, SolanaExecutorError>
     {
         let statuses = rpc_client
@@ -887,23 +937,21 @@ impl SolanaExecutorJobHandler {
         let Some(status) = &statuses.value[0] else {
             return Ok(None);
         };
-        if status.err != status.status.clone().err() {
+        if status.err != status.status.clone().err() || statuses.context.slot < status.slot {
             return Err(SolanaExecutorError::InternalError {
                 message: "RPC returned inconsistent transaction status".into(),
             }
             .nack(Some(NETWORK_ERROR_RETRY_DELAY), RequeuePosition::Last));
         }
-        if !status.satisfies_commitment(commitment) {
+        let commitment = CommitmentConfig::finalized();
+        if !status.satisfies_commitment(commitment)
+            || status.confirmation_status
+                != Some(solana_transaction_status::TransactionConfirmationStatus::Finalized)
+        {
             return Ok(Some(Err(SolanaExecutorError::NotYetConfirmed {
                 signature: attempt.signature.to_string(),
             }
             .nack(Some(CONFIRMATION_RETRY_DELAY), RequeuePosition::Last))));
-        }
-        if let Some(error) = &status.err {
-            return Ok(Some(Err(SolanaExecutorError::TransactionFailed {
-                reason: format!("{error:?}"),
-            }
-            .fail())));
         }
         let details = rpc_client
             .get_transaction_with_config(
@@ -932,12 +980,30 @@ impl SolanaExecutorJobHandler {
                 .transaction
                 .meta
                 .as_ref()
-                .is_none_or(|meta| meta.err.is_some())
+                .is_none_or(|meta| meta.err != status.err.clone().map(Into::into))
         {
             return Err(SolanaExecutorError::InternalError {
                 message: "Inconsistent transaction receipt; retry reconciliation".into(),
             }
             .nack(Some(NETWORK_ERROR_RETRY_DELAY), RequeuePosition::Last));
+        }
+        crate::finality::record_solana_terminal(
+            &job_data.transaction_id,
+            job_data.transaction.execution_options.chain_id.as_str(),
+            &expected_signature,
+            details.slot,
+            status.err.is_none(),
+        )
+        .await
+        .map_err(|inner_error| {
+            SolanaExecutorError::RpcError { inner_error }
+                .nack(Some(RECOVERY_PARK_DELAY), RequeuePosition::Last)
+        })?;
+        if let Some(error) = &status.err {
+            return Ok(Some(Err(SolanaExecutorError::TransactionFailed {
+                reason: format!("{error:?}"),
+            }
+            .fail())));
         }
         Ok(Some(Ok(SolanaExecutorResult {
             transaction_id: job_data.transaction_id.clone(),
@@ -1012,6 +1078,26 @@ impl SolanaExecutorJobHandler {
             max_retries: Some(0),
             ..Default::default()
         };
+        if let Some(journal) = engine_core::recovery::global() {
+            let replay_key = format!(
+                "solana:{}:{}",
+                job_data.transaction.execution_options.chain_id.as_str(),
+                attempt.signature
+            );
+            journal
+                .before_broadcast(
+                    "solana",
+                    &job_data.transaction_id,
+                    &replay_key,
+                    json!({"chainId":job_data.transaction.execution_options.chain_id.as_str(),
+                    "signature":attempt.signature.to_string(), "attempt":attempt}),
+                )
+                .await
+                .map_err(|error| SolanaExecutorError::InternalError {
+                    message: error.to_string(),
+                })
+                .map_err_nack(Some(NETWORK_ERROR_RETRY_DELAY), RequeuePosition::Last)?;
+        }
         let sent: Result<String, _> = rpc_client
             .send(RpcRequest::SendTransaction, json!([wire, config]))
             .await;

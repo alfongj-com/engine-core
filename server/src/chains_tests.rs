@@ -11,6 +11,7 @@ use axum::{
 use engine_core::{
     chain::{Chain, RpcEndpointConfig},
     error::AlloyRpcErrorToEngineError,
+    finality::FinalityPolicy,
 };
 use serde_json::{Value, json};
 use std::{collections::BTreeMap, net::SocketAddr, sync::Arc};
@@ -151,6 +152,97 @@ fn assert_redacted(text: &str) {
             !text.contains(secret),
             "credential present in diagnostic output"
         );
+    }
+}
+
+#[tokio::test]
+async fn finality_defaults_are_strong_and_depth_requires_explicit_valid_configuration() {
+    let mut rpc = config("http://127.0.0.1:1".into());
+    let service = ThirdwebChainService::new(&thirdweb(), &rpc).unwrap();
+    for id in [11155111, 1, 999999] {
+        assert_eq!(
+            service.get_chain(id).unwrap().finality_policy(),
+            FinalityPolicy::Finalized
+        );
+    }
+    let endpoint = rpc.endpoints.get_mut("11155111").unwrap();
+    endpoint.finality = FinalityPolicy::Depth { confirmations: 12 };
+    let service = ThirdwebChainService::new(&thirdweb(), &rpc).unwrap();
+    assert_eq!(
+        service.get_chain(11155111).unwrap().finality_policy(),
+        FinalityPolicy::Depth { confirmations: 12 }
+    );
+    rpc.endpoints.get_mut("11155111").unwrap().finality =
+        FinalityPolicy::Depth { confirmations: 0 };
+    assert!(ThirdwebChainService::new(&thirdweb(), &rpc).is_err());
+    let local = rpc.endpoints.remove("11155111").unwrap();
+    rpc.endpoints.insert("31337".into(), local);
+    assert_eq!(
+        ThirdwebChainService::new(&thirdweb(), &rpc)
+            .unwrap()
+            .get_chain(31337)
+            .unwrap()
+            .finality_policy(),
+        FinalityPolicy::Depth { confirmations: 0 }
+    );
+    for invalid in [
+        json!({"mode":"latest"}),
+        json!({"mode":"depth", "confirmations":-1}),
+        json!({"mode":"depth"}),
+        json!({"mode":"finalized", "confirmations":0}),
+    ] {
+        assert!(
+            serde_json::from_value::<RpcEndpointConfig>(
+                json!({"url":"http://127.0.0.1:1", "finality": invalid})
+            )
+            .is_err(),
+            "Unexpected accepted finality config: {invalid}"
+        );
+    }
+}
+
+#[tokio::test]
+async fn finality_depth_parses_environment_strings_and_rejects_malformed_values() {
+    for (chain_id, value, valid) in [
+        (31337, "0", true),
+        (11155111, "12", true),
+        (11155111, "0", false),
+        (31337, "-1", false),
+        (31337, "1.5", false),
+        (31337, "true", false),
+        (31337, "18446744073709551616", false),
+        (31337, "", false),
+    ] {
+        let prefix = format!("APP__EVM_RPC__ENDPOINTS__{chain_id}");
+        let source = std::collections::HashMap::from([
+            (format!("{prefix}__URL"), "http://127.0.0.1:1".into()),
+            (format!("{prefix}__FINALITY__MODE"), "depth".into()),
+            (format!("{prefix}__FINALITY__CONFIRMATIONS"), value.into()),
+        ]);
+        let loaded = ::config::Config::builder()
+            .add_source(
+                ::config::Environment::with_prefix("app")
+                    .separator("__")
+                    .source(Some(source)),
+            )
+            .build()
+            .unwrap()
+            .get::<EvmRpcConfig>("evm_rpc");
+        let policy = loaded.and_then(|rpc| {
+            ThirdwebChainService::new(&thirdweb(), &rpc)
+                .and_then(|service| service.get_chain(chain_id))
+                .map(|chain| chain.finality_policy())
+                .map_err(|error| ::config::ConfigError::Message(error.to_string()))
+        });
+        assert_eq!(policy.is_ok(), valid, "chain {chain_id}, depth {value:?}");
+        if valid {
+            assert_eq!(
+                policy.unwrap(),
+                FinalityPolicy::Depth {
+                    confirmations: value.parse().unwrap()
+                }
+            );
+        }
     }
 }
 

@@ -2,7 +2,11 @@ use alloy::{
     primitives::B256,
     providers::{Provider, RootProvider},
 };
-use engine_core::{chain::Chain, error::AlloyRpcErrorToEngineError};
+use engine_core::{
+    chain::Chain,
+    error::AlloyRpcErrorToEngineError,
+    finality::{FinalityAssessment, assess_receipt_finality},
+};
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -19,6 +23,9 @@ use crate::{
         },
     },
 };
+
+const FINALITY_POLL_INTERVAL_MS: u64 = 5_000;
+const MAX_RECEIPTS_PER_POLL: usize = 256;
 
 const NONCE_STALL_LIMIT_MS: u64 = 60_000; // 1 minute in milliseconds - after this time, attempt gas bump
 
@@ -72,6 +79,27 @@ async fn fetch_confirmed_transaction_receipts(
         .collect()
 }
 
+/// Rotate a bounded read window so permanently missing receipts cannot starve
+/// later nonces. Cleanup shifts offsets but every retained hash is revisited.
+fn receipt_poll_batch(
+    waiting: Vec<SubmittedTransactionDehydrated>,
+    offset: usize,
+) -> (Vec<SubmittedTransactionDehydrated>, usize) {
+    if waiting.is_empty() {
+        return (Vec::new(), 0);
+    }
+    let count = waiting.len().min(MAX_RECEIPTS_PER_POLL);
+    let start = offset % waiting.len();
+    let selected = waiting
+        .iter()
+        .cycle()
+        .skip(start)
+        .take(count)
+        .cloned()
+        .collect();
+    (selected, (start + count) % waiting.len())
+}
+
 #[cfg(test)]
 #[path = "receipt_tests.rs"]
 mod receipt_tests;
@@ -99,7 +127,12 @@ impl<C: Chain> EoaExecutorWorker<C> {
 
         if self.store.is_manual_reset_scheduled().await? {
             tracing::info!("Manual reset scheduled, executing now");
-            self.store.reset_nonces(transaction_counts.latest).await?;
+            match self.store.reset_nonces(transaction_counts.latest).await {
+                Err(TransactionStoreError::UnresolvedNonceReservations) => {
+                    tracing::warn!("Deferring manual nonce reset until signed attempts settle");
+                }
+                result => result?,
+            }
         }
 
         let cached_transaction_count = match self.store.get_cached_transaction_count().await {
@@ -216,17 +249,36 @@ impl<C: Chain> EoaExecutorWorker<C> {
                 .await?;
         }
 
-        // Get all pending transactions below the current chain transaction count
-        // ie, if transaction count is 1, nonce 0 should have mined
-        let waiting_txs = self
+        // Settlement polling has its own cadence; provisional nonce observation
+        // above still frees the mempool window on every send cycle.
+        let mut health = self.get_eoa_health().await?;
+        let now = EoaExecutorStore::now();
+        if now.saturating_sub(health.last_finality_poll_at) < FINALITY_POLL_INTERVAL_MS {
+            return Ok(CleanupReport::default());
+        }
+        // Bound failed/unknown continuity reads by the same polling cadence.
+        health.last_finality_poll_at = now;
+        self.store.update_health_data(&health).await?;
+        // Check prior settled history even if this wallet currently has no
+        // receipt candidates (for example latest nonce fell after a deep reorg).
+        crate::finality::check_continuity(&self.chain)
+            .await
+            .map_err(|inner_error| EoaExecutorWorkerError::RpcError {
+                message: "Finality checkpoint continuity unavailable".into(),
+                inner_error,
+            })?;
+        let waiting = self
             .store
             .get_submitted_transactions_below_chain_transaction_count(
-                transaction_counts.preconfirmed,
+                transaction_counts
+                    .preconfirmed
+                    .max(transaction_counts.latest),
             )
             .await?;
-
+        let (waiting_txs, next_offset) = receipt_poll_batch(waiting, health.finality_scan_offset);
+        health.finality_scan_offset = next_offset;
+        self.store.update_health_data(&health).await?;
         if waiting_txs.is_empty() {
-            tracing::debug!("No waiting transactions to confirm");
             return Ok(CleanupReport::default());
         }
 
@@ -235,37 +287,90 @@ impl<C: Chain> EoaExecutorWorker<C> {
             fetch_confirmed_transaction_receipts(self.chain.provider(), waiting_txs).await;
 
         // Process confirmed transactions
-        let successes: Vec<ConfirmedTransaction> = confirmed_txs
-            .into_iter()
-            .map(|tx| {
-                let receipt_data = match serde_json::to_string(&tx.receipt) {
-                    Ok(receipt_json) => receipt_json,
-                    Err(e) => {
-                        tracing::warn!(
-                            transaction_id = ?tx.transaction_id,
-                            hash = tx.transaction_hash,
-                            error = ?e,
-                            "Failed to serialize receipt as JSON, using debug format"
-                        );
-                        format!("{:?}", tx.receipt)
-                    }
-                };
-
-                tracing::info!(
-                    transaction_id = ?tx.transaction_id,
-                    nonce = tx.nonce,
-                    hash = tx.transaction_hash,
-                    "Transaction confirmed"
-                );
-
-                ConfirmedTransaction {
-                    transaction_hash: tx.transaction_hash,
-                    transaction_id: tx.transaction_id,
-                    receipt: tx.receipt,
-                    receipt_serialized: receipt_data,
+        let mut successes = Vec::new();
+        let mut block_assessments: std::collections::HashMap<
+            _,
+            Result<FinalityAssessment, engine_core::error::EngineError>,
+        > = std::collections::HashMap::new();
+        for tx in confirmed_txs {
+            use alloy::consensus::TxReceipt;
+            if tx
+                .receipt
+                .inner
+                .status_or_post_state()
+                .as_eip658()
+                .is_none()
+            {
+                continue;
+            }
+            let expected_hash = tx.receipt.transaction_hash;
+            let key = (tx.receipt.block_number, tx.receipt.block_hash);
+            let assessment = if let Some(cached) = block_assessments.get(&key) {
+                cached.clone()
+            } else {
+                let assessment =
+                    crate::finality::assess(&self.chain, expected_hash, &tx.receipt).await;
+                block_assessments.insert(key, assessment.clone());
+                assessment
+            };
+            let finality = match assessment {
+                Ok(FinalityAssessment::Finalized(evidence)) => evidence,
+                Ok(_) => continue, // Inclusion/orphaning never authorizes cleanup or a new nonce.
+                Err(error) => {
+                    tracing::warn!(transaction_id = tx.transaction_id, error = %error,
+                        "Finality unavailable; preserving submitted identity");
+                    continue;
                 }
-            })
-            .collect();
+            };
+            let (kind, id) = if tx.transaction_id == crate::eoa::store::NO_OP_TRANSACTION_ID {
+                (
+                    "eoa_noop",
+                    format!(
+                        "__engine_noop:{}:{:#x}:{}",
+                        self.chain_id, self.eoa, tx.nonce
+                    ),
+                )
+            } else {
+                ("eoa", tx.transaction_id.clone())
+            };
+            crate::finality::record_evm_terminal(
+                kind,
+                &id,
+                self.chain_id,
+                expected_hash,
+                tx.receipt.status(),
+                &finality,
+            )
+            .await
+            .map_err(crate::recovery::eoa_error)?;
+            let receipt_data = match serde_json::to_string(&tx.receipt) {
+                Ok(receipt_json) => receipt_json,
+                Err(e) => {
+                    tracing::warn!(
+                        transaction_id = ?tx.transaction_id,
+                        hash = tx.transaction_hash,
+                        error = ?e,
+                        "Failed to serialize receipt as JSON, using debug format"
+                    );
+                    format!("{:?}", tx.receipt)
+                }
+            };
+
+            tracing::info!(
+                transaction_id = ?tx.transaction_id,
+                nonce = tx.nonce,
+                hash = tx.transaction_hash,
+                "Transaction confirmed"
+            );
+
+            successes.push(ConfirmedTransaction {
+                transaction_hash: tx.transaction_hash,
+                transaction_id: tx.transaction_id,
+                receipt: tx.receipt,
+                receipt_serialized: receipt_data,
+                finality,
+            });
+        }
 
         let report = self
             .store
@@ -313,6 +418,25 @@ impl<C: Chain> EoaExecutorWorker<C> {
             .store
             .get_submitted_transactions_for_nonce(expected_nonce)
             .await?;
+
+        // A consumed nonce may briefly disagree with a receipt backend. Never
+        // replace a canonically included attempt just because latest-count is stale.
+        for attempt in &submitted_transactions {
+            let Ok(hash) = attempt.transaction_hash.parse::<B256>() else {
+                return Ok(false);
+            };
+            match self.chain.provider().get_transaction_receipt(hash).await {
+                Ok(Some(receipt)) => {
+                    match assess_receipt_finality(&self.chain, hash, &receipt).await {
+                        Ok(FinalityAssessment::Orphaned) => {}
+                        Ok(FinalityAssessment::Pending { canonical: false }) => {}
+                        _ => return Ok(false),
+                    }
+                }
+                Ok(None) => {}
+                Err(_) => return Ok(false),
+            }
+        }
 
         // Load transaction data for all IDs and find the newest one
         let newest_transaction = if submitted_transactions.len() == 1 {
@@ -483,6 +607,7 @@ impl<C: Chain> EoaExecutorWorker<C> {
                 .await?;
 
             // Send the bumped transaction
+            crate::recovery::before_eoa(&newest_transaction_data.user_request, &bumped_tx).await?;
             let tx_envelope = bumped_tx.into();
             match self.chain.provider().send_tx_envelope(tx_envelope).await {
                 Ok(_) => {

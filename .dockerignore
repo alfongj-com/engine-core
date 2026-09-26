@@ -9,3 +9,7 @@ target/
 **/.env.*
 **/target/
 docs/baselines/
+data/
+server/data/
+**/*.sqlite*
+**/recovery-export*.json

@@ -1,10 +1,10 @@
 # Solana recovery model
 
-**Status:** finite-state safety checks of a manually written abstraction, not a proof of the Rust binary. Reviewed against runtime source at `224b638`; checked September 26, 2026. No chain transactions or paid RPC calls are needed.
+**Status:** finite-state safety checks of a manually written abstraction, not a proof of the Rust binary. Initial review used runtime `224b638`; the source map and correspondence below were refreshed after the finality/journal runtime freeze on September 26, 2026. Earlier evidence reports retain their original source scope. No chain transactions or paid RPC calls are needed for the model.
 
 ## Contract
 
-For one admitted intent, persist its signed transaction before dispatch, retain it while the outcome is unknown, and retransmit only that identity. A missing history response—even after blockhash expiry—is insufficient evidence to sign again. A terminal queue commit needs the current queue lease and execution evidence at the requested commitment.
+For one admitted intent, persist its signed transaction before dispatch, retain it while the outcome is unknown, and retransmit only that identity. A missing history response—even after blockhash expiry—is insufficient evidence to sign again. A terminal queue commit needs the current queue lease and finalized execution evidence. The runtime now enforces that floor even for an existing request that selected confirmed.
 
 [`SolanaRecovery.tla`](tla/SolanaRecovery.tla) checks that contract for the **finalized** commitment. Each identity represents the entire immutable signed wire message, signature, and associated blockhash. Two identities deliberately permit the model to discover two executions of the same business intent.
 
@@ -37,7 +37,7 @@ Successful send acknowledgments and lost/error responses are collapsed into the 
 | `TerminalCommitOwned` | Every terminal commit held the current queue token at its linearization point. |
 | `UnresolvedEvidenceRetained` | Once dispatched, an active/unknown admission retains its signed attempt, including cancellation and parking. |
 | `TerminalHasChainProof` | Terminal success/failure agrees with the separately modeled finalized ledger outcome. |
-| `TerminalCleanupAtomic` | Terminal admission, queue result, and attempt removal move together. |
+| `TerminalCleanupAtomic` | Redis terminal admission, queue result, and attempt removal move together. The separate authoritative terminal proof is committed before this Redis transition, and can survive an interrupted cleanup. |
 
 `TypeOK` additionally checks bounded counters and state domains. These are safety properties; there is **no eventual-completion claim**. Permanent RPC failure, absent history, exhausted allowance, or cancellation can prevent progress indefinitely.
 
@@ -74,10 +74,10 @@ Substitute each configuration above; negative runs must identify its exact expec
 
 ## Assumptions and exclusions
 
-- One admitted intent within its retention window. Admission fingerprint correctness, multiple intents/wallets, tombstone expiry and resubmission after retention are not modeled. Terminal tombstones are not permanent idempotency guarantees.
+- One admitted intent within its retention window. Admission fingerprint correctness, multiple intents/wallets, tombstone expiry and resubmission after retention are not modeled. Redis tombstones alone are not permanent idempotency guarantees; the current server's independent journal retains identity beyond those TTLs.
 - Redis linearizes the fenced storage operations and atomic terminal transaction, and acknowledged recovery data survives. Partial Redis command errors, failover rollback, disk durability and replication are outside the positive model. The data-loss configuration demonstrates why that matters.
 - A canonical ledger executes a signed identity at most once and does not execute it for the first time after expiry. The model verifies Engine does not create a second identity; it does not prove validator consensus or cryptography. Transaction failures may charge fees but do not count as successful business effects here.
-- Honest terminal evidence and stable finality. History absence and stale below-commitment observations are already allowed; fabricated success/failure and reversal of finalized history are separate negative boundaries. `processed`/`confirmed` deployments require a different finality contract.
+- Honest terminal evidence and stable finality. History absence and stale below-commitment observations are already allowed; fabricated success/failure and reversal of finalized history are separate negative boundaries. The current durable executor cannot opt down to processed/confirmed terminal completion.
 - Blockhash validity is a Boolean abstraction of `height > lastValidBlockHeight`; numerical off-by-one behavior remains covered by Rust tests. Serialization, signatures, malformed RPC responses, matching receipt fields and legacy records are validated by implementation tests, not expanded byte-for-byte in this state space. Durable nonce transactions are outside this model.
 - Timeouts, two-second send spacing, lease durations, transport limits and performance are abstracted. Lease generations are unique within the finite run. Operator resume includes acquiring/releasing an available storage lock as one atomic action; it does not claim an exposed recovery API exists.
 
@@ -88,6 +88,7 @@ The existing [Redis/RPC recovery tests](../executors/src/solana_executor/recover
 - `persisted_before_send_crash_recovers_identical_bytes_without_signing`, `lost_response_and_already_processed_reconcile_one_signature`, and `response_timeout_retains_the_exact_attempt_for_recovery`.
 - `landing_between_first_status_and_finalized_expiry_never_rebuilds`, `expiry_boundary_rebroadcasts_then_parks_without_re_signing`, `previously_visible_then_stale_absence_never_re_signs_or_erases_evidence`, and `visible_unfinalized_status_and_history_errors_cannot_trigger_replacement`.
 - `reconciliation_budget_parks_without_rpc_and_explicit_resume_preserves_identity`, `lost_storage_lock_cannot_replace_or_resume_attempt`, and `terminal_cleanup_waits_for_commit_and_cancellation_retains_unknown_attempt`.
+- `confirmed_revert_then_reorg_cannot_terminate_or_resign_a_legacy_confirmed_job`, `finalized_error_requires_matching_receipt_and_nonstale_context`, and `terminal_journal_resumes_cleanup_and_missing_projection_never_signs` connect the stronger completion floor and authoritative journal to recovery. The [DisasterRecovery model](disaster-recovery.md) separately models that authority; composition with this Redis protocol is not mechanically proved.
 
 [Admission tests](../server/src/solana_admission_tests.rs) cover cancellation/pruning, fingerprint fences and aborted terminal commits. [The local validator harness](../scripts/local_solana_recovery.py) and [public Devnet crash report](../docs/baselines/testnet-solana-crash.json) exercise actual signed-byte recovery. Those tests supplement the abstraction; they do not establish a machine-checked refinement from Rust to TLA+.
 

@@ -173,7 +173,7 @@ impl ExecutionRouter {
         rpc_credentials: RpcCredentials,
         signing_credential: SigningCredential,
         pregenerated_nonce: Option<U256>,
-    ) -> Result<(), TwmqError> {
+    ) -> Result<(), EngineError> {
         let job_data = ExternalBundlerSendJobData {
             transaction_id: base_execution_options.idempotency_key.clone(),
             chain_id: base_execution_options.chain_id,
@@ -183,6 +183,13 @@ impl ExecutionRouter {
             webhook_options: webhook_options.to_owned(),
             rpc_credentials,
             pregenerated_nonce,
+        };
+
+        let Some(job_data) =
+            crate::recovery::reserve("erc4337", &base_execution_options.idempotency_key, job_data)
+                .await?
+        else {
+            return Ok(());
         };
 
         // Register transaction in registry first
@@ -221,7 +228,7 @@ impl ExecutionRouter {
         transactions: &[InnerTransaction],
         rpc_credentials: RpcCredentials,
         signing_credential: SigningCredential,
-    ) -> Result<(), TwmqError> {
+    ) -> Result<(), EngineError> {
         let job_data = Eip7702SendJobData {
             transaction_id: base_execution_options.idempotency_key.clone(),
             chain_id: base_execution_options.chain_id,
@@ -237,6 +244,13 @@ impl ExecutionRouter {
                 rand::random(),
                 rand::random(),
             ])),
+        };
+
+        let Some(job_data) =
+            crate::recovery::reserve("eip7702", &base_execution_options.idempotency_key, job_data)
+                .await?
+        else {
+            return Ok(());
         };
 
         // Register transaction in registry first
@@ -325,6 +339,16 @@ impl ExecutionRouter {
             transaction_type_data: transaction.transaction_type_data.clone(),
         };
 
+        let Some(eoa_transaction_request) = crate::recovery::reserve(
+            "eoa",
+            &base_execution_options.idempotency_key,
+            eoa_transaction_request,
+        )
+        .await?
+        else {
+            return Ok(());
+        };
+
         let eoa_executor_store = EoaExecutorStore::new(
             self.redis.clone(),
             self.namespace.clone(),
@@ -400,6 +424,14 @@ impl ExecutionRouter {
         if request.execution_options.max_blockhash_retries != 0 {
             return Err(EngineError::ValidationError { message: "Automatic Solana resubmission with a new blockhash is unsupported: maxBlockhashRetries must be 0; ambiguous expired transactions require operator reconciliation".into() });
         }
+        if !matches!(
+            request.execution_options.commitment,
+            engine_core::execution_options::solana::CommitmentLevel::Finalized
+        ) {
+            return Err(EngineError::ValidationError {
+                message: "Durable Solana execution requires finalized commitment; confirmed inclusion is provisional".into(),
+            });
+        }
         let transaction_id = request.idempotency_key.clone();
         let chain_id = request.execution_options.chain_id;
         let signer_address = request.execution_options.signer_address;
@@ -447,14 +479,18 @@ impl ExecutionRouter {
             webhook_options: request.webhook_options,
         };
 
-        crate::solana_admission::admit(
-            &self.redis,
-            &self.solana_executor_queue,
-            &self.transaction_registry,
-            &self.solana_executor_queue.handler.storage,
-            &job_data,
-        )
-        .await?;
+        if let Some(job_data) =
+            crate::recovery::reserve("solana", &transaction_id, job_data).await?
+        {
+            crate::solana_admission::admit(
+                &self.redis,
+                &self.solana_executor_queue,
+                &self.transaction_registry,
+                &self.solana_executor_queue.handler.storage,
+                &job_data,
+            )
+            .await?;
+        }
 
         tracing::debug!(
             transaction_id = %transaction_id,

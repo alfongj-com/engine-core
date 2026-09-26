@@ -9,6 +9,9 @@ coverage
 !.env.example
 __pycache__/
 *.pyc
+# Independent recovery authority and credential-bearing private exports
+/server/data/
+/data/
 # Formal verification downloads, solver outputs and local state graphs
 /formal/.cache/
 /formal/results/

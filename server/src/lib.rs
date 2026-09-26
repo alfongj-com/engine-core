@@ -3,6 +3,7 @@ pub mod config;
 pub mod execution_router;
 pub mod http;
 pub mod queue;
+mod recovery;
 mod solana_admission;
 
 // Re-export commonly used types for integration tests and external usage

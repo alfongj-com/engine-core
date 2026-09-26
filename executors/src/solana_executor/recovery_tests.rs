@@ -876,3 +876,191 @@ async fn malformed_status_count_and_disagreeing_error_fields_do_not_succeed() {
     lock.release().await.unwrap();
     f.cleanup().await;
 }
+
+#[tokio::test]
+#[ignore = "requires disposable Redis in TEST_REDIS_URL"]
+async fn confirmed_revert_then_reorg_cannot_terminate_or_resign_a_legacy_confirmed_job() {
+    let mut f = Fixture::new().await;
+    f.data.transaction.execution_options.commitment = ExecutionCommitment::Confirmed;
+    let lock = f.seed().await;
+    let mut provisional_revert = finalized();
+    provisional_revert["confirmations"] = json!(1);
+    provisional_revert["confirmationStatus"] = json!("confirmed");
+    provisional_revert["err"] = json!("AccountNotFound");
+    provisional_revert["status"] = json!({"Err":"AccountNotFound"});
+    let (rpc, seen, server) = rpc(vec![
+        status(provisional_revert),
+        status(Value::Null),
+        reply("getBlockHeight", json!(101)),
+        status(Value::Null),
+        status(finalized()),
+        details(&f.attempt),
+    ])
+    .await;
+    assert!(matches!(
+        assert_nack(f.handler.execute_transaction(&rpc, &f.data, &lock, 1).await),
+        SolanaExecutorError::NotYetConfirmed { .. }
+    ));
+    assert!(matches!(
+        assert_nack(f.handler.execute_transaction(&rpc, &f.data, &lock, 2).await),
+        SolanaExecutorError::RecoveryRequired { .. }
+    ));
+    let outcome = f.handler.execute_transaction(&rpc, &f.data, &lock, 3).await;
+    assert!(
+        outcome.is_ok(),
+        "finalized matching success should reconcile the original attempt"
+    );
+    finish(server).await;
+    let requests = seen.lock().unwrap();
+    assert_eq!(requests.len(), 6);
+    assert_eq!(requests[5]["params"][1]["commitment"], "finalized");
+    assert!(
+        !requests
+            .iter()
+            .any(|request| request["method"] == "sendTransaction")
+    );
+    drop(requests);
+    assert_eq!(
+        f.stored(&lock).await.signed_transaction,
+        f.attempt.signed_transaction
+    );
+    lock.release().await.unwrap();
+    f.cleanup().await;
+}
+
+#[tokio::test]
+#[ignore = "requires disposable Redis in TEST_REDIS_URL"]
+async fn finalized_error_requires_matching_receipt_and_nonstale_context() {
+    let f = Fixture::new().await;
+    let lock = f.seed().await;
+    let mut failure = finalized();
+    failure["err"] = json!("AccountNotFound");
+    failure["status"] = json!({"Err":"AccountNotFound"});
+    let mut stale = status(failure.clone());
+    stale.body.as_mut().unwrap()["result"]["context"]["slot"] = json!(1);
+    let mut failed_details = details(&f.attempt);
+    failed_details.body.as_mut().unwrap()["result"]["meta"]["err"] = json!("AccountNotFound");
+    failed_details.body.as_mut().unwrap()["result"]["meta"]["status"] =
+        json!({"Err":"AccountNotFound"});
+    let (rpc, seen, server) = rpc(vec![
+        stale,
+        status(failure.clone()),
+        details(&f.attempt),
+        status(failure),
+        failed_details,
+    ])
+    .await;
+    for n in 1..=2 {
+        assert!(matches!(
+            assert_nack(f.handler.execute_transaction(&rpc, &f.data, &lock, n).await),
+            SolanaExecutorError::InternalError { .. }
+        ));
+    }
+    assert!(matches!(
+        f.handler.execute_transaction(&rpc, &f.data, &lock, 3).await,
+        Err(JobError::Fail(
+            SolanaExecutorError::TransactionFailed { .. }
+        ))
+    ));
+    finish(server).await;
+    assert_eq!(seen.lock().unwrap().len(), 5);
+    assert!(
+        f.handler.storage.has_attempt("intent").await.unwrap(),
+        "cleanup still waits for queue commit"
+    );
+    lock.release().await.unwrap();
+    f.cleanup().await;
+}
+
+#[tokio::test]
+#[ignore = "requires disposable Redis in TEST_REDIS_URL; journal isolated in subprocess"]
+async fn terminal_journal_resumes_cleanup_and_missing_projection_never_signs() {
+    const CHILD: &str = "ENGINE_TEST_SOLANA_TERMINAL_CHILD";
+    if std::env::var_os(CHILD).is_none() {
+        let output = std::process::Command::new(std::env::current_exe().unwrap())
+            .args(["--exact", "solana_executor::worker::recovery_tests::terminal_journal_resumes_cleanup_and_missing_projection_never_signs", "--ignored", "--nocapture"])
+            .env(CHILD, "1").output().unwrap();
+        assert!(
+            output.status.success(),
+            "child failed: {} {}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+        return;
+    }
+    use engine_core::recovery::{self, RecoveryJournal};
+    let mut f = Fixture::new().await;
+    f.attempt.reconciliation_checks = MAX_RECONCILIATION_CHECKS;
+    let lock = f.seed().await;
+    let directory =
+        std::env::temp_dir().join(format!("solana-finality-journal-{}", uuid::Uuid::new_v4()));
+    let path = directory.join("ledger.sqlite");
+    let journal_namespace = format!("{}_journal", f.namespace.replace(':', "_"));
+    let namespace = Some(journal_namespace.clone());
+    let url = std::env::var("TEST_REDIS_URL").unwrap();
+    RecoveryJournal::initialize(&path, &url, namespace.clone())
+        .await
+        .unwrap();
+    let journal = RecoveryJournal::open(&path, &url, namespace).await.unwrap();
+    let payload = serde_json::to_value(&f.data).unwrap();
+    let fingerprint = recovery::admission_fingerprint("solana", &payload).unwrap();
+    journal
+        .reserve_admission("solana", "intent", &fingerprint, payload.clone())
+        .await
+        .unwrap();
+    let key = format!(
+        "solana:{}:{}",
+        f.data.transaction.execution_options.chain_id.as_str(),
+        f.attempt.signature
+    );
+    journal
+        .before_broadcast(
+            "solana",
+            "intent",
+            &key,
+            json!({"signature":f.attempt.signature.to_string(),"attempt":f.attempt}),
+        )
+        .await
+        .unwrap();
+    journal.record_terminal("solana", "intent", json!({"chainId":f.data.transaction.execution_options.chain_id.as_str(),
+        "signature":f.attempt.signature.to_string(),"slot":90,"commitment":"finalized","outcome":"success"})).await.unwrap();
+    crate::finality::validate_reconciliation_payload(&journal, "solana", "intent", &payload)
+        .await
+        .unwrap();
+    recovery::install(journal.clone()).unwrap();
+    let (rpc, seen, server) = rpc(vec![status(finalized()), details(&f.attempt)]).await;
+    assert!(
+        f.handler
+            .execute_transaction(&rpc, &f.data, &lock, 1000)
+            .await
+            .is_ok(),
+        "terminal proof must not block projection cleanup even after old polling budget"
+    );
+    finish(server).await;
+    // Simulate partial Redis loss with the current external journal marker.
+    let _: () = f
+        .redis
+        .clone()
+        .del(format!("{}:solana_tx_attempt:intent", f.namespace))
+        .await
+        .unwrap();
+    assert!(matches!(
+        assert_nack(f.handler.execute_transaction(&rpc, &f.data, &lock, 1).await),
+        SolanaExecutorError::InternalError { .. }
+    ));
+    assert_eq!(
+        seen.lock().unwrap().len(),
+        2,
+        "no new blockhash, fee query, signature or broadcast is allowed"
+    );
+    lock.release().await.unwrap();
+    let _: () = f
+        .redis
+        .clone()
+        .del(format!("{journal_namespace}:recovery:checkpoint"))
+        .await
+        .unwrap();
+    f.cleanup().await;
+    // The process owns the installed journal until exit; unlink only its disposable files.
+    std::fs::remove_dir_all(directory).unwrap();
+}

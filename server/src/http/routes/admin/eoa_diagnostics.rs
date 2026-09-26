@@ -461,6 +461,11 @@ pub async fn schedule_manual_reset(
     State(state): State<EngineServerState>,
     Path(eoa_chain): Path<String>,
 ) -> Result<impl IntoResponse, ApiEngineError> {
+    if engine_core::recovery::global().is_some() {
+        return Err(ApiEngineError(engine_core::error::EngineError::ValidationError {
+            message: "Online nonce reset is disabled with recovery protection; reconcile retained attempts through the offline recovery tool".into(),
+        }));
+    }
     let (eoa, chain_id) = parse_eoa_chain(&eoa_chain)?;
     let eoa_address: Address = eoa.parse().map_err(|_| {
         ApiEngineError(engine_core::error::EngineError::ValidationError {

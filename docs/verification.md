@@ -2,6 +2,40 @@
 
 Updated: **2026-09-26**. Upstream baseline: `b6b7a0bbdc737b3a2b09611305b71b1bf6aba6e8`. Each round below records its own source, tool versions and limitations. Earlier public-chain and benchmark results do not automatically qualify later runtime changes.
 
+## Finality and independent Redis recovery — 2026-09-26
+
+Added [chain-specific finality rules](design/finality-and-recovery.md), retained
+attempts through provisional reorgs, and an [independent recovery journal](design/redis-disaster-recovery.md).
+The server now requires that journal before starting workers. Redis loss and
+rollback halt writes; offline recovery preserves immutable identities and
+quarantines attempted transactions. This is a single-host protocol, with no
+claim of recovery from loss or rollback of the authoritative journal itself.
+
+The full local workspace suite, Engine/recovery CLI builds, 49 executor Redis
+tests, 10 ignored journal fault tests, four admission tests, two HTTP tests and
+26 queue regressions pass. The journal's pure unit test also runs in the workspace
+suite. Active-poll tests cover checkpoint rollback with empty EOA candidates,
+missing AA/7702 receipts, provisional receipts and changed policy.
+
+Real Anvil scenarios cover successful and reverted pre-finality reorgs: Engine
+retains the original nonce through restart and automatically replaces the orphaned
+attempt, then waits for the configured depth before terminal success/failure.
+Separate full-process tests delete Redis or restore a stale RDB, reject unsafe
+restart/reattach, quarantine the uncertain ID, and execute a fresh intent once.
+The existing intact-AOF and 12-transaction Solana lost-response scenarios also pass.
+
+New bounded TLA+ models separate finality observations from chain state and the
+independent journal from Redis/network state. The full manifest now has 52 cases,
+including required counterexamples for unsupported assumptions. Source hashes
+are reviewed change guards, not a proof that Rust refines the models.
+
+No paid RPC calls were used. This round does not qualify public provider finality,
+host power-loss durability, multi-host execution or production throughput. The
+new synchronous journal adds storage work; earlier queue/admission benchmark
+numbers do not measure it. EIP-7702 transaction attribution remains dependent on
+the bundler. Exact source, scenario reports and hosted results are recorded in
+the finality/recovery evidence added with this round.
+
 ## Formal verification — 2026-09-26
 
 [TLA+ protocol models and production Rust fee proofs](../formal/README.md) add

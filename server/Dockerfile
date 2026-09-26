@@ -21,7 +21,7 @@ RUN cargo chef cook --locked --release --recipe-path recipe.json
 
 # Build application
 COPY . .
-RUN cargo build --locked --release --bin thirdweb-engine
+RUN cargo build --locked --release -p thirdweb-engine --bins
 
 # Runtime stage
 FROM debian:trixie-slim AS runtime
@@ -35,12 +35,14 @@ WORKDIR /app
 
 # Copy the binary
 COPY --from=builder /app/target/release/thirdweb-engine /app/thirdweb-engine
+COPY --from=builder /app/target/release/engine-recovery /app/engine-recovery
 
 # Copy configuration files
 COPY --from=builder /app/server/configuration /app/configuration
 
 # Create non-root user for security
 RUN useradd -r -s /bin/false appuser
+RUN mkdir -p /app/data && chmod 0700 /app/data
 RUN chown -R appuser:appuser /app
 USER appuser
 

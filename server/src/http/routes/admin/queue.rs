@@ -46,6 +46,11 @@ pub async fn empty_queue_idempotency_set(
     State(state): State<EngineServerState>,
     Path(queue_name): Path<String>,
 ) -> Result<impl IntoResponse, ApiEngineError> {
+    if engine_core::recovery::global().is_some() && queue_name != "webhook" {
+        return Err(ApiEngineError(engine_core::error::EngineError::ValidationError {
+            message: "Transaction deduplication cannot be cleared while recovery protection is active; reconcile through the offline recovery tool".into(),
+        }));
+    }
     tracing::info!(
         queue_name = queue_name,
         "Processing empty idempotency set request"

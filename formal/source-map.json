@@ -2,9 +2,92 @@
   "purpose": "Source-change review guard, not a refinement proof. See formal/README.md.",
   "files": [
     {
-      "path": "executors/src/eoa/store/atomic.rs",
-      "sha256": "760418a3a0a0f4b0a2421b2831910bbda4830e6ef59fcc9fa8c412d42635138d",
+      "path": "core/src/chain.rs",
+      "sha256": "39ede93dd327f7218ed406f9b7cb04d99b84a4311a6fc4b73274d13c6b4f59f6",
       "models": [
+        "Finality"
+      ]
+    },
+    {
+      "path": "core/src/execution_options/solana.rs",
+      "sha256": "5b72692caf397365c1a07003258624122994cec0335461753a424a7d01ed1bea",
+      "models": [
+        "SolanaRecovery"
+      ]
+    },
+    {
+      "path": "core/src/finality.rs",
+      "sha256": "892b6e7b20ba114754f8699aad8be902fb4c38d0764456d82da6eb4646adefc6",
+      "models": [
+        "Finality"
+      ]
+    },
+    {
+      "path": "core/src/finality_tests.rs",
+      "sha256": "c0c42972e2b6249187a3ba0a1aa30a28839f92f0e0f3a25103869bcc920ef640",
+      "models": [
+        "Finality"
+      ]
+    },
+    {
+      "path": "core/src/lib.rs",
+      "sha256": "5a036570fc7c8af0e118636955ed625a5dc00fa69da230ae317dc999484189cb",
+      "models": [
+        "DisasterRecovery",
+        "Finality"
+      ]
+    },
+    {
+      "path": "core/src/recovery.rs",
+      "sha256": "c8e1498cf6e6b1c0172e322981d29bec2d2cf5dd9f884433909194e2bae1c4e1",
+      "models": [
+        "DisasterRecovery",
+        "Finality"
+      ]
+    },
+    {
+      "path": "core/src/recovery/tests.rs",
+      "sha256": "78040f47d6fb78a7b3abd49701824cbf788a497c957521fa2ca44b92db907894",
+      "models": [
+        "DisasterRecovery",
+        "Finality"
+      ]
+    },
+    {
+      "path": "executors/src/eip7702_executor/confirm.rs",
+      "sha256": "3fc95bd4c806b941fe6c45216a0ab1a73cdf92933831f51d471aa30ac201010d",
+      "models": [
+        "DisasterRecovery",
+        "Finality"
+      ]
+    },
+    {
+      "path": "executors/src/eip7702_executor/send.rs",
+      "sha256": "8a44dd14aadfc7bec71fa5fee77cfb678e9be8ce6781a1bb9ee28f8f73dfbf98",
+      "models": [
+        "DisasterRecovery"
+      ]
+    },
+    {
+      "path": "executors/src/eoa/events.rs",
+      "sha256": "2b5f8935c11c10b8df177acfa12b6c85ebc49a9ddafcaddfd278ee07f6330b39",
+      "models": [
+        "Finality"
+      ]
+    },
+    {
+      "path": "executors/src/eoa/store/atomic.rs",
+      "sha256": "a11032213733a56e7f8f3801be036f23f3157b309adcfde0b88e2386af550899",
+      "models": [
+        "DisasterRecovery",
+        "EoaRecovery"
+      ]
+    },
+    {
+      "path": "executors/src/eoa/store/borrowed.rs",
+      "sha256": "4225a6f4adf9cafb393a12d325ef34812b8021f00d1208cb8347bb6f08c5dcf4",
+      "models": [
+        "DisasterRecovery",
         "EoaRecovery"
       ]
     },
@@ -16,6 +99,15 @@
       ]
     },
     {
+      "path": "executors/src/eoa/store/mod.rs",
+      "sha256": "c0d950a56a8efe2630f43084d8a3b98c12b7256cab3bc749a27b582ee13215c9",
+      "models": [
+        "DisasterRecovery",
+        "EoaRecovery",
+        "Finality"
+      ]
+    },
+    {
       "path": "executors/src/eoa/store/pending.rs",
       "sha256": "56792080135b85e1f8c3ec60e7a61c38370e730d1fc873b31329bc6a705a49de",
       "models": [
@@ -24,28 +116,33 @@
     },
     {
       "path": "executors/src/eoa/store/submitted.rs",
-      "sha256": "12b1c3c77fa54c842b1e5cbfb7c79fad1423cd1e7497969a5185111b1258bff1",
+      "sha256": "451f7d1fd047354cc9bad9bc3f5d89e8aa69b317bb9b6517f5ebde617ac1057a",
       "models": [
-        "EoaRecovery"
+        "EoaRecovery",
+        "Finality"
       ]
     },
     {
       "path": "executors/src/eoa/store/tests.rs",
-      "sha256": "b35b05b6b2d39a233b4794990fe9a9b965e41dd2a3bf581af73e062743e1ad57",
+      "sha256": "71c8a7c7cda5c2a0b612202ddfa4701ae1c128d7a5ad7d57b6ffed1b59eaea12",
       "models": [
-        "EoaRecovery"
+        "DisasterRecovery",
+        "EoaRecovery",
+        "Finality"
       ]
     },
     {
       "path": "executors/src/eoa/worker/confirm.rs",
-      "sha256": "cfd655060732ba8f449fc71900ac6d7fa10c27f86bf1aaaa5385822cce4ee664",
+      "sha256": "d912459f8b486bb88786cdc16edecf19af8bbb36cb47ec71fdf212aae6482661",
       "models": [
-        "EoaRecovery"
+        "DisasterRecovery",
+        "EoaRecovery",
+        "Finality"
       ]
     },
     {
       "path": "executors/src/eoa/worker/error.rs",
-      "sha256": "d8644732a52741eb8c2662a47ca6cd85aed609739cb302dfa1ed5f63f84a5b43",
+      "sha256": "bb63c9009dbc8bd1b149fb2a5e89614e124f74d90449e0f4f014a6ce322cb3c6",
       "models": [
         "EoaRecovery"
       ]
@@ -59,36 +156,102 @@
     },
     {
       "path": "executors/src/eoa/worker/fee_tests.rs",
-      "sha256": "7b3f5ef09f0a7e018f4a16340ac2216c26198a9bee7122cc8b0eccce9f085c57",
+      "sha256": "7114fa6e969a445a28b459ecaaa43b5e23ce057b5153c415925fbead584a3e2a",
       "models": [
         "Fees"
       ]
     },
     {
-      "path": "executors/src/eoa/worker/receipt_tests.rs",
-      "sha256": "fc18edb515669c18e41b4fd77f3ca33540c0bfd148e0d1196b726ba9d00993ae",
+      "path": "executors/src/eoa/worker/mod.rs",
+      "sha256": "e85e5b45a8b817785eded06cfb5a0463ef8e3370911ceed488c10cca1c2fe18c",
       "models": [
-        "EoaRecovery"
+        "DisasterRecovery",
+        "EoaRecovery",
+        "Finality"
+      ]
+    },
+    {
+      "path": "executors/src/eoa/worker/receipt_tests.rs",
+      "sha256": "6f837ddbdf5e7682c26fed1d05c0e96a51b3b85ab4cb22625db11966ea1c2aa8",
+      "models": [
+        "EoaRecovery",
+        "Finality"
       ]
     },
     {
       "path": "executors/src/eoa/worker/send.rs",
-      "sha256": "1a2bacea500b068b33ad1f9ae7992e4ae2bb480b2639bcdf76ba74994b795013",
+      "sha256": "5dcc22f34c066bb6b2c7a0342482b4ba29edf910b3bab9c2db6ec6f91b919542",
       "models": [
+        "DisasterRecovery",
         "EoaRecovery"
       ]
     },
     {
       "path": "executors/src/eoa/worker/transaction.rs",
-      "sha256": "afe219da473fa87f568f363a477fbf212047510662088c1342766e2ae07b4a55",
+      "sha256": "182bc7fbd96755eef9b2a86240434af7be7066084901bc41fc54055dd7a2336d",
       "models": [
+        "DisasterRecovery",
         "Fees"
       ]
     },
     {
-      "path": "executors/src/solana_executor/recovery_tests.rs",
-      "sha256": "53166ed881039cc2119b7335560f296ccf4165ed6c7e9c42c0c41a5759dc6dd1",
+      "path": "executors/src/external_bundler/confirm.rs",
+      "sha256": "337b95ee870955347589ec43a57723d09a5c22e8c8f82626898f4aa5be690789",
       "models": [
+        "DisasterRecovery",
+        "Finality"
+      ]
+    },
+    {
+      "path": "executors/src/external_bundler/send.rs",
+      "sha256": "ebf5930e009aadb254e00637b80375c437248b609961db755d8b5ee2c77f1cfd",
+      "models": [
+        "DisasterRecovery"
+      ]
+    },
+    {
+      "path": "executors/src/finality.rs",
+      "sha256": "4049b5906a37084dea012012fd1ddd5ffda9f589686b741511f46715c62b5ccd",
+      "models": [
+        "DisasterRecovery",
+        "Finality"
+      ]
+    },
+    {
+      "path": "executors/src/finality_tests.rs",
+      "sha256": "d79894e94bfb4e2b1e484e9ef17f9338a33b9043ad0ec4451970300b5de4b05e",
+      "models": [
+        "DisasterRecovery",
+        "Finality"
+      ]
+    },
+    {
+      "path": "executors/src/lib.rs",
+      "sha256": "fbf2ed1cfed128c415dda41d134222f1f7052888eb009ac49e67a6ae88cf7c7a",
+      "models": [
+        "DisasterRecovery",
+        "Finality"
+      ]
+    },
+    {
+      "path": "executors/src/recovery.rs",
+      "sha256": "d3e3ad21f1009edaba80a53adbd82b2e9b9e6c481dda700940ffd168f3994117",
+      "models": [
+        "DisasterRecovery"
+      ]
+    },
+    {
+      "path": "executors/src/recovery_tests.rs",
+      "sha256": "b224d75a939db083411e1ece9d5962b2d35d30981178fa09af0c1baba2f5c5ee",
+      "models": [
+        "DisasterRecovery"
+      ]
+    },
+    {
+      "path": "executors/src/solana_executor/recovery_tests.rs",
+      "sha256": "c83e4ea36fc4683037888eaadca644d2f9c951ea2a6ef68b11b79647bd74d297",
+      "models": [
+        "DisasterRecovery",
         "SolanaRecovery"
       ]
     },
@@ -96,15 +259,126 @@
       "path": "executors/src/solana_executor/storage.rs",
       "sha256": "933b657e7751ae63593626c3615d08f249afda3a492464029b21f73e861b1b42",
       "models": [
-        "SolanaRecovery",
-        "Admission"
+        "Admission",
+        "SolanaRecovery"
       ]
     },
     {
       "path": "executors/src/solana_executor/worker.rs",
-      "sha256": "97076caeb22f2e09b5b560cac2e850e0ab956b50f5ec6a2e3579dbf2b8b3ff11",
+      "sha256": "e59150ec2f6c7d3bd45d447738f0f01472c57105746a0a6000f40fdaba82d6e8",
       "models": [
+        "DisasterRecovery",
         "SolanaRecovery"
+      ]
+    },
+    {
+      "path": "scripts/local_eoa_recovery.py",
+      "sha256": "8490e994b9f71da17da632dc8735fdbb0a4bdcfd66242c397d91d701caa90554",
+      "models": [
+        "DisasterRecovery",
+        "EoaRecovery"
+      ]
+    },
+    {
+      "path": "scripts/local_eoa_reorg.py",
+      "sha256": "7e4abc6a383a9baed86c5bcee43bb9dfc5dfbbeeac2fee533a333b71c3df0597",
+      "models": [
+        "Finality"
+      ]
+    },
+    {
+      "path": "scripts/local_redis_disaster.py",
+      "sha256": "bff0e95aea7ab0039d9d5ba395d9627858020d95ddb5be991882db7d8b77901b",
+      "models": [
+        "DisasterRecovery"
+      ]
+    },
+    {
+      "path": "scripts/local_solana_recovery.py",
+      "sha256": "8d62cb1ca1ef6e891e04347767f9adb282d0d19dfe76bdf92e0319e7592cdb14",
+      "models": [
+        "DisasterRecovery",
+        "SolanaRecovery"
+      ]
+    },
+    {
+      "path": "server/src/bin/engine-recovery.rs",
+      "sha256": "61e8e345bd4c987188138d98166f1193cb3880e09c19985770eaf638cfceeaa7",
+      "models": [
+        "DisasterRecovery"
+      ]
+    },
+    {
+      "path": "server/src/chains.rs",
+      "sha256": "cd1390acf370862aaf6dd86e4cb0e2bd4bc796fdf8fbbb728ec6f9a0eab45e82",
+      "models": [
+        "Finality"
+      ]
+    },
+    {
+      "path": "server/src/chains_tests.rs",
+      "sha256": "bccf7a5677b71e4dfa0f0dc3a961515dcde99bcb852f75508a6bf8a45fde1c01",
+      "models": [
+        "Finality"
+      ]
+    },
+    {
+      "path": "server/src/config.rs",
+      "sha256": "dd31fe79fd4a45cf450867d769c84da894f5e914717337856dd633661f409bfb",
+      "models": [
+        "DisasterRecovery",
+        "Finality"
+      ]
+    },
+    {
+      "path": "server/src/execution_router/mod.rs",
+      "sha256": "ecb7097c7a725c6cbaf936c3fd90e1b9947a5c060f1ff080739a7040f931cf9e",
+      "models": [
+        "Admission",
+        "DisasterRecovery",
+        "SolanaRecovery"
+      ]
+    },
+    {
+      "path": "server/src/http/routes/admin/eoa_diagnostics.rs",
+      "sha256": "137fedd8cf297c9718e8cf5084ca49f3e9db11081fd56b6dea805deba527603e",
+      "models": [
+        "DisasterRecovery"
+      ]
+    },
+    {
+      "path": "server/src/http/routes/admin/queue.rs",
+      "sha256": "35e9ec4bd381d4225e3fbb80d6fa76614b16e6cab2b6c52160b35112dce88678",
+      "models": [
+        "DisasterRecovery"
+      ]
+    },
+    {
+      "path": "server/src/http/server.rs",
+      "sha256": "abe6b4408a5dcbccb14a1fece747d25763f83403d1ba5a2fc091686543c425ce",
+      "models": [
+        "DisasterRecovery"
+      ]
+    },
+    {
+      "path": "server/src/lib.rs",
+      "sha256": "00c234516c2327a6d2e6ba2453e03f674708c7b23a2b4c017a2175cfc171e02f",
+      "models": [
+        "DisasterRecovery"
+      ]
+    },
+    {
+      "path": "server/src/main.rs",
+      "sha256": "d08c3d3ae7d5f273c9ebda178fa2d0e5763bacdc9f0331628399db396391f7fd",
+      "models": [
+        "DisasterRecovery"
+      ]
+    },
+    {
+      "path": "server/src/recovery.rs",
+      "sha256": "058b4f056e0fd5b2eb1aadbc95afc771f853c2bab53cc16a43fef70bddd05b60",
+      "models": [
+        "DisasterRecovery"
       ]
     },
     {
@@ -119,6 +393,15 @@
       "sha256": "fa03eb98e10f61c064463b0bd843c17d62a9851b6317fd08a0fe445ec13f046f",
       "models": [
         "Admission"
+      ]
+    },
+    {
+      "path": "server/tests/api_safety.rs",
+      "sha256": "149f94e02494501d6c8ee9cb5ea70eb6d5d6e31dba0cf440beb08203b0037689",
+      "models": [
+        "Admission",
+        "DisasterRecovery",
+        "SolanaRecovery"
       ]
     },
     {
@@ -156,5 +439,10 @@
         "QueueLease"
       ]
     }
-  ]
+  ],
+  "review": {
+    "date": "2026-09-26",
+    "base_commit": "3e96e14ae0d37be794f7b787423f936d168a1d90",
+    "scope": "Reviewed frozen working-tree bytes listed below; finite models are separate abstractions, not a proved composition or Rust/SQLite/Redis/filesystem refinement. The base commit alone does not identify the modified runtime."
+  }
 }

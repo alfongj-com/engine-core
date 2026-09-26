@@ -252,6 +252,12 @@ where
         job: &BorrowedJob<Self::JobData>,
     ) -> JobResult<Self::Output, Self::ErrorData> {
         let job_data = &job.job.data;
+        crate::recovery::validate("erc4337", &job_data.transaction_id, job_data)
+            .await
+            .map_err(|error| ExternalBundlerSendError::InternalError {
+                message: error.to_string(),
+            })
+            .map_err_nack(Some(Duration::from_secs(10)), RequeuePosition::Last)?;
         let nonce = job_data.pregenerated_nonce.ok_or_else(|| ExternalBundlerSendError::InternalError {
             message: "Job has no persisted UserOperation nonce. Reconcile its on-chain outcome before resubmitting; legacy jobs cannot be retried safely.".to_string(),
         }).map_err_fail()?;
@@ -476,6 +482,32 @@ where
         tracing::debug!("User operation built");
 
         // 9. Send to Bundler
+        if let Some(journal) = engine_core::recovery::global() {
+            let replay_key = format!(
+                "erc4337:{}:{:#x}:{:#x}:{}",
+                job_data.chain_id,
+                job_data
+                    .execution_options
+                    .entrypoint_details
+                    .entrypoint_address,
+                smart_account.address,
+                nonce
+            );
+            journal
+                .before_broadcast(
+                    "erc4337",
+                    &job_data.transaction_id,
+                    &replay_key,
+                    serde_json::json!({"chainId":job_data.chain_id, "sender":smart_account.address,
+                    "entrypoint":job_data.execution_options.entrypoint_details.entrypoint_address,
+                    "nonce":nonce, "userOperation":signed_user_op}),
+                )
+                .await
+                .map_err(|error| ExternalBundlerSendError::InternalError {
+                    message: error.to_string(),
+                })
+                .map_err_nack(Some(Duration::from_secs(10)), RequeuePosition::Last)?;
+        }
         let user_op_hash = chain
             .bundler_client()
             .send_user_op(
@@ -554,6 +586,13 @@ where
                 account_address: success_data.result.account_address,
                 chain_id: job.job.data.chain_id,
                 nonce: success_data.result.nonce,
+                entrypoint_address: Some(
+                    job.job
+                        .data
+                        .execution_options
+                        .entrypoint_details
+                        .entrypoint_address,
+                ),
                 user_op_hash: success_data.result.user_op_hash.clone(),
                 transaction_id: job.job.data.transaction_id.clone(),
                 webhook_options: job.job.data.webhook_options().clone(),

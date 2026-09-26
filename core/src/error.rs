@@ -352,6 +352,10 @@ pub enum EngineError {
     #[schema(title = "Engine Internal Error")]
     #[error("Internal error: {message}")]
     InternalError { message: String },
+
+    #[schema(title = "Recovery Required")]
+    #[error("Recovery required: {message}")]
+    RecoveryRequired { message: String },
 }
 
 #[derive(thiserror::Error, Debug, Serialize, Clone, Deserialize, utoipa::ToSchema)]

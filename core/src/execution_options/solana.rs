@@ -74,9 +74,9 @@ pub struct SolanaExecutionOptions {
     #[serde(default)]
     pub max_blockhash_retries: u32,
 
-    /// Commitment level for transaction confirmation
-    /// Options: "processed", "confirmed", "finalized"
-    /// Default: "finalized"
+    /// Commitment preference for non-durable operations ("confirmed" or "finalized").
+    /// Durable execution always waits for finalized status and a matching receipt,
+    /// including for legacy queued requests that selected "confirmed".
     #[serde(default)]
     pub commitment: CommitmentLevel,
 

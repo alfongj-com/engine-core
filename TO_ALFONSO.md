@@ -2,32 +2,32 @@
 
 Updated September 26, 2026.
 
-## Formal verification
+## Finality and Redis recovery
 
-Added **TLA+ models for queue ownership, EVM/Solana recovery and request retention**, plus **Kani proofs of the production Rust fee arithmetic**. The fee proofs cover all possible integer inputs within their stated assumptions. Protocol models explore finite combinations of workers, crashes, retries and observations.
+Implemented on `production-hardening`, in [draft PR #1](https://github.com/alfongj-com/engine-core/pull/1).
 
-**35 model checks pass; five Rust proofs pass all 116 checks.** The model suite includes required counterexamples for broken behavior and unsupported guarantees.
+- **Final outcomes wait for finality.** Ethereum, Arbitrum and OP Stack/Base use the RPC's finalized checkpoint by default. Solana requires finalized status. Reverted execution follows the same rule. Explicit EVM block-depth policies remain probabilistic.
+- **Reorgs retain the original intent.** Provisional receipts cannot release a nonce or create a fresh Solana signature. Conflicting retained EVM checkpoints halt that chain when detected during active polling.
+- **Redis is no longer the only recovery record.** An independent SQLite journal stores admitted requests, signed attempts, replay bindings and final outcomes. Lost or stale Redis data closes writes. Offline recovery uses a new namespace and quarantines uncertain transactions.
 
-All four Linux CI workflows pass at `1c0bb18`: formal verification, the full Rust/Redis/HTTP/local-chain suite, queue tests and queue coverage. [Exact results](formal/evidence/README.md).
+### Evidence
 
-The models also exposed queue cancellation and pruning bugs. Those fixes have real Redis regressions, including checks that fail against the previous behavior.
+Local process tests pass for Redis deletion, stale-backup restore, intact AOF restart, and successful/reverted EVM reorg recovery. Engine automatically recovered each orphaned transaction at its original nonce; no duplicate effects occurred. The local Solana validator test passed 12 lost-response/crash recoveries with identical signed bytes and 12 finalized effects.
 
-The correctness fix makes history pruning slower: about **123–127 µs per entry** at default retention in a focused Redis benchmark. A reference index is the next performance improvement; earlier throughput numbers did not exercise pruning. [Measurement and limits](formal/evidence/pruning/README.md).
+The final full-suite and CI results will be recorded in [verification](docs/verification.md). The new TLA+ models cover finality and independent-journal recovery, including expected counterexamples for dishonest RPCs, finalized rollback and loss of the authoritative journal. These are bounded models, not a proof of the entire service.
 
-Start with [formal verification](formal/README.md), [coverage and remaining gaps](formal/coverage.md), and the [verification record](docs/verification.md). These checks do **not** prove the entire service correct. Reorg/finality handling, storage loss and dishonest providers have explicit counterexamples; they remain production work.
+### Operating limits
 
-## Existing qualification
+This version supports **one active Engine process on one host**, with the journal on a persistent local volume independent of Redis. Startup requires explicit journal initialization. Existing deployments need an offline cutover; old Redis jobs cannot establish missing journal evidence. [Setup and recovery commands](docs/design/redis-disaster-recovery.md).
 
-The [fork](https://github.com/alfongj-com/engine-core/tree/production-hardening) builds without Thirdweb Vault. Everything remains in [draft PR #1](https://github.com/alfongj-com/engine-core/pull/1).
+Quarantined transactions need reconciliation; recovery does not automatically resend them. Losing or rolling back both the journal and Redis remains unsupported. EIP-7702 still relies on the bundler's transaction attribution. Production endpoints, KMS and deployed smart-account contracts remain unqualified.
 
-The earlier public round verified **332 transactions on five test networks, with zero duplicate effects**, including crash recovery. Short bursts reached offered rates of 10/s on Ethereum, 20/s on the EVM L2s and 5/s on Solana. They do not establish sustained capacity. [Receipts and results](docs/baselines/public-transactions.md).
+No paid RPC calls were used. The earlier campaign estimate remains **$2.22**; its gateway is stopped and its $12 ceiling remains. Rotate the shared dRPC key when the campaign ends.
 
-This formal-verification work used **no paid RPC calls**. Estimated campaign spending remains **$2.22**, the gateway is stopped, and the persistent $12 ceiling remains. Rotate the shared dRPC key when the campaign ends.
+## Next work
 
-## Next production work
+1. Add evidence-based operator reconciliation for quarantined transactions and a shared durable authority before multi-host deployment.
+2. Measure sustained throughput with the journal, finality backlog and production storage enabled; earlier Redis-only throughput figures do not apply to this path. Add intake/storage limits and production spending controls.
+3. Integrate AWS KMS through credential references and independently verify smart-account execution, especially EIP-7702.
 
-1. Define and implement chain-specific finality/reorg handling and Redis disaster recovery.
-2. Add operator recovery, production spending limits and sustained multi-wallet tests.
-3. Integrate AWS KMS through credential references and qualify deployed smart-account contracts.
-
-**Nothing is needed from you for these checks.** Before deployment, we still need target traffic, AWS/KMS setup, hosting/Redis choice and resolution of the upstream repository's missing license. Follow the [migration guide](docs/replay-migration.md) before upgrading retained queues.
+Nothing is needed from you to finish these checks. Deployment still needs target traffic, hosting/storage and KMS choices, endpoint qualification, and resolution of the upstream repository's missing license.

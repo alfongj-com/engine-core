@@ -284,6 +284,17 @@ impl SafeRedisTransaction for CleanSubmittedTransactions<'_> {
         conn: &mut MultiplexedConnection,
         store: &EoaExecutorStore,
     ) -> Result<Self::ValidationData, TransactionStoreError> {
+        for confirmed in self.confirmed_transactions {
+            if confirmed.receipt.transaction_hash.to_string() != confirmed.transaction_hash
+                || confirmed.receipt.block_number != Some(confirmed.finality.block_number)
+                || confirmed.receipt.block_hash != Some(confirmed.finality.block_hash)
+                || confirmed.finality.checkpoint_number < confirmed.finality.block_number
+            {
+                return Err(TransactionStoreError::InternalError {
+                    message: "Finality evidence does not match the receipt".into(),
+                });
+            }
+        }
         // Fetch transactions up to the latest confirmed nonce for replacements
         // This includes both transactions that should be confirmed and those that might be replaced
         let max_count = std::cmp::max(
@@ -320,6 +331,7 @@ impl SafeRedisTransaction for CleanSubmittedTransactions<'_> {
         let confirmed_ids: BTreeMap<&str, ConfirmedTransaction> = self
             .confirmed_transactions
             .iter()
+            .filter(|tx| tx.transaction_id != NO_OP_TRANSACTION_ID)
             .map(|tx| (tx.transaction_id.as_str(), tx.clone()))
             .collect();
 
@@ -357,7 +369,9 @@ impl SafeRedisTransaction for CleanSubmittedTransactions<'_> {
                 match (tx.transaction_id(), confirmed_ids.get(tx.transaction_id())) {
                     // if the transaction id is noop, we don't do anything but still clean up
                     (NO_OP_TRANSACTION_ID, _) => {
-                        report.noop_count += 1;
+                        if nonces_with_receipts.contains(&tx_nonce) {
+                            report.noop_count += 1;
+                        }
                     }
 
                     // A mined revert consumes the nonce just like success. It is
@@ -382,6 +396,13 @@ impl SafeRedisTransaction for CleanSubmittedTransactions<'_> {
                             &data_key_name,
                             "receipt",
                             confirmed_tx.receipt_serialized.clone(),
+                        );
+
+                        pipeline.hset(
+                            &data_key_name,
+                            "finality",
+                            serde_json::to_string(&confirmed_tx.finality)
+                                .expect("finality evidence contains only serializable primitives"),
                         );
 
                         // Add TTL expiration
@@ -503,9 +524,12 @@ impl SafeRedisTransaction for CleanSubmittedTransactions<'_> {
                 (_, Some(_)) => {
                     self.remove_transaction_from_redis_submitted_zset(pipeline, tx);
                 }
-                // NOOP transactions: always clean up
+                // A NOOP is still a signed nonce reservation. Counts alone are
+                // provisional; retain it until its nonce has final receipt proof.
                 (NO_OP_TRANSACTION_ID, _) => {
-                    self.remove_transaction_from_redis_submitted_zset(pipeline, tx);
+                    if nonces_with_receipts.contains(&tx_nonce) {
+                        self.remove_transaction_from_redis_submitted_zset(pipeline, tx);
+                    }
                 }
                 // SCENARIO 2: Transaction ID was NOT confirmed - only clean up if within latest confirmed nonce range
                 _ => {
@@ -625,6 +649,7 @@ impl SafeRedisTransaction for CleanAndGetRecycledNonces<'_> {
             self.keys.last_transaction_count_key_name(),
             self.keys.optimistic_transaction_count_key_name(),
             self.keys.submitted_transactions_zset_name(),
+            self.keys.borrowed_transactions_hashmap_name(),
         ]
     }
 
@@ -638,7 +663,22 @@ impl SafeRedisTransaction for CleanAndGetRecycledNonces<'_> {
             .zrange_withscores(self.keys.submitted_transactions_zset_name(), -1, -1)
             .await?;
 
-        let highest_submitted_nonce = highest_submitted.first().map(|tx| tx.1);
+        let borrowed: Vec<String> = conn
+            .hvals(self.keys.borrowed_transactions_hashmap_name())
+            .await?;
+        let highest_borrowed = borrowed
+            .iter()
+            .map(|value| {
+                serde_json::from_str::<crate::eoa::store::BorrowedTransactionData>(value)
+                    .map(|tx| alloy::consensus::Transaction::nonce(&tx.signed_transaction))
+            })
+            .collect::<Result<Vec<_>, _>>()?
+            .into_iter()
+            .max();
+        let highest_submitted_nonce = highest_submitted
+            .first()
+            .map(|tx| tx.1)
+            .max(highest_borrowed);
 
         let highest_submitted_nonce = match highest_submitted_nonce {
             Some(nonce) => Some(nonce),

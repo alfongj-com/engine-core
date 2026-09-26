@@ -18,6 +18,8 @@ use crate::webhook::{WebhookJobHandler, queue_webhook_envelopes};
 #[derive(Debug, Clone)]
 pub enum SubmissionResultType {
     Success,
+    /// Restore submitted projection without asserting a new network send.
+    Reconcile,
     Nack(EoaExecutorWorkerError),
     Fail(EoaExecutorWorkerError),
 }
@@ -122,17 +124,19 @@ impl SafeRedisTransaction for ProcessBorrowedTransactions<'_> {
             // pipeline.lpush(&attempts_key, &attempt_json);
 
             match &result.result {
-                SubmissionResultType::Success => {
+                SubmissionResultType::Success | SubmissionResultType::Reconcile => {
                     // Record metrics: transaction queued to sent
                     let sent_timestamp = current_timestamp_ms();
                     let queued_to_sent_duration =
                         calculate_duration_seconds(result.transaction.queued_at, sent_timestamp);
                     // Record metrics using the clean EoaMetrics abstraction
-                    self.eoa_metrics.record_transaction_sent(
-                        self.keys.eoa,
-                        self.keys.chain_id,
-                        queued_to_sent_duration,
-                    );
+                    if matches!(result.result, SubmissionResultType::Success) {
+                        self.eoa_metrics.record_transaction_sent(
+                            self.keys.eoa,
+                            self.keys.chain_id,
+                            queued_to_sent_duration,
+                        );
+                    }
 
                     // Add to submitted zset
                     let (submitted_tx_redis_string, nonce) =
@@ -162,7 +166,9 @@ impl SafeRedisTransaction for ProcessBorrowedTransactions<'_> {
 
                     let envelope =
                         event.send_attempt_success_envelope(result.transaction.data.clone());
-                    if !result.transaction.user_request.webhook_options.is_empty() {
+                    if matches!(result.result, SubmissionResultType::Success)
+                        && !result.transaction.user_request.webhook_options.is_empty()
+                    {
                         let mut tx_context = self
                             .webhook_queue
                             .transaction_context_from_pipeline(pipeline);

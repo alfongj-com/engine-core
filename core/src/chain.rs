@@ -12,6 +12,7 @@ use std::{collections::BTreeMap, fmt, time::Duration};
 use thirdweb_core::auth::ThirdwebAuth;
 
 use crate::error::EngineError;
+use crate::finality::FinalityPolicy;
 
 #[derive(Clone, Serialize, Deserialize)]
 pub enum RpcCredentials {
@@ -51,6 +52,9 @@ pub struct RpcEndpointConfig {
     /// preconfirmation, rather than ordinary mempool acceptance.
     #[serde(default)]
     pub use_pending_for_preconfirmation: bool,
+    /// Terminal evidence policy. Unsupported finalized tags never fall back.
+    #[serde(default)]
+    pub finality: FinalityPolicy,
 }
 
 impl fmt::Debug for RpcEndpointConfig {
@@ -58,6 +62,7 @@ impl fmt::Debug for RpcEndpointConfig {
         f.debug_struct("RpcEndpointConfig")
             .field("url", &"[redacted]")
             .field("headers", &"[redacted]")
+            .field("finality", &self.finality)
             .finish()
     }
 }
@@ -107,6 +112,9 @@ impl RpcEndpointConfig {
 
 pub trait Chain: Send + Sync {
     fn chain_id(&self) -> u64;
+    fn finality_policy(&self) -> FinalityPolicy {
+        FinalityPolicy::Finalized
+    }
     fn use_pending_for_preconfirmation(&self) -> bool {
         false
     }
@@ -139,6 +147,7 @@ pub struct ThirdwebChain {
 
     chain_id: u64,
     use_pending_for_preconfirmation: bool,
+    finality: FinalityPolicy,
     rpc_url: Url,
     bundler_url: Url,
     paymaster_url: Url,
@@ -153,6 +162,10 @@ pub struct ThirdwebChain {
 }
 
 impl Chain for ThirdwebChain {
+    fn finality_policy(&self) -> FinalityPolicy {
+        self.finality
+    }
+
     fn use_pending_for_preconfirmation(&self) -> bool {
         self.use_pending_for_preconfirmation
     }
@@ -228,6 +241,8 @@ impl ThirdwebChainConfig<'_> {
                 message: "RPC timeouts must be positive".into(),
             });
         }
+        let finality = endpoint.map(|value| value.finality).unwrap_or_default();
+        finality.validate(self.chain_id)?;
         // Special handling for chain ID 31337 (local anvil)
         let (rpc_url, bundler_url, paymaster_url) = if self.chain_id == 31337 {
             // For local anvil, use localhost URLs
@@ -342,6 +357,7 @@ impl ThirdwebChainConfig<'_> {
             transport_builder: transport_builder.clone(),
 
             chain_id: self.chain_id,
+            finality,
             use_pending_for_preconfirmation: endpoint
                 .is_some_and(|endpoint| endpoint.use_pending_for_preconfirmation),
             rpc_url: rpc_url.clone(),

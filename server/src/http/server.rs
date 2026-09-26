@@ -1,6 +1,13 @@
 use std::sync::Arc;
 
-use axum::{Json, Router, routing::get};
+use axum::{
+    Json, Router,
+    extract::Request,
+    http::{Method, StatusCode},
+    middleware::{self, Next},
+    response::{IntoResponse, Response},
+    routing::get,
+};
 use engine_core::{
     credentials::KmsClientCache,
     signer::{EoaSigner, SolanaSigner},
@@ -109,8 +116,9 @@ impl EngineServer {
         let router = router
             .merge(Scalar::with_url("/reference", api).custom_html(SCALAR_HTML))
             // health endpoint with 200 and JSON response {}
-            .route("/health", get(|| async { Json(json!({"status": "ok"})) }))
-            .route("/api.json", get(|| async { Json(api_clone) }));
+            .route("/health", get(recovery_health))
+            .route("/api.json", get(|| async { Json(api_clone) }))
+            .layer(middleware::from_fn(recovery_gate));
 
         Self {
             handle: None,
@@ -170,5 +178,30 @@ impl EngineServer {
         }
 
         Ok(())
+    }
+}
+
+async fn recovery_gate(request: Request, next: Next) -> Response {
+    if !matches!(
+        *request.method(),
+        Method::GET | Method::HEAD | Method::OPTIONS
+    ) {
+        if engine_core::recovery::ensure_healthy().await.is_err() {
+            return (StatusCode::SERVICE_UNAVAILABLE, Json(json!({
+                "error": "RECOVERY_REQUIRED", "message": "Transaction writes and signing are paused; inspect the recovery journal"
+            }))).into_response();
+        }
+    }
+    next.run(request).await
+}
+
+async fn recovery_health() -> Response {
+    match engine_core::recovery::ensure_healthy().await {
+        Ok(()) => Json(json!({"status": "ok"})).into_response(),
+        Err(_) => (
+            StatusCode::SERVICE_UNAVAILABLE,
+            Json(json!({"status": "recovery_required"})),
+        )
+            .into_response(),
     }
 }

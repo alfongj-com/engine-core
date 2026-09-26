@@ -222,6 +222,7 @@ async fn receipt_outage_cannot_requeue_an_already_broadcast_intent() {
         transaction_id: winner.transaction_id,
         receipt: serde_json::from_value(winner_receipt.clone()).unwrap(),
         receipt_serialized: winner_receipt.to_string(),
+        finality: fixture_finality(),
     };
     let report = owner
         .clean_submitted_transactions(
@@ -256,6 +257,7 @@ async fn receipt_outage_cannot_requeue_an_already_broadcast_intent() {
                 transaction_id: preconfirmed_zero.transaction_id,
                 receipt: serde_json::from_value(zero_receipt.clone()).unwrap(),
                 receipt_serialized: zero_receipt.to_string(),
+                finality: fixture_finality(),
             }],
             TransactionCounts {
                 latest: 0,
@@ -377,4 +379,35 @@ async fn legacy_fee_request_survives_storage_and_signed_wire_encoding() {
     if !keys.is_empty() {
         let _: () = conn.del(keys).await.unwrap();
     }
+}
+
+fn fixture_finality() -> engine_core::finality::FinalityEvidence {
+    engine_core::finality::FinalityEvidence {
+        block_number: 10,
+        block_hash: alloy::primitives::B256::repeat_byte(9),
+        checkpoint_number: 12,
+        checkpoint_hash: alloy::primitives::B256::repeat_byte(12),
+        policy: engine_core::finality::FinalityPolicy::Finalized,
+    }
+}
+
+#[test]
+fn bounded_receipt_poll_rotates_past_permanently_missing_early_hashes() {
+    let waiting: Vec<_> = (0..700)
+        .map(|nonce| submitted(&format!("intent-{nonce}"), 1, nonce))
+        .collect();
+    let mut offset = 0;
+    let mut seen = std::collections::HashSet::new();
+    for _ in 0..3 {
+        let (batch, next) = receipt_poll_batch(waiting.clone(), offset);
+        assert_eq!(batch.len(), MAX_RECEIPTS_PER_POLL);
+        seen.extend(batch.into_iter().map(|transaction| transaction.nonce));
+        offset = next;
+    }
+    assert_eq!(seen.len(), 700);
+    assert!(receipt_poll_batch(Vec::new(), 123).0.is_empty());
+    assert_eq!(
+        receipt_poll_batch(vec![submitted("only", 1, 999)], usize::MAX).0[0].nonce,
+        999
+    );
 }
