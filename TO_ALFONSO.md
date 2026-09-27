@@ -1,6 +1,6 @@
 # To Alfonso
 
-Updated September 27, 2026, 12:47 a.m. EDT. [Draft PR #1](https://github.com/alfongj-com/engine-core/pull/1).
+Updated September 27, 2026. Campaign in progress. [Draft PR #1](https://github.com/alfongj-com/engine-core/pull/1).
 
 ## Current measurements
 
@@ -21,12 +21,25 @@ The new Arbitrum dispatcher improved the adjacent comparison from 43.84 to 48.84
 - The earlier Nitro disk-full incident recovered all 14,400 accepted intents after disk repair.
 - A later EVM55 harness run stopped after a host-wide disk-allocation spike. It discarded its disposable node before receipt verification: 3,274 signed intents are preserved, but 1,980 final outcomes remain unverified. This failed run is not repaired or promoted. The harness now preserves interrupted Anvil history and uses sustained disk consumption for long forecasts. [Incident](docs/baselines/capacity-2026-09-26/evm55-projection-incident/README.md).
 
-The latest 147 integrated harness tests passed, including actual Ethereum/OP snapshot restores. Engine's transaction code and durability settings were unchanged by these harness fixes. The prior Rust, queue, coverage and formal CI checks are green; the finite models do not prove the whole service.
+The latest 155 integrated harness tests passed, including actual Ethereum/OP snapshot restores and cleanup with unresolved transactions. Engine's transaction code and durability settings were unchanged by these harness fixes. The prior Rust, queue, coverage and formal CI checks are green; the finite models do not prove the whole service.
 
 ## Shared results and current work
 
-With the campaign’s 10-second lease, shared 235 TPS accepted and eventually reconciled 55,742 transactions but rejected 28,858 requests. Shared 47 TPS (12/12/10/13 per chain) accepted and verified all 16,920 with no Engine/RPC errors. Neither is an indefinite capacity guarantee.
+With the production 600-second queue lease:
 
-The overload exposed a benchmark configuration mismatch: production defaults to a 600-second queue lease. The harness is corrected and the same shared high/low pair is being repeated with that setting. Then come the planned high-load fault tests. Original reports and failures remain visible; the new runs cannot retroactively qualify them.
+- **235 TPS offered:** 55,105 transactions accepted and reconciled; 29,495 rejected. Late completion was 41.19 TPS combined, with EVM queues growing while Solana progressed.
+- **47 TPS offered (12/12/10/13):** all 16,920 accepted and verified. Late completion was 47.11 TPS, with no Engine/RPC errors. This is a clean finite control, not an indefinite capacity guarantee.
+
+The earlier 10-second benchmark lease caused ownership churn under overload. Correcting it removed those errors but did not solve the shared throughput limit. [Corrected shared evidence](docs/baselines/capacity-2026-09-26/shared-lease600-1c3eec03d6cb/README.md).
+
+Completed fault/control tests:
+
+| Test | Independently verified result |
+| --- | --- |
+| Lost accepted RPC responses, four chains | All 14,100 completed after 80 lost responses; original signed identities preserved. |
+| Mixed transactions, three chains | All 11,100 completed, including 2,400 expected EVM reverts with no persisted storage changes. |
+| Mixed transactions with send-RPC errors | All 11,100 completed after 60 pre-forward errors; no extra upstream sends or new identities. |
+
+All three drained completely. Their 100 duplicate-ID probes covered EVM only and produced no new sends. The OP reorg/pool-loss run has closed with a passing oracle; independent review is underway. Next are final rate brackets, then process and Redis failure tests. The harness now preserves owned EVM history for ordinary unresolved outcomes as well as unexpected interruptions.
 
 No paid RPC credits were used. Public RPC quotas, L1 settlement, KMS and production hardware remain unqualified. Nothing is needed from you to continue. Publishing the additional CI workflow steps still requires GitHub workflow permission. Rotate the shared dRPC key when the campaign ends.

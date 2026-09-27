@@ -1,0 +1,162 @@
+{
+  "schema": "independent-shared-closed-report-review-v1",
+  "reviewed_at_utc": "2026-09-27T05:03:00.715635+00:00",
+  "scope": "Captured per-ID evidence audited against original private journal, no fresh RPC or lifecycle action.",
+  "report": "capacity-shared-lease600-high-1c3eec03d6cb.json",
+  "report_sha256": "e06162b8f7dde1c72a44ea57642a7d444e0d4d743da9cb26519e09d18fa9edec",
+  "observations_sha256": "31c01c160874323c57b22f97b184a352295ccfbe174f982913272dafc14c3714",
+  "queue_lease_seconds": 600,
+  "offered": 84600,
+  "admitted_audited": 55105,
+  "missing_offers": 29495,
+  "accepted_custody": "pass",
+  "all_offered_workload": "incomplete",
+  "per_chain": {
+    "evm12": {
+      "offered": 21600,
+      "audited_admitted_ids": 15421,
+      "http429": 6179,
+      "balances": {
+        "canonical_executions": 15421,
+        "nonce_delta": 15421,
+        "receipt_fees": 4036661761650000,
+        "recipient_delta": 15421,
+        "sender_spent": 4036661761665421
+      },
+      "nonce_range": [
+        0,
+        15420
+      ],
+      "same_wire_extra_forwards": 1,
+      "max_forwards_per_wire": 2,
+      "rpc_method_errors": {
+        "eth_sendRawTransaction": 1
+      }
+    },
+    "evm2": {
+      "offered": 21600,
+      "audited_admitted_ids": 12907,
+      "http429": 8693,
+      "balances": {
+        "canonical_executions": 12907,
+        "nonce_delta": 12907,
+        "receipt_fees": 95017840464141000,
+        "recipient_delta": 12907,
+        "sender_spent": 95017840464153907
+      },
+      "nonce_range": [
+        0,
+        12906
+      ],
+      "same_wire_extra_forwards": 1,
+      "max_forwards_per_wire": 2,
+      "rpc_method_errors": {
+        "eth_sendRawTransaction": 1
+      }
+    },
+    "nitro": {
+      "offered": 18000,
+      "audited_admitted_ids": 11689,
+      "http429": 6311,
+      "balances": {
+        "canonical_executions": 11689,
+        "nonce_delta": 11689,
+        "receipt_fees": 1109179700000000000,
+        "recipient_delta": 11689,
+        "sender_spent": 1109179700000011689
+      },
+      "nonce_range": [
+        155867,
+        167555
+      ],
+      "same_wire_extra_forwards": 0,
+      "max_forwards_per_wire": 1,
+      "rpc_method_errors": {}
+    },
+    "solana": {
+      "offered": 23400,
+      "audited_admitted_ids": 15088,
+      "http429": 8312,
+      "balances": {
+        "payer_spent": 90528000,
+        "receipt_fees": 75440000,
+        "recipient_delta": 15088000
+      },
+      "nonce_range": null,
+      "same_wire_extra_forwards": 0,
+      "max_forwards_per_wire": 1,
+      "rpc_method_errors": {}
+    }
+  },
+  "identity_checks": "Exact unique admission/wire hash/digest/replay/intent and original terminal-proof identity/receipt-block-or-slot equality for every ID; each one attempt and one canonical finalized execution. Balances/fees reconcile.",
+  "http_membership_limit": "Normal report records aggregate HTTP status counts; exact admitted/journal/proxy/observed union and offered complement verified, not a separately retained per-ID HTTP status map.",
+  "drain": {
+    "client_pending": 0,
+    "http_inflight": 0,
+    "journal_unresolved": 0,
+    "node_pending": 0,
+    "redis_active": 0,
+    "redis_borrowed": 0,
+    "redis_delayed": 0,
+    "redis_pending": 0,
+    "redis_submitted": 0
+  },
+  "owned_children_checked": [
+    {
+      "name": "redis",
+      "pid": 57703,
+      "alive": false
+    },
+    {
+      "name": "evm12",
+      "pid": 57707,
+      "alive": false
+    },
+    {
+      "name": "evm2",
+      "pid": 57708,
+      "alive": false
+    },
+    {
+      "name": "solana",
+      "pid": 57713,
+      "alive": false
+    },
+    {
+      "name": "engine",
+      "pid": 57754,
+      "alive": false
+    },
+    {
+      "name": "drain-hook-nitro",
+      "pid": 57980,
+      "alive": false
+    }
+  ],
+  "healthy_provider_probes": 628,
+  "allowed_resource_checks": 16,
+  "engine_log_levels": {
+    "WARN": 5
+  },
+  "engine_log_messages": {
+    "Nonce sync required, store was uninitialized, updating cached transaction count with current chain transaction count": 3,
+    "Gap replay response unknown; preserving wire and cooldown": 2
+  },
+  "gap_replay_rejections": [
+    {
+      "timestamp": "2026-09-27T04:48:51.101794Z",
+      "nonce": 221,
+      "category": "nonce_too_low"
+    },
+    {
+      "timestamp": "2026-09-27T04:48:51.319552Z",
+      "nonce": 250,
+      "category": "nonce_too_low"
+    }
+  ],
+  "engine_error_count": 0,
+  "observed_lost_lease_errors": 0,
+  "harness_errors": [],
+  "capacity_qualification": "rejected; original29495missingoffers remain in84600denominator",
+  "prior_failed_evm55": "Original1980unknowns unaffected."
+}

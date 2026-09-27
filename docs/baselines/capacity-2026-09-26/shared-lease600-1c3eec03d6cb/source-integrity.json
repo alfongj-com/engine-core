@@ -1,0 +1,217 @@
+{
+  "frozen_source_checks": {
+    "/Users/alfongj/Code/engine-core/docs/baselines/capacity-2026-09-26/supervisor-v4/runner.py": "0f2d64f85a240d932ba1f558a2c105445a76370d04287967dea877e55eebb040",
+    "/Users/alfongj/Code/engine-core/scripts/capacity_assess.py": "8ebafce9dd136ce0a0179ab04292836d8c0d685fe9b31f9b455e45665e4b6865",
+    "/Users/alfongj/Code/engine-core/scripts/capacity_campaign.py": "6f95c10f8515dd107634422dfb626c232a7dab6c4c969aaa7459101a658c720b",
+    "/Users/alfongj/Code/engine-core/scripts/capacity_faults.py": "59e2bc4d90bceca2682c27e35c5871ee538d4878a795f990fa90e6d5f90afa13",
+    "/Users/alfongj/Code/engine-core/scripts/capacity_resource_guard.py": "bbfda4901f49600cdff9fa907b73e2a64e8df534496083994fd4717c55979bb6",
+    "/private/tmp/engine-capacity-dispatch-plan/shared-lease600-jobs.json": "5645f3b5d5cf891eac2a340244239507aeecdbaa427ef17d4771ac380e88c667",
+    "/tmp/engine-capacity-tools/nitro-drain-hook-v2.py": "424a26e6b8539d251df61396372951270ab1193372733099f94ec66608f92bd1"
+  },
+  "sources": {
+    "archive-source.py": {
+      "lossless_gzip": false,
+      "source": "/tmp/engine-shared-lease600-archive.py",
+      "source_bytes": 16698,
+      "source_sha256": "456677402bb0e63db43935ca4072a2713780c205279deff7626d583e63cb198b"
+    },
+    "backlog-descriptor-source.py": {
+      "lossless_gzip": false,
+      "source": "/tmp/capacity-posthoc/describe_backlogs.py",
+      "source_bytes": 3667,
+      "source_sha256": "50ef35bd4a3226521e58f2a3115e30fd546d678e18a4648781f38bdc0bb37f83"
+    },
+    "compact-extractor-source.py": {
+      "lossless_gzip": false,
+      "source": "/tmp/engine-capacity-report-extract/extract.py",
+      "source_bytes": 12034,
+      "source_sha256": "c4c65f157513c50f7171aef0646b60630f58f7f81b8bc828d53ed44760b5033f"
+    },
+    "frozen-jobs.json": {
+      "lossless_gzip": false,
+      "source": "/tmp/engine-capacity-dispatch-plan/shared-lease600-jobs.json",
+      "source_bytes": 927,
+      "source_sha256": "5645f3b5d5cf891eac2a340244239507aeecdbaa427ef17d4771ac380e88c667"
+    },
+    "high/analyst-backlog-description.json": {
+      "lossless_gzip": false,
+      "source": "/private/tmp/capacity-shared-lease600-high-1c3eec03d6cb-backlog-description.json",
+      "source_bytes": 26895,
+      "source_sha256": "90992d0bb0f03fe4db5decc7e8fd96f1e4e141952361ca34e6e271f4fc4e74c1"
+    },
+    "high/analyst-compact.json": {
+      "lossless_gzip": false,
+      "source": "/private/tmp/capacity-shared-lease600-high-1c3eec03d6cb-compact.json",
+      "source_bytes": 2617997,
+      "source_sha256": "bea758a6bdb0cffa7fe328f4778df3024500674ac69c750a013b25ddc4e8423b"
+    },
+    "high/analyst-summary.json": {
+      "lossless_gzip": false,
+      "source": "/private/tmp/capacity-shared-lease600-high-1c3eec03d6cb-summary.json",
+      "source_bytes": 4950,
+      "source_sha256": "580478240e8a2d7ec008dd407a986030c1f88f5f695fc0c14bc8a9aa0eb2af93"
+    },
+    "high/evm12-rpc-audit.jsonl.gz": {
+      "lossless_gzip": true,
+      "source": "/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/engine-capacity-8igs6ng1/evm12-rpc.jsonl",
+      "source_bytes": 9053031,
+      "source_sha256": "c98387ec72e9340bd078caf30fb6a29e5bb57fe12422b98f6d6327bbf53944c6"
+    },
+    "high/evm2-rpc-audit.jsonl.gz": {
+      "lossless_gzip": true,
+      "source": "/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/engine-capacity-8igs6ng1/evm2-rpc.jsonl",
+      "source_bytes": 7575410,
+      "source_sha256": "4c87335aa6ab3d5f2c56cd1b919304dc49154727a25af31a99d16ecc9f7c4673"
+    },
+    "high/full-report.json.gz": {
+      "lossless_gzip": true,
+      "source": "/private/tmp/capacity-shared-lease600-high-1c3eec03d6cb.json",
+      "source_bytes": 18142073,
+      "source_sha256": "e06162b8f7dde1c72a44ea57642a7d444e0d4d743da9cb26519e09d18fa9edec"
+    },
+    "high/independent-audit.json": {
+      "lossless_gzip": false,
+      "source": "/tmp/engine-capacity-lease600-independent-audit/high.json",
+      "source_bytes": 4618,
+      "source_sha256": "1615dc7e0116306ae6113d2630cc11f29fee6dfabbd68d68f812dcdfad2db363"
+    },
+    "high/nitro-rpc-audit.jsonl.gz": {
+      "lossless_gzip": true,
+      "source": "/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/engine-capacity-8igs6ng1/nitro-rpc.jsonl",
+      "source_bytes": 6859177,
+      "source_sha256": "c3d5e0f13470bbfa528f883cc6690d23cf62e08ca074e6e5bd19fcc6acc7a51d"
+    },
+    "high/observations.jsonl.gz": {
+      "lossless_gzip": false,
+      "source": "/private/tmp/capacity-shared-lease600-high-1c3eec03d6cb.observations.jsonl.gz",
+      "source_bytes": 7152141,
+      "source_sha256": "31c01c160874323c57b22f97b184a352295ccfbe174f982913272dafc14c3714"
+    },
+    "high/resource-preflight.jsonl": {
+      "lossless_gzip": false,
+      "source": "/private/tmp/capacity-shared-lease600-high-1c3eec03d6cb.resource-preflight.jsonl",
+      "source_bytes": 2796,
+      "source_sha256": "9befe6348ba67c1563f03fe23147f2eeb67ed5d6867e6179cb939df1325a91f9"
+    },
+    "high/resources.jsonl": {
+      "lossless_gzip": false,
+      "source": "/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/engine-capacity-8igs6ng1/resource-guard.jsonl",
+      "source_bytes": 37922,
+      "source_sha256": "fa2259112107cff181581c06ae8b7b3efd8568ec4e951bbdcc5386c673a91c95"
+    },
+    "high/solana-rpc-audit.jsonl.gz": {
+      "lossless_gzip": true,
+      "source": "/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/engine-capacity-8igs6ng1/solana-rpc.jsonl",
+      "source_bytes": 8964286,
+      "source_sha256": "a0eb66a169eab6b4eedc2d60f99e6c9b7c891ac235d9cccfdc5ff443875f2bdc"
+    },
+    "high/strict-assessment.json": {
+      "lossless_gzip": false,
+      "source": "/private/tmp/capacity-shared-lease600-high-1c3eec03d6cb-assessment.json",
+      "source_bytes": 10333,
+      "source_sha256": "ba6aa029f5fd79c4d6134a658e4c8a5c8f30ddb6a2996bc7561a4ff68fbf8906"
+    },
+    "interpretation-policy.md": {
+      "lossless_gzip": false,
+      "source": "/tmp/capacity-posthoc/interpretation-v1.md",
+      "source_bytes": 3683,
+      "source_sha256": "9ce1b79f2428ad6a20bc2d097496b741d8bc147a790ef1f64359d6c719a61e3f"
+    },
+    "low/analyst-backlog-description.json": {
+      "lossless_gzip": false,
+      "source": "/private/tmp/capacity-shared-lease600-scale020-1c3eec03d6cb-backlog-description.json",
+      "source_bytes": 25812,
+      "source_sha256": "d368d476dd6857835999175c6ce8724bc397a0bb9e60b1a6c874f85377eee3e0"
+    },
+    "low/analyst-compact.json": {
+      "lossless_gzip": false,
+      "source": "/private/tmp/capacity-shared-lease600-scale020-1c3eec03d6cb-compact.json",
+      "source_bytes": 59392,
+      "source_sha256": "f5865bc6206a3967b3e8e1274338b3a928f59c186b272ef1b989a6fe925067ec"
+    },
+    "low/analyst-summary.json": {
+      "lossless_gzip": false,
+      "source": "/private/tmp/capacity-shared-lease600-scale020-1c3eec03d6cb-summary.json",
+      "source_bytes": 6640,
+      "source_sha256": "ced2d424432b9fddff615cfab79870b0c148af385e8ccfea8a4de3be93f05497"
+    },
+    "low/evm12-rpc-audit.jsonl.gz": {
+      "lossless_gzip": true,
+      "source": "/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/engine-capacity-2v5nkigj/evm12-rpc.jsonl",
+      "source_bytes": 2527970,
+      "source_sha256": "17420f3b1a78492d540096997e058b26efd54baa221d5c96d673dec943b173b7"
+    },
+    "low/evm2-rpc-audit.jsonl.gz": {
+      "lossless_gzip": true,
+      "source": "/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/engine-capacity-2v5nkigj/evm2-rpc.jsonl",
+      "source_bytes": 2527986,
+      "source_sha256": "6d76affd9b9062d17591349c83f8c41534fc4f59ae76abdb1e3db9b8bf829ed3"
+    },
+    "low/full-report.json.gz": {
+      "lossless_gzip": true,
+      "source": "/private/tmp/capacity-shared-lease600-scale020-1c3eec03d6cb.json",
+      "source_bytes": 5342897,
+      "source_sha256": "975ab4dcd5b7fbc90faf201a1b906bcd009065a7b3776898c534d0df79f8378f"
+    },
+    "low/independent-audit.json": {
+      "lossless_gzip": false,
+      "source": "/tmp/engine-capacity-lease600-independent-audit/low.json",
+      "source_bytes": 4040,
+      "source_sha256": "fb6c449116af85497bc1ef382eb60f3eab66548386d89685c8ab987dfe754310"
+    },
+    "low/nitro-rpc-audit.jsonl.gz": {
+      "lossless_gzip": true,
+      "source": "/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/engine-capacity-2v5nkigj/nitro-rpc.jsonl",
+      "source_bytes": 2106524,
+      "source_sha256": "12803f4f2db2ecc2a5e98d58979ccdb096451a7acea3a95a7a913752fc2e51fa"
+    },
+    "low/observations.jsonl.gz": {
+      "lossless_gzip": false,
+      "source": "/private/tmp/capacity-shared-lease600-scale020-1c3eec03d6cb.observations.jsonl.gz",
+      "source_bytes": 2235966,
+      "source_sha256": "32230a8fa7c129e8f842213922710c2ed7a36053809a0942d07765c4ee63e3ac"
+    },
+    "low/resource-preflight.jsonl": {
+      "lossless_gzip": false,
+      "source": "/private/tmp/capacity-shared-lease600-scale020-1c3eec03d6cb.resource-preflight.jsonl",
+      "source_bytes": 2796,
+      "source_sha256": "b9b1cb9b9eb8e933298925d5e528e7e71bd09cd738c9a9ad33e085aca3b1f381"
+    },
+    "low/resources.jsonl": {
+      "lossless_gzip": false,
+      "source": "/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/engine-capacity-2v5nkigj/resource-guard.jsonl",
+      "source_bytes": 23911,
+      "source_sha256": "bbdcca8dd69902947052982a791348d9b4a039b715536ef30e839c2daeebd5d5"
+    },
+    "low/solana-rpc-audit.jsonl.gz": {
+      "lossless_gzip": true,
+      "source": "/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/engine-capacity-2v5nkigj/solana-rpc.jsonl",
+      "source_bytes": 2774116,
+      "source_sha256": "a8520cb86427f2a9f11b62a023f051dbfe10c79e37c9da76fc8cb5e2dd66fd4d"
+    },
+    "low/strict-assessment.json": {
+      "lossless_gzip": false,
+      "source": "/private/tmp/capacity-shared-lease600-scale020-1c3eec03d6cb-assessment.json",
+      "source_bytes": 8785,
+      "source_sha256": "a4edad50fa6de705f08d78ce742ca24f3b10963c120a3463b7470ce6fb610f1b"
+    },
+    "strict-assessor-source.py": {
+      "lossless_gzip": false,
+      "source": "/Users/alfongj/Code/engine-core/scripts/capacity_assess.py",
+      "source_bytes": 8301,
+      "source_sha256": "8ebafce9dd136ce0a0179ab04292836d8c0d685fe9b31f9b455e45665e4b6865"
+    },
+    "supervisor-final-state.json": {
+      "lossless_gzip": false,
+      "source": "/tmp/engine-capacity-shared-lease600-state.json",
+      "source_bytes": 4345,
+      "source_sha256": "9f6ace0244a8bfc836541840c30c631f5a54262807f6e29f1a8f7e563af7c9d6"
+    },
+    "supervisor-source.py": {
+      "lossless_gzip": false,
+      "source": "/Users/alfongj/Code/engine-core/docs/baselines/capacity-2026-09-26/supervisor-v4/runner.py",
+      "source_bytes": 17758,
+      "source_sha256": "0f2d64f85a240d932ba1f558a2c105445a76370d04287967dea877e55eebb040"
+    }
+  }
+}

@@ -1,0 +1,142 @@
+{
+  "allowed_resource_checks": 9,
+  "capacity_selected": false,
+  "drain": {
+    "client_pending": 0,
+    "http_inflight": 0,
+    "journal_unresolved": 0,
+    "node_pending": 0,
+    "redis_active": 0,
+    "redis_borrowed": 0,
+    "redis_delayed": 0,
+    "redis_pending": 0,
+    "redis_submitted": 0
+  },
+  "engine_error_count": 0,
+  "engine_log_levels": {
+    "WARN": 2
+  },
+  "engine_log_messages": {
+    "Nonce sync required, store was uninitialized, updating cached transaction count with current chain transaction count": 2
+  },
+  "engine_log_sha256": "7d3e2cee1f6a171880d962ad55eda61a012f11b70278114c5f341a813de885ab",
+  "exact_admitted_observed_terminal_ids": 11100,
+  "harness_errors": [],
+  "healthy_provider_probes": 201,
+  "limitations": [
+    "Local three-chain mixed control only; no native Nitro mixed-contract qualification.",
+    "Captured receipt/signature validation was performed by campaign; offline audit repeats intent/wire/durable/receipt association, not live consensus/signature execution.",
+    "Original failedEVM55 remains unresolved; these new fixtures do not resolve its1980unknowns.",
+    "No maximum/sustainable capacity qualification follows from thisfinitecontrol."
+  ],
+  "missing_original_ids": 0,
+  "observations_sha256": "58145951b7929dde246d707703124f74fc2dc89d6436865cb0f7173cc72ce353",
+  "observed_lease_loss_or_reap_messages": 0,
+  "original_202": 11100,
+  "original_offered_ids": 11100,
+  "owned_children_checked": [
+    {
+      "alive": false,
+      "name": "redis",
+      "pid": 59585
+    },
+    {
+      "alive": false,
+      "name": "evm12",
+      "pid": 59586
+    },
+    {
+      "alive": false,
+      "name": "evm2",
+      "pid": 59587
+    },
+    {
+      "alive": false,
+      "name": "solana",
+      "pid": 59592
+    },
+    {
+      "alive": false,
+      "name": "engine",
+      "pid": 59615
+    }
+  ],
+  "per_chain": {
+    "evm12": {
+      "balances": {
+        "canonical_executions": 3600,
+        "nonce_delta": 3600,
+        "receipt_fees": 29869712768042398,
+        "recipient_delta": 1200,
+        "sender_spent": 29869712768043598
+      },
+      "extra_wire_forwards": 0,
+      "fixture_counts": {
+        "revert": 1200,
+        "storage": 1200,
+        "transfer": 1200
+      },
+      "nonce_range": [
+        0,
+        3599
+      ],
+      "rpc_audit_sha256": "e206a979e00f92391a090cba41c6d1a0bc6c8eb294165034dedd44dab7fb364d",
+      "rpc_method_errors": {}
+    },
+    "evm2": {
+      "balances": {
+        "canonical_executions": 3600,
+        "nonce_delta": 3600,
+        "receipt_fees": 92011453942588400,
+        "recipient_delta": 1200,
+        "sender_spent": 92011453942589600
+      },
+      "extra_wire_forwards": 0,
+      "fixture_counts": {
+        "revert": 1200,
+        "storage": 1200,
+        "transfer": 1200
+      },
+      "nonce_range": [
+        0,
+        3599
+      ],
+      "rpc_audit_sha256": "5725b7de248af9cb825b201b403ed307b13564b6ef01198f14c4a3dab4f2d1b4",
+      "rpc_method_errors": {}
+    },
+    "solana": {
+      "balances": {
+        "payer_spent": 25351950,
+        "receipt_fees": 19500000,
+        "recipient_delta": 5851950
+      },
+      "extra_wire_forwards": 0,
+      "fixture_counts": {
+        "multi_transfer": 1950,
+        "transfer": 1950
+      },
+      "nonce_range": null,
+      "rpc_audit_sha256": "595617e397b2936a83890e00a3c2abcaa03668d9639b8da3bc895e98313e7900",
+      "rpc_method_errors": {}
+    }
+  },
+  "report": "chaos02-mixed-lease600.json",
+  "report_sha256": "17652f0275bcfe11aa6fa2b5c9b13c941478130d3451be5a3852a624517af9ea",
+  "retry_probes": {
+    "chain": "evm12",
+    "count": 100,
+    "http202": 100,
+    "new_admitted_ids": 0,
+    "new_forwarded_sends": {
+      "evm12": 0,
+      "evm2": 0,
+      "solana": 0
+    },
+    "scope": "Additional global lexicographic terminal-ID probes; original offers accounted separately. Per-ID retry bodies are not retained; selection is source-reviewed."
+  },
+  "reviewed_at_utc": "2026-09-27T05:26:06.621804+00:00",
+  "schema": "independent-chaos-mixed-control-review-v1",
+  "scope": "Read-only captured observations versus original private journal, actual saved EVM envelopes and Solana instruction parser. No fresh RPC/lifecycle action; captured independent RPC sweep not repeated.",
+  "storage_evidence_scope": "Captured per-ID storage effects equal1 in1,200 distinct success slots perEVMchain. All1,200 reverting slots perchain were read as0 by the recorded reconciliation sweep (2,400 getStorageAt calls perchain); zero is represented by absence of reverted_storage_persisted in captured effects. No fresh read is claimed.",
+  "verdict": "mixed effects, revert semantics and accepted custody pass"
+}

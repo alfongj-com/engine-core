@@ -108,6 +108,147 @@ class SnapshotBounds(unittest.TestCase):
         c.reconcile.assert_not_called()
 
 
+class UnresolvedCleanup(unittest.TestCase):
+    """Exercise ordinary Campaign.run cleanup; no providers or processes."""
+    def setUp(self):
+        fixture = infrastructure_fixture.Infrastructure()
+        fixture.setUp()
+        self.addCleanup(fixture.doCleanups)
+        self.c = c = fixture.c
+        c.profiles = {
+            'owned': {'family': 'evm', 'chain_id': 31337},
+            'external': {'family': 'evm', 'chain_id': 412346,
+                         'external_url': 'http://127.0.0.1:18547'},
+            'solana': {'family': 'solana'}}
+        c.nodes = {name: mock.Mock() for name in c.profiles}
+        c.proxies = {}
+        self.engine, self.node = mock.Mock(), mock.Mock()
+        self.engine.poll.return_value = self.node.poll.return_value = None
+        c.children = {'engine': self.engine, 'owned': self.node}
+        c.setup, c.load = mock.Mock(), mock.Mock()
+        self.order = []
+        self.oracle = {'outcome': 'incomplete', 'safety_pass': True, 'liveness_pass': False,
+                       'safety_failures': [], 'liveness_failures': ['unresolved original intent']}
+        self.drain = {'journal_unresolved': 2, 'node_pending': 1}
+        self.snapshot_failure = False
+        self.stop_failure = False
+        self.snapshot_result = {'status': 'saved_mined_history_restore_unverified',
+                                'pending_pool_restored_by_state': False, 'automatic_resume': False}
+
+    def run_case(self, outcome='fail_closed_recovery_required'):
+        c = self.c
+        c.recovery_required = outcome == 'fail_closed_recovery_required'
+        c.projection_recovered = outcome == 'recovered_with_quarantine'
+        def reconcile():
+            self.stop(self.engine)
+            c.report.update({'oracle': self.oracle, 'drain': self.drain,
+                             'offline_projection_recovered': c.projection_recovered,
+                             'all_chain_capacity_candidate': False, 'requested_fault_validated': False})
+            self.order.append('reconciled')
+        c.reconcile = mock.Mock(side_effect=reconcile)
+        http = mock.Mock(); http.snapshot.return_value = {}
+        with mock.patch.object(campaign, 'stop', side_effect=self.stop), \
+             mock.patch.object(campaign, 'preserve_anvil_custody', side_effect=self.snapshot) as capture, \
+             mock.patch.object(campaign, 'LOCAL_HTTP', http), mock.patch('builtins.print'):
+            c.run()
+        self.assertTrue(c.report['owned_children_stopped'])
+        self.assertEqual(c.report['errors'], [])
+        self.assertEqual(c.report['outcome'], outcome)
+        self.assertIs(c.report['oracle'], self.oracle)
+        self.assertIs(c.report['drain'], self.drain)
+        self.assertFalse(c.report['requested_fault_validated'])
+        self.assertNotIn('operator_review_required', c.report)
+        self.assertIsNone(c.infrastructure_stop)
+        saved = json.loads(c.args.report.read_text())
+        self.assertEqual(saved['oracle'], self.oracle)
+        self.assertEqual(saved['drain'], self.drain)
+        return capture, saved
+
+    def stop(self, process, **_):
+        label = 'engine_stop' if process is self.engine else 'node_stop'
+        self.order.append(label)
+        if self.stop_failure and label == 'engine_stop' and self.order.count('engine_stop') == 2:
+            raise TimeoutError('fixture stop boundary failure')
+        process.poll.return_value = 0
+
+    def snapshot(self, node, directory):
+        self.assertIs(node, self.c.nodes['owned'])
+        self.assertEqual(self.engine.poll(), 0)
+        self.assertIsNone(self.node.poll())
+        self.assertEqual(directory.name, 'owned-unresolved-state')
+        self.order.append('snapshot')
+        if self.snapshot_failure:
+            raise TimeoutError('fixture snapshot timeout')
+        return self.snapshot_result
+
+    def test_fail_closed_retains_history_after_reconciliation_before_node_cleanup(self):
+        capture, saved = self.run_case()
+        capture.assert_called_once()
+        self.assertLess(self.order.index('reconciled'), self.order.index('snapshot'))
+        self.assertLess(self.order.index('snapshot'), self.order.index('node_stop'))
+        self.assertEqual(saved['unresolved_chain_custody']['journal_unresolved'], 2)
+        self.assertEqual(saved['unresolved_chain_custody']['chains'], {'owned': self.snapshot_result})
+        self.assertTrue(self.c.recovery_required)
+        self.assertFalse(self.c.projection_recovered)
+        for name in ('external', 'solana'):
+            self.c.nodes[name].call.assert_not_called()
+
+    def test_quarantine_preserves_proven_oracle_and_original_verdict(self):
+        capture, saved = self.run_case('recovered_with_quarantine')
+        capture.assert_called_once()
+        self.assertTrue(saved['offline_projection_recovered'])
+        self.assertFalse(saved['unresolved_chain_custody']['automatic_resume'])
+        self.assertFalse(self.c.recovery_required)
+        self.assertTrue(self.c.projection_recovered)
+
+    def test_settled_normal_outcome_needs_no_snapshot_or_extra_rpc(self):
+        self.drain['journal_unresolved'] = 0
+        self.oracle.update(outcome='pass', liveness_pass=True, liveness_failures=[])
+        capture, saved = self.run_case('pass')
+        capture.assert_not_called()
+        self.assertNotIn('unresolved_chain_custody', saved)
+        for node in self.c.nodes.values(): node.call.assert_not_called()
+
+    def test_ordinary_incomplete_oracle_also_retains_unresolved_history(self):
+        capture, saved = self.run_case('incomplete')
+        capture.assert_called_once()
+        self.assertFalse(saved['operator_recovery_required'])
+        self.assertFalse(self.c.projection_recovered)
+
+    def test_missing_engine_process_records_unavailable_boundary_without_snapshot(self):
+        del self.c.children['engine']
+        capture, saved = self.run_case()
+        capture.assert_not_called()
+        self.assertEqual(saved['unresolved_chain_custody']['capture_error'], 'RuntimeError')
+        self.assertEqual(saved['unresolved_chain_custody']['chains'], {})
+
+    def test_existing_interrupted_custody_is_not_snapshotted_twice(self):
+        prior = {'chain_custody': {'owned': self.snapshot_result}}
+        self.c.report['custody'] = prior
+        capture, saved = self.run_case()
+        capture.assert_not_called()
+        self.assertIs(self.c.report['custody'], prior)
+        self.assertNotIn('unresolved_chain_custody', saved)
+
+    def test_snapshot_failure_remains_visible_without_hiding_oracle_or_cleanup(self):
+        self.snapshot_failure = True
+        capture, saved = self.run_case('recovered_with_quarantine')
+        capture.assert_called_once()
+        entry = saved['unresolved_chain_custody']['chains']['owned']
+        self.assertEqual(entry['status'], 'snapshot_failed')
+        self.assertEqual(entry['error_type'], 'TimeoutError')
+        self.assertFalse(entry['automatic_resume'])
+        self.assertNotIn('fixture snapshot timeout', json.dumps(saved))
+
+    def test_stop_boundary_failure_never_snapshots_and_cleanup_still_runs(self):
+        self.stop_failure = True
+        capture, saved = self.run_case()
+        capture.assert_not_called()
+        self.assertEqual(saved['unresolved_chain_custody']['capture_error'], 'TimeoutError')
+        self.assertEqual(saved['unresolved_chain_custody']['chains'], {})
+        self.assertEqual(self.order.count('engine_stop'), 3)
+
+
 @unittest.skipUnless(os.environ.get('ANVIL_BIN'), 'Set ANVIL_BIN for pinned local restore qualification')
 class ActualAnvilRestore(unittest.TestCase):
     def run_network(self, network):

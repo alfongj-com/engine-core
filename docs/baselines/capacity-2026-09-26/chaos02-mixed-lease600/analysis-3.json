@@ -1,0 +1,9 @@
+{
+  "reviewed_utc": "2026-09-27T05:26:52.473847+00:00",
+  "report_sha256": "17652f0275bcfe11aa6fa2b5c9b13c941478130d3451be5a3852a624517af9ea",
+  "independent_audit_sha256": "d27692d090724f3c1291fb63b4f94ecb27091a1dab5603b204580d1e16dc80b6",
+  "accepted_ids": 11100,
+  "conclusion": "All original mixed offers settled exactly, including 2400 expected reverts with no persisted storage changes. Duplicate probes added no sends. No unresolved custody.",
+  "capacity_selected": false,
+  "next_action_authorized_by_root_review": "Run mixed transient send-RPC errors at the same rates; retain original evidence."
+}

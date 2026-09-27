@@ -856,19 +856,9 @@ class Campaign:
                 custody["journal"] = {"available": True, "backup": str(backup), "sha256": digest.hexdigest(), **counts}
         except (OSError, sqlite3.Error, TimeoutError) as error:
             custody["journal"] = {"available": False, "reason": type(error).__name__}
-        # Failure-only: preserve the in-memory mined chain before ordinary
-        # finally cleanup terminates owned Anvil. External nodes are untouched.
-        for name, profile in self.profiles.items():
-            if profile["family"] != "evm" or profile.get("external_url") or name not in self.children:
-                continue
-            try:
-                custody["chain_custody"][name] = preserve_anvil_custody(
-                    self.nodes[name], self.logs / (name + "-interrupted-state"))
-            except Exception as error:
-                custody["chain_custody"][name] = {"status": "snapshot_failed", "error_type": type(error).__name__,
-                    "partial_directory": str(self.logs / (name + "-interrupted-state")), "automatic_resume": False}
-            # Node preservation has its own bound; preserve the existing fixed
-            # queue-inventory budget after it, rather than consume that budget.
+        self.preserve_owned_anvil_history(custody["chain_custody"], "interrupted-state")
+        # Node preservation has its own bound; preserve the existing fixed
+        # queue-inventory budget after it, rather than consume that budget.
         deadline = time.monotonic() + 30
         # Fixed number of aggregate queue queries. No provider calls or per-ID RPC loops.
         try:
@@ -900,6 +890,40 @@ class Campaign:
         self.report.setdefault("oracle", {"outcome": "incomplete", "safety_pass": None, "liveness_pass": False,
             "safety_failures": [], "liveness_failures": ["Independent chain reconciliation unavailable after interrupted run"]})
         private_json(self.logs / "interrupted-custody-summary.json", custody)
+
+    def preserve_owned_anvil_history(self, evidence, suffix):
+        """Caller must stop Engine first; pending pool inventory is not restored."""
+        for name, profile in self.profiles.items():
+            if profile["family"] != "evm" or profile.get("external_url") or name not in self.children:
+                continue
+            directory = self.logs / (name + "-" + suffix)
+            try:
+                evidence[name] = preserve_anvil_custody(self.nodes[name], directory)
+            except Exception as error:
+                evidence[name] = {"status": "snapshot_failed", "error_type": type(error).__name__,
+                    "partial_directory": str(directory), "automatic_resume": False}
+
+    def preserve_unresolved_anvil_history(self):
+        # Ordinary fail-closed/quarantine outcomes can complete the oracle sweep
+        # yet retain unresolved intents. Do not discard their in-memory chain.
+        unresolved = self.report.get("drain", {}).get("journal_unresolved", 0)
+        if unresolved <= 0 or "custody" in self.report:
+            return
+        evidence = {"scope": "Unresolved intents after reconciliation; oracle and drain retained unchanged",
+                    "journal_unresolved": unresolved, "automatic_resume": False, "chains": {}}
+        self.report["unresolved_chain_custody"] = evidence
+        try:
+            engine = self.children.get("engine")
+            if engine is None:
+                raise RuntimeError("Engine process unavailable for snapshot boundary")
+            stop(engine)
+            if engine.poll() is None:
+                raise RuntimeError("Engine still running at snapshot boundary")
+            self.preserve_owned_anvil_history(evidence["chains"], "unresolved-state")
+        except Exception as error:
+            # Snapshot failure is evidence, not permission to skip cleanup or
+            # replace the already computed oracle/recovery verdict.
+            evidence["capture_error"] = type(error).__name__
 
     def setup(self):
         from capacity_faults import RpcFaultProxy, FaultPlan, EVM_COUNTER_CODE, EVM_REVERT_CODE
@@ -1916,6 +1940,7 @@ class Campaign:
                 self.capture_interrupted_custody()
             else:
                 self.reconcile()
+                self.preserve_unresolved_anvil_history()
         except BaseException as error:
             self.abort.set()
             if getattr(self, "lifecycle_stop", None): self.lifecycle_stop.set()

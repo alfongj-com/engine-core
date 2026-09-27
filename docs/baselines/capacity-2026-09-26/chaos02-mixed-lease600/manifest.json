@@ -1,0 +1,65 @@
+{
+  "archive_wall_seconds": 0.5958472499999999,
+  "files": {
+    "README.md": {
+      "bytes": 1151,
+      "sha256": "0ea421cf79793d16efd473f0b04f44bb0ac2e235ecdb5ccb3ebd4f989e734335"
+    },
+    "analysis-1.json": {
+      "bytes": 41457,
+      "sha256": "f68e17e20292cde45b0fd3b14c6600985b66f31efd8daa44db9750e47354f2fc"
+    },
+    "analysis-2.json": {
+      "bytes": 6040,
+      "sha256": "e0f2826dd586d18665b8f6b87b173aef53eae810b35247e527c7bdc6b3c451f9"
+    },
+    "analysis-3.json": {
+      "bytes": 609,
+      "sha256": "c79ecf4c1e0e77cd18ab20905177ee465896aad1a2fc7957eb8cbbffba0a296f"
+    },
+    "archive-source.py": {
+      "bytes": 12481,
+      "sha256": "3af1736c8c27923dbd85578b6a43058910a2891cae4894fa3ace4481356aa90d"
+    },
+    "evm12-rpc-audit.jsonl.gz": {
+      "bytes": 454598,
+      "sha256": "5f132787d57aae497d10131a31042610ba246742e33749087946a70035760753"
+    },
+    "evm2-rpc-audit.jsonl.gz": {
+      "bytes": 455191,
+      "sha256": "95480f4d2d7f65d5a09ab9068f036025c9ff6b04d2f6536a775b32d9bae68c05"
+    },
+    "full-report.json.gz": {
+      "bytes": 1207653,
+      "sha256": "a6419d72753c7edc6d5da26a7b0b28062971318a3783a67c1927651fff511d5b"
+    },
+    "independent-audit-1.json": {
+      "bytes": 4662,
+      "sha256": "d27692d090724f3c1291fb63b4f94ecb27091a1dab5603b204580d1e16dc80b6"
+    },
+    "observations.jsonl.gz": {
+      "bytes": 1666018,
+      "sha256": "58145951b7929dde246d707703124f74fc2dc89d6436865cb0f7173cc72ce353"
+    },
+    "one-shot-state.json": {
+      "bytes": 6246,
+      "sha256": "6caf0aab6209c6d09151d3eb1f8e4726f9de2707c17c1288893cc402f64d3773"
+    },
+    "provenance.json": {
+      "bytes": 5892,
+      "sha256": "1a912a4ab71adecd81e175b79f1e6cb917549c6ec22b640c0c73e4bd93730ae2"
+    },
+    "resource-preflight.jsonl": {
+      "bytes": 1232,
+      "sha256": "18d396c47cc78c99377e3019a45aea3b29fcd4bfde54c9976b2a4b73b024c17f"
+    },
+    "resources.jsonl": {
+      "bytes": 8695,
+      "sha256": "ae530b9386d19b58228a6554ccc5f0c5767e67a0511f9fb1821af79f9b58bf77"
+    },
+    "solana-rpc-audit.jsonl.gz": {
+      "bytes": 636935,
+      "sha256": "99b18fe6210339ca502ca901b16d08c1e2683f1140e5c321b7af18a34b21f495"
+    }
+  }
+}

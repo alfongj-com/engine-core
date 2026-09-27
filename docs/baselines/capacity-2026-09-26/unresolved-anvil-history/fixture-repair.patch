@@ -1,0 +1,11 @@
+--- first-validation/scripts/capacity_anvil_custody_test.py
++++ final/scripts/capacity_anvil_custody_test.py
+@@ -167,7 +167,7 @@
+     def stop(self, process, **_):
+         label = 'engine_stop' if process is self.engine else 'node_stop'
+         self.order.append(label)
+-        if self.stop_failure and self.order.count('engine_stop') == 2:
++        if self.stop_failure and label == 'engine_stop' and self.order.count('engine_stop') == 2:
+             raise TimeoutError('fixture stop boundary failure')
+         process.poll.return_value = 0
+ 

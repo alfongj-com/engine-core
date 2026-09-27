@@ -1,0 +1,153 @@
+{
+  "archive_wall_seconds": 4.032123833,
+  "files": {
+    "README.md": {
+      "bytes": 2176,
+      "sha256": "83f45eb2af4baebbc576bff7dcb82fed688cdc24d5bfa49e478b45e8ffa5687c"
+    },
+    "archive-source.py": {
+      "bytes": 16698,
+      "sha256": "456677402bb0e63db43935ca4072a2713780c205279deff7626d583e63cb198b"
+    },
+    "backlog-descriptor-source.py": {
+      "bytes": 3667,
+      "sha256": "50ef35bd4a3226521e58f2a3115e30fd546d678e18a4648781f38bdc0bb37f83"
+    },
+    "compact-extractor-source.py": {
+      "bytes": 12034,
+      "sha256": "c4c65f157513c50f7171aef0646b60630f58f7f81b8bc828d53ed44760b5033f"
+    },
+    "frozen-jobs.json": {
+      "bytes": 927,
+      "sha256": "5645f3b5d5cf891eac2a340244239507aeecdbaa427ef17d4771ac380e88c667"
+    },
+    "high/analyst-backlog-description.json": {
+      "bytes": 26895,
+      "sha256": "90992d0bb0f03fe4db5decc7e8fd96f1e4e141952361ca34e6e271f4fc4e74c1"
+    },
+    "high/analyst-compact.json": {
+      "bytes": 2617997,
+      "sha256": "bea758a6bdb0cffa7fe328f4778df3024500674ac69c750a013b25ddc4e8423b"
+    },
+    "high/analyst-summary.json": {
+      "bytes": 4950,
+      "sha256": "580478240e8a2d7ec008dd407a986030c1f88f5f695fc0c14bc8a9aa0eb2af93"
+    },
+    "high/evm12-rpc-audit.jsonl.gz": {
+      "bytes": 1931543,
+      "sha256": "04228fe380d66ec83bc0d8c2bfc8b64eab11b9b2ee4a6e81520202da19dc86b3"
+    },
+    "high/evm2-rpc-audit.jsonl.gz": {
+      "bytes": 1620433,
+      "sha256": "663a1e50315767c8231e2c11d1226cd65498789cf2e6210a229d90c387427f10"
+    },
+    "high/full-report.json.gz": {
+      "bytes": 5532701,
+      "sha256": "1b32c54caa630507f9ea723e4f067b6a6fb39548b79dff761df2c443c10082f5"
+    },
+    "high/independent-audit.json": {
+      "bytes": 4618,
+      "sha256": "1615dc7e0116306ae6113d2630cc11f29fee6dfabbd68d68f812dcdfad2db363"
+    },
+    "high/nitro-rpc-audit.jsonl.gz": {
+      "bytes": 1464787,
+      "sha256": "aaf5d8156fa9cd0e9b9fea0fc9d7f72a397af5fefaf2d4ee4eb18e98d65e9baa"
+    },
+    "high/observations.jsonl.gz": {
+      "bytes": 7152141,
+      "sha256": "31c01c160874323c57b22f97b184a352295ccfbe174f982913272dafc14c3714"
+    },
+    "high/resource-preflight.jsonl": {
+      "bytes": 2796,
+      "sha256": "9befe6348ba67c1563f03fe23147f2eeb67ed5d6867e6179cb939df1325a91f9"
+    },
+    "high/resources.jsonl": {
+      "bytes": 37922,
+      "sha256": "fa2259112107cff181581c06ae8b7b3efd8568ec4e951bbdcc5386c673a91c95"
+    },
+    "high/solana-rpc-audit.jsonl.gz": {
+      "bytes": 2420427,
+      "sha256": "55abc4312608d039bfe11f7e79d93f44e7b33dd08f22c7264241ea5def314a2b"
+    },
+    "high/strict-assessment.json": {
+      "bytes": 10333,
+      "sha256": "ba6aa029f5fd79c4d6134a658e4c8a5c8f30ddb6a2996bc7561a4ff68fbf8906"
+    },
+    "interpretation-policy.md": {
+      "bytes": 3683,
+      "sha256": "9ce1b79f2428ad6a20bc2d097496b741d8bc147a790ef1f64359d6c719a61e3f"
+    },
+    "low/analyst-backlog-description.json": {
+      "bytes": 25812,
+      "sha256": "d368d476dd6857835999175c6ce8724bc397a0bb9e60b1a6c874f85377eee3e0"
+    },
+    "low/analyst-compact.json": {
+      "bytes": 59392,
+      "sha256": "f5865bc6206a3967b3e8e1274338b3a928f59c186b272ef1b989a6fe925067ec"
+    },
+    "low/analyst-summary.json": {
+      "bytes": 6640,
+      "sha256": "ced2d424432b9fddff615cfab79870b0c148af385e8ccfea8a4de3be93f05497"
+    },
+    "low/evm12-rpc-audit.jsonl.gz": {
+      "bytes": 546147,
+      "sha256": "9be64e2ef056781a8f4e439e4ab4461455906f648bc98568802589e87aa392f7"
+    },
+    "low/evm2-rpc-audit.jsonl.gz": {
+      "bytes": 546417,
+      "sha256": "d7a49568c20faac4494d556c3e316999101d82d6e98a2f7564f77047b63546d6"
+    },
+    "low/full-report.json.gz": {
+      "bytes": 1789218,
+      "sha256": "d40cfb1d0a92fbc81c64bdae538a1f449f5c50de664f8f152a8f32365de0b35d"
+    },
+    "low/independent-audit.json": {
+      "bytes": 4040,
+      "sha256": "fb6c449116af85497bc1ef382eb60f3eab66548386d89685c8ab987dfe754310"
+    },
+    "low/nitro-rpc-audit.jsonl.gz": {
+      "bytes": 459853,
+      "sha256": "f43bbbfacc5dd5135a29d3e42a55a1e22139df74ca442a492fea9a1fdc9f77d2"
+    },
+    "low/observations.jsonl.gz": {
+      "bytes": 2235966,
+      "sha256": "32230a8fa7c129e8f842213922710c2ed7a36053809a0942d07765c4ee63e3ac"
+    },
+    "low/resource-preflight.jsonl": {
+      "bytes": 2796,
+      "sha256": "b9b1cb9b9eb8e933298925d5e528e7e71bd09cd738c9a9ad33e085aca3b1f381"
+    },
+    "low/resources.jsonl": {
+      "bytes": 23911,
+      "sha256": "bbdcca8dd69902947052982a791348d9b4a039b715536ef30e839c2daeebd5d5"
+    },
+    "low/solana-rpc-audit.jsonl.gz": {
+      "bytes": 764507,
+      "sha256": "49d5678b8d95efa45c19ea15b8b695a537474e0518e0ebf284312d6ed72d11ba"
+    },
+    "low/strict-assessment.json": {
+      "bytes": 8785,
+      "sha256": "a4edad50fa6de705f08d78ce742ca24f3b10963c120a3463b7470ce6fb610f1b"
+    },
+    "source-integrity.json": {
+      "bytes": 10718,
+      "sha256": "2c6a2f5a3564c2132062254bf2394d192fa10b8fba7fbbd525cdf62fb0d27617"
+    },
+    "strict-assessor-source.py": {
+      "bytes": 8301,
+      "sha256": "8ebafce9dd136ce0a0179ab04292836d8c0d685fe9b31f9b455e45665e4b6865"
+    },
+    "summary.json": {
+      "bytes": 2894,
+      "sha256": "4e809191a1172f428818c59769178e9327f23dba1e3b45627572606a49bd242d"
+    },
+    "supervisor-final-state.json": {
+      "bytes": 4345,
+      "sha256": "9f6ace0244a8bfc836541840c30c631f5a54262807f6e29f1a8f7e563af7c9d6"
+    },
+    "supervisor-source.py": {
+      "bytes": 17758,
+      "sha256": "0f2d64f85a240d932ba1f558a2c105445a76370d04287967dea877e55eebb040"
+    }
+  }
+}
