@@ -1,0 +1,13 @@
+{
+  "reviewed_utc": "2026-09-27T07:33:18.043055+00:00",
+  "report_sha256": "af24b4ad71e633c0970c5cc42adbfc36f553817c80095193ba66265a33715f0b",
+  "independent_audit_sha256": "58de1389be9b03c976198c87f913c0a30bb2150a9cf0cae46be03fe50820f8b9",
+  "admissions": 909,
+  "attempts": 904,
+  "recorded_terminal_proofs_independently_verified": 648,
+  "nonterminal_admissions_retained": 261,
+  "original_oracle_safety": null,
+  "conclusion": "Actual Redis crash fenced health and writes; mirror-failure halt correctly refused reattach. Independent stopped-copy review establishes intact custody and validity of all recorded terminal proofs. 261 original admissions remain nonterminal; no automatic recovery or full workload settlement is claimed. Original journal, AOF and chain histories remain retained; no replay or clearing of halt authorized.",
+  "harness_fix": "Existing-only logically read-only WAL reader integrated; 163 regression tests pass. Original report/verdict unchanged.",
+  "next_action_authorized_by_root_review": "Fresh isolated cut4 and cut8 fixtures only. Preserve this original halted workload and its custody separately. This is not a zero-drain release or permission to resume this workload."
+}

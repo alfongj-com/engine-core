@@ -1,0 +1,17 @@
+{
+  "reviewed_utc": "2026-09-27T07:49:41.650986+00:00",
+  "report_sha256": "c9a605b893c848c113a0c2d2aedcf676264d4cad9ba102995f743d6320664e5c",
+  "independent_audit_sha256": "68db52a4971846729bd5b95966c080349a71aae7e0697b77024fd39ce03943c2",
+  "endpoint_accepted": "Explicit offline projection recovery with retained quarantine",
+  "admissions": 605,
+  "terminal_proofs_verified": 413,
+  "quarantined": 187,
+  "unsigned": 5,
+  "nonterminal_retained": 192,
+  "api_probes": 331,
+  "new_rpc_sends": 0,
+  "original_completion_claimed": false,
+  "same_signer_liveness_qualified": false,
+  "conclusion": "The intended operator recovery branch passed independent immutable-state and guard checks. The workload remains incomplete, with 192 retained nonterminal admissions and 13 saved pending transactions. No replay or original-identity substitution is permitted by this review.",
+  "custody": "Original state/report and global custody pointer remain unchanged; all owned children stopped. Earlier interrupted test cases remain separately retained. No further workload scheduled."
+}

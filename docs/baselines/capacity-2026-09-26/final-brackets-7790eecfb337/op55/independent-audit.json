@@ -1,0 +1,86 @@
+{
+  "accepted_custody": "pass",
+  "allowed_resource_checks": 9,
+  "capacity_note": "Settlement verdict only. Preserve original missing offers and apply unchanged strict rate/stability criteria separately; raw candidate is not maximum qualification.",
+  "drain": {
+    "client_pending": 0,
+    "http_inflight": 0,
+    "journal_unresolved": 0,
+    "node_pending": 0,
+    "redis_active": 0,
+    "redis_borrowed": 0,
+    "redis_delayed": 0,
+    "redis_pending": 0,
+    "redis_submitted": 0
+  },
+  "engine_error_count": 0,
+  "engine_log_levels": {
+    "WARN": 1
+  },
+  "engine_log_messages": {
+    "Nonce sync required, store was uninitialized, updating cached transaction count with current chain transaction count": 1
+  },
+  "engine_log_sha256": "0e0972e95036cae5384b6943397281d56d66233c7763e5b99dc5ae07f348a5b3",
+  "engine_unknown_categories": [],
+  "exact_settled_admitted_ids": 19800,
+  "harness_errors": [],
+  "healthy_provider_probes": 76,
+  "limitations": [
+    "Normal report retains aggregate original HTTP statuses rather than individual response records; exact admitted ID set and full missing-offer complement were checked against original expected namespace.",
+    "Previous interrupted EVM55 fixture1980unknown outcomes remain unresolved and separate."
+  ],
+  "missing_offers": 0,
+  "observations_sha256": "d3a3f69b9cf056ba4fb5c10188800421b1310100e12548daac93da0d27d45f73",
+  "observed_lease_loss_or_reap_messages": 0,
+  "original_offered_ids": 19800,
+  "original_offered_liveness": true,
+  "owned_children_checked": [
+    {
+      "alive": false,
+      "name": "redis",
+      "pid": 60965
+    },
+    {
+      "alive": false,
+      "name": "evm2",
+      "pid": 60966
+    },
+    {
+      "alive": false,
+      "name": "engine",
+      "pid": 60968
+    }
+  ],
+  "per_chain": {
+    "evm2": {
+      "audited_admitted_ids": 19800,
+      "balances": {
+        "canonical_executions": 19800,
+        "nonce_delta": 19800,
+        "receipt_fees": 309461363502207000,
+        "recipient_delta": 19800,
+        "sender_spent": 309461363502226800
+      },
+      "client": {
+        "dispatched": 19800
+      },
+      "extra_same_wire_forwards": 0,
+      "method_errors": {},
+      "nonce_range": [
+        0,
+        19799
+      ],
+      "original_http": {
+        "202": 19800
+      },
+      "original_offered": 19800,
+      "rpc_audit_sha256": "163eabce948aa4f5e54ff9e7ff61a8368fec6ef84126c35cd2998ce096c0750c"
+    }
+  },
+  "queue_lease_seconds": "600",
+  "report": "capacity-final-bracket-lease600-op55-7790eecfb337.json",
+  "report_sha256": "f8425728ce0d85b03c3e5e761c9f6a2d1b7f2ffa7739e272e7c966dcfd08fe94",
+  "reviewed_at_utc": "2026-09-27T06:04:00.154057+00:00",
+  "schema": "independent-final-bracket-review-v1",
+  "scope": "Offline captured per-ID observations and private journal. Saved EVM envelope/Solana intent bytes checked; no fresh RPC or lifecycle action. Original provider proof sweep not repeated."
+}

@@ -1,6 +1,6 @@
 --- a/.github/workflows/ci-hardening.yaml
 +++ b/.github/workflows/ci-hardening.yaml
-@@ -68,7 +68,13 @@
+@@ -68,7 +68,14 @@
            curl -fL --retry 3 https://github.com/foundry-rs/foundry/releases/download/v1.8.1/foundry_v1.8.1_linux_amd64.tar.gz -o /tmp/foundry.tar.gz
            echo "37b45855232e57624d90113b049ca54f0c92055bb5c1997fcbdc3076c7b89c10  /tmp/foundry.tar.gz" | sha256sum -c -
            mkdir -p /tmp/engine-foundry
@@ -10,12 +10,13 @@
 +        timeout-minutes: 3
 +        env:
 +          PYTHONPATH: scripts
++          ANVIL_BIN: /tmp/engine-foundry/anvil
 +          CAST_BIN: /tmp/engine-foundry/cast
-+        run: python3 -m unittest test_capacity_faults capacity_campaign_test capacity_scenarios_test capacity_pool_test capacity_assess_test capacity_fence_test capacity_resource_guard_test capacity_resource_phase_test capacity_resource_projection_test capacity_anvil_custody_test capacity_infrastructure_test test_local_eoa_reorg -v
++        run: python3 -m unittest test_capacity_faults capacity_campaign_test capacity_scenarios_test capacity_pool_test capacity_assess_test capacity_fence_test capacity_resource_guard_test capacity_resource_phase_test capacity_resource_projection_test capacity_anvil_custody_test capacity_infrastructure_test capacity_journal_reader_test test_local_eoa_reorg -v
        - name: Actual server crash recovery and duplicate admission
          run: |
            cargo build --locked --bin thirdweb-engine
-@@ -97,6 +103,43 @@
+@@ -97,6 +104,43 @@
          run: python3 scripts/local_solana_recovery.py --solana-bin-dir /tmp/engine-solana/solana-release/bin --rust-log debug --report /tmp/local-solana-recovery.json
        - name: Single payer Solana load and finality drain (local debug build)
          run: python3 scripts/local_solana_throughput.py --engine-bin "$PWD/target/debug/thirdweb-engine" --solana-bin-dir /tmp/engine-solana/solana-release/bin --rate 50 --seconds 20 --redis-fsync everysec --drain-seconds 120 --report /tmp/local-solana-throughput.json
@@ -59,7 +60,7 @@
        - name: Preserve local-chain scenario reports
          if: always()
          uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-@@ -106,6 +149,8 @@
+@@ -106,6 +150,8 @@
              /tmp/local-eoa-*.json
              /tmp/local-redis-*.json
              /tmp/local-solana-*.json

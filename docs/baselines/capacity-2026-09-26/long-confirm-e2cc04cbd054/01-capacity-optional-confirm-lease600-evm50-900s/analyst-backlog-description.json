@@ -1,0 +1,406 @@
+{
+  "chains": {
+    "evm12": {
+      "aggregation_seconds": 60,
+      "method": "sample quantiles; nominal phase only; descriptive, not a pass/fail test",
+      "sample_window_seconds": [
+        180.016,
+        900.008
+      ],
+      "terminal": {
+        "groups": [
+          {
+            "max": 1977,
+            "mean": 1734.4166666666667,
+            "median": 1722.0,
+            "min": 1477,
+            "p10": 1602.3,
+            "p90": 1886.4,
+            "sample_count": 12,
+            "start_seconds": 180.0
+          },
+          {
+            "max": 1977,
+            "mean": 1742.8333333333333,
+            "median": 1741.0,
+            "min": 1477,
+            "p10": 1602.8,
+            "p90": 1883.7,
+            "sample_count": 12,
+            "start_seconds": 240.0
+          },
+          {
+            "max": 1886,
+            "mean": 1712.6666666666667,
+            "median": 1703.0,
+            "min": 1529,
+            "p10": 1577.2,
+            "p90": 1848.7,
+            "sample_count": 12,
+            "start_seconds": 300.0
+          },
+          {
+            "max": 1874,
+            "mean": 1706.3333333333333,
+            "median": 1711.0,
+            "min": 1530,
+            "p10": 1557.1,
+            "p90": 1852.0,
+            "sample_count": 12,
+            "start_seconds": 360.0
+          },
+          {
+            "max": 1894,
+            "mean": 1709.0833333333333,
+            "median": 1707.0,
+            "min": 1532,
+            "p10": 1568.8,
+            "p90": 1847.7,
+            "sample_count": 12,
+            "start_seconds": 420.0
+          },
+          {
+            "max": 1879,
+            "mean": 1714.9166666666667,
+            "median": 1719.0,
+            "min": 1537,
+            "p10": 1568.3,
+            "p90": 1853.0,
+            "sample_count": 12,
+            "start_seconds": 480.0
+          },
+          {
+            "max": 1882,
+            "mean": 1713.6666666666667,
+            "median": 1711.5,
+            "min": 1524,
+            "p10": 1579.8,
+            "p90": 1846.2,
+            "sample_count": 12,
+            "start_seconds": 540.0
+          },
+          {
+            "max": 1874,
+            "mean": 1704.9166666666667,
+            "median": 1700.0,
+            "min": 1536,
+            "p10": 1569.9,
+            "p90": 1839.7,
+            "sample_count": 12,
+            "start_seconds": 600.0
+          },
+          {
+            "max": 1878,
+            "mean": 1708.25,
+            "median": 1706.5,
+            "min": 1532,
+            "p10": 1572.4,
+            "p90": 1846.9,
+            "sample_count": 12,
+            "start_seconds": 660.0
+          },
+          {
+            "max": 1875,
+            "mean": 1708.0833333333333,
+            "median": 1704.5,
+            "min": 1538,
+            "p10": 1572.3,
+            "p90": 1845.0,
+            "sample_count": 12,
+            "start_seconds": 720.0
+          },
+          {
+            "max": 1875,
+            "mean": 1707.5,
+            "median": 1704.5,
+            "min": 1533,
+            "p10": 1574.5,
+            "p90": 1843.9,
+            "sample_count": 12,
+            "start_seconds": 780.0
+          },
+          {
+            "max": 1877,
+            "mean": 1708.5833333333333,
+            "median": 1705.0,
+            "min": 1536,
+            "p10": 1568.4,
+            "p90": 1841.7,
+            "sample_count": 12,
+            "start_seconds": 840.0
+          }
+        ],
+        "last_180_seconds_range": [
+          1533,
+          1877
+        ],
+        "paired_phase_growth": [
+          {
+            "end_seconds": 840.016,
+            "growth": -15.0,
+            "start_seconds": 180.016
+          },
+          {
+            "end_seconds": 845.016,
+            "growth": 90.0,
+            "start_seconds": 185.016
+          },
+          {
+            "end_seconds": 850.016,
+            "growth": 9.0,
+            "start_seconds": 190.016
+          },
+          {
+            "end_seconds": 855.016,
+            "growth": -202.0,
+            "start_seconds": 195.016
+          },
+          {
+            "end_seconds": 860.016,
+            "growth": -14.0,
+            "start_seconds": 200.016
+          },
+          {
+            "end_seconds": 865.016,
+            "growth": -14.0,
+            "start_seconds": 205.016
+          },
+          {
+            "end_seconds": 870.016,
+            "growth": -110.0,
+            "start_seconds": 210.016
+          },
+          {
+            "end_seconds": 875.016,
+            "growth": 7.0,
+            "start_seconds": 215.016
+          },
+          {
+            "end_seconds": 880.016,
+            "growth": -46.0,
+            "start_seconds": 220.016
+          },
+          {
+            "end_seconds": 885.016,
+            "growth": -14.864908073540619,
+            "start_seconds": 225.016
+          },
+          {
+            "end_seconds": 890.016,
+            "growth": 17.0,
+            "start_seconds": 230.016
+          },
+          {
+            "end_seconds": 895.016,
+            "growth": -17.0,
+            "start_seconds": 235.016
+          }
+        ],
+        "paired_phase_growth_min_median_max": [
+          -202.0,
+          -14.43245403677031,
+          90.0
+        ]
+      },
+      "unsigned": {
+        "groups": [
+          {
+            "max": 174,
+            "mean": 61,
+            "median": 23.0,
+            "min": 8,
+            "p10": 9.1,
+            "p90": 163.1,
+            "sample_count": 12,
+            "start_seconds": 180.0
+          },
+          {
+            "max": 189,
+            "mean": 73,
+            "median": 46.0,
+            "min": 12,
+            "p10": 16.1,
+            "p90": 165.6,
+            "sample_count": 12,
+            "start_seconds": 240.0
+          },
+          {
+            "max": 213,
+            "mean": 87.83333333333333,
+            "median": 76.5,
+            "min": 7,
+            "p10": 10.4,
+            "p90": 207.1,
+            "sample_count": 12,
+            "start_seconds": 300.0
+          },
+          {
+            "max": 210,
+            "mean": 88.83333333333333,
+            "median": 90.5,
+            "min": 11,
+            "p10": 14.4,
+            "p90": 178.4,
+            "sample_count": 12,
+            "start_seconds": 360.0
+          },
+          {
+            "max": 258,
+            "mean": 90.25,
+            "median": 78.0,
+            "min": 3,
+            "p10": 7.1,
+            "p90": 206.9,
+            "sample_count": 12,
+            "start_seconds": 420.0
+          },
+          {
+            "max": 222,
+            "mean": 98,
+            "median": 88.5,
+            "min": 2,
+            "p10": 15.2,
+            "p90": 193.6,
+            "sample_count": 12,
+            "start_seconds": 480.0
+          },
+          {
+            "max": 232,
+            "mean": 91.66666666666667,
+            "median": 84.0,
+            "min": 6,
+            "p10": 7.4,
+            "p90": 203.0,
+            "sample_count": 12,
+            "start_seconds": 540.0
+          },
+          {
+            "max": 216,
+            "mean": 88.41666666666667,
+            "median": 82.0,
+            "min": 5,
+            "p10": 10.3,
+            "p90": 195.5,
+            "sample_count": 12,
+            "start_seconds": 600.0
+          },
+          {
+            "max": 225,
+            "mean": 90.41666666666667,
+            "median": 84.0,
+            "min": 4,
+            "p10": 5.9,
+            "p90": 207.7,
+            "sample_count": 12,
+            "start_seconds": 660.0
+          },
+          {
+            "max": 216,
+            "mean": 89.33333333333333,
+            "median": 80.0,
+            "min": 12,
+            "p10": 12.2,
+            "p90": 208.7,
+            "sample_count": 12,
+            "start_seconds": 720.0
+          },
+          {
+            "max": 223,
+            "mean": 89.58333333333333,
+            "median": 83.5,
+            "min": 5,
+            "p10": 11.1,
+            "p90": 210.9,
+            "sample_count": 12,
+            "start_seconds": 780.0
+          },
+          {
+            "max": 218,
+            "mean": 88.83333333333333,
+            "median": 84.0,
+            "min": 9,
+            "p10": 9.3,
+            "p90": 204.2,
+            "sample_count": 12,
+            "start_seconds": 840.0
+          }
+        ],
+        "last_180_seconds_range": [
+          5,
+          223
+        ],
+        "paired_phase_growth": [
+          {
+            "end_seconds": 840.016,
+            "growth": -6.0,
+            "start_seconds": 180.016
+          },
+          {
+            "end_seconds": 845.016,
+            "growth": 123.0,
+            "start_seconds": 185.016
+          },
+          {
+            "end_seconds": 850.016,
+            "growth": 16.0,
+            "start_seconds": 190.016
+          },
+          {
+            "end_seconds": 855.016,
+            "growth": 88.0,
+            "start_seconds": 195.016
+          },
+          {
+            "end_seconds": 860.016,
+            "growth": -62.0,
+            "start_seconds": 200.016
+          },
+          {
+            "end_seconds": 865.016,
+            "growth": -9.0,
+            "start_seconds": 205.016
+          },
+          {
+            "end_seconds": 870.016,
+            "growth": 41.0,
+            "start_seconds": 210.016
+          },
+          {
+            "end_seconds": 875.016,
+            "growth": -1.0,
+            "start_seconds": 215.016
+          },
+          {
+            "end_seconds": 880.016,
+            "growth": 42.0,
+            "start_seconds": 220.016
+          },
+          {
+            "end_seconds": 885.016,
+            "growth": -14.95763389288549,
+            "start_seconds": 225.016
+          },
+          {
+            "end_seconds": 890.016,
+            "growth": -5.0,
+            "start_seconds": 230.016
+          },
+          {
+            "end_seconds": 895.016,
+            "growth": 122.0,
+            "start_seconds": 235.016
+          }
+        ],
+        "paired_phase_growth_min_median_max": [
+          -62.0,
+          7.5,
+          123.0
+        ]
+      }
+    }
+  },
+  "descriptor_sha256": "50ef35bd4a3226521e58f2a3115e30fd546d678e18a4648781f38bdc0bb37f83",
+  "interpretation_policy_sha256": "9ce1b79f2428ad6a20bc2d097496b741d8bc147a790ef1f64359d6c719a61e3f",
+  "report": "/tmp/capacity-optional-confirm-lease600-evm50-900s-e2cc04cbd054.json",
+  "report_sha256": "1ac6203ba81e3edb1b5d8ce056b4c139d5a27f345784489396d63d1a031f7fc7"
+}

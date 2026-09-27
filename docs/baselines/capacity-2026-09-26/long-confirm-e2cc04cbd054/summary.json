@@ -1,0 +1,235 @@
+{
+  "01-capacity-optional-confirm-lease600-evm50-900s": {
+    "archive_safety_verdict": "None; original assessments and independent audits remain authoritative",
+    "drain": {
+      "client_pending": 0,
+      "http_inflight": 0,
+      "journal_unresolved": 0,
+      "node_pending": 0,
+      "redis_active": 0,
+      "redis_borrowed": 0,
+      "redis_delayed": 0,
+      "redis_pending": 0,
+      "redis_submitted": 0
+    },
+    "independent_audit_result": "pass",
+    "late_windows": {
+      "evm12": {
+        "admission_p99_limit_ms": 1000,
+        "capacity_candidate": true,
+        "disqualifiers": [],
+        "from_seconds": 300.016,
+        "rates_tps": {
+          "admitted": 49.999,
+          "attempted": 50.006,
+          "included": 49.989,
+          "terminal": 50.031
+        },
+        "relative_tolerance": 0.05,
+        "requires_repeated_confirmation": true,
+        "terminal_backlog_end": 1830,
+        "terminal_backlog_growth_per_second": -0.032,
+        "terminal_backlog_start": 1849,
+        "to_seconds": 900.008,
+        "unsigned_backlog_end": 15,
+        "unsigned_backlog_linear_trend_per_second": -0.008,
+        "unsigned_backlog_start": 19,
+        "unsigned_growth_detected": false,
+        "unsigned_monotonic_growth": false,
+        "unsigned_trend_threshold_per_second": 0.1,
+        "window_seconds": 599.992
+      }
+    },
+    "original_oracle": {
+      "eligible_for_rate_assessment": true,
+      "expected_parked_intents": 0,
+      "liveness_failures": [],
+      "liveness_pass": true,
+      "observed_intents": 45000,
+      "offered_intents": 45000,
+      "outcome": "pass",
+      "safety_failures": [],
+      "safety_pass": true
+    },
+    "original_outcome": "pass",
+    "original_raw_capacity_candidate": true,
+    "original_run_record": {
+      "assessment": "/private/tmp/capacity-optional-confirm-lease600-evm50-900s-e2cc04cbd054-assessment.json",
+      "assessment_sha256": "7d49d9734753f4c83f1fc88d8169beeb293046360e720d5dee78ed92de18f2ae",
+      "capacity_selected": false,
+      "exit": 0,
+      "name": "capacity-optional-confirm-lease600-evm50-900s",
+      "report": "/private/tmp/capacity-optional-confirm-lease600-evm50-900s-e2cc04cbd054.json",
+      "report_sha256": "1ac6203ba81e3edb1b5d8ce056b4c139d5a27f345784489396d63d1a031f7fc7",
+      "safely_settled": true
+    },
+    "queue_settings": {
+      "APP__QUEUE__EOA_BROADCAST_CONCURRENCY": "32",
+      "APP__QUEUE__EOA_EXECUTOR_WORKERS": "1",
+      "APP__QUEUE__EOA_MAX_INFLIGHT": "4096",
+      "APP__QUEUE__EXECUTION_NAMESPACE": "b6a60af3225f40dc92c319373adf0ccc",
+      "APP__QUEUE__EXTERNAL_BUNDLER_SEND_WORKERS": "1",
+      "APP__QUEUE__LEASE_DURATION_SECONDS": "600",
+      "APP__QUEUE__LOCAL_CONCURRENCY": "4",
+      "APP__QUEUE__POLLING_INTERVAL_MS": "20",
+      "APP__QUEUE__SOLANA_CONFIRMATION_POLL_INTERVAL_SECONDS": "5",
+      "APP__QUEUE__SOLANA_EXECUTOR_WORKERS": "100",
+      "APP__QUEUE__USEROP_CONFIRM_WORKERS": "1",
+      "APP__QUEUE__WEBHOOK_WORKERS": "1"
+    }
+  },
+  "02-capacity-confirm-lease600-shared5875-900s": {
+    "archive_safety_verdict": "None; original assessments and independent audits remain authoritative",
+    "drain": {
+      "client_pending": 0,
+      "http_inflight": 0,
+      "journal_unresolved": 0,
+      "node_pending": 0,
+      "redis_active": 0,
+      "redis_borrowed": 0,
+      "redis_delayed": 0,
+      "redis_pending": 0,
+      "redis_submitted": 0
+    },
+    "independent_audit_result": "pass",
+    "late_windows": {
+      "evm12": {
+        "admission_p99_limit_ms": 1000,
+        "capacity_candidate": true,
+        "disqualifiers": [],
+        "from_seconds": 300.017,
+        "rates_tps": {
+          "admitted": 14.999,
+          "attempted": 14.999,
+          "included": 15.0,
+          "terminal": 15.002
+        },
+        "relative_tolerance": 0.05,
+        "requires_repeated_confirmation": true,
+        "terminal_backlog_end": 519,
+        "terminal_backlog_growth_per_second": -0.003,
+        "terminal_backlog_start": 521,
+        "to_seconds": 900.004,
+        "unsigned_backlog_end": 11,
+        "unsigned_backlog_linear_trend_per_second": 0.003,
+        "unsigned_backlog_start": 11,
+        "unsigned_growth_detected": false,
+        "unsigned_monotonic_growth": false,
+        "unsigned_trend_threshold_per_second": 0.1,
+        "window_seconds": 599.9870000000001
+      },
+      "evm2": {
+        "admission_p99_limit_ms": 1000,
+        "capacity_candidate": true,
+        "disqualifiers": [],
+        "from_seconds": 300.017,
+        "rates_tps": {
+          "admitted": 15.0,
+          "attempted": 15.009,
+          "included": 15.007,
+          "terminal": 15.1
+        },
+        "relative_tolerance": 0.05,
+        "requires_repeated_confirmation": true,
+        "terminal_backlog_end": 101,
+        "terminal_backlog_growth_per_second": -0.1,
+        "terminal_backlog_start": 161,
+        "to_seconds": 900.004,
+        "unsigned_backlog_end": 5,
+        "unsigned_backlog_linear_trend_per_second": -0.001,
+        "unsigned_backlog_start": 10,
+        "unsigned_growth_detected": false,
+        "unsigned_monotonic_growth": false,
+        "unsigned_trend_threshold_per_second": 0.1,
+        "window_seconds": 599.9870000000001
+      },
+      "nitro": {
+        "admission_p99_limit_ms": 1000,
+        "capacity_candidate": true,
+        "disqualifiers": [],
+        "from_seconds": 300.017,
+        "rates_tps": {
+          "admitted": 12.5,
+          "attempted": 12.5,
+          "included": 12.495,
+          "terminal": 12.49
+        },
+        "relative_tolerance": 0.05,
+        "requires_repeated_confirmation": true,
+        "terminal_backlog_end": 50,
+        "terminal_backlog_growth_per_second": 0.01,
+        "terminal_backlog_start": 44,
+        "to_seconds": 900.004,
+        "unsigned_backlog_end": 3,
+        "unsigned_backlog_linear_trend_per_second": -0.0,
+        "unsigned_backlog_start": 3,
+        "unsigned_growth_detected": false,
+        "unsigned_monotonic_growth": false,
+        "unsigned_trend_threshold_per_second": 0.1,
+        "window_seconds": 599.9870000000001
+      },
+      "solana": {
+        "admission_p99_limit_ms": 1000,
+        "capacity_candidate": true,
+        "disqualifiers": [],
+        "from_seconds": 300.017,
+        "rates_tps": {
+          "admitted": 16.25,
+          "attempted": 16.249,
+          "included": 16.24,
+          "terminal": 16.247
+        },
+        "relative_tolerance": 0.05,
+        "requires_repeated_confirmation": true,
+        "terminal_backlog_end": 326,
+        "terminal_backlog_growth_per_second": 0.003,
+        "terminal_backlog_start": 324,
+        "to_seconds": 900.004,
+        "unsigned_backlog_end": 1,
+        "unsigned_backlog_linear_trend_per_second": -0.0,
+        "unsigned_backlog_start": 0,
+        "unsigned_growth_detected": false,
+        "unsigned_monotonic_growth": false,
+        "unsigned_trend_threshold_per_second": 0.1,
+        "window_seconds": 599.9870000000001
+      }
+    },
+    "original_oracle": {
+      "eligible_for_rate_assessment": true,
+      "expected_parked_intents": 0,
+      "liveness_failures": [],
+      "liveness_pass": true,
+      "observed_intents": 52875,
+      "offered_intents": 52875,
+      "outcome": "pass",
+      "safety_failures": [],
+      "safety_pass": true
+    },
+    "original_outcome": "pass",
+    "original_raw_capacity_candidate": true,
+    "original_run_record": {
+      "assessment": "/private/tmp/capacity-confirm-lease600-shared5875-900s-e2cc04cbd054-assessment.json",
+      "assessment_sha256": "91a67d390050c37861601ca5f559782888709ab256d08039ea53fc05d67f0c36",
+      "capacity_selected": false,
+      "exit": 0,
+      "name": "capacity-confirm-lease600-shared5875-900s",
+      "report": "/private/tmp/capacity-confirm-lease600-shared5875-900s-e2cc04cbd054.json",
+      "report_sha256": "c9539e942a6080a27077b9fd9f4768a2e12ffeb99a5a975b24ea04c0c167937f",
+      "safely_settled": true
+    },
+    "queue_settings": {
+      "APP__QUEUE__EOA_BROADCAST_CONCURRENCY": "32",
+      "APP__QUEUE__EOA_EXECUTOR_WORKERS": "3",
+      "APP__QUEUE__EOA_MAX_INFLIGHT": "4096",
+      "APP__QUEUE__EXECUTION_NAMESPACE": "1229fcb76dba46d8a10a94b0da4d6cf0",
+      "APP__QUEUE__EXTERNAL_BUNDLER_SEND_WORKERS": "1",
+      "APP__QUEUE__LEASE_DURATION_SECONDS": "600",
+      "APP__QUEUE__LOCAL_CONCURRENCY": "4",
+      "APP__QUEUE__POLLING_INTERVAL_MS": "20",
+      "APP__QUEUE__SOLANA_CONFIRMATION_POLL_INTERVAL_SECONDS": "5",
+      "APP__QUEUE__SOLANA_EXECUTOR_WORKERS": "100",
+      "APP__QUEUE__USEROP_CONFIRM_WORKERS": "1",
+      "APP__QUEUE__WEBHOOK_WORKERS": "1"
+    }
+  }
+}

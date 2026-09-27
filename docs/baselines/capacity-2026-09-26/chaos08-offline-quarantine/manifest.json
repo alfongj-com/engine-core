@@ -1,0 +1,62 @@
+{
+  "archive_wall_seconds": 0.04455325,
+  "files": {
+    "README.md": {
+      "bytes": 1900,
+      "sha256": "659441b79b610f1727d841c5de54c78b491bc9d90cc285bae189cf2e7e604293"
+    },
+    "analysis-1.json": {
+      "bytes": 1075,
+      "sha256": "62cc36cc8303af1f3522c8026d9f99ee052af21d09112fad85a398b0c933620f"
+    },
+    "archive-source.py": {
+      "bytes": 12481,
+      "sha256": "3af1736c8c27923dbd85578b6a43058910a2891cae4894fa3ace4481356aa90d"
+    },
+    "chronology.json": {
+      "bytes": 5850,
+      "sha256": "637cc4a6fe865ed979174d8d174cf23a2d0af20deca26358c41abdc1bb8d4072"
+    },
+    "evm12-rpc-audit.jsonl.gz": {
+      "bytes": 38890,
+      "sha256": "91de5ec063a28f7a27319035f5d8a894476b3107417ca11bbc7466629ae00283"
+    },
+    "evm2-rpc-audit.jsonl.gz": {
+      "bytes": 38984,
+      "sha256": "4ff18dc527249cc6e2492e6e0fde6aef9737fe582f85ae31394a56e852c8dd89"
+    },
+    "full-report.json.gz": {
+      "bytes": 118909,
+      "sha256": "adb0005808869b0fa1fee97eedc014b6419d664efa9874956ed85ee54ea67a0d"
+    },
+    "independent-audit-1.json": {
+      "bytes": 8470,
+      "sha256": "68db52a4971846729bd5b95966c080349a71aae7e0697b77024fd39ce03943c2"
+    },
+    "observations.jsonl.gz": {
+      "bytes": 86584,
+      "sha256": "54caaddea0af416de3f1522a7e023d10c5b2edd058ff1091e907d2b5dfec21ba"
+    },
+    "one-shot-state.json": {
+      "bytes": 6083,
+      "sha256": "ef44df1261dad98e2635afa721d20f69ab9812ec5c85caf599fd65ce761f2004"
+    },
+    "provenance.json": {
+      "bytes": 165041,
+      "sha256": "9087004d963d2134a0378450d6c78d852184ae90da85a4e59a11444ac05b8e05"
+    },
+    "resource-preflight.jsonl": {
+      "bytes": 1229,
+      "sha256": "3f005a949f991f94a2382908b6ef95f8e0f00aadcb91ee4583be6f616e7eb65b"
+    },
+    "resources.jsonl": {
+      "bytes": 3981,
+      "sha256": "7f6150f3ec9cf2941ac97d423d4f7d99903af6b59fdef324a6736cf71ad6c663"
+    },
+    "verified-observations.jsonl.gz": {
+      "bytes": 77000,
+      "sha256": "3b6cb62af0f6e7e72bd61829656c7d9defe8e9dce367a8d713419fd720b62854"
+    }
+  },
+  "supplement": "Independent verified per-ID rows, chronology and outcome description added; original report unchanged."
+}

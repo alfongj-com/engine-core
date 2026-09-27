@@ -1,0 +1,241 @@
+{
+  "schema": "closed-engine-kill-timing-counts-v1",
+  "source_report": "/tmp/chaos04-engine-kill-lease600.json",
+  "source_sha256": "00c6f6577213af337ca406205ac0749101db0ab7f3a0d7b72df82220d4ce73c1",
+  "scope": "Closed saved report and hashing captured RPC audit files only. No live RPC, restart, replay, or independent custody audit.",
+  "configuration": {
+    "engine_binary_sha256": "35e307e16cafa7cbb17caafcf5ed90a840d58dddd2454542566619266e7a4c07",
+    "harness_sha256": {
+      "capacity_campaign.py": "c3af22b49a72617c0f3deaccc938abd3cd41012ab776b59f57431a3bee2c37f6",
+      "capacity_faults.py": "59e2bc4d90bceca2682c27e35c5871ee538d4878a795f990fa90e6d5f90afa13",
+      "capacity_resource_guard.py": "bbfda4901f49600cdff9fa907b73e2a64e8df534496083994fd4717c55979bb6"
+    },
+    "rates": {
+      "evm12": 12.0,
+      "evm2": 12.0,
+      "nitro": 10.0,
+      "solana": 13.0
+    },
+    "planned_duration_seconds": 300.0,
+    "actual_offer_phase_end_seconds": 160.456310541,
+    "queue_lease_seconds": 600,
+    "redis_appendfsync": "everysec",
+    "sqlite": "WAL synchronous=FULL/fullfsync=ON"
+  },
+  "verdict": {
+    "outcome": "fail_closed_recovery_required",
+    "actual_engine_sigkill_recorded": true,
+    "requested_fault_validated": false,
+    "reported_safety_pass": true,
+    "reported_liveness_pass": false,
+    "reported_oracle_outcome": "incomplete",
+    "eligible_for_rate_assessment": false,
+    "automatic_recovery_demonstrated": false,
+    "independent_security_review": "complete: retained custody and recorded terminal proofs verified; automatic recovery/liveness failed"
+  },
+  "timeline": [
+    {
+      "event": "chaos_trigger",
+      "load_elapsed_seconds": 100.426741,
+      "campaign_elapsed_seconds": 134.430483,
+      "accepted": 1002,
+      "kind": "engine-crash"
+    },
+    {
+      "event": "engine_sigkill",
+      "load_elapsed_seconds": 100.43121,
+      "campaign_elapsed_seconds": 134.434951
+    },
+    {
+      "event": "spawn",
+      "name": "engine",
+      "load_elapsed_seconds": 100.44235,
+      "campaign_elapsed_seconds": 134.44609
+    },
+    {
+      "event": "durable_fence_stop",
+      "load_elapsed_seconds": 160.445515,
+      "campaign_elapsed_seconds": 194.449256,
+      "journal_halted": true,
+      "journal_halt_category": "redis_checkpoint_mismatch",
+      "context": "chaos_failure"
+    },
+    {
+      "event": "chaos_failed",
+      "load_elapsed_seconds": 160.445519,
+      "campaign_elapsed_seconds": 194.449262,
+      "error_type": "RuntimeError"
+    },
+    {
+      "event": "client_drained",
+      "load_elapsed_seconds": 160.464003,
+      "campaign_elapsed_seconds": 194.467745
+    },
+    {
+      "event": "engine_stopped_for_consistent_reconciliation",
+      "load_elapsed_seconds": 160.471515,
+      "campaign_elapsed_seconds": 194.475258
+    }
+  ],
+  "counts": {
+    "planned_offers": 14100,
+    "dispatched": 7543,
+    "original_202": 4719,
+    "original_transport_errors": 2824,
+    "campaign_aborted_not_dispatched": 6557,
+    "last_sample_admissions": 4719,
+    "last_sample_attempts": 4696,
+    "last_sample_terminal": 3978,
+    "journal_unresolved": 741,
+    "proxy_accepted_unique_wires": 4695
+  },
+  "last_sample_seconds": 160.456,
+  "per_chain": {
+    "evm12": {
+      "planned_offers": 3600,
+      "dispatched": 1926,
+      "campaign_aborted_not_dispatched": 1674,
+      "original_responses": {
+        "202": 1205,
+        "transport_error": 721
+      },
+      "last_journal_sample": {
+        "admitted": 1205,
+        "attempted": 1194,
+        "included": 1194,
+        "terminal": 883
+      },
+      "proxy_accepted_unique_wires": 1194,
+      "forwarded_sends": 1194,
+      "proxy_failure_counts": {},
+      "rpc_audit": {
+        "path": "/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/engine-capacity-w_bdqb4n/evm12-rpc.jsonl",
+        "sha256": "a75f49776d15cf2c8340d0d8934f8f08f5efcddb5010795f912dc61b36c8bbef",
+        "reported_event_count": 2389
+      }
+    },
+    "evm2": {
+      "planned_offers": 3600,
+      "dispatched": 1926,
+      "campaign_aborted_not_dispatched": 1674,
+      "original_responses": {
+        "202": 1205,
+        "transport_error": 721
+      },
+      "last_journal_sample": {
+        "admitted": 1205,
+        "attempted": 1195,
+        "included": 1195,
+        "terminal": 1079
+      },
+      "proxy_accepted_unique_wires": 1195,
+      "forwarded_sends": 1195,
+      "proxy_failure_counts": {
+        "BrokenPipeError": 14
+      },
+      "rpc_audit": {
+        "path": "/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/engine-capacity-w_bdqb4n/evm2-rpc.jsonl",
+        "sha256": "de914e0cc78bbfd74b4292989afd071283bdae110414d524072c8a12b55ade71",
+        "reported_event_count": 2391
+      }
+    },
+    "nitro": {
+      "planned_offers": 3000,
+      "dispatched": 1605,
+      "campaign_aborted_not_dispatched": 1395,
+      "original_responses": {
+        "202": 1004,
+        "transport_error": 601
+      },
+      "last_journal_sample": {
+        "admitted": 1004,
+        "attempted": 1002,
+        "included": 1002,
+        "terminal": 965
+      },
+      "proxy_accepted_unique_wires": 1002,
+      "forwarded_sends": 1002,
+      "proxy_failure_counts": {},
+      "rpc_audit": {
+        "path": "/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/engine-capacity-w_bdqb4n/nitro-rpc.jsonl",
+        "sha256": "c674cdef5cda2566d1b5fae70d5ba481a146cd35ea316c387cea1e83cf9ddd39",
+        "reported_event_count": 2005
+      }
+    },
+    "solana": {
+      "planned_offers": 3900,
+      "dispatched": 2086,
+      "campaign_aborted_not_dispatched": 1814,
+      "original_responses": {
+        "202": 1305,
+        "transport_error": 781
+      },
+      "last_journal_sample": {
+        "admitted": 1305,
+        "attempted": 1305,
+        "included": 1304,
+        "finalized": 1304,
+        "terminal": 1051
+      },
+      "proxy_accepted_unique_wires": 1304,
+      "forwarded_sends": 1304,
+      "proxy_failure_counts": {},
+      "rpc_audit": {
+        "path": "/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/engine-capacity-w_bdqb4n/solana-rpc.jsonl",
+        "sha256": "276a19ea48f962d6a8f1a3a1426d7529d916b9b2eca09c320203be34f9f0d673",
+        "reported_event_count": 2609
+      }
+    }
+  },
+  "drain": {
+    "client_pending": 0,
+    "http_inflight": 0,
+    "journal_unresolved": 741,
+    "node_pending": 0,
+    "redis_active": 11,
+    "redis_borrowed": 0,
+    "redis_delayed": 247,
+    "redis_pending": 23,
+    "redis_submitted": 464
+  },
+  "durable_fence": {
+    "chain_ids": [],
+    "context": "chaos_failure",
+    "journal_halt_category": "redis_checkpoint_mismatch",
+    "journal_halted": true
+  },
+  "observed_fault_to_fence_seconds": 60.014305,
+  "cause": "Restart exited immediately with Recovery required: Redis checkpoint mismatch. Captured SQL13436 is one checkpoint ahead of final persisted Redis marker13435 with matching authority. Consistent with commit-before-mirror crash window; instruction-level timing is not proven.",
+  "limits": [
+    "Actual SIGKILL and restart spawn are recorded; restart exited with checkpoint mismatch, requested_fault_validated=false and automatic recovery failed.",
+    "Reported safety_pass=true means the captured safety checks found no violation; liveness=false and741 journal requests remain nonterminal. It is not complete-workload success.",
+    "The60.014-second kill-to-fence observation includes the harness restart-readiness wait; it is not the time the durable mismatch first arose or a fail-closed SLA.",
+    "Original transport errors were not retried. Per-chain202 totals equal admission-prefix counts, but the report has no per-response-ID map; do not claim exact individual202-to-admission mapping.",
+    "Planned14100 offers include6557 never dispatched after campaign abort; neither set is erased from the incomplete verdict.",
+    "No post-fault recovery throughput or capacity promotion is reported. Queue counts are nonzero and retained state requires operator custody review."
+  ],
+  "independent_security_audit": {
+    "path": "/tmp/engine-chaos04-independent-audit/audit.json",
+    "sha256": "d252e9414f4f3699e3ccd8df57b66e3640a7ebe7d2c885272c9ee6e56c2ad527",
+    "recorded_terminal_proofs_verified": 3978,
+    "retained_nonterminal": 741,
+    "nonterminal_disposition": {
+      "qualified_chain_execution_not_terminal": 711,
+      "provisional_nitro_execution": 6,
+      "unbroadcast_solana_signature": 1,
+      "unsigned_eoa": 23
+    },
+    "http_correspondence": "Original HTTP statuses are aggregate per chain; exact namespace admission prefixes match those totals. No retained per-response-ID map.",
+    "restart_stderr": "Recovery required: Redis checkpoint mismatch"
+  },
+  "checkpoint_comparison": {
+    "path": "/tmp/engine-chaos04-independent-audit/marker-comparison.json",
+    "sha256": "2939e3884adbedcbcd541cd6f2a11fcf223c7b3f34ac04b1c1adf1035e3e2899",
+    "captured_aof_marker_checkpoint": 13435,
+    "journal_checkpoint": 13436,
+    "same_schema_deployment_epoch": true,
+    "sql_ahead_by": 1,
+    "interpretation": "Persisted SQLite is ahead of the final captured Redis marker. This is consistent with a SIGKILL between durable journal commit and its Redis mirror, without proving instruction-level timing.",
+    "source_scope": "Sequential read-only parsing of persisted AOF commands after owned Redis stopped; no Redis process, checkpoint change, reattach or replay."
+  }
+}

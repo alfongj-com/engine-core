@@ -1,0 +1,15 @@
+{
+  "README.md": "04c39fb8b9b849a87321fa9c48cf0e8b1128c0cd97d416de9764581a4fb9c915",
+  "draft/README.md": "043e69b95e7b315a33f136a9f1a1f9f8c63bee2558056d7d86781684342e4e99",
+  "draft/capacity_campaign.py": "c3af22b49a72617c0f3deaccc938abd3cd41012ab776b59f57431a3bee2c37f6",
+  "draft/capacity_journal_reader_test.py": "eb88820b9e9ceb7b7b92c06215b46b808eb6624a3a577f7536a977c15d8ba628",
+  "draft/final-tests.log": "3f9795da93768230186f91fba1987e7954448904ff93c5b2ae10348f94bbc73b",
+  "draft/journal-reader.patch": "36f9f97c4377ada4ce5caecb5d8a33564cb2a7818fa9c7edd0ddc06c1a8a0919",
+  "draft/manifest.json": "d4860774a64d0c5ed3521e3d62c6989f08b82855b9c4e96169c09c3994e3eef2",
+  "draft/negative-control.log": "e10dabe79a397b902cf8edf94088dcf910096d29ba460ef8d63b470a92f25b3d",
+  "draft/tests.log": "c88e3af4913a1e38b3402c2e8bc8be1cc4ee2a73160f4254a45f666e06f36c8c",
+  "final-tests.log": "3f9795da93768230186f91fba1987e7954448904ff93c5b2ae10348f94bbc73b",
+  "integrated-tests.log": "f6ffa71fe6bfb8869f629503d57e2d1dfc812c3f3c6d4d1976ca24049ac1ab8a",
+  "journal-reader.patch": "36f9f97c4377ada4ce5caecb5d8a33564cb2a7818fa9c7edd0ddc06c1a8a0919",
+  "negative-control.log": "e10dabe79a397b902cf8edf94088dcf910096d29ba460ef8d63b470a92f25b3d"
+}

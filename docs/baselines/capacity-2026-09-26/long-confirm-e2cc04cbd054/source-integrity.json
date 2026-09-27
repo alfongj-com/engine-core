@@ -1,0 +1,250 @@
+{
+  "checked_frozen_sources": {
+    "/Users/alfongj/Code/engine-core/docs/baselines/capacity-2026-09-26/supervisor-v4/runner.py": "0f2d64f85a240d932ba1f558a2c105445a76370d04287967dea877e55eebb040",
+    "/Users/alfongj/Code/engine-core/scripts/capacity_assess.py": "8ebafce9dd136ce0a0179ab04292836d8c0d685fe9b31f9b455e45665e4b6865",
+    "/Users/alfongj/Code/engine-core/scripts/capacity_campaign.py": "959d1aa819e380ab2c17d1afa59348110954412d891d53d24944d3831fa675d7",
+    "/Users/alfongj/Code/engine-core/scripts/capacity_faults.py": "59e2bc4d90bceca2682c27e35c5871ee538d4878a795f990fa90e6d5f90afa13",
+    "/Users/alfongj/Code/engine-core/scripts/capacity_resource_guard.py": "bbfda4901f49600cdff9fa907b73e2a64e8df534496083994fd4717c55979bb6",
+    "/private/tmp/engine-capacity-dispatch-plan/long-confirmation-jobs.json": "b250472c8ac1ceafc05944e3204cda270bf3cce530a58064414633cf507bd7b7",
+    "/tmp/engine-capacity-tools/nitro-drain-hook-v2.py": "424a26e6b8539d251df61396372951270ab1193372733099f94ec66608f92bd1"
+  },
+  "cohort": "e2cc04cbd054",
+  "original_review_required": null,
+  "privacy_and_provenance_checks": {
+    "01-capacity-optional-confirm-lease600-evm50-900s": {
+      "observation_rows_privacy_checked": 45000,
+      "rpc_events": {
+        "evm12": {
+          "rpc_faults_released": 1,
+          "send_accepted": 45000,
+          "send_forwarded": 45000
+        }
+      }
+    },
+    "02-capacity-confirm-lease600-shared5875-900s": {
+      "observation_rows_privacy_checked": 52875,
+      "rpc_events": {
+        "evm12": {
+          "rpc_faults_released": 1,
+          "send_accepted": 13500,
+          "send_forwarded": 13500
+        },
+        "evm2": {
+          "rpc_faults_released": 1,
+          "send_accepted": 13500,
+          "send_forwarded": 13500
+        },
+        "nitro": {
+          "rpc_faults_released": 1,
+          "send_accepted": 11250,
+          "send_forwarded": 11250
+        },
+        "solana": {
+          "rpc_faults_released": 1,
+          "send_accepted": 14625,
+          "send_forwarded": 14625
+        }
+      }
+    }
+  },
+  "sources": {
+    "01-capacity-optional-confirm-lease600-evm50-900s/analyst-backlog-description.json": {
+      "lossless_gzip": false,
+      "source": "/private/tmp/capacity-optional-confirm-lease600-evm50-900s-e2cc04cbd054-backlog-description.json",
+      "source_bytes": 10433,
+      "source_sha256": "18acd370e354baacda3b22dca35627b0ea6e06739c5341f6ff6c5cca2873f794"
+    },
+    "01-capacity-optional-confirm-lease600-evm50-900s/analyst-compact.json": {
+      "lossless_gzip": false,
+      "source": "/private/tmp/capacity-optional-confirm-lease600-evm50-900s-e2cc04cbd054-compact.json",
+      "source_bytes": 17653,
+      "source_sha256": "a78f5fe3a128c8079a63848ce36305986ea59fd329afb4020ccaa89556b53aaa"
+    },
+    "01-capacity-optional-confirm-lease600-evm50-900s/analyst-summary.json": {
+      "lossless_gzip": false,
+      "source": "/private/tmp/capacity-optional-confirm-lease600-evm50-900s-e2cc04cbd054-summary.json",
+      "source_bytes": 6303,
+      "source_sha256": "35d10cc49d490e75be4ca5450c84a7293e4daa127108ffd88248442bc0bc41d5"
+    },
+    "01-capacity-optional-confirm-lease600-evm50-900s/evm12-rpc-audit.jsonl.gz": {
+      "lossless_gzip": true,
+      "source": "/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/engine-capacity-zlveg60d/evm12-rpc.jsonl",
+      "source_bytes": 26428277,
+      "source_sha256": "3063e5db2ad377d5e97d13ee118295e951457a04ca709bc77702175c59f44726"
+    },
+    "01-capacity-optional-confirm-lease600-evm50-900s/full-report.json.gz": {
+      "lossless_gzip": true,
+      "source": "/private/tmp/capacity-optional-confirm-lease600-evm50-900s-e2cc04cbd054.json",
+      "source_bytes": 10648673,
+      "source_sha256": "1ac6203ba81e3edb1b5d8ce056b4c139d5a27f345784489396d63d1a031f7fc7"
+    },
+    "01-capacity-optional-confirm-lease600-evm50-900s/independent-audit.json": {
+      "lossless_gzip": false,
+      "source": "/tmp/engine-capacity-long-confirm-independent-audit/evm50.json",
+      "source_bytes": 2928,
+      "source_sha256": "014e72bc81d81606196626222ad156005dbeb5b57accc9c1eae41ce12b422dbf"
+    },
+    "01-capacity-optional-confirm-lease600-evm50-900s/observations.jsonl.gz": {
+      "lossless_gzip": false,
+      "source": "/private/tmp/capacity-optional-confirm-lease600-evm50-900s-e2cc04cbd054.observations.jsonl.gz",
+      "source_bytes": 5036818,
+      "source_sha256": "2e111f424ceda480eeb2a13085542b81c1d466a2fc7c416bfc69cabe2cf593e6"
+    },
+    "01-capacity-optional-confirm-lease600-evm50-900s/resource-preflight.jsonl": {
+      "lossless_gzip": false,
+      "source": "/private/tmp/capacity-optional-confirm-lease600-evm50-900s-e2cc04cbd054.resource-preflight.jsonl",
+      "source_bytes": 1229,
+      "source_sha256": "036d1450f1449f348596770e88f8638908e3bde5205bdc7dd52bd70c79ca0564"
+    },
+    "01-capacity-optional-confirm-lease600-evm50-900s/resources.jsonl": {
+      "lossless_gzip": false,
+      "source": "/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/engine-capacity-zlveg60d/resource-guard.jsonl",
+      "source_bytes": 17923,
+      "source_sha256": "f816d40bbcd075c420ffba9eacc95e9e27ca978c2e345835097c9399b7f07cd0"
+    },
+    "01-capacity-optional-confirm-lease600-evm50-900s/strict-assessment.json": {
+      "lossless_gzip": false,
+      "source": "/private/tmp/capacity-optional-confirm-lease600-evm50-900s-e2cc04cbd054-assessment.json",
+      "source_bytes": 3392,
+      "source_sha256": "7d49d9734753f4c83f1fc88d8169beeb293046360e720d5dee78ed92de18f2ae"
+    },
+    "02-capacity-confirm-lease600-shared5875-900s/analyst-backlog-description.json": {
+      "lossless_gzip": false,
+      "source": "/private/tmp/capacity-confirm-lease600-shared5875-900s-e2cc04cbd054-backlog-description.json",
+      "source_bytes": 54069,
+      "source_sha256": "047f26b2d53fed2c512d385554580581a8910f964af6c0075296f17eb433c1aa"
+    },
+    "02-capacity-confirm-lease600-shared5875-900s/analyst-compact.json": {
+      "lossless_gzip": false,
+      "source": "/private/tmp/capacity-confirm-lease600-shared5875-900s-e2cc04cbd054-compact.json",
+      "source_bytes": 58543,
+      "source_sha256": "b6d18297b2babcf1447423ec6e46079fced897d188f455cceb83f49586c80e2c"
+    },
+    "02-capacity-confirm-lease600-shared5875-900s/analyst-summary.json": {
+      "lossless_gzip": false,
+      "source": "/private/tmp/capacity-confirm-lease600-shared5875-900s-e2cc04cbd054-summary.json",
+      "source_bytes": 24565,
+      "source_sha256": "5e27daaf21e306005190e441d410c6f0a9ef5747d47e22c8b76f641f02603a21"
+    },
+    "02-capacity-confirm-lease600-shared5875-900s/evm12-rpc-audit.jsonl.gz": {
+      "lossless_gzip": true,
+      "source": "/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/engine-capacity-3hcxoydv/evm12-rpc.jsonl",
+      "source_bytes": 7921953,
+      "source_sha256": "64a57d9cae6b159da420635c5f7c2df08e030e9f8c9772ce7623c9dc4c513c45"
+    },
+    "02-capacity-confirm-lease600-shared5875-900s/evm2-rpc-audit.jsonl.gz": {
+      "lossless_gzip": true,
+      "source": "/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/engine-capacity-3hcxoydv/evm2-rpc.jsonl",
+      "source_bytes": 7922161,
+      "source_sha256": "cdacdbcfda78f4747947536a70a3f2734b23593475118c636112dfdf7b6e038c"
+    },
+    "02-capacity-confirm-lease600-shared5875-900s/full-report.json.gz": {
+      "lossless_gzip": true,
+      "source": "/private/tmp/capacity-confirm-lease600-shared5875-900s-e2cc04cbd054.json",
+      "source_bytes": 14755836,
+      "source_sha256": "c9539e942a6080a27077b9fd9f4768a2e12ffeb99a5a975b24ea04c0c167937f"
+    },
+    "02-capacity-confirm-lease600-shared5875-900s/independent-audit.json": {
+      "lossless_gzip": false,
+      "source": "/tmp/engine-capacity-long-confirm-independent-audit/shared5875.json",
+      "source_bytes": 4960,
+      "source_sha256": "ad6bea505cf694a17c305656a7507bd3668fef05c6d04d8dcf582333cfc59949"
+    },
+    "02-capacity-confirm-lease600-shared5875-900s/nitro-rpc-audit.jsonl.gz": {
+      "lossless_gzip": true,
+      "source": "/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/engine-capacity-3hcxoydv/nitro-rpc.jsonl",
+      "source_bytes": 6599967,
+      "source_sha256": "50e86b2a578726c0d2efc7ed83bc45d9b94b28e27c41c21ed5b6d3114b6f3d7e"
+    },
+    "02-capacity-confirm-lease600-shared5875-900s/observations.jsonl.gz": {
+      "lossless_gzip": false,
+      "source": "/private/tmp/capacity-confirm-lease600-shared5875-900s-e2cc04cbd054.observations.jsonl.gz",
+      "source_bytes": 6932875,
+      "source_sha256": "9c638d5f912c1d2e360f1bab2044b4850d753b757fee4c933eef7aedf45ddd37"
+    },
+    "02-capacity-confirm-lease600-shared5875-900s/resource-preflight.jsonl": {
+      "lossless_gzip": false,
+      "source": "/private/tmp/capacity-confirm-lease600-shared5875-900s-e2cc04cbd054.resource-preflight.jsonl",
+      "source_bytes": 2796,
+      "source_sha256": "f615c78cfde759ff4c40e3fadc806311cd7b09b5586c5226f8d1067e988eb16e"
+    },
+    "02-capacity-confirm-lease600-shared5875-900s/resources.jsonl": {
+      "lossless_gzip": false,
+      "source": "/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/engine-capacity-3hcxoydv/resource-guard.jsonl",
+      "source_bytes": 44968,
+      "source_sha256": "f6c0bb77765d2db780a6fde602f3824b4e2f1921f40b1612fa62f0de16208cc1"
+    },
+    "02-capacity-confirm-lease600-shared5875-900s/solana-rpc-audit.jsonl.gz": {
+      "lossless_gzip": true,
+      "source": "/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/engine-capacity-3hcxoydv/solana-rpc.jsonl",
+      "source_bytes": 8695809,
+      "source_sha256": "b679ab295982565fcba3de72b841f57f39826b64f52e995cab4e06dd14e01ba9"
+    },
+    "02-capacity-confirm-lease600-shared5875-900s/strict-assessment.json": {
+      "lossless_gzip": false,
+      "source": "/private/tmp/capacity-confirm-lease600-shared5875-900s-e2cc04cbd054-assessment.json",
+      "source_bytes": 12648,
+      "source_sha256": "91a67d390050c37861601ca5f559782888709ab256d08039ea53fc05d67f0c36"
+    },
+    "archive-privacy-source.py": {
+      "lossless_gzip": false,
+      "source": "/tmp/engine-chaos-archive.py",
+      "source_bytes": 12481,
+      "source_sha256": "3af1736c8c27923dbd85578b6a43058910a2891cae4894fa3ace4481356aa90d"
+    },
+    "archive-source.py": {
+      "lossless_gzip": false,
+      "source": "/tmp/engine-nominal-cohort-archive.py",
+      "source_bytes": 11176,
+      "source_sha256": "fadc4fd680cb1219d0c440ea2920027c72b6f9c72a516ab1087ff56b87176146"
+    },
+    "audit-map.json": {
+      "lossless_gzip": false,
+      "source": "/tmp/engine-capacity-dispatch-plan/long-confirm-audit-map.json",
+      "source_bytes": 238,
+      "source_sha256": "6a0fca01e63fe6ff54c3ebd87b35b91515fe80d0db7b2c4d9a037b8b91471d5c"
+    },
+    "backlog-descriptor-source.py": {
+      "lossless_gzip": false,
+      "source": "/tmp/capacity-posthoc/describe_backlogs.py",
+      "source_bytes": 3667,
+      "source_sha256": "50ef35bd4a3226521e58f2a3115e30fd546d678e18a4648781f38bdc0bb37f83"
+    },
+    "compact-extractor-source.py": {
+      "lossless_gzip": false,
+      "source": "/tmp/engine-capacity-report-extract/extract.py",
+      "source_bytes": 12034,
+      "source_sha256": "c4c65f157513c50f7171aef0646b60630f58f7f81b8bc828d53ed44760b5033f"
+    },
+    "frozen-jobs.json": {
+      "lossless_gzip": false,
+      "source": "/tmp/engine-capacity-dispatch-plan/long-confirmation-jobs.json",
+      "source_bytes": 902,
+      "source_sha256": "b250472c8ac1ceafc05944e3204cda270bf3cce530a58064414633cf507bd7b7"
+    },
+    "interpretation-policy.md": {
+      "lossless_gzip": false,
+      "source": "/tmp/capacity-posthoc/interpretation-v1.md",
+      "source_bytes": 3683,
+      "source_sha256": "9ce1b79f2428ad6a20bc2d097496b741d8bc147a790ef1f64359d6c719a61e3f"
+    },
+    "strict-assessor-source.py": {
+      "lossless_gzip": false,
+      "source": "/Users/alfongj/Code/engine-core/scripts/capacity_assess.py",
+      "source_bytes": 8301,
+      "source_sha256": "8ebafce9dd136ce0a0179ab04292836d8c0d685fe9b31f9b455e45665e4b6865"
+    },
+    "supervisor-final-state.json": {
+      "lossless_gzip": false,
+      "source": "/tmp/engine-capacity-long-confirm-state.json",
+      "source_bytes": 4388,
+      "source_sha256": "91599021c1695dc33b71bb592a53b760be90831b5d3b913e640da6f5ba02e76f"
+    },
+    "supervisor-source.py": {
+      "lossless_gzip": false,
+      "source": "/Users/alfongj/Code/engine-core/docs/baselines/capacity-2026-09-26/supervisor-v4/runner.py",
+      "source_bytes": 17758,
+      "source_sha256": "0f2d64f85a240d932ba1f558a2c105445a76370d04287967dea877e55eebb040"
+    }
+  }
+}

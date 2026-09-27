@@ -1,0 +1,98 @@
+{
+  "archive_wall_seconds": 0.044909124999999994,
+  "files": {
+    "README.md": {
+      "bytes": 1811,
+      "sha256": "4850bb9171e324b20a7c5a9a7998dab2b758d61e125140d0929e6f8aaf326b30"
+    },
+    "analysis-1.json": {
+      "bytes": 1208,
+      "sha256": "e3904ae1e9d0e179f370ceff705d7bc21ceb9c18e1f7fbcef67cb3e401cc488e"
+    },
+    "archive-source.py": {
+      "bytes": 12481,
+      "sha256": "3af1736c8c27923dbd85578b6a43058910a2891cae4894fa3ace4481356aa90d"
+    },
+    "chronology.json": {
+      "bytes": 9074,
+      "sha256": "2e63bea311d320ef04447d6e8921ffd0fd1fd80608112ce7b29260188b5ff7e2"
+    },
+    "cold-journal-inventory.json": {
+      "bytes": 1986,
+      "sha256": "5091f821152471db87d1f605fd32be6bc9f589ea65c8e50a70bd1528dcfbdb10"
+    },
+    "cold-journal-observations.jsonl.gz": {
+      "bytes": 235207,
+      "sha256": "28fc530e125e9c95a554773b2d56785b1423f3a3c512db8c9d86f1e9dc6e7687"
+    },
+    "evm12-rpc-audit.jsonl.gz": {
+      "bytes": 38945,
+      "sha256": "a1693cdf5032e2184d5b4fca5fd470e55041e31e7d3d6632b6dae546a1f620de"
+    },
+    "evm2-rpc-audit.jsonl.gz": {
+      "bytes": 38883,
+      "sha256": "34a2d61999f8da00a813f4d37370856174f50c767b327e84a43aa70f785c914a"
+    },
+    "full-report.json.gz": {
+      "bytes": 172154,
+      "sha256": "8e920b6e6d689238af096b4ff1bad1d86faea07b742d71fdd99128ede5d56b32"
+    },
+    "independent-audit-1.json": {
+      "bytes": 13107,
+      "sha256": "58de1389be9b03c976198c87f913c0a30bb2150a9cf0cae46be03fe50820f8b9"
+    },
+    "one-shot-state.json": {
+      "bytes": 6596,
+      "sha256": "902ef8d9d208c8cc2fad5092f7a533f96d577e3dd555e0a3cf1a9ac75ebbbf4b"
+    },
+    "provenance.json": {
+      "bytes": 4955,
+      "sha256": "e72c1edadb86c0fd07351c8d1cdb09b89ed31cfbd316604f0369c3db49f3028d"
+    },
+    "resource-preflight.jsonl": {
+      "bytes": 1232,
+      "sha256": "bb2fd5cdfe8b9d5c8eb3ac83baee38123d1ff2c514a302a94fafa93cb65995ed"
+    },
+    "resources.jsonl": {
+      "bytes": 3056,
+      "sha256": "65e5eb58617b1b7e7de3d645dc0ece1e25337285321deef61b8ae61071d4c369"
+    },
+    "restored-evm-observations.jsonl.gz": {
+      "bytes": 71109,
+      "sha256": "4a72a9f4c82a22ccbe728b266a8d85423c5164a0beaad10f202058d0d8dddd71"
+    },
+    "restored-evm.json": {
+      "bytes": 3575,
+      "sha256": "545880407992e3e03edf4467a8855c6cc7e2a43093ea75fe3764414a6923001d"
+    },
+    "restored-solana-first-failed.json": {
+      "bytes": 1064,
+      "sha256": "557b7172de0aeedcc4530be7bd68d044b3ef9428ef157484667b6413957383b9"
+    },
+    "restored-solana-observations.jsonl.gz": {
+      "bytes": 39975,
+      "sha256": "decec35e7c33f6627caff6304802fbabb53a4ccd3946f97a7d67300ffea8226d"
+    },
+    "restored-solana-second-failed.json": {
+      "bytes": 1244,
+      "sha256": "c117ba09117962c6711d6d46a42fd389f1f1e39da645ec6c47a0e6c0121d49c0"
+    },
+    "restored-solana-third-failed.json": {
+      "bytes": 1417,
+      "sha256": "2bd709a0cd7f97b089f3092bf9b9b33a841dbb2bdce441a09954bc37371083de"
+    },
+    "restored-solana.json": {
+      "bytes": 1936,
+      "sha256": "9fba4f10e415160f11ff67f0cdab6a93c4df78b13cef06c4ef06d2ec4ae296f1"
+    },
+    "solana-rpc-audit.jsonl.gz": {
+      "bytes": 49920,
+      "sha256": "5a2bc683dac193020e43addec05d2c80d9cdd7c69392e0c72e56b980d7a5e692"
+    },
+    "supplement-manifest.json": {
+      "bytes": 2028,
+      "sha256": "847d44a5cf98ed6c912e6375c2ec57c61b0f9b21e0a045712dae80f4e61990c2"
+    }
+  },
+  "supplement": "Independent stopped-copy custody observations and chronology added after initial archive; original reports unchanged."
+}

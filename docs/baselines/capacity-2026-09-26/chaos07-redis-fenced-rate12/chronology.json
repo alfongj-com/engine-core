@@ -1,0 +1,246 @@
+{
+  "schema_version": "incident-timing-summary-v1",
+  "source_report": "/tmp/chaos07-redis-restart-lease600-rate12-trigger300.json",
+  "source_sha256": "af24b4ad71e633c0970c5cc42adbfc36f553817c80095193ba66265a33715f0b",
+  "scope": "Saved closed artifacts only; no live RPC, process actions, or independent journal/chain reconciliation.",
+  "verdict": {
+    "actual_redis_sigkill_observed": true,
+    "health_and_mutation_503_observed": true,
+    "exact_reattach": "refused; operator recovery required",
+    "requested_crash_scenario": "incomplete: observer OperationalError interrupted independent reconciliation",
+    "safety": null,
+    "capacity_qualification": false,
+    "drain_verified": false
+  },
+  "configuration": {
+    "rates": {
+      "evm12": 4.0,
+      "evm2": 4.0,
+      "solana": 4.0
+    },
+    "requested_offer_seconds": 300.0,
+    "lease_seconds": 600,
+    "redis_appendfsync": "always",
+    "sqlite": "WAL synchronous=FULL/fullfsync=ON",
+    "engine_binary_sha256": "35e307e16cafa7cbb17caafcf5ed90a840d58dddd2454542566619266e7a4c07",
+    "harness_sha256": {
+      "capacity_campaign.py": "959d1aa819e380ab2c17d1afa59348110954412d891d53d24944d3831fa675d7",
+      "capacity_faults.py": "59e2bc4d90bceca2682c27e35c5871ee538d4878a795f990fa90e6d5f90afa13",
+      "capacity_resource_guard.py": "bbfda4901f49600cdff9fa907b73e2a64e8df534496083994fd4717c55979bb6"
+    }
+  },
+  "timeline": [
+    {
+      "event": "chaos_trigger",
+      "load_elapsed_seconds": 75.717205,
+      "campaign_elapsed_seconds": 109.567884,
+      "accepted": 300,
+      "kind": "redis-restart"
+    },
+    {
+      "event": "redis_sigkill",
+      "load_elapsed_seconds": 75.721333,
+      "campaign_elapsed_seconds": 109.572012
+    },
+    {
+      "event": "redis_loss_fail_closed_verified",
+      "load_elapsed_seconds": 75.723978,
+      "campaign_elapsed_seconds": 109.574658,
+      "health_status": 503,
+      "mutation_status": 503
+    },
+    {
+      "event": "redis_reattach_refused",
+      "load_elapsed_seconds": 75.860569,
+      "campaign_elapsed_seconds": 109.711247,
+      "classification": "fail_closed_operator_recovery_required"
+    }
+  ],
+  "original_client_responses": {
+    "evm12": {
+      "202": 303,
+      "transport_error": 1
+    },
+    "evm2": {
+      "202": 303,
+      "transport_error": 1
+    },
+    "solana": {
+      "202": 303,
+      "transport_error": 1
+    }
+  },
+  "original_totals": {
+    "acknowledged_202": 909,
+    "transport_unknown": 3,
+    "dispatched": 912
+  },
+  "final_proxy_observation": {
+    "evm12": {
+      "accepted_unique_wires": 301,
+      "forwarded_sends": 301,
+      "dropped_responses": 0,
+      "proxy_failures": []
+    },
+    "evm2": {
+      "accepted_unique_wires": 300,
+      "forwarded_sends": 300,
+      "dropped_responses": 0,
+      "proxy_failures": []
+    },
+    "solana": {
+      "accepted_unique_wires": 302,
+      "forwarded_sends": 302,
+      "dropped_responses": 0,
+      "proxy_failures": []
+    }
+  },
+  "last_complete_precrash_sample": {
+    "seconds": 75.011,
+    "chains": {
+      "evm12": {
+        "admitted": 300,
+        "attempted": 300,
+        "included": 296,
+        "terminal": 151
+      },
+      "evm2": {
+        "admitted": 300,
+        "attempted": 299,
+        "included": 295,
+        "terminal": 272
+      },
+      "solana": {
+        "admitted": 300,
+        "attempted": 300,
+        "included": 298,
+        "finalized": 233,
+        "terminal": 221,
+        "observer_pending_signatures": 87
+      }
+    }
+  },
+  "custody": {
+    "journal": {
+      "available": false,
+      "reason": "OperationalError"
+    },
+    "independent_reconciliation_complete": false,
+    "chain_state": {
+      "evm12": {
+        "status": "saved_mined_history_restore_unverified",
+        "automatic_resume": false,
+        "historical_states_requested": true,
+        "pending_pool_restored_by_state": false
+      },
+      "evm2": {
+        "status": "saved_mined_history_restore_unverified",
+        "automatic_resume": false,
+        "historical_states_requested": true,
+        "pending_pool_restored_by_state": false
+      },
+      "solana": "owned_node_state_not_qualified_for_resume"
+    },
+    "redis_queue_counters": {
+      "eoa_executor_active": 2,
+      "eoa_executor_delayed": 0,
+      "eoa_executor_pending": 0,
+      "solana_executor_active": 1,
+      "solana_executor_delayed": 77,
+      "solana_executor_pending": 0
+    },
+    "redis_count_scope": "Queue indexes only; EOA transaction lifecycle retained in original AOF and authoritative journal"
+  },
+  "limits": [
+    "At report time,3 transport-unknown IDs were unresolved, not presumed rejected. The separate cold-journal inventory subsequently verifies all3 are absent from the909-admission union; this does not rewrite original response evidence.",
+    "903 proxy-accepted unique wires do not independently establish outcomes for all 912 dispatched IDs.",
+    "Last complete sample predates the fault; its terminal counts are not final reconciled outcomes.",
+    "Saved Anvil mined history excludes pending pools and is explicitly unqualified for automatic resume; Solana retained state is also unqualified pending audit.",
+    "Empty oracle safety_failures alongside safety_pass=null is not a safety pass.",
+    "Observed 503 sequence and reattach refusal demonstrate the fail-closed branch only; no successful recovery/drain or general timing SLA is established.",
+    "OperationalError root cause and authoritative journal availability await the separate read-only audit; no causal diagnosis inferred from this report."
+  ],
+  "subsequent_cold_journal_inspection": {
+    "evidence_sources": [
+      {
+        "path": "/tmp/engine-chaos07-journal-investigation/cold-copy-manifest.json",
+        "sha256": "8374fb57ae4213d938da8874add68a52a808411f9714788c5e80f4b7d605c23a"
+      },
+      {
+        "path": "/tmp/engine-chaos07-journal-investigation/case-ro.json",
+        "sha256": "5ef3cb573c9d90be28f272848d2c057e14cb56e9b6bc66d34aae1462e12d6b23"
+      },
+      {
+        "path": "/tmp/engine-chaos07-journal-investigation/case-rw.json",
+        "sha256": "2be96e2a757863640589aa0f002933c40847baac4b696c48e04ba60eda586527"
+      },
+      {
+        "path": "/tmp/engine-chaos07-journal-investigation/case-immutable.json",
+        "sha256": "8973fe43288938f51e0e8781db47c0b6972a416a953e11ac077676118f7bc244"
+      },
+      {
+        "path": "/tmp/engine-chaos07-rate12-independent-audit/cold-journal-inventory.json",
+        "sha256": "5091f821152471db87d1f605fd32be6bc9f589ea65c8e50a70bd1528dcfbdb10"
+      }
+    ],
+    "source_procedure_scope": "Peer-created cold copies; read-only original access still errored. This supplement does not run or authorize recovery.",
+    "integrity_check": "ok in writable and immutable cold-copy cases",
+    "global_halt": "Redis checkpoint mirror failed",
+    "checkpoint": 2478,
+    "counts": {
+      "eoa_nonterminal": 183,
+      "eoa_terminal": 423,
+      "solana_nonterminal": 78,
+      "solana_terminal": 225,
+      "admissions_total": 909,
+      "terminal_total": 648,
+      "nonterminal_total": 261
+    },
+    "independent_chain_effect_audit": "Separate EVM restore audit available; Solana audit pending. Original report remains incomplete with safety_pass=null.",
+    "exact_dispatched_id_mapping_and_attempt_count": "Verified by independent cold-journal inventory:909 acknowledged IDs exactly match admission union;3 transport-unknown IDs are absent;904 durable attempts.",
+    "independent_inventory": {
+      "schema": "independent-cold-journal-custody-v1",
+      "scope": "Private cold-journal and captured client/RPC proof binding only; terminal rows are recorded claims pending separate restored-chain checks. No admission, replay, reset or clearing of halt.",
+      "report_sha256": "af24b4ad71e633c0970c5cc42adbfc36f553817c80095193ba66265a33715f0b",
+      "cold_journal_sha256": "f323505182a117379fcc62763e2a73fa8363c9c234667569c9bf9943d4e81282",
+      "integrity_check": "ok",
+      "admissions": 909,
+      "durable_attempts": 904,
+      "terminal_proofs": 648,
+      "nonterminal_admissions": 261,
+      "provider_accepted_unique_wires": 903,
+      "http202_exactly_matches_admission_union": true,
+      "transport_unknown_ids_absent_from_journal": [
+        "74e73c8265f14864aaba5035e51d68ee-evm12-303",
+        "74e73c8265f14864aaba5035e51d68ee-evm2-303",
+        "74e73c8265f14864aaba5035e51d68ee-solana-303"
+      ],
+      "per_chain": {
+        "evm12": {
+          "admissions": 303,
+          "attempts": 302,
+          "provider_accepted": 301,
+          "state_admitted": 152,
+          "state_terminal": 151,
+          "unsigned": 1
+        },
+        "evm2": {
+          "admissions": 303,
+          "attempts": 300,
+          "provider_accepted": 300,
+          "state_admitted": 31,
+          "state_terminal": 272,
+          "unsigned": 3
+        },
+        "solana": {
+          "admissions": 303,
+          "attempts": 302,
+          "provider_accepted": 302,
+          "state_admitted": 78,
+          "state_terminal": 225,
+          "unsigned": 1
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,786 @@
+{
+  "schema": "captured-resource-summary-v1",
+  "method": "Read closed campaign samples only. RSS is highest observed sample, not continuous peak. ps percent is its reported lifetime average, not instantaneous CPU. Interval CPU derives cumulative process CPU time over the late load window and uses100%=one logical core. Host load is runnable/waiting load, not CPU utilization. Journal sums recovery.sqlite* database/WAL/SHM. External native VM is excluded.",
+  "reports": [
+    {
+      "report": "/tmp/capacity-final-bracket-lease600-native55-7790eecfb337.json",
+      "report_sha256": "e37560c6a40c21da83458dc7b15711baae6bf987b99a4eb50de0f490ab09905b",
+      "resource_scope": "Owned Engine/Redis/local nodes plus combined campaign+RPC proxy process; external node/VM CPU and memory require separate observation. ps CPU is its reported lifetime average.",
+      "phases_measured": [
+        "drain",
+        "load"
+      ],
+      "per_process": {
+        "campaign": {
+          "pids": [
+            60417
+          ],
+          "sampled_peak_rss_bytes": 132513792,
+          "sampled_peak_rss_mib": 126.375,
+          "rss_peak_at_seconds": 25.016,
+          "rss_peak_phase": "load",
+          "largest_ps_reported_lifetime_cpu_percent": 55.5,
+          "cpu_snapshot_at_seconds": 85.01,
+          "late_window_cpu_one_core_percent": 20.244,
+          "late_cpu_window_seconds": [
+            180.016,
+            360.017
+          ]
+        },
+        "drain-hook-nitro": {
+          "pids": [
+            60694
+          ],
+          "sampled_peak_rss_bytes": 12615680,
+          "sampled_peak_rss_mib": 12.031,
+          "rss_peak_at_seconds": 365.017,
+          "rss_peak_phase": "drain",
+          "largest_ps_reported_lifetime_cpu_percent": 0.0,
+          "cpu_snapshot_at_seconds": 360.041
+        },
+        "engine": {
+          "pids": [
+            60425
+          ],
+          "sampled_peak_rss_bytes": 80084992,
+          "sampled_peak_rss_mib": 76.375,
+          "rss_peak_at_seconds": 255.016,
+          "rss_peak_phase": "load",
+          "largest_ps_reported_lifetime_cpu_percent": 45.0,
+          "cpu_snapshot_at_seconds": 45.007,
+          "late_window_cpu_one_core_percent": 23.778,
+          "late_cpu_window_seconds": [
+            180.016,
+            360.017
+          ]
+        },
+        "redis": {
+          "pids": [
+            60423
+          ],
+          "sampled_peak_rss_bytes": 63668224,
+          "sampled_peak_rss_mib": 60.719,
+          "rss_peak_at_seconds": 370.017,
+          "rss_peak_phase": "drain",
+          "largest_ps_reported_lifetime_cpu_percent": 12.7,
+          "cpu_snapshot_at_seconds": 45.007,
+          "late_window_cpu_one_core_percent": 6.094,
+          "late_cpu_window_seconds": [
+            180.016,
+            360.017
+          ]
+        }
+      },
+      "sampled_host": {
+        "highest_load_average_1_5_15_minutes": [
+          3.26171875,
+          2.03466796875,
+          2.03515625
+        ],
+        "lowest_free_disk_bytes": 75648839680,
+        "largest_journal_database_plus_wal_shm_bytes": 46747608,
+        "cpu_utilization_percent": "not measured",
+        "used_or_available_ram": "not measured",
+        "swap": "not measured",
+        "disk_iops_or_fsync_latency": "not measured"
+      }
+    },
+    {
+      "report": "/tmp/capacity-final-bracket-lease600-evm55-7790eecfb337.json",
+      "report_sha256": "cf8299cef332b8cedbb56c9f946b02851a35fc2ae51962315252bbf9f18e8ee3",
+      "resource_scope": "Owned Engine/Redis/local nodes plus combined campaign+RPC proxy process; external node/VM CPU and memory require separate observation. ps CPU is its reported lifetime average.",
+      "phases_measured": [
+        "drain",
+        "load"
+      ],
+      "per_process": {
+        "campaign": {
+          "pids": [
+            60748
+          ],
+          "sampled_peak_rss_bytes": 136003584,
+          "sampled_peak_rss_mib": 129.703,
+          "rss_peak_at_seconds": 370.016,
+          "rss_peak_phase": "drain",
+          "largest_ps_reported_lifetime_cpu_percent": 69.9,
+          "cpu_snapshot_at_seconds": 195.006,
+          "late_window_cpu_one_core_percent": 20.474,
+          "late_cpu_window_seconds": [
+            180.015,
+            360.001
+          ]
+        },
+        "engine": {
+          "pids": [
+            60754
+          ],
+          "sampled_peak_rss_bytes": 82968576,
+          "sampled_peak_rss_mib": 79.125,
+          "rss_peak_at_seconds": 180.015,
+          "rss_peak_phase": "load",
+          "largest_ps_reported_lifetime_cpu_percent": 50.2,
+          "cpu_snapshot_at_seconds": 295.011,
+          "late_window_cpu_one_core_percent": 28.363,
+          "late_cpu_window_seconds": [
+            180.015,
+            360.001
+          ]
+        },
+        "evm12": {
+          "pids": [
+            60752
+          ],
+          "sampled_peak_rss_bytes": 155222016,
+          "sampled_peak_rss_mib": 148.031,
+          "rss_peak_at_seconds": 375.016,
+          "rss_peak_phase": "drain",
+          "largest_ps_reported_lifetime_cpu_percent": 8.8,
+          "cpu_snapshot_at_seconds": 100.014,
+          "late_window_cpu_one_core_percent": 2.261,
+          "late_cpu_window_seconds": [
+            180.015,
+            360.001
+          ]
+        },
+        "redis": {
+          "pids": [
+            60751
+          ],
+          "sampled_peak_rss_bytes": 67174400,
+          "sampled_peak_rss_mib": 64.062,
+          "rss_peak_at_seconds": 400.01,
+          "rss_peak_phase": "drain",
+          "largest_ps_reported_lifetime_cpu_percent": 12.1,
+          "cpu_snapshot_at_seconds": 55.009,
+          "late_window_cpu_one_core_percent": 7.162,
+          "late_cpu_window_seconds": [
+            180.015,
+            360.001
+          ]
+        }
+      },
+      "sampled_host": {
+        "highest_load_average_1_5_15_minutes": [
+          2.6181640625,
+          2.16748046875,
+          2.06103515625
+        ],
+        "lowest_free_disk_bytes": 75506831360,
+        "largest_journal_database_plus_wal_shm_bytes": 46636968,
+        "cpu_utilization_percent": "not measured",
+        "used_or_available_ram": "not measured",
+        "swap": "not measured",
+        "disk_iops_or_fsync_latency": "not measured"
+      }
+    },
+    {
+      "report": "/tmp/capacity-final-bracket-lease600-op55-7790eecfb337.json",
+      "report_sha256": "f8425728ce0d85b03c3e5e761c9f6a2d1b7f2ffa7739e272e7c966dcfd08fe94",
+      "resource_scope": "Owned Engine/Redis/local nodes plus combined campaign+RPC proxy process; external node/VM CPU and memory require separate observation. ps CPU is its reported lifetime average.",
+      "phases_measured": [
+        "drain",
+        "load"
+      ],
+      "per_process": {
+        "campaign": {
+          "pids": [
+            60962
+          ],
+          "sampled_peak_rss_bytes": 147931136,
+          "sampled_peak_rss_mib": 141.078,
+          "rss_peak_at_seconds": 15.015,
+          "rss_peak_phase": "load",
+          "largest_ps_reported_lifetime_cpu_percent": 35.8,
+          "cpu_snapshot_at_seconds": 0.0,
+          "late_window_cpu_one_core_percent": 20.396,
+          "late_cpu_window_seconds": [
+            180.015,
+            360.003
+          ]
+        },
+        "engine": {
+          "pids": [
+            60968
+          ],
+          "sampled_peak_rss_bytes": 67338240,
+          "sampled_peak_rss_mib": 64.219,
+          "rss_peak_at_seconds": 125.016,
+          "rss_peak_phase": "load",
+          "largest_ps_reported_lifetime_cpu_percent": 44.6,
+          "cpu_snapshot_at_seconds": 360.039,
+          "late_window_cpu_one_core_percent": 26.035,
+          "late_cpu_window_seconds": [
+            180.015,
+            360.003
+          ]
+        },
+        "evm2": {
+          "pids": [
+            60966
+          ],
+          "sampled_peak_rss_bytes": 156598272,
+          "sampled_peak_rss_mib": 149.344,
+          "rss_peak_at_seconds": 370.015,
+          "rss_peak_phase": "drain",
+          "largest_ps_reported_lifetime_cpu_percent": 4.4,
+          "cpu_snapshot_at_seconds": 80.015,
+          "late_window_cpu_one_core_percent": 2.089,
+          "late_cpu_window_seconds": [
+            180.015,
+            360.003
+          ]
+        },
+        "redis": {
+          "pids": [
+            60965
+          ],
+          "sampled_peak_rss_bytes": 62210048,
+          "sampled_peak_rss_mib": 59.328,
+          "rss_peak_at_seconds": 370.015,
+          "rss_peak_phase": "drain",
+          "largest_ps_reported_lifetime_cpu_percent": 14.0,
+          "cpu_snapshot_at_seconds": 360.039,
+          "late_window_cpu_one_core_percent": 6.845,
+          "late_cpu_window_seconds": [
+            180.015,
+            360.003
+          ]
+        }
+      },
+      "sampled_host": {
+        "highest_load_average_1_5_15_minutes": [
+          2.82666015625,
+          2.23583984375,
+          2.09716796875
+        ],
+        "lowest_free_disk_bytes": 75362586624,
+        "largest_journal_database_plus_wal_shm_bytes": 46526232,
+        "cpu_utilization_percent": "not measured",
+        "used_or_available_ram": "not measured",
+        "swap": "not measured",
+        "disk_iops_or_fsync_latency": "not measured"
+      }
+    },
+    {
+      "report": "/tmp/capacity-final-bracket-lease600-solana60-7790eecfb337.json",
+      "report_sha256": "c192d7e2f0ae2d3c31bde7a0acd0ef9470ade090b058d184342519d99943c1c4",
+      "resource_scope": "Owned Engine/Redis/local nodes plus combined campaign+RPC proxy process; external node/VM CPU and memory require separate observation. ps CPU is its reported lifetime average.",
+      "phases_measured": [
+        "drain",
+        "load"
+      ],
+      "per_process": {
+        "campaign": {
+          "pids": [
+            61145
+          ],
+          "sampled_peak_rss_bytes": 165330944,
+          "sampled_peak_rss_mib": 157.672,
+          "rss_peak_at_seconds": 360.001,
+          "rss_peak_phase": "load",
+          "largest_ps_reported_lifetime_cpu_percent": 22.6,
+          "cpu_snapshot_at_seconds": 345.014,
+          "late_window_cpu_one_core_percent": 18.712,
+          "late_cpu_window_seconds": [
+            180.007,
+            360.001
+          ]
+        },
+        "engine": {
+          "pids": [
+            61167
+          ],
+          "sampled_peak_rss_bytes": 67780608,
+          "sampled_peak_rss_mib": 64.641,
+          "rss_peak_at_seconds": 350.015,
+          "rss_peak_phase": "load",
+          "largest_ps_reported_lifetime_cpu_percent": 28.5,
+          "cpu_snapshot_at_seconds": 345.014,
+          "late_window_cpu_one_core_percent": 19.206,
+          "late_cpu_window_seconds": [
+            180.007,
+            360.001
+          ]
+        },
+        "redis": {
+          "pids": [
+            61148
+          ],
+          "sampled_peak_rss_bytes": 27181056,
+          "sampled_peak_rss_mib": 25.922,
+          "rss_peak_at_seconds": 380.012,
+          "rss_peak_phase": "drain",
+          "largest_ps_reported_lifetime_cpu_percent": 14.8,
+          "cpu_snapshot_at_seconds": 345.014,
+          "late_window_cpu_one_core_percent": 9.011,
+          "late_cpu_window_seconds": [
+            180.007,
+            360.001
+          ]
+        },
+        "solana": {
+          "pids": [
+            61153
+          ],
+          "sampled_peak_rss_bytes": 888963072,
+          "sampled_peak_rss_mib": 847.781,
+          "rss_peak_at_seconds": 350.015,
+          "rss_peak_phase": "load",
+          "largest_ps_reported_lifetime_cpu_percent": 127.2,
+          "cpu_snapshot_at_seconds": 330.012,
+          "late_window_cpu_one_core_percent": 121.382,
+          "late_cpu_window_seconds": [
+            180.007,
+            360.001
+          ]
+        }
+      },
+      "sampled_host": {
+        "highest_load_average_1_5_15_minutes": [
+          4.95849609375,
+          2.93115234375,
+          2.36083984375
+        ],
+        "lowest_free_disk_bytes": 73946685440,
+        "largest_journal_database_plus_wal_shm_bytes": 78712720,
+        "cpu_utilization_percent": "not measured",
+        "used_or_available_ram": "not measured",
+        "swap": "not measured",
+        "disk_iops_or_fsync_latency": "not measured"
+      }
+    },
+    {
+      "report": "/tmp/capacity-final-bracket-lease600-shared5875-7790eecfb337.json",
+      "report_sha256": "243d6ff64f0efb7be0b0195bdea9d9ecff47092a18cd15ab9d2fba3e6df99c0e",
+      "resource_scope": "Owned Engine/Redis/local nodes plus combined campaign+RPC proxy process; external node/VM CPU and memory require separate observation. ps CPU is its reported lifetime average.",
+      "phases_measured": [
+        "drain",
+        "load"
+      ],
+      "per_process": {
+        "campaign": {
+          "pids": [
+            61347
+          ],
+          "sampled_peak_rss_bytes": 152944640,
+          "sampled_peak_rss_mib": 145.859,
+          "rss_peak_at_seconds": 370.012,
+          "rss_peak_phase": "drain",
+          "largest_ps_reported_lifetime_cpu_percent": 37.5,
+          "cpu_snapshot_at_seconds": 205.013,
+          "late_window_cpu_one_core_percent": 14.229,
+          "late_cpu_window_seconds": [
+            180.015,
+            360.001
+          ]
+        },
+        "drain-hook-nitro": {
+          "pids": [
+            61541
+          ],
+          "sampled_peak_rss_bytes": 12648448,
+          "sampled_peak_rss_mib": 12.062,
+          "rss_peak_at_seconds": 390.014,
+          "rss_peak_phase": "drain",
+          "largest_ps_reported_lifetime_cpu_percent": 0.0,
+          "cpu_snapshot_at_seconds": 360.021
+        },
+        "engine": {
+          "pids": [
+            61385
+          ],
+          "sampled_peak_rss_bytes": 78364672,
+          "sampled_peak_rss_mib": 74.734,
+          "rss_peak_at_seconds": 395.017,
+          "rss_peak_phase": "drain",
+          "largest_ps_reported_lifetime_cpu_percent": 25.6,
+          "cpu_snapshot_at_seconds": 205.013,
+          "late_window_cpu_one_core_percent": 14.879,
+          "late_cpu_window_seconds": [
+            180.015,
+            360.001
+          ]
+        },
+        "evm12": {
+          "pids": [
+            61354
+          ],
+          "sampled_peak_rss_bytes": 63422464,
+          "sampled_peak_rss_mib": 60.484,
+          "rss_peak_at_seconds": 250.017,
+          "rss_peak_phase": "load",
+          "largest_ps_reported_lifetime_cpu_percent": 3.1,
+          "cpu_snapshot_at_seconds": 315.016,
+          "late_window_cpu_one_core_percent": 0.367,
+          "late_cpu_window_seconds": [
+            180.015,
+            360.001
+          ]
+        },
+        "evm2": {
+          "pids": [
+            61355
+          ],
+          "sampled_peak_rss_bytes": 65011712,
+          "sampled_peak_rss_mib": 62.0,
+          "rss_peak_at_seconds": 250.017,
+          "rss_peak_phase": "load",
+          "largest_ps_reported_lifetime_cpu_percent": 1.7,
+          "cpu_snapshot_at_seconds": 215.014,
+          "late_window_cpu_one_core_percent": 0.394,
+          "late_cpu_window_seconds": [
+            180.015,
+            360.001
+          ]
+        },
+        "redis": {
+          "pids": [
+            61353
+          ],
+          "sampled_peak_rss_bytes": 55066624,
+          "sampled_peak_rss_mib": 52.516,
+          "rss_peak_at_seconds": 395.017,
+          "rss_peak_phase": "drain",
+          "largest_ps_reported_lifetime_cpu_percent": 8.2,
+          "cpu_snapshot_at_seconds": 295.017,
+          "late_window_cpu_one_core_percent": 4.511,
+          "late_cpu_window_seconds": [
+            180.015,
+            360.001
+          ]
+        },
+        "solana": {
+          "pids": [
+            61360
+          ],
+          "sampled_peak_rss_bytes": 868843520,
+          "sampled_peak_rss_mib": 828.594,
+          "rss_peak_at_seconds": 160.012,
+          "rss_peak_phase": "load",
+          "largest_ps_reported_lifetime_cpu_percent": 119.5,
+          "cpu_snapshot_at_seconds": 220.01,
+          "late_window_cpu_one_core_percent": 114.137,
+          "late_cpu_window_seconds": [
+            180.015,
+            360.001
+          ]
+        }
+      },
+      "sampled_host": {
+        "highest_load_average_1_5_15_minutes": [
+          3.73046875,
+          2.9296875,
+          2.5244140625
+        ],
+        "lowest_free_disk_bytes": 72514977792,
+        "largest_journal_database_plus_wal_shm_bytes": 56127376,
+        "cpu_utilization_percent": "not measured",
+        "used_or_available_ram": "not measured",
+        "swap": "not measured",
+        "disk_iops_or_fsync_latency": "not measured"
+      }
+    },
+    {
+      "report": "/tmp/capacity-upper-bracket-lease600-native65-f6b8bbf5a938.json",
+      "report_sha256": "449aab01938ac63019510cfbda94ea60b4483ed6a99d390562b54a0d7f5d5633",
+      "resource_scope": "Owned Engine/Redis/local nodes plus combined campaign+RPC proxy process; external node/VM CPU and memory require separate observation. ps CPU is its reported lifetime average.",
+      "phases_measured": [
+        "drain",
+        "load"
+      ],
+      "per_process": {
+        "campaign": {
+          "pids": [
+            61669
+          ],
+          "sampled_peak_rss_bytes": 139755520,
+          "sampled_peak_rss_mib": 133.281,
+          "rss_peak_at_seconds": 15.017,
+          "rss_peak_phase": "load",
+          "largest_ps_reported_lifetime_cpu_percent": 76.5,
+          "cpu_snapshot_at_seconds": 85.007,
+          "late_window_cpu_one_core_percent": 21.38,
+          "late_cpu_window_seconds": [
+            180.017,
+            360.0
+          ]
+        },
+        "drain-hook-nitro": {
+          "pids": [
+            61915
+          ],
+          "sampled_peak_rss_bytes": 12713984,
+          "sampled_peak_rss_mib": 12.125,
+          "rss_peak_at_seconds": 380.009,
+          "rss_peak_phase": "drain",
+          "largest_ps_reported_lifetime_cpu_percent": 0.0,
+          "cpu_snapshot_at_seconds": 360.036
+        },
+        "engine": {
+          "pids": [
+            61677
+          ],
+          "sampled_peak_rss_bytes": 73826304,
+          "sampled_peak_rss_mib": 70.406,
+          "rss_peak_at_seconds": 110.016,
+          "rss_peak_phase": "load",
+          "largest_ps_reported_lifetime_cpu_percent": 50.2,
+          "cpu_snapshot_at_seconds": 80.011,
+          "late_window_cpu_one_core_percent": 25.186,
+          "late_cpu_window_seconds": [
+            180.017,
+            360.0
+          ]
+        },
+        "redis": {
+          "pids": [
+            61675
+          ],
+          "sampled_peak_rss_bytes": 73793536,
+          "sampled_peak_rss_mib": 70.375,
+          "rss_peak_at_seconds": 395.008,
+          "rss_peak_phase": "drain",
+          "largest_ps_reported_lifetime_cpu_percent": 12.4,
+          "cpu_snapshot_at_seconds": 125.008,
+          "late_window_cpu_one_core_percent": 6.428,
+          "late_cpu_window_seconds": [
+            180.017,
+            360.0
+          ]
+        }
+      },
+      "sampled_host": {
+        "highest_load_average_1_5_15_minutes": [
+          2.9072265625,
+          2.69873046875,
+          2.4912109375
+        ],
+        "lowest_free_disk_bytes": 72308494336,
+        "largest_journal_database_plus_wal_shm_bytes": 54366120,
+        "cpu_utilization_percent": "not measured",
+        "used_or_available_ram": "not measured",
+        "swap": "not measured",
+        "disk_iops_or_fsync_latency": "not measured"
+      }
+    },
+    {
+      "report": "/tmp/capacity-optional-confirm-lease600-evm50-900s-e2cc04cbd054.json",
+      "report_sha256": "1ac6203ba81e3edb1b5d8ce056b4c139d5a27f345784489396d63d1a031f7fc7",
+      "resource_scope": "Owned Engine/Redis/local nodes plus combined campaign+RPC proxy process; external node/VM CPU and memory require separate observation. ps CPU is its reported lifetime average.",
+      "phases_measured": [
+        "drain",
+        "load"
+      ],
+      "per_process": {
+        "campaign": {
+          "pids": [
+            62037
+          ],
+          "sampled_peak_rss_bytes": 195657728,
+          "sampled_peak_rss_mib": 186.594,
+          "rss_peak_at_seconds": 665.016,
+          "rss_peak_phase": "load",
+          "largest_ps_reported_lifetime_cpu_percent": 53.9,
+          "cpu_snapshot_at_seconds": 0.0,
+          "late_window_cpu_one_core_percent": 19.318,
+          "late_cpu_window_seconds": [
+            720.016,
+            900.008
+          ]
+        },
+        "engine": {
+          "pids": [
+            62043
+          ],
+          "sampled_peak_rss_bytes": 94765056,
+          "sampled_peak_rss_mib": 90.375,
+          "rss_peak_at_seconds": 510.016,
+          "rss_peak_phase": "load",
+          "largest_ps_reported_lifetime_cpu_percent": 42.2,
+          "cpu_snapshot_at_seconds": 450.011,
+          "late_window_cpu_one_core_percent": 26.596,
+          "late_cpu_window_seconds": [
+            720.016,
+            900.008
+          ]
+        },
+        "evm12": {
+          "pids": [
+            62041
+          ],
+          "sampled_peak_rss_bytes": 230948864,
+          "sampled_peak_rss_mib": 220.25,
+          "rss_peak_at_seconds": 655.016,
+          "rss_peak_phase": "load",
+          "largest_ps_reported_lifetime_cpu_percent": 4.9,
+          "cpu_snapshot_at_seconds": 380.007,
+          "late_window_cpu_one_core_percent": 2.067,
+          "late_cpu_window_seconds": [
+            720.016,
+            900.008
+          ]
+        },
+        "redis": {
+          "pids": [
+            62040
+          ],
+          "sampled_peak_rss_bytes": 125550592,
+          "sampled_peak_rss_mib": 119.734,
+          "rss_peak_at_seconds": 945.016,
+          "rss_peak_phase": "drain",
+          "largest_ps_reported_lifetime_cpu_percent": 13.8,
+          "cpu_snapshot_at_seconds": 450.011,
+          "late_window_cpu_one_core_percent": 6.839,
+          "late_cpu_window_seconds": [
+            720.016,
+            900.008
+          ]
+        }
+      },
+      "sampled_host": {
+        "highest_load_average_1_5_15_minutes": [
+          2.54052734375,
+          2.34228515625,
+          2.3603515625
+        ],
+        "lowest_free_disk_bytes": 72063279104,
+        "largest_journal_database_plus_wal_shm_bytes": 100786016,
+        "cpu_utilization_percent": "not measured",
+        "used_or_available_ram": "not measured",
+        "swap": "not measured",
+        "disk_iops_or_fsync_latency": "not measured"
+      }
+    },
+    {
+      "report": "/tmp/capacity-confirm-lease600-shared5875-900s-e2cc04cbd054.json",
+      "report_sha256": "c9539e942a6080a27077b9fd9f4768a2e12ffeb99a5a975b24ea04c0c167937f",
+      "resource_scope": "Owned Engine/Redis/local nodes plus combined campaign+RPC proxy process; external node/VM CPU and memory require separate observation. ps CPU is its reported lifetime average.",
+      "phases_measured": [
+        "drain",
+        "load"
+      ],
+      "per_process": {
+        "campaign": {
+          "pids": [
+            62572
+          ],
+          "sampled_peak_rss_bytes": 256557056,
+          "sampled_peak_rss_mib": 244.672,
+          "rss_peak_at_seconds": 915.013,
+          "rss_peak_phase": "drain",
+          "largest_ps_reported_lifetime_cpu_percent": 55.3,
+          "cpu_snapshot_at_seconds": 0.0,
+          "late_window_cpu_one_core_percent": 14.384,
+          "late_cpu_window_seconds": [
+            720.018,
+            900.004
+          ]
+        },
+        "drain-hook-nitro": {
+          "pids": [
+            62974
+          ],
+          "sampled_peak_rss_bytes": 12648448,
+          "sampled_peak_rss_mib": 12.062,
+          "rss_peak_at_seconds": 930.014,
+          "rss_peak_phase": "drain",
+          "largest_ps_reported_lifetime_cpu_percent": 0.0,
+          "cpu_snapshot_at_seconds": 900.019
+        },
+        "engine": {
+          "pids": [
+            62593
+          ],
+          "sampled_peak_rss_bytes": 60506112,
+          "sampled_peak_rss_mib": 57.703,
+          "rss_peak_at_seconds": 50.009,
+          "rss_peak_phase": "load",
+          "largest_ps_reported_lifetime_cpu_percent": 24.5,
+          "cpu_snapshot_at_seconds": 605.008,
+          "late_window_cpu_one_core_percent": 14.879,
+          "late_cpu_window_seconds": [
+            720.018,
+            900.004
+          ]
+        },
+        "evm12": {
+          "pids": [
+            62579
+          ],
+          "sampled_peak_rss_bytes": 71417856,
+          "sampled_peak_rss_mib": 68.109,
+          "rss_peak_at_seconds": 615.024,
+          "rss_peak_phase": "load",
+          "largest_ps_reported_lifetime_cpu_percent": 0.5,
+          "cpu_snapshot_at_seconds": 185.022,
+          "late_window_cpu_one_core_percent": 0.361,
+          "late_cpu_window_seconds": [
+            720.018,
+            900.004
+          ]
+        },
+        "evm2": {
+          "pids": [
+            62581
+          ],
+          "sampled_peak_rss_bytes": 76398592,
+          "sampled_peak_rss_mib": 72.859,
+          "rss_peak_at_seconds": 530.015,
+          "rss_peak_phase": "load",
+          "largest_ps_reported_lifetime_cpu_percent": 1.2,
+          "cpu_snapshot_at_seconds": 110.014,
+          "late_window_cpu_one_core_percent": 0.394,
+          "late_cpu_window_seconds": [
+            720.018,
+            900.004
+          ]
+        },
+        "redis": {
+          "pids": [
+            62578
+          ],
+          "sampled_peak_rss_bytes": 104349696,
+          "sampled_peak_rss_mib": 99.516,
+          "rss_peak_at_seconds": 930.014,
+          "rss_peak_phase": "drain",
+          "largest_ps_reported_lifetime_cpu_percent": 7.6,
+          "cpu_snapshot_at_seconds": 605.008,
+          "late_window_cpu_one_core_percent": 4.617,
+          "late_cpu_window_seconds": [
+            720.018,
+            900.004
+          ]
+        },
+        "solana": {
+          "pids": [
+            62586
+          ],
+          "sampled_peak_rss_bytes": 933576704,
+          "sampled_peak_rss_mib": 890.328,
+          "rss_peak_at_seconds": 740.017,
+          "rss_peak_phase": "load",
+          "largest_ps_reported_lifetime_cpu_percent": 121.3,
+          "cpu_snapshot_at_seconds": 85.016,
+          "late_window_cpu_one_core_percent": 114.331,
+          "late_cpu_window_seconds": [
+            720.018,
+            900.004
+          ]
+        }
+      },
+      "sampled_host": {
+        "highest_load_average_1_5_15_minutes": [
+          4.5263671875,
+          3.36767578125,
+          2.80810546875
+        ],
+        "lowest_free_disk_bytes": 69045997568,
+        "largest_journal_database_plus_wal_shm_bytes": 134914200,
+        "cpu_utilization_percent": "not measured",
+        "used_or_available_ram": "not measured",
+        "swap": "not measured",
+        "disk_iops_or_fsync_latency": "not measured"
+      }
+    }
+  ]
+}

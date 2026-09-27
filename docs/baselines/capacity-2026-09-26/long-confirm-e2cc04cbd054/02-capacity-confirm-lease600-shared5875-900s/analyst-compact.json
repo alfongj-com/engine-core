@@ -1,0 +1,1472 @@
+{
+  "limitations": [
+    "Exact oracle/drain are reported results, not reverified per-ID here.",
+    "Inclusion is live observer knowledge, not direct sequencer throughput; observer errors and lag remain visible.",
+    "RPC mean uses counter differences; max is cumulative through endpoint, not a window maximum.",
+    "Completed-call time equivalent is a latency-sum signal, not measured send-only concurrent occupancy; proxy peak includes all RPC methods.",
+    "Flat observed attempt intervals may include observer delay; they do not prove disk or confirmation causation.",
+    "Local gas/chain/finality fixtures and finite windows do not establish public-chain maxima."
+  ],
+  "method": "Nearest existing load samples to configured post-warmup and last180 boundaries; actual sample duration denominators. Descriptive queue slopes/quantiles, no significance or stability verdict. Preserve original raw and strict assessments.",
+  "new_qualification_thresholds": false,
+  "reports": [
+    {
+      "binary_sha256": "35e307e16cafa7cbb17caafcf5ed90a840d58dddd2454542566619266e7a4c07",
+      "chains": {
+        "evm12": {
+          "admission_latency_ms": {
+            "http_service_latency_ms": {
+              "count": 13500,
+              "max": 93.36,
+              "p50": 6.596,
+              "p95": 33.209,
+              "p99": 53.246
+            },
+            "scheduled_to_http_start_lateness_ms": {
+              "count": 13500,
+              "max": 30.388,
+              "p50": 4.107,
+              "p95": 9.854,
+              "p99": 10.34
+            },
+            "scheduled_to_response_latency_ms": {
+              "count": 13500,
+              "max": 104.345,
+              "p50": 11.906,
+              "p95": 39.607,
+              "p99": 57.912
+            }
+          },
+          "admitted_http202": 13500,
+          "client_counts": {
+            "dispatched": 13500
+          },
+          "client_drop_counts": {},
+          "http_responses": {
+            "202": 13500
+          },
+          "offered": 13500,
+          "original_late_window_assessment": {
+            "admission_p99_limit_ms": 1000,
+            "capacity_candidate": true,
+            "disqualifiers": [],
+            "from_seconds": 300.017,
+            "rates_tps": {
+              "admitted": 14.999,
+              "attempted": 14.999,
+              "included": 15.0,
+              "terminal": 15.002
+            },
+            "relative_tolerance": 0.05,
+            "requires_repeated_confirmation": true,
+            "terminal_backlog_end": 519,
+            "terminal_backlog_growth_per_second": -0.003,
+            "terminal_backlog_start": 521,
+            "to_seconds": 900.004,
+            "unsigned_backlog_end": 11,
+            "unsigned_backlog_linear_trend_per_second": 0.003,
+            "unsigned_backlog_start": 11,
+            "unsigned_growth_detected": false,
+            "unsigned_monotonic_growth": false,
+            "unsigned_trend_threshold_per_second": 0.1,
+            "window_seconds": 599.9870000000001
+          },
+          "profile": {
+            "block_seconds": 12.0,
+            "chain_id": 31337,
+            "depth": 2,
+            "family": "evm",
+            "label": "Anvil EVM execution with simulated block cadence; not Nitro or public-chain capacity",
+            "network": "ethereum",
+            "rate": 15.0
+          },
+          "transport_errors": [],
+          "whole_run_engine_rpc": {
+            "accepted_unique_wires": 13500,
+            "calls": {
+              "eth_blockNumber": 168,
+              "eth_feeHistory": 13500,
+              "eth_getBalance": 1,
+              "eth_getBlockByNumber": 693,
+              "eth_getCode": 4,
+              "eth_getTransactionCount": 1000,
+              "eth_getTransactionReceipt": 13500,
+              "eth_sendRawTransaction": 13500
+            },
+            "calls_per_admitted": 3.1382222222222222,
+            "forwarded_sends": 13500,
+            "http_transport": {
+              "active": 0,
+              "connection_attempts": 137,
+              "connection_reuses": 42229,
+              "connections_opened": 137,
+              "failures": [],
+              "owned_connections": 0,
+              "peak_active": 32,
+              "requests": 42366,
+              "responses": 42366,
+              "status_200": 42366
+            },
+            "proxy_failure_details": [],
+            "proxy_failures": [],
+            "proxy_overloads": 0,
+            "total_method_calls": 42366
+          },
+          "windows": {
+            "last180": {
+              "available": true,
+              "backlogs": {
+                "terminal": {
+                  "end": 519,
+                  "growth": -1,
+                  "growth_per_second": -0.005555987687931284,
+                  "max": 595,
+                  "min": 401,
+                  "sample_ols_slope_per_second": -0.09925323225119222,
+                  "sample_p10": 444.6,
+                  "sample_p50": 507.0,
+                  "sample_p90": 565.4,
+                  "start": 520,
+                  "time_weighted_mean": 504.76644294556246
+                },
+                "unsigned": {
+                  "end": 11,
+                  "growth": -1,
+                  "growth_per_second": -0.005555987687931284,
+                  "max": 27,
+                  "min": 6,
+                  "sample_ols_slope_per_second": -0.00303402576349884,
+                  "sample_p10": 9.6,
+                  "sample_p50": 11.0,
+                  "sample_p90": 24.799999999999997,
+                  "start": 12,
+                  "time_weighted_mean": 12.902772993455041
+                }
+              },
+              "counter_errors": [],
+              "cpu_one_core_percent": {
+                "campaign": 14.384452124054102,
+                "engine": 14.878935028279978,
+                "evm12": 0.3611391997155336,
+                "evm2": 0.39447512584312117,
+                "redis": 4.617025768670898,
+                "solana": 114.33111464224987
+              },
+              "engine_rpc_methods": {
+                "eth_blockNumber": {
+                  "completed_call_time_equivalent": 0.00045699641639067334,
+                  "count": 32,
+                  "errors": 0,
+                  "max_ms_through_window_end": 10.59941700000877,
+                  "mean_ms": 2.5704049062653667,
+                  "requests_per_second": 0.1777916060138011
+                },
+                "eth_feeHistory": {
+                  "completed_call_time_equivalent": 0.05664156203259651,
+                  "count": 2700,
+                  "errors": 0,
+                  "max_ms_through_window_end": 20.98324999997203,
+                  "mean_ms": 3.7758104385181164,
+                  "requests_per_second": 15.001166757414467
+                },
+                "eth_getBlockByNumber": {
+                  "completed_call_time_equivalent": 0.0024451003855847143,
+                  "count": 137,
+                  "errors": 0,
+                  "max_ms_through_window_end": 18.11099999997623,
+                  "mean_ms": 3.2122907883200758,
+                  "requests_per_second": 0.7611703132465859
+                },
+                "eth_getTransactionCount": {
+                  "completed_call_time_equivalent": 0.00264865022279878,
+                  "count": 191,
+                  "errors": 0,
+                  "max_ms_through_window_end": 31.660542000054193,
+                  "mean_ms": 2.495916015710268,
+                  "requests_per_second": 1.0611936483948752
+                },
+                "eth_getTransactionReceipt": {
+                  "completed_call_time_equivalent": 0.10016513749404617,
+                  "count": 2700,
+                  "errors": 0,
+                  "max_ms_through_window_end": 33.94345799995335,
+                  "mean_ms": 6.677156458149405,
+                  "requests_per_second": 15.001166757414467
+                },
+                "eth_sendRawTransaction": {
+                  "completed_call_time_equivalent": 0.023705641605467218,
+                  "count": 2700,
+                  "errors": 0,
+                  "max_ms_through_window_end": 24.344041999995625,
+                  "mean_ms": 1.5802531888894897,
+                  "requests_per_second": 15.001166757414467
+                }
+              },
+              "engine_rpc_requests_per_second": 47.00365583989866,
+              "from_seconds": 720.018,
+              "observed_attempt_plateaus_with_unsigned_work": {
+                "first_eight_intervals": [],
+                "intervals": 0,
+                "intervals_with_terminal_progress": 0,
+                "longest_single_sample_interval_seconds": 0,
+                "terminal_delta_total": 0,
+                "total_seconds": 0
+              },
+              "observer_duration_ms_max": 43.751,
+              "proxy_peak_all_method_inflight_through_end": 32,
+              "requested_from_seconds": 720.003560541,
+              "requested_to_seconds": 900.003560541,
+              "sample_gap_seconds": {
+                "max": 5.0090000000000146,
+                "median": 4.999000000000024
+              },
+              "samples": 37,
+              "seconds": 179.986,
+              "stage_rates_per_second": {
+                "admitted": 14.995610769726536,
+                "attempted": 15.001166757414467,
+                "included": 15.001166757414467,
+                "terminal": 15.001166757414467
+              },
+              "to_seconds": 900.004
+            },
+            "post_warmup": {
+              "available": true,
+              "backlogs": {
+                "terminal": {
+                  "end": 519,
+                  "growth": -2,
+                  "growth_per_second": -0.0027778163585605357,
+                  "max": 625,
+                  "min": 401,
+                  "sample_ols_slope_per_second": -0.01772963881762914,
+                  "sample_p10": 436.2,
+                  "sample_p50": 507.0,
+                  "sample_p90": 581.6,
+                  "start": 521,
+                  "time_weighted_mean": 509.6649231239324
+                },
+                "unsigned": {
+                  "end": 11,
+                  "growth": 0,
+                  "growth_per_second": 0.0,
+                  "max": 41,
+                  "min": 2,
+                  "sample_ols_slope_per_second": 0.002838128567289628,
+                  "sample_p10": 10.0,
+                  "sample_p50": 11.0,
+                  "sample_p90": 15.999999999999972,
+                  "start": 11,
+                  "time_weighted_mean": 12.486276892734615
+                }
+              },
+              "counter_errors": [],
+              "cpu_one_core_percent": {
+                "campaign": 14.412700176391342,
+                "engine": 14.897429130960152,
+                "evm12": 0.36250503479214996,
+                "evm2": 0.3916721065570355,
+                "redis": 4.588952624342005,
+                "solana": 114.40575563549491
+              },
+              "engine_rpc_methods": {
+                "eth_blockNumber": {
+                  "completed_call_time_equivalent": 0.0005199996986073951,
+                  "count": 129,
+                  "errors": 0,
+                  "max_ms_through_window_end": 10.59941700000877,
+                  "mean_ms": 2.9022835891499095,
+                  "requests_per_second": 0.17916915512715453
+                },
+                "eth_feeHistory": {
+                  "completed_call_time_equivalent": 0.050435211054313596,
+                  "count": 10799,
+                  "errors": 0,
+                  "max_ms_through_window_end": 20.98324999997203,
+                  "mean_ms": 3.362612057319682,
+                  "requests_per_second": 14.99881942804761
+                },
+                "eth_getBlockByNumber": {
+                  "completed_call_time_equivalent": 0.00272954051167365,
+                  "count": 549,
+                  "errors": 0,
+                  "max_ms_through_window_end": 18.11099999997623,
+                  "mean_ms": 3.5796755428049387,
+                  "requests_per_second": 0.762510590424867
+                },
+                "eth_getCode": {
+                  "completed_call_time_equivalent": 1.3966041194789134e-06,
+                  "count": 2,
+                  "errors": 0,
+                  "max_ms_through_window_end": 0.6331660000000738,
+                  "mean_ms": 0.5027704999918114,
+                  "requests_per_second": 0.0027778163585605357
+                },
+                "eth_getTransactionCount": {
+                  "completed_call_time_equivalent": 0.0020422819108608485,
+                  "count": 768,
+                  "errors": 0,
+                  "max_ms_through_window_end": 31.660542000054193,
+                  "mean_ms": 1.9146126992196644,
+                  "requests_per_second": 1.0666814816872456
+                },
+                "eth_getTransactionReceipt": {
+                  "completed_call_time_equivalent": 0.09365521131682727,
+                  "count": 10801,
+                  "errors": 0,
+                  "max_ms_through_window_end": 33.94345799995335,
+                  "mean_ms": 6.243015979631744,
+                  "requests_per_second": 15.001597244406172
+                },
+                "eth_sendRawTransaction": {
+                  "completed_call_time_equivalent": 0.02307260551118703,
+                  "count": 10799,
+                  "errors": 0,
+                  "max_ms_through_window_end": 24.344041999995625,
+                  "mean_ms": 1.5382947719232845,
+                  "requests_per_second": 14.99881942804761
+                }
+              },
+              "engine_rpc_requests_per_second": 47.01037514409922,
+              "from_seconds": 180.014,
+              "observed_attempt_plateaus_with_unsigned_work": {
+                "first_eight_intervals": [],
+                "intervals": 0,
+                "intervals_with_terminal_progress": 0,
+                "longest_single_sample_interval_seconds": 0,
+                "terminal_delta_total": 0,
+                "total_seconds": 0
+              },
+              "observer_duration_ms_max": 71.314,
+              "proxy_peak_all_method_inflight_through_end": 32,
+              "requested_from_seconds": 180.0,
+              "requested_to_seconds": 900.003560541,
+              "sample_gap_seconds": {
+                "max": 5.015999999999963,
+                "median": 5.0
+              },
+              "samples": 145,
+              "seconds": 719.99,
+              "stage_rates_per_second": {
+                "admitted": 14.99881942804761,
+                "attempted": 14.99881942804761,
+                "included": 15.000208336226892,
+                "terminal": 15.001597244406172
+              },
+              "to_seconds": 900.004
+            }
+          }
+        },
+        "evm2": {
+          "admission_latency_ms": {
+            "http_service_latency_ms": {
+              "count": 13500,
+              "max": 105.025,
+              "p50": 7.096,
+              "p95": 40.824,
+              "p99": 75.735
+            },
+            "scheduled_to_http_start_lateness_ms": {
+              "count": 13500,
+              "max": 23.487,
+              "p50": 2.399,
+              "p95": 7.538,
+              "p99": 11.909
+            },
+            "scheduled_to_response_latency_ms": {
+              "count": 13500,
+              "max": 114.833,
+              "p50": 10.203,
+              "p95": 44.081,
+              "p99": 85.721
+            }
+          },
+          "admitted_http202": 13500,
+          "client_counts": {
+            "dispatched": 13500
+          },
+          "client_drop_counts": {},
+          "http_responses": {
+            "202": 13500
+          },
+          "offered": 13500,
+          "original_late_window_assessment": {
+            "admission_p99_limit_ms": 1000,
+            "capacity_candidate": true,
+            "disqualifiers": [],
+            "from_seconds": 300.017,
+            "rates_tps": {
+              "admitted": 15.0,
+              "attempted": 15.009,
+              "included": 15.007,
+              "terminal": 15.1
+            },
+            "relative_tolerance": 0.05,
+            "requires_repeated_confirmation": true,
+            "terminal_backlog_end": 101,
+            "terminal_backlog_growth_per_second": -0.1,
+            "terminal_backlog_start": 161,
+            "to_seconds": 900.004,
+            "unsigned_backlog_end": 5,
+            "unsigned_backlog_linear_trend_per_second": -0.001,
+            "unsigned_backlog_start": 10,
+            "unsigned_growth_detected": false,
+            "unsigned_monotonic_growth": false,
+            "unsigned_trend_threshold_per_second": 0.1,
+            "window_seconds": 599.9870000000001
+          },
+          "profile": {
+            "block_seconds": 2.0,
+            "chain_id": 31338,
+            "depth": 2,
+            "family": "evm",
+            "label": "OP execution on Anvil; simulated cadence; no sequencer/derivation/L1 settlement; L1 fee predeploy state may be artificial",
+            "network": "optimism",
+            "rate": 15.0
+          },
+          "transport_errors": [],
+          "whole_run_engine_rpc": {
+            "accepted_unique_wires": 13500,
+            "calls": {
+              "eth_blockNumber": 163,
+              "eth_feeHistory": 13500,
+              "eth_getBalance": 1,
+              "eth_getBlockByNumber": 3614,
+              "eth_getCode": 4,
+              "eth_getTransactionCount": 1025,
+              "eth_getTransactionReceipt": 13500,
+              "eth_sendRawTransaction": 13500
+            },
+            "calls_per_admitted": 3.356074074074074,
+            "forwarded_sends": 13500,
+            "http_transport": {
+              "active": 0,
+              "connection_attempts": 32,
+              "connection_reuses": 45275,
+              "connections_opened": 32,
+              "failures": [],
+              "owned_connections": 0,
+              "peak_active": 32,
+              "requests": 45307,
+              "responses": 45307,
+              "status_200": 45307
+            },
+            "proxy_failure_details": [],
+            "proxy_failures": [],
+            "proxy_overloads": 0,
+            "total_method_calls": 45307
+          },
+          "windows": {
+            "last180": {
+              "available": true,
+              "backlogs": {
+                "terminal": {
+                  "end": 101,
+                  "growth": -1,
+                  "growth_per_second": -0.005555987687931284,
+                  "max": 176,
+                  "min": 87,
+                  "sample_ols_slope_per_second": -0.07501221417700724,
+                  "sample_p10": 94.4,
+                  "sample_p50": 123.0,
+                  "sample_p90": 155.0,
+                  "start": 102,
+                  "time_weighted_mean": 123.29484515462315
+                },
+                "unsigned": {
+                  "end": 5,
+                  "growth": -7,
+                  "growth_per_second": -0.038891913815518986,
+                  "max": 26,
+                  "min": 2,
+                  "sample_ols_slope_per_second": -0.03157870979548998,
+                  "sample_p10": 5.0,
+                  "sample_p50": 11.0,
+                  "sample_p90": 12.399999999999999,
+                  "start": 12,
+                  "time_weighted_mean": 10.958657895614104
+                }
+              },
+              "counter_errors": [],
+              "cpu_one_core_percent": {
+                "campaign": 14.384452124054102,
+                "engine": 14.878935028279978,
+                "evm12": 0.3611391997155336,
+                "evm2": 0.39447512584312117,
+                "redis": 4.617025768670898,
+                "solana": 114.33111464224987
+              },
+              "engine_rpc_methods": {
+                "eth_blockNumber": {
+                  "completed_call_time_equivalent": 0.000473512062046684,
+                  "count": 33,
+                  "errors": 0,
+                  "max_ms_through_window_end": 9.466667000083362,
+                  "mean_ms": 2.582592181804075,
+                  "requests_per_second": 0.18334759370173237
+                },
+                "eth_feeHistory": {
+                  "completed_call_time_equivalent": 0.053337735329420294,
+                  "count": 2707,
+                  "errors": 0,
+                  "max_ms_through_window_end": 56.125833999999486,
+                  "mean_ms": 3.5463781422242486,
+                  "requests_per_second": 15.040058671229986
+                },
+                "eth_getBlockByNumber": {
+                  "completed_call_time_equivalent": 0.011537486515622622,
+                  "count": 720,
+                  "errors": 0,
+                  "max_ms_through_window_end": 22.8945000000067,
+                  "mean_ms": 2.884147288890074,
+                  "requests_per_second": 4.0003111353105245
+                },
+                "eth_getTransactionCount": {
+                  "completed_call_time_equivalent": 0.002721484826593992,
+                  "count": 204,
+                  "errors": 0,
+                  "max_ms_through_window_end": 17.051749999950516,
+                  "mean_ms": 2.401123372545815,
+                  "requests_per_second": 1.1334214883379818
+                },
+                "eth_getTransactionReceipt": {
+                  "completed_call_time_equivalent": 0.09862034734921771,
+                  "count": 2701,
+                  "errors": 0,
+                  "max_ms_through_window_end": 36.78341700003784,
+                  "mean_ms": 6.571744479080452,
+                  "requests_per_second": 15.006722745102397
+                },
+                "eth_sendRawTransaction": {
+                  "completed_call_time_equivalent": 0.01994726891535845,
+                  "count": 2707,
+                  "errors": 0,
+                  "max_ms_through_window_end": 24.973583999980065,
+                  "mean_ms": 1.3262760040634303,
+                  "requests_per_second": 15.040058671229986
+                }
+              },
+              "engine_rpc_requests_per_second": 50.40392030491261,
+              "from_seconds": 720.018,
+              "observed_attempt_plateaus_with_unsigned_work": {
+                "first_eight_intervals": [],
+                "intervals": 0,
+                "intervals_with_terminal_progress": 0,
+                "longest_single_sample_interval_seconds": 0,
+                "terminal_delta_total": 0,
+                "total_seconds": 0
+              },
+              "observer_duration_ms_max": 43.751,
+              "proxy_peak_all_method_inflight_through_end": 32,
+              "requested_from_seconds": 720.003560541,
+              "requested_to_seconds": 900.003560541,
+              "sample_gap_seconds": {
+                "max": 5.0090000000000146,
+                "median": 4.999000000000024
+              },
+              "samples": 37,
+              "seconds": 179.986,
+              "stage_rates_per_second": {
+                "admitted": 15.001166757414467,
+                "attempted": 15.040058671229986,
+                "included": 15.006722745102397,
+                "terminal": 15.006722745102397
+              },
+              "to_seconds": 900.004
+            },
+            "post_warmup": {
+              "available": true,
+              "backlogs": {
+                "terminal": {
+                  "end": 101,
+                  "growth": -59,
+                  "growth_per_second": -0.0819455825775358,
+                  "max": 191,
+                  "min": 87,
+                  "sample_ols_slope_per_second": -0.03439298846405606,
+                  "sample_p10": 101.0,
+                  "sample_p50": 136.0,
+                  "sample_p90": 175.0,
+                  "start": 160,
+                  "time_weighted_mean": 136.24842567257886
+                },
+                "unsigned": {
+                  "end": 5,
+                  "growth": -6,
+                  "growth_per_second": -0.008333449075681607,
+                  "max": 27,
+                  "min": 1,
+                  "sample_ols_slope_per_second": -0.0008156232570430142,
+                  "sample_p10": 4.4,
+                  "sample_p50": 11.0,
+                  "sample_p90": 12.0,
+                  "start": 11,
+                  "time_weighted_mean": 10.263677967749553
+                }
+              },
+              "counter_errors": [],
+              "cpu_one_core_percent": {
+                "campaign": 14.412700176391342,
+                "engine": 14.897429130960152,
+                "evm12": 0.36250503479214996,
+                "evm2": 0.3916721065570355,
+                "redis": 4.588952624342005,
+                "solana": 114.40575563549491
+              },
+              "engine_rpc_methods": {
+                "eth_blockNumber": {
+                  "completed_call_time_equivalent": 0.00045862807261046656,
+                  "count": 129,
+                  "errors": 0,
+                  "max_ms_through_window_end": 9.466667000083362,
+                  "mean_ms": 2.559749038750464,
+                  "requests_per_second": 0.17916915512715453
+                },
+                "eth_feeHistory": {
+                  "completed_call_time_equivalent": 0.04767179358324057,
+                  "count": 10806,
+                  "errors": 0,
+                  "max_ms_through_window_end": 56.125833999999486,
+                  "mean_ms": 3.176310814547231,
+                  "requests_per_second": 15.008541785302574
+                },
+                "eth_getBlockByNumber": {
+                  "completed_call_time_equivalent": 0.011619489813752,
+                  "count": 2896,
+                  "errors": 0,
+                  "max_ms_through_window_end": 22.8945000000067,
+                  "mean_ms": 2.8887833118105326,
+                  "requests_per_second": 4.022278087195655
+                },
+                "eth_getCode": {
+                  "completed_call_time_equivalent": 1.3865942582957461e-06,
+                  "count": 2,
+                  "errors": 0,
+                  "max_ms_through_window_end": 0.5649170000197046,
+                  "mean_ms": 0.4991670000151771,
+                  "requests_per_second": 0.0027778163585605357
+                },
+                "eth_getTransactionCount": {
+                  "completed_call_time_equivalent": 0.0020210707884822433,
+                  "count": 812,
+                  "errors": 0,
+                  "max_ms_through_window_end": 17.051749999950516,
+                  "mean_ms": 1.7920575825114908,
+                  "requests_per_second": 1.1277934415755775
+                },
+                "eth_getTransactionReceipt": {
+                  "completed_call_time_equivalent": 0.09598408852622858,
+                  "count": 10859,
+                  "errors": 0,
+                  "max_ms_through_window_end": 36.78341700003784,
+                  "mean_ms": 6.364083607882799,
+                  "requests_per_second": 15.082153918804428
+                },
+                "eth_sendRawTransaction": {
+                  "completed_call_time_equivalent": 0.02094891605577883,
+                  "count": 10806,
+                  "errors": 0,
+                  "max_ms_through_window_end": 24.973583999980065,
+                  "mean_ms": 1.3957995623727744,
+                  "requests_per_second": 15.008541785302574
+                }
+              },
+              "engine_rpc_requests_per_second": 50.431255989666525,
+              "from_seconds": 180.014,
+              "observed_attempt_plateaus_with_unsigned_work": {
+                "first_eight_intervals": [],
+                "intervals": 0,
+                "intervals_with_terminal_progress": 0,
+                "longest_single_sample_interval_seconds": 0,
+                "terminal_delta_total": 0,
+                "total_seconds": 0
+              },
+              "observer_duration_ms_max": 71.314,
+              "proxy_peak_all_method_inflight_through_end": 32,
+              "requested_from_seconds": 180.0,
+              "requested_to_seconds": 900.003560541,
+              "sample_gap_seconds": {
+                "max": 5.015999999999963,
+                "median": 5.0
+              },
+              "samples": 145,
+              "seconds": 719.99,
+              "stage_rates_per_second": {
+                "admitted": 15.000208336226892,
+                "attempted": 15.008541785302574,
+                "included": 15.002986152585452,
+                "terminal": 15.082153918804428
+              },
+              "to_seconds": 900.004
+            }
+          }
+        },
+        "nitro": {
+          "admission_latency_ms": {
+            "http_service_latency_ms": {
+              "count": 11250,
+              "max": 104.514,
+              "p50": 7.016,
+              "p95": 40.612,
+              "p99": 66.192
+            },
+            "scheduled_to_http_start_lateness_ms": {
+              "count": 11250,
+              "max": 24.763,
+              "p50": 3.523,
+              "p95": 9.815,
+              "p99": 11.247
+            },
+            "scheduled_to_response_latency_ms": {
+              "count": 11250,
+              "max": 114.954,
+              "p50": 12.245,
+              "p95": 44.914,
+              "p99": 73.079
+            }
+          },
+          "admitted_http202": 11250,
+          "client_counts": {
+            "dispatched": 11250
+          },
+          "client_drop_counts": {},
+          "http_responses": {
+            "202": 11250
+          },
+          "offered": 11250,
+          "original_late_window_assessment": {
+            "admission_p99_limit_ms": 1000,
+            "capacity_candidate": true,
+            "disqualifiers": [],
+            "from_seconds": 300.017,
+            "rates_tps": {
+              "admitted": 12.5,
+              "attempted": 12.5,
+              "included": 12.495,
+              "terminal": 12.49
+            },
+            "relative_tolerance": 0.05,
+            "requires_repeated_confirmation": true,
+            "terminal_backlog_end": 50,
+            "terminal_backlog_growth_per_second": 0.01,
+            "terminal_backlog_start": 44,
+            "to_seconds": 900.004,
+            "unsigned_backlog_end": 3,
+            "unsigned_backlog_linear_trend_per_second": -0.0,
+            "unsigned_backlog_start": 3,
+            "unsigned_growth_detected": false,
+            "unsigned_monotonic_growth": false,
+            "unsigned_trend_threshold_per_second": 0.1,
+            "window_seconds": 599.9870000000001
+          },
+          "profile": {
+            "chain_id": 412346,
+            "depth": 2,
+            "drain_hook": [
+              "/tmp/engine-capacity-tools/nitro-drain-hook-v2.py",
+              "--max-seconds",
+              "1800"
+            ],
+            "external_url": "http://127.0.0.1:18547",
+            "family": "evm",
+            "label": "caller-owned local dev execution; no public qualification",
+            "network": "external",
+            "rate": 12.5
+          },
+          "transport_errors": [],
+          "whole_run_engine_rpc": {
+            "accepted_unique_wires": 11250,
+            "calls": {
+              "eth_blockNumber": 159,
+              "eth_estimateGas": 11250,
+              "eth_feeHistory": 11250,
+              "eth_getBalance": 1,
+              "eth_getBlockByNumber": 25230,
+              "eth_getCode": 4,
+              "eth_getTransactionCount": 482,
+              "eth_getTransactionReceipt": 11250,
+              "eth_sendRawTransaction": 11250
+            },
+            "calls_per_admitted": 6.300088888888889,
+            "forwarded_sends": 11250,
+            "http_transport": {
+              "active": 0,
+              "connection_attempts": 32,
+              "connection_reuses": 70844,
+              "connections_opened": 32,
+              "failures": [],
+              "owned_connections": 0,
+              "peak_active": 30,
+              "requests": 70876,
+              "responses": 70876,
+              "status_200": 70876
+            },
+            "proxy_failure_details": [],
+            "proxy_failures": [],
+            "proxy_overloads": 0,
+            "total_method_calls": 70876
+          },
+          "windows": {
+            "last180": {
+              "available": true,
+              "backlogs": {
+                "terminal": {
+                  "end": 50,
+                  "growth": -26,
+                  "growth_per_second": -0.14445567988621338,
+                  "max": 78,
+                  "min": 16,
+                  "sample_ols_slope_per_second": -0.019252097583761518,
+                  "sample_p10": 24.6,
+                  "sample_p50": 50.0,
+                  "sample_p90": 75.0,
+                  "start": 76,
+                  "time_weighted_mean": 48.997574811374214
+                },
+                "unsigned": {
+                  "end": 3,
+                  "growth": -2,
+                  "growth_per_second": -0.011111975375862568,
+                  "max": 8,
+                  "min": 0,
+                  "sample_ols_slope_per_second": 0.0005692688897285761,
+                  "sample_p10": 0.6000000000000001,
+                  "sample_p50": 3.0,
+                  "sample_p90": 4.399999999999999,
+                  "start": 5,
+                  "time_weighted_mean": 2.3612308735123824
+                }
+              },
+              "counter_errors": [],
+              "cpu_one_core_percent": {
+                "campaign": 14.384452124054102,
+                "engine": 14.878935028279978,
+                "evm12": 0.3611391997155336,
+                "evm2": 0.39447512584312117,
+                "redis": 4.617025768670898,
+                "solana": 114.33111464224987
+              },
+              "engine_rpc_methods": {
+                "eth_blockNumber": {
+                  "completed_call_time_equivalent": 9.562412076463196e-05,
+                  "count": 31,
+                  "errors": 0,
+                  "max_ms_through_window_end": 1.742708000051607,
+                  "mean_ms": 0.5551936451594531,
+                  "requests_per_second": 0.1722356183258698
+                },
+                "eth_estimateGas": {
+                  "completed_call_time_equivalent": 0.02051025098618758,
+                  "count": 2252,
+                  "errors": 0,
+                  "max_ms_through_window_end": 17.72766699997419,
+                  "mean_ms": 1.6392353614564643,
+                  "requests_per_second": 12.512084273221252
+                },
+                "eth_feeHistory": {
+                  "completed_call_time_equivalent": 0.020585312718757943,
+                  "count": 2252,
+                  "errors": 0,
+                  "max_ms_through_window_end": 24.381790999996156,
+                  "mean_ms": 1.6452345004433246,
+                  "requests_per_second": 12.512084273221252
+                },
+                "eth_getBlockByNumber": {
+                  "completed_call_time_equivalent": 0.044188840709822264,
+                  "count": 4987,
+                  "errors": 0,
+                  "max_ms_through_window_end": 24.37287500004004,
+                  "mean_ms": 1.594821071585737,
+                  "requests_per_second": 27.707710599713312
+                },
+                "eth_getTransactionCount": {
+                  "completed_call_time_equivalent": 0.0004166280155092567,
+                  "count": 93,
+                  "errors": 0,
+                  "max_ms_through_window_end": 16.241207999996732,
+                  "mean_ms": 0.8063140860155815,
+                  "requests_per_second": 0.5167068549776094
+                },
+                "eth_getTransactionReceipt": {
+                  "completed_call_time_equivalent": 0.07382360716945435,
+                  "count": 2212,
+                  "errors": 0,
+                  "max_ms_through_window_end": 25.935000000004038,
+                  "mean_ms": 6.006878734177853,
+                  "requests_per_second": 12.289844765704
+                },
+                "eth_sendRawTransaction": {
+                  "completed_call_time_equivalent": 2.58841705351529,
+                  "count": 2249,
+                  "errors": 0,
+                  "max_ms_through_window_end": 283.68033399999604,
+                  "mean_ms": 207.14932494175324,
+                  "requests_per_second": 12.495416310157458
+                }
+              },
+              "engine_rpc_requests_per_second": 78.20608269532075,
+              "from_seconds": 720.018,
+              "observed_attempt_plateaus_with_unsigned_work": {
+                "first_eight_intervals": [],
+                "intervals": 0,
+                "intervals_with_terminal_progress": 0,
+                "longest_single_sample_interval_seconds": 0,
+                "terminal_delta_total": 0,
+                "total_seconds": 0
+              },
+              "observer_duration_ms_max": 43.751,
+              "proxy_peak_all_method_inflight_through_end": 32,
+              "requested_from_seconds": 720.003560541,
+              "requested_to_seconds": 900.003560541,
+              "sample_gap_seconds": {
+                "max": 5.0090000000000146,
+                "median": 4.999000000000024
+              },
+              "samples": 37,
+              "seconds": 179.986,
+              "stage_rates_per_second": {
+                "admitted": 12.500972297845388,
+                "attempted": 12.512084273221252,
+                "included": 12.495416310157458,
+                "terminal": 12.645427977731602
+              },
+              "to_seconds": 900.004
+            },
+            "post_warmup": {
+              "available": true,
+              "backlogs": {
+                "terminal": {
+                  "end": 50,
+                  "growth": -4,
+                  "growth_per_second": -0.005555632717121071,
+                  "max": 79,
+                  "min": 16,
+                  "sample_ols_slope_per_second": 0.0035481379127962577,
+                  "sample_p10": 24.4,
+                  "sample_p50": 49.0,
+                  "sample_p90": 75.0,
+                  "start": 54,
+                  "time_weighted_mean": 47.72835039375548
+                },
+                "unsigned": {
+                  "end": 3,
+                  "growth": 2,
+                  "growth_per_second": 0.0027778163585605357,
+                  "max": 11,
+                  "min": 0,
+                  "sample_ols_slope_per_second": -0.0001999553572603662,
+                  "sample_p10": 1.0,
+                  "sample_p50": 2.0,
+                  "sample_p90": 5.0,
+                  "start": 1,
+                  "time_weighted_mean": 2.3401908359838326
+                }
+              },
+              "counter_errors": [],
+              "cpu_one_core_percent": {
+                "campaign": 14.412700176391342,
+                "engine": 14.897429130960152,
+                "evm12": 0.36250503479214996,
+                "evm2": 0.3916721065570355,
+                "redis": 4.588952624342005,
+                "solana": 114.40575563549491
+              },
+              "engine_rpc_methods": {
+                "eth_blockNumber": {
+                  "completed_call_time_equivalent": 9.935086320584471e-05,
+                  "count": 126,
+                  "errors": 0,
+                  "max_ms_through_window_end": 1.742708000051607,
+                  "mean_ms": 0.5677113333299693,
+                  "requests_per_second": 0.17500243058931375
+                },
+                "eth_estimateGas": {
+                  "completed_call_time_equivalent": 0.020301780969181102,
+                  "count": 8998,
+                  "errors": 0,
+                  "max_ms_through_window_end": 17.72766699997419,
+                  "mean_ms": 1.6244809157591356,
+                  "requests_per_second": 12.497395797163849
+                },
+                "eth_feeHistory": {
+                  "completed_call_time_equivalent": 0.019639479058043433,
+                  "count": 8998,
+                  "errors": 0,
+                  "max_ms_through_window_end": 24.381790999996156,
+                  "mean_ms": 1.571485722049421,
+                  "requests_per_second": 12.497395797163849
+                },
+                "eth_getBlockByNumber": {
+                  "completed_call_time_equivalent": 0.04456072220029938,
+                  "count": 20279,
+                  "errors": 0,
+                  "max_ms_through_window_end": 24.37287500004004,
+                  "mean_ms": 1.582093514324846,
+                  "requests_per_second": 28.16566896762455
+                },
+                "eth_getCode": {
+                  "completed_call_time_equivalent": 2.140885290007192e-06,
+                  "count": 2,
+                  "errors": 0,
+                  "max_ms_through_window_end": 1.1941250000049308,
+                  "mean_ms": 0.770707999976139,
+                  "requests_per_second": 0.0027778163585605357
+                },
+                "eth_getTransactionCount": {
+                  "completed_call_time_equivalent": 0.00046850564729965087,
+                  "count": 377,
+                  "errors": 0,
+                  "max_ms_through_window_end": 16.241207999996732,
+                  "mean_ms": 0.8947463686983438,
+                  "requests_per_second": 0.523618383588661
+                },
+                "eth_getTransactionReceipt": {
+                  "completed_call_time_equivalent": 0.07610160693343329,
+                  "count": 9004,
+                  "errors": 0,
+                  "max_ms_through_window_end": 25.935000000004038,
+                  "mean_ms": 6.085339402043829,
+                  "requests_per_second": 12.50572924623953
+                },
+                "eth_sendRawTransaction": {
+                  "completed_call_time_equivalent": 2.594536668588456,
+                  "count": 8999,
+                  "errors": 0,
+                  "max_ms_through_window_end": 283.68033399999604,
+                  "mean_ms": 207.5831154591624,
+                  "requests_per_second": 12.49878470534313
+                }
+              },
+              "engine_rpc_requests_per_second": 78.86637314407145,
+              "from_seconds": 180.014,
+              "observed_attempt_plateaus_with_unsigned_work": {
+                "first_eight_intervals": [],
+                "intervals": 0,
+                "intervals_with_terminal_progress": 0,
+                "longest_single_sample_interval_seconds": 0,
+                "terminal_delta_total": 0,
+                "total_seconds": 0
+              },
+              "observer_duration_ms_max": 71.314,
+              "proxy_peak_all_method_inflight_through_end": 32,
+              "requested_from_seconds": 180.0,
+              "requested_to_seconds": 900.003560541,
+              "sample_gap_seconds": {
+                "max": 5.015999999999963,
+                "median": 5.0
+              },
+              "samples": 145,
+              "seconds": 719.99,
+              "stage_rates_per_second": {
+                "admitted": 12.50017361352241,
+                "attempted": 12.497395797163849,
+                "included": 12.49878470534313,
+                "terminal": 12.50572924623953
+              },
+              "to_seconds": 900.004
+            }
+          }
+        },
+        "solana": {
+          "admission_latency_ms": {
+            "http_service_latency_ms": {
+              "count": 14625,
+              "max": 107.016,
+              "p50": 6.876,
+              "p95": 40.996,
+              "p99": 69.136
+            },
+            "scheduled_to_http_start_lateness_ms": {
+              "count": 14625,
+              "max": 32.956,
+              "p50": 2.931,
+              "p95": 9.782,
+              "p99": 10.592
+            },
+            "scheduled_to_response_latency_ms": {
+              "count": 14625,
+              "max": 116.607,
+              "p50": 11.259,
+              "p95": 45.815,
+              "p99": 74.134
+            }
+          },
+          "admitted_http202": 14625,
+          "client_counts": {
+            "dispatched": 14625
+          },
+          "client_drop_counts": {},
+          "http_responses": {
+            "202": 14625
+          },
+          "offered": 14625,
+          "original_late_window_assessment": {
+            "admission_p99_limit_ms": 1000,
+            "capacity_candidate": true,
+            "disqualifiers": [],
+            "from_seconds": 300.017,
+            "rates_tps": {
+              "admitted": 16.25,
+              "attempted": 16.249,
+              "included": 16.24,
+              "terminal": 16.247
+            },
+            "relative_tolerance": 0.05,
+            "requires_repeated_confirmation": true,
+            "terminal_backlog_end": 326,
+            "terminal_backlog_growth_per_second": 0.003,
+            "terminal_backlog_start": 324,
+            "to_seconds": 900.004,
+            "unsigned_backlog_end": 1,
+            "unsigned_backlog_linear_trend_per_second": -0.0,
+            "unsigned_backlog_start": 0,
+            "unsigned_growth_detected": false,
+            "unsigned_monotonic_growth": false,
+            "unsigned_trend_threshold_per_second": 0.1,
+            "window_seconds": 599.9870000000001
+          },
+          "profile": {
+            "chain_id": "solana:local",
+            "family": "solana",
+            "label": "local Agave validator; not public-cluster capacity",
+            "rate": 16.25
+          },
+          "transport_errors": [],
+          "whole_run_engine_rpc": {
+            "accepted_unique_wires": 14625,
+            "calls": {
+              "getLatestBlockhash": 14625,
+              "getSignatureStatuses": 58500,
+              "getTransaction": 14625,
+              "sendTransaction": 14625
+            },
+            "calls_per_admitted": 7.0,
+            "forwarded_sends": 14625,
+            "http_transport": {
+              "active": 0,
+              "connection_attempts": 121,
+              "connection_reuses": 102254,
+              "connections_opened": 121,
+              "failures": [],
+              "owned_connections": 0,
+              "peak_active": 52,
+              "requests": 102375,
+              "responses": 102375,
+              "status_200": 102375
+            },
+            "proxy_failure_details": [],
+            "proxy_failures": [],
+            "proxy_overloads": 0,
+            "total_method_calls": 102375
+          },
+          "windows": {
+            "last180": {
+              "available": true,
+              "backlogs": {
+                "terminal": {
+                  "end": 326,
+                  "growth": 0,
+                  "growth_per_second": 0.0,
+                  "max": 326,
+                  "min": 325,
+                  "sample_ols_slope_per_second": 0.000569053847566522,
+                  "sample_p10": 325.0,
+                  "sample_p50": 325.0,
+                  "sample_p90": 326.0,
+                  "start": 326,
+                  "time_weighted_mean": 325.24998611003076
+                },
+                "unsigned": {
+                  "end": 1,
+                  "growth": 1,
+                  "growth_per_second": 0.005555987687931284,
+                  "max": 1,
+                  "min": 0,
+                  "sample_ols_slope_per_second": 0.001659493179957019,
+                  "sample_p10": 0.0,
+                  "sample_p50": 0.0,
+                  "sample_p90": 0.3999999999999986,
+                  "start": 0,
+                  "time_weighted_mean": 0.09719644861266973
+                }
+              },
+              "counter_errors": [],
+              "cpu_one_core_percent": {
+                "campaign": 14.384452124054102,
+                "engine": 14.878935028279978,
+                "evm12": 0.3611391997155336,
+                "evm2": 0.39447512584312117,
+                "redis": 4.617025768670898,
+                "solana": 114.33111464224987
+              },
+              "engine_rpc_methods": {
+                "getLatestBlockhash": {
+                  "completed_call_time_equivalent": 0.007630439745318984,
+                  "count": 2925,
+                  "errors": 0,
+                  "max_ms_through_window_end": 26.987458999997216,
+                  "mean_ms": 0.46952900102597694,
+                  "requests_per_second": 16.251263987199007
+                },
+                "getSignatureStatuses": {
+                  "completed_call_time_equivalent": 0.513061434572713,
+                  "count": 11700,
+                  "errors": 0,
+                  "max_ms_through_window_end": 115.24837500007834,
+                  "mean_ms": 7.8926389199149005,
+                  "requests_per_second": 65.00505594879603
+                },
+                "getTransaction": {
+                  "completed_call_time_equivalent": 0.10643371788915779,
+                  "count": 2925,
+                  "errors": 0,
+                  "max_ms_through_window_end": 114.76775000005546,
+                  "mean_ms": 6.549257828375368,
+                  "requests_per_second": 16.251263987199007
+                },
+                "sendTransaction": {
+                  "completed_call_time_equivalent": 0.03297751301209959,
+                  "count": 2924,
+                  "errors": 0,
+                  "max_ms_through_window_end": 25.280208000026505,
+                  "mean_ms": 2.029921565320026,
+                  "requests_per_second": 16.245707999511072
+                }
+              },
+              "engine_rpc_requests_per_second": 113.7532919227051,
+              "from_seconds": 720.018,
+              "observed_attempt_plateaus_with_unsigned_work": {
+                "first_eight_intervals": [],
+                "intervals": 0,
+                "intervals_with_terminal_progress": 0,
+                "longest_single_sample_interval_seconds": 0,
+                "terminal_delta_total": 0,
+                "total_seconds": 0
+              },
+              "observer_duration_ms_max": 43.751,
+              "proxy_peak_all_method_inflight_through_end": 61,
+              "requested_from_seconds": 720.003560541,
+              "requested_to_seconds": 900.003560541,
+              "sample_gap_seconds": {
+                "max": 5.0090000000000146,
+                "median": 4.999000000000024
+              },
+              "samples": 37,
+              "seconds": 179.986,
+              "stage_rates_per_second": {
+                "admitted": 16.251263987199007,
+                "attempted": 16.245707999511072,
+                "finalized": 16.21792806107142,
+                "included": 16.22904003644728,
+                "terminal": 16.251263987199007
+              },
+              "to_seconds": 900.004
+            },
+            "post_warmup": {
+              "available": true,
+              "backlogs": {
+                "terminal": {
+                  "end": 326,
+                  "growth": 1,
+                  "growth_per_second": 0.0013889081792802678,
+                  "max": 326,
+                  "min": 322,
+                  "sample_ols_slope_per_second": 0.000985654408827232,
+                  "sample_p10": 324.0,
+                  "sample_p50": 325.0,
+                  "sample_p90": 326.0,
+                  "start": 325,
+                  "time_weighted_mean": 324.9340122779483
+                },
+                "unsigned": {
+                  "end": 1,
+                  "growth": 0,
+                  "growth_per_second": 0.0,
+                  "max": 1,
+                  "min": 0,
+                  "sample_ols_slope_per_second": -0.00017792402468104972,
+                  "sample_p10": 0.0,
+                  "sample_p50": 0.0,
+                  "sample_p90": 1.0,
+                  "start": 1,
+                  "time_weighted_mean": 0.22915179377491357
+                }
+              },
+              "counter_errors": [],
+              "cpu_one_core_percent": {
+                "campaign": 14.412700176391342,
+                "engine": 14.897429130960152,
+                "evm12": 0.36250503479214996,
+                "evm2": 0.3916721065570355,
+                "redis": 4.588952624342005,
+                "solana": 114.40575563549491
+              },
+              "engine_rpc_methods": {
+                "getLatestBlockhash": {
+                  "completed_call_time_equivalent": 0.007251895554108472,
+                  "count": 11700,
+                  "errors": 0,
+                  "max_ms_through_window_end": 26.987458999997216,
+                  "mean_ms": 0.4462642974361162,
+                  "requests_per_second": 16.250225697579133
+                },
+                "getSignatureStatuses": {
+                  "completed_call_time_equivalent": 0.49486754786317216,
+                  "count": 46736,
+                  "errors": 0,
+                  "max_ms_through_window_end": 115.24837500007834,
+                  "mean_ms": 7.623666676352391,
+                  "requests_per_second": 64.9120126668426
+                },
+                "getTransaction": {
+                  "completed_call_time_equivalent": 0.10204665737023451,
+                  "count": 11683,
+                  "errors": 0,
+                  "max_ms_through_window_end": 114.76775000005546,
+                  "mean_ms": 6.28884471796586,
+                  "requests_per_second": 16.226614258531367
+                },
+                "sendTransaction": {
+                  "completed_call_time_equivalent": 0.03171752565591115,
+                  "count": 11700,
+                  "errors": 0,
+                  "max_ms_through_window_end": 25.280208000026505,
+                  "mean_ms": 1.951820623675168,
+                  "requests_per_second": 16.250225697579133
+                }
+              },
+              "engine_rpc_requests_per_second": 113.63907832053224,
+              "from_seconds": 180.014,
+              "observed_attempt_plateaus_with_unsigned_work": {
+                "first_eight_intervals": [],
+                "intervals": 0,
+                "intervals_with_terminal_progress": 0,
+                "longest_single_sample_interval_seconds": 0,
+                "terminal_delta_total": 0,
+                "total_seconds": 0
+              },
+              "observer_duration_ms_max": 71.314,
+              "proxy_peak_all_method_inflight_through_end": 61,
+              "requested_from_seconds": 180.0,
+              "requested_to_seconds": 900.003560541,
+              "sample_gap_seconds": {
+                "max": 5.015999999999963,
+                "median": 5.0
+              },
+              "samples": 145,
+              "seconds": 719.99,
+              "stage_rates_per_second": {
+                "admitted": 16.250225697579133,
+                "attempted": 16.250225697579133,
+                "finalized": 16.24467006486201,
+                "included": 16.247447881220573,
+                "terminal": 16.248836789399853
+              },
+              "to_seconds": 900.004
+            }
+          }
+        }
+      },
+      "complete_zero_drain_reported": true,
+      "configuration": {
+        "durability": {
+          "redis_appendfsync": "everysec",
+          "sqlite": "WAL synchronous=FULL/fullfsync=ON"
+        },
+        "duration_seconds": 900.0,
+        "eoa_broadcast_concurrency": 32,
+        "eoa_max_inflight_per_wallet": 4096,
+        "http_concurrency": 128,
+        "max_schedule_lag_ms": 100.0,
+        "solana_confirmation_poll_seconds": 5,
+        "solana_workers": 100,
+        "warmup_seconds": 180.0
+      },
+      "drain": {
+        "client_pending": 0,
+        "http_inflight": 0,
+        "journal_unresolved": 0,
+        "node_pending": 0,
+        "redis_active": 0,
+        "redis_borrowed": 0,
+        "redis_delayed": 0,
+        "redis_pending": 0,
+        "redis_submitted": 0
+      },
+      "drain_reached_load_seconds": 930.314335,
+      "exact_oracle_liveness_reported": true,
+      "exact_oracle_safety_reported": true,
+      "execution_errors": [],
+      "harness_sha256": {
+        "capacity_campaign.py": "959d1aa819e380ab2c17d1afa59348110954412d891d53d24944d3831fa675d7",
+        "capacity_faults.py": "59e2bc4d90bceca2682c27e35c5871ee538d4878a795f990fa90e6d5f90afa13",
+        "capacity_resource_guard.py": "bbfda4901f49600cdff9fa907b73e2a64e8df534496083994fd4717c55979bb6"
+      },
+      "infrastructure_stop": null,
+      "observer_errors": 0,
+      "operator_review_required": null,
+      "oracle": {
+        "eligible_for_rate_assessment": true,
+        "expected_parked_intents": 0,
+        "liveness_failures": [],
+        "liveness_pass": true,
+        "observed_intents": 52875,
+        "offered_intents": 52875,
+        "outcome": "pass",
+        "safety_failures": [],
+        "safety_pass": true
+      },
+      "outcome": "pass",
+      "owned_children_stopped": true,
+      "preserved_strict_assessments": {
+        "evm12": {
+          "aligned_mean_slopes_tps": {
+            "terminal": -0.016636777859206937,
+            "unsigned": 0.0028848840717364847
+          },
+          "classification": "steady_window_evidence_requires_repetition",
+          "persistent_growth_stages": [],
+          "reasons": []
+        },
+        "evm2": {
+          "aligned_mean_slopes_tps": {
+            "terminal": -0.03343879207238417,
+            "unsigned": -0.0006627452519396782
+          },
+          "classification": "steady_window_evidence_requires_repetition",
+          "persistent_growth_stages": [],
+          "reasons": []
+        },
+        "nitro": {
+          "aligned_mean_slopes_tps": {
+            "terminal": 0.003859578711888025,
+            "unsigned": -0.00026022833578349524
+          },
+          "classification": "unconfirmed_growth_or_cadence_ambiguity",
+          "persistent_growth_stages": [],
+          "reasons": [
+            "stage_rate_below_offered_beyond_one_transaction",
+            "unsigned_backlog_endpoint_growth"
+          ]
+        },
+        "solana": {
+          "aligned_mean_slopes_tps": {
+            "terminal": 0.0009819427926295162,
+            "unsigned": -0.00017392267764044914
+          },
+          "classification": "unconfirmed",
+          "persistent_growth_stages": [],
+          "reasons": [
+            "stage_rate_below_offered_beyond_one_transaction"
+          ]
+        }
+      },
+      "report": "/tmp/capacity-confirm-lease600-shared5875-900s-e2cc04cbd054.json",
+      "report_sha256_uncompressed": "c9539e942a6080a27077b9fd9f4768a2e12ffeb99a5a975b24ea04c0c167937f",
+      "source_commit": "1ebe25cced2b7e65e0879c5231d54944d894b770",
+      "source_is_dirty": true,
+      "strict_assessment_sha256": "91a67d390050c37861601ca5f559782888709ab256d08039ea53fc05d67f0c36"
+    }
+  ],
+  "schema": "capacity-compact-readonly-v1"
+}

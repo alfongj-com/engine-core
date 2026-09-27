@@ -1,0 +1,12 @@
+{
+  "base_harness_sha256": "959d1aa819e380ab2c17d1afa59348110954412d891d53d24944d3831fa675d7",
+  "files": {
+    "capacity_journal_reader_test.py": "eb88820b9e9ceb7b7b92c06215b46b808eb6624a3a577f7536a977c15d8ba628",
+    "journal-reader.patch": "36f9f97c4377ada4ce5caecb5d8a33564cb2a7818fa9c7edd0ddc06c1a8a0919",
+    "tests.log": "c88e3af4913a1e38b3402c2e8bc8be1cc4ee2a73160f4254a45f666e06f36c8c",
+    "final-tests.log": "3f9795da93768230186f91fba1987e7954448904ff93c5b2ae10348f94bbc73b",
+    "capacity_campaign.py": "c3af22b49a72617c0f3deaccc938abd3cd41012ab776b59f57431a3bee2c37f6",
+    "negative-control.log": "e10dabe79a397b902cf8edf94088dcf910096d29ba460ef8d63b470a92f25b3d",
+    "README.md": "043e69b95e7b315a33f136a9f1a1f9f8c63bee2558056d7d86781684342e4e99"
+  }
+}

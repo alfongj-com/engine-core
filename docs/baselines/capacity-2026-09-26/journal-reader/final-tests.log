@@ -1,0 +1,13 @@
+test_absent_database_is_not_created (capacity_journal_reader_test.JournalReaderTests) ... ok
+test_actual_custody_backup_of_closed_ledger_keeps_original_verdict (capacity_journal_reader_test.JournalReaderTests) ... ok
+test_actual_observer_and_fence_can_read_closed_ledger (capacity_journal_reader_test.JournalReaderTests) ... ok
+test_closed_checkpointed_wal_without_sidecars_is_readable (capacity_journal_reader_test.JournalReaderTests) ... ok
+test_connection_closes_on_normal_and_exception_paths (capacity_journal_reader_test.JournalReaderTests) ... ok
+test_live_committed_wal_visible_uncommitted_and_rollback_hidden (capacity_journal_reader_test.JournalReaderTests) ... ok
+test_reader_transaction_is_one_snapshot_then_next_reader_sees_commit (capacity_journal_reader_test.JournalReaderTests) ... ok
+test_sql_mutations_fail_and_rows_remain (capacity_journal_reader_test.JournalReaderTests) ... ok
+
+----------------------------------------------------------------------
+Ran 8 tests in 0.038s
+
+OK

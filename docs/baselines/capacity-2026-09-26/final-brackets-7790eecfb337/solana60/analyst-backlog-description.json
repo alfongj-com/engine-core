@@ -1,0 +1,266 @@
+{
+  "chains": {
+    "solana": {
+      "aggregation_seconds": 30,
+      "method": "sample quantiles; nominal phase only; descriptive, not a pass/fail test",
+      "sample_window_seconds": [
+        120.008,
+        360.001
+      ],
+      "terminal": {
+        "groups": [
+          {
+            "max": 1188,
+            "mean": 1187.3333333333333,
+            "median": 1187.5,
+            "min": 1186,
+            "p10": 1186.5,
+            "p90": 1188.0,
+            "sample_count": 6,
+            "start_seconds": 120.0
+          },
+          {
+            "max": 1188,
+            "mean": 1187.5,
+            "median": 1188.0,
+            "min": 1186,
+            "p10": 1186.5,
+            "p90": 1188.0,
+            "sample_count": 6,
+            "start_seconds": 150.0
+          },
+          {
+            "max": 1188,
+            "mean": 1187.5,
+            "median": 1187.5,
+            "min": 1187,
+            "p10": 1187.0,
+            "p90": 1188.0,
+            "sample_count": 6,
+            "start_seconds": 180.0
+          },
+          {
+            "max": 1188,
+            "mean": 1187,
+            "median": 1187.0,
+            "min": 1186,
+            "p10": 1186.5,
+            "p90": 1187.5,
+            "sample_count": 6,
+            "start_seconds": 210.0
+          },
+          {
+            "max": 1188,
+            "mean": 1187.5,
+            "median": 1187.5,
+            "min": 1187,
+            "p10": 1187.0,
+            "p90": 1188.0,
+            "sample_count": 6,
+            "start_seconds": 240.0
+          },
+          {
+            "max": 1188,
+            "mean": 1187.5,
+            "median": 1187.5,
+            "min": 1187,
+            "p10": 1187.0,
+            "p90": 1188.0,
+            "sample_count": 6,
+            "start_seconds": 270.0
+          },
+          {
+            "max": 1188,
+            "mean": 1187.5,
+            "median": 1187.5,
+            "min": 1187,
+            "p10": 1187.0,
+            "p90": 1188.0,
+            "sample_count": 6,
+            "start_seconds": 300.0
+          },
+          {
+            "max": 1187,
+            "mean": 1186,
+            "median": 1187.0,
+            "min": 1181,
+            "p10": 1184.0,
+            "p90": 1187.0,
+            "sample_count": 6,
+            "start_seconds": 330.0
+          }
+        ],
+        "last_180_seconds_range": [
+          1181,
+          1188
+        ],
+        "paired_phase_growth": [
+          {
+            "end_seconds": 330.008,
+            "growth": -0.9991995197117376,
+            "start_seconds": 120.008
+          },
+          {
+            "end_seconds": 335.015,
+            "growth": -1.0,
+            "start_seconds": 125.015
+          },
+          {
+            "end_seconds": 340.00800000000004,
+            "growth": 1.0,
+            "start_seconds": 130.008
+          },
+          {
+            "end_seconds": 345.015,
+            "growth": -6.998800239952061,
+            "start_seconds": 135.015
+          },
+          {
+            "end_seconds": 350.01099999999997,
+            "growth": -0.004799040191983295,
+            "start_seconds": 140.011
+          },
+          {
+            "end_seconds": 355.01099999999997,
+            "growth": 0.0,
+            "start_seconds": 145.011
+          }
+        ],
+        "paired_phase_growth_min_median_max": [
+          -6.998800239952061,
+          -0.5019992799518604,
+          1.0
+        ]
+      },
+      "unsigned": {
+        "groups": [
+          {
+            "max": 1,
+            "mean": 0.5,
+            "median": 0.5,
+            "min": 0,
+            "p10": 0.0,
+            "p90": 1.0,
+            "sample_count": 6,
+            "start_seconds": 120.0
+          },
+          {
+            "max": 1,
+            "mean": 0.6666666666666666,
+            "median": 1.0,
+            "min": 0,
+            "p10": 0.0,
+            "p90": 1.0,
+            "sample_count": 6,
+            "start_seconds": 150.0
+          },
+          {
+            "max": 1,
+            "mean": 0.6666666666666666,
+            "median": 1.0,
+            "min": 0,
+            "p10": 0.0,
+            "p90": 1.0,
+            "sample_count": 6,
+            "start_seconds": 180.0
+          },
+          {
+            "max": 1,
+            "mean": 0.8333333333333334,
+            "median": 1.0,
+            "min": 0,
+            "p10": 0.5,
+            "p90": 1.0,
+            "sample_count": 6,
+            "start_seconds": 210.0
+          },
+          {
+            "max": 1,
+            "mean": 0.8333333333333334,
+            "median": 1.0,
+            "min": 0,
+            "p10": 0.5,
+            "p90": 1.0,
+            "sample_count": 6,
+            "start_seconds": 240.0
+          },
+          {
+            "max": 1,
+            "mean": 0.3333333333333333,
+            "median": 0.0,
+            "min": 0,
+            "p10": 0.0,
+            "p90": 1.0,
+            "sample_count": 6,
+            "start_seconds": 270.0
+          },
+          {
+            "max": 1,
+            "mean": 0.6666666666666666,
+            "median": 1.0,
+            "min": 0,
+            "p10": 0.0,
+            "p90": 1.0,
+            "sample_count": 6,
+            "start_seconds": 300.0
+          },
+          {
+            "max": 34,
+            "mean": 6.333333333333333,
+            "median": 1.0,
+            "min": 0,
+            "p10": 0.5,
+            "p90": 17.5,
+            "sample_count": 6,
+            "start_seconds": 330.0
+          }
+        ],
+        "last_180_seconds_range": [
+          0,
+          34
+        ],
+        "paired_phase_growth": [
+          {
+            "end_seconds": 330.008,
+            "growth": 0.0,
+            "start_seconds": 120.008
+          },
+          {
+            "end_seconds": 335.015,
+            "growth": 0.0,
+            "start_seconds": 125.015
+          },
+          {
+            "end_seconds": 340.00800000000004,
+            "growth": 1.0,
+            "start_seconds": 130.008
+          },
+          {
+            "end_seconds": 345.015,
+            "growth": 33.99320135972822,
+            "start_seconds": 135.015
+          },
+          {
+            "end_seconds": 350.01099999999997,
+            "growth": -0.9728054389120899,
+            "start_seconds": 140.011
+          },
+          {
+            "end_seconds": 355.01099999999997,
+            "growth": 0.9991999999999962,
+            "start_seconds": 145.011
+          }
+        ],
+        "paired_phase_growth_min_median_max": [
+          -0.9728054389120899,
+          0.4995999999999981,
+          33.99320135972822
+        ]
+      }
+    }
+  },
+  "descriptor_sha256": "50ef35bd4a3226521e58f2a3115e30fd546d678e18a4648781f38bdc0bb37f83",
+  "interpretation_policy_sha256": "9ce1b79f2428ad6a20bc2d097496b741d8bc147a790ef1f64359d6c719a61e3f",
+  "report": "/tmp/capacity-final-bracket-lease600-solana60-7790eecfb337.json",
+  "report_sha256": "c192d7e2f0ae2d3c31bde7a0acd0ef9470ade090b058d184342519d99943c1c4"
+}

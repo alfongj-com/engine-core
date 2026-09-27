@@ -1,9 +1,9 @@
 # Finality, reorganizations and recovery
 
-Status: **implemented in the working tree; final integrated verification pending**.
+Status: **implemented, with local process tests and Linux gates recorded**.
 This describes the shared EVM gate, executor integration and independent recovery
-journal authored on 2026-09-26. Targeted implementation/model checks have passed;
-the final frozen-source evidence belongs in [verification](../verification.md).
+journal authored on 2026-09-26 and subsequent hardening. Each round's source,
+checks and limitations are recorded in [verification](../verification.md).
 Official sources accessed **2026-09-26**. No production endpoint is certified here.
 
 ## Context and decision
@@ -247,7 +247,8 @@ The [Finality model](../../formal/finality.md) separates real canonical state fr
 observations; the [disaster-recovery model](../../formal/disaster-recovery.md)
 separates the authority, Redis projection and network effects. Their negative
 cases expose dishonest-provider, post-finality rollback and lost-authority limits.
-Final process/Linux gates and frozen-source evidence remain required. Production
+Process/Linux gates and frozen-source evidence are recorded per round in
+[verification](../verification.md). Production
 endpoint qualification, immutable admission policy, global backpressure and
 independent 7702 bundler attribution remain open.
 
@@ -257,8 +258,9 @@ All post-dispatch RPC errors retain the original signed borrowed attempt and its
 nonce. Recovery first looks for a matching included receipt, then retransmits the
 same wire when unresolved; error text never recycles the nonce. Unknown sends do
 not emit a send-success webhook or terminal failure. The existing worker requeue
-cadence uses a rounded one-second delay for unknown-only/no-progress work, with
-32 concurrent recovery RPC tasks. Mixed successful cycles with send/recovery
+cadence uses a rounded one-second delay for unknown-only/no-progress work.
+Borrowed receipt lookups have a separate concurrency limit of 32; recovery
+broadcast concurrency defaults to 32 and is configurable up to 128. Mixed successful cycles with send/recovery
 progress and unsigned backlog can rejoin the queue tail immediately; retries can
 continue indefinitely while evidence remains unknown. Admission and inflight
 bounds limit retained work, not lifetime provider spend. Recovery visits all

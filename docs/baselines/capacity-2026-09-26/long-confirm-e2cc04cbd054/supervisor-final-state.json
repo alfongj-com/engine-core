@@ -1,0 +1,98 @@
+{
+  "active": null,
+  "config": {
+    "drain_seconds": 1800,
+    "output_dir": "/private/tmp",
+    "setup_seconds": 120,
+    "verification_seconds": 600
+  },
+  "frozen_sha256": {
+    "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/bin/python3.9": "bdea59019a38eb6600cc9e71e984a97fedadc406448431281e7657030f54987e",
+    "/Users/alfongj/Code/engine-core/docs/baselines/capacity-2026-09-26/supervisor-v4/runner.py": "0f2d64f85a240d932ba1f558a2c105445a76370d04287967dea877e55eebb040",
+    "/Users/alfongj/Code/engine-core/scripts/capacity_assess.py": "8ebafce9dd136ce0a0179ab04292836d8c0d685fe9b31f9b455e45665e4b6865",
+    "/Users/alfongj/Code/engine-core/scripts/capacity_campaign.py": "959d1aa819e380ab2c17d1afa59348110954412d891d53d24944d3831fa675d7",
+    "/Users/alfongj/Code/engine-core/scripts/capacity_faults.py": "59e2bc4d90bceca2682c27e35c5871ee538d4878a795f990fa90e6d5f90afa13",
+    "/Users/alfongj/Code/engine-core/scripts/capacity_resource_guard.py": "bbfda4901f49600cdff9fa907b73e2a64e8df534496083994fd4717c55979bb6",
+    "/Users/alfongj/Code/engine-core/target/release/thirdweb-engine": "35e307e16cafa7cbb17caafcf5ed90a840d58dddd2454542566619266e7a4c07",
+    "/private/tmp/engine-capacity-dispatch-plan/long-confirmation-jobs.json": "b250472c8ac1ceafc05944e3204cda270bf3cce530a58064414633cf507bd7b7",
+    "/tmp/engine-capacity-tools/cast": "da3334cc53dc92415c2a65a102a385ca30e3cdcf3e15a711ce206180a60c51fc",
+    "/tmp/engine-capacity-tools/nitro-drain-hook-v2.py": "424a26e6b8539d251df61396372951270ab1193372733099f94ec66608f92bd1",
+    "/tmp/engine-finality/anvil": "cad9ae8b74a37fd417e2b8d29b2caca869ba10fd015a1e92059ed15973188e66",
+    "/tmp/engine-finality/solana-release/bin/solana": "5cfbfb188edd6c0466d7a65dd9e8c1cbbb682a691e28281dde35b029555e35e9",
+    "/tmp/engine-finality/solana-release/bin/solana-keygen": "bde132e0af570fac97e15a6c24368183c4311c9f746b7b90738142ce6e9303ee",
+    "/tmp/engine-finality/solana-release/bin/solana-test-validator": "46e8e70b04a3bb020c3d90cf0aeef732a9c0e1663426f49a768d2f2a5ca779e6",
+    "/tmp/redis-7.4.2/src/redis-server": "7f82251c903404546f80b808de5b6641b8a7e757333c5ed2caf4d5753fe6a5b3"
+  },
+  "id": "e2cc04cbd054",
+  "jobs": [
+    {
+      "chains": [
+        "evm12=50"
+      ],
+      "extra": [
+        "--warmup-seconds",
+        "180",
+        "--late-window-seconds",
+        "600",
+        "--max-schedule-lag-ms",
+        "100",
+        "--eoa-broadcast-concurrency",
+        "32",
+        "--http-concurrency",
+        "128",
+        "--solana-confirmation-poll-seconds",
+        "5"
+      ],
+      "name": "capacity-optional-confirm-lease600-evm50-900s",
+      "seconds": 900
+    },
+    {
+      "chains": [
+        "evm12=15",
+        "evm2=15",
+        "nitro=12.5",
+        "solana=16.25"
+      ],
+      "extra": [
+        "--warmup-seconds",
+        "180",
+        "--late-window-seconds",
+        "600",
+        "--max-schedule-lag-ms",
+        "100",
+        "--eoa-broadcast-concurrency",
+        "32",
+        "--http-concurrency",
+        "128",
+        "--solana-confirmation-poll-seconds",
+        "5"
+      ],
+      "name": "capacity-confirm-lease600-shared5875-900s",
+      "seconds": 900
+    }
+  ],
+  "review_required": null,
+  "runs": [
+    {
+      "assessment": "/private/tmp/capacity-optional-confirm-lease600-evm50-900s-e2cc04cbd054-assessment.json",
+      "assessment_sha256": "7d49d9734753f4c83f1fc88d8169beeb293046360e720d5dee78ed92de18f2ae",
+      "capacity_selected": false,
+      "exit": 0,
+      "name": "capacity-optional-confirm-lease600-evm50-900s",
+      "report": "/private/tmp/capacity-optional-confirm-lease600-evm50-900s-e2cc04cbd054.json",
+      "report_sha256": "1ac6203ba81e3edb1b5d8ce056b4c139d5a27f345784489396d63d1a031f7fc7",
+      "safely_settled": true
+    },
+    {
+      "assessment": "/private/tmp/capacity-confirm-lease600-shared5875-900s-e2cc04cbd054-assessment.json",
+      "assessment_sha256": "91a67d390050c37861601ca5f559782888709ab256d08039ea53fc05d67f0c36",
+      "capacity_selected": false,
+      "exit": 0,
+      "name": "capacity-confirm-lease600-shared5875-900s",
+      "report": "/private/tmp/capacity-confirm-lease600-shared5875-900s-e2cc04cbd054.json",
+      "report_sha256": "c9539e942a6080a27077b9fd9f4768a2e12ffeb99a5a975b24ea04c0c167937f",
+      "safely_settled": true
+    }
+  ],
+  "schema": "local-capacity-sequential-v4"
+}

@@ -1,0 +1,161 @@
+{
+  "schema": "upper-bracket-readonly-summary-v1",
+  "report": "/tmp/capacity-upper-bracket-lease600-native65-f6b8bbf5a938.json",
+  "report_sha256": "449aab01938ac63019510cfbda94ea60b4483ed6a99d390562b54a0d7f5d5633",
+  "engine_binary_sha256": "35e307e16cafa7cbb17caafcf5ed90a840d58dddd2454542566619266e7a4c07",
+  "harness_sha256": {
+    "capacity_campaign.py": "959d1aa819e380ab2c17d1afa59348110954412d891d53d24944d3831fa675d7",
+    "capacity_faults.py": "59e2bc4d90bceca2682c27e35c5871ee538d4878a795f990fa90e6d5f90afa13",
+    "capacity_resource_guard.py": "bbfda4901f49600cdff9fa907b73e2a64e8df534496083994fd4717c55979bb6"
+  },
+  "oracle": {
+    "offered_intents": 23400,
+    "observed_intents": 23400,
+    "safety_pass": true,
+    "liveness_pass": true
+  },
+  "original_responses": {
+    "202": 23400
+  },
+  "original_client": {
+    "dispatched": 23400
+  },
+  "strict_assessment": {
+    "aggregation_seconds": 30.0,
+    "aligned_mean_backlogs": {
+      "terminal": [
+        539.1638202250183,
+        635.3805381449816,
+        898.7202069830705,
+        1111.1226018569294,
+        1403.8150235314802,
+        1664.512192811633,
+        1933.3815504488823,
+        2209.584605226064
+      ],
+      "unsigned": [
+        276.91823472471873,
+        399.0800172386144,
+        611.1781498370268,
+        874.1866647196398,
+        1131.5027731531893,
+        1420.2963272065972,
+        1696.3654827808916,
+        1912.5033178907588
+      ]
+    },
+    "aligned_mean_slopes_tps": {
+      "terminal": 8.243348355406514,
+      "unsigned": 8.18270602161247
+    },
+    "backlog_endpoints": {
+      "terminal": {
+        "end": 2385.0,
+        "growth": 1752.0,
+        "start": 633.0
+      },
+      "unsigned": {
+        "end": 2020.0,
+        "growth": 1815.0,
+        "start": 205.0
+      }
+    },
+    "classification": "observed_persistent_backlog_growth",
+    "complete_aggregation_windows": 8,
+    "from_seconds": 120.008,
+    "nominal_complete_block_cycles": null,
+    "notes": [
+      "no_fixed_block_cadence_assumed"
+    ],
+    "offered_tps": 65.0,
+    "one_transaction_rate_allowance_tps": 0.004166805560185339,
+    "original_candidate": false,
+    "persistent_growth_stages": [
+      "unsigned",
+      "terminal"
+    ],
+    "reasons": [
+      "stage_rate_below_offered_beyond_one_transaction",
+      "unsigned_backlog_endpoint_growth",
+      "unsigned_backlog_positive_aligned_mean_trend",
+      "terminal_backlog_endpoint_growth",
+      "terminal_backlog_positive_aligned_mean_trend"
+    ],
+    "sample_interval_seconds": 5.0,
+    "stage_rates_tps": {
+      "admitted": 65.00216673889129,
+      "attempted": 57.4394146471549,
+      "included": 57.46441548051601,
+      "terminal": 57.70192339744658
+    },
+    "to_seconds": 360.0,
+    "window_seconds": 239.99200000000002
+  },
+  "late180_sample_window": {
+    "from_seconds": 180.017,
+    "to_seconds": 360.0,
+    "stage_rates_per_second": {
+      "admitted": 65.00058338843112,
+      "attempted": 57.288743936927375,
+      "included": 57.24985137485207,
+      "terminal": 55.449681358795
+    },
+    "backlogs": {
+      "terminal": {
+        "end": 2385,
+        "growth": 1719,
+        "growth_per_second": 9.550902029636132,
+        "max": 2385,
+        "min": 666,
+        "sample_ols_slope_per_second": 8.899843063071097,
+        "sample_p10": 918.0,
+        "sample_p50": 1493.0,
+        "sample_p90": 2185.8,
+        "start": 666,
+        "time_weighted_mean": 1536.8696765805662
+      },
+      "unsigned": {
+        "end": 2020,
+        "growth": 1388,
+        "growth_per_second": 7.711839451503753,
+        "max": 2022,
+        "min": 445,
+        "sample_ols_slope_per_second": 8.734304615184703,
+        "sample_p10": 632.0,
+        "sample_p50": 1244.0,
+        "sample_p90": 1906.3999999999999,
+        "start": 632,
+        "time_weighted_mean": 1274.342543462438
+      }
+    },
+    "engine_rpc_requests_per_second": 245.52318830111733
+  },
+  "nominal_phase_differences": {
+    "terminal": [
+      1362.040119760478,
+      1602.996799359872,
+      1833.999999999999
+    ],
+    "unsigned": [
+      1362.1832335329345,
+      1636.9600143980892,
+      1872.9991988784298
+    ]
+  },
+  "post_warmup_sample_rates": {
+    "admitted": 65.00216673889129,
+    "attempted": 57.4394146471549,
+    "included": 57.46441548051601,
+    "terminal": 57.70192339744658
+  },
+  "whole_rpc_calls_per_intent": 4.314017094017094,
+  "late_send_mean_ms": 153.37130276678963,
+  "admission_response_p99_ms": 24.096,
+  "all_drained_load_seconds": 395.191066,
+  "interpretation": "Clear65TPS upperfailedpoint oncurrent35e: persistently rising unsigned/terminalmeans and stronglypositiveallphasepairs despiteexact eventualdrain.55TPS remainsunconfirmedlowercandidate; not a provenmaximum. No need70before longerselectedconfirmation.",
+  "limits": [
+    "Local Nitrodev execution, noL1settlement/publicRPC/mainnetclaim.",
+    "Observed57TPSprocessing doesnotisolate a specific bottleneck or proveits maximum.",
+    "RPCcounts exclude observer/directguards."
+  ]
+}

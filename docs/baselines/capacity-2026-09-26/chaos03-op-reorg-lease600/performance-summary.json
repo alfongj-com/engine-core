@@ -1,0 +1,192 @@
+{
+  "schema": "cut3-readonly-summary-v1",
+  "report": "/tmp/chaos03-op-reorg-lease600.json",
+  "report_sha256": "c6b06fd4a2af2363615a547d3e7b47c2a63b2b733a62825524e18580ceb35169",
+  "binary_sha256": "35e307e16cafa7cbb17caafcf5ed90a840d58dddd2454542566619266e7a4c07",
+  "harness_sha256": {
+    "capacity_campaign.py": "959d1aa819e380ab2c17d1afa59348110954412d891d53d24944d3831fa675d7",
+    "capacity_faults.py": "59e2bc4d90bceca2682c27e35c5871ee538d4878a795f990fa90e6d5f90afa13",
+    "capacity_resource_guard.py": "bbfda4901f49600cdff9fa907b73e2a64e8df534496083994fd4717c55979bb6"
+  },
+  "scope": "One local OP execution-on-Anvil mixed12TPS run,300s,depth2,lease600. Not native OP sequencer/derivation/L1 or sustained-capacity qualification.",
+  "oracle": {
+    "offered_intents": 3600,
+    "observed_intents": 3600,
+    "safety_pass": true,
+    "liveness_pass": true
+  },
+  "actual_scenario": {
+    "requested_fault_validated": true,
+    "provisional_block": 44,
+    "stable_anchor_checkpoint": 42,
+    "provisional_hold_seconds": 20.0,
+    "receipt_calls_during_hold": 23,
+    "orphaned_intents": 19,
+    "orphaned_outcomes": {
+      "success": 13,
+      "revert": 6
+    },
+    "pool_count_before": 234,
+    "pool_count_after": 0,
+    "pool_nonce_range": [
+      1021,
+      1254
+    ],
+    "forwarded_sends_before_after": [
+      1255,
+      1255
+    ],
+    "pool_snapshot_atomic": false,
+    "pool_snapshot_limit": "Engine stays live. Separate snapshots cannot prove the exact removed set when broadcasts interleave; counts describe the observed RPC snapshots.",
+    "engine_process_restarted": false,
+    "manual_signed_wire_replay": false,
+    "finality_halted": false,
+    "all_orphaned_intents_recovered": true
+  },
+  "timings": {
+    "trigger_seconds": 83.481706,
+    "provisional_batch_seconds": 85.051356,
+    "rollback_event_seconds": 105.304256,
+    "harness_recovery_event_seconds": 115.325286,
+    "harness_event_is_not_actual_replay_start": true,
+    "replayed_wires": 253,
+    "accepted_replay_start_seconds": 105.428868,
+    "accepted_replay_end_seconds": 145.501376,
+    "first_replay_after_rollback_seconds": 0.12461199999999906,
+    "all_replays_after_rollback_seconds": 40.19712,
+    "replay_accept_counts_by_5_second_bin": {
+      "105": 32,
+      "110": 32,
+      "115": 32,
+      "120": 32,
+      "125": 32,
+      "130": 32,
+      "135": 32,
+      "145": 29
+    },
+    "all_intents_drained_load_seconds": 310.077789,
+    "drain_after_offered_seconds": 10.077788999999996
+  },
+  "sample_windows": {
+    "provisional_hold": {
+      "start_seconds": 85.007,
+      "end_seconds": 105.015,
+      "rates_tps": {
+        "admitted": 12.045182,
+        "attempted": 11.795282,
+        "included": 0.94962,
+        "terminal": 1.14954
+      },
+      "unsigned": [
+        1,
+        6
+      ],
+      "terminal_backlog": [
+        42,
+        260
+      ],
+      "engine_rpc_rps": 26.489404
+    },
+    "rollback_and_replay": {
+      "start_seconds": 105.015,
+      "end_seconds": 150.016,
+      "rates_tps": {
+        "admitted": 11.999733,
+        "attempted": 11.977512,
+        "included": 16.910735,
+        "terminal": 4.999889
+      },
+      "unsigned": [
+        6,
+        7
+      ],
+      "terminal_backlog": [
+        260,
+        575
+      ],
+      "engine_rpc_rps": 37.554721
+    },
+    "catchup": {
+      "start_seconds": 150.016,
+      "end_seconds": 180.009,
+      "rates_tps": {
+        "admitted": 11.96946,
+        "attempted": 12.169506,
+        "included": 12.002801,
+        "terminal": 28.940086
+      },
+      "unsigned": [
+        7,
+        1
+      ],
+      "terminal_backlog": [
+        575,
+        66
+      ],
+      "engine_rpc_rps": 58.346948
+    },
+    "after_recovery": {
+      "start_seconds": 180.009,
+      "end_seconds": 300.009,
+      "rates_tps": {
+        "admitted": 12.0,
+        "attempted": 11.958333,
+        "included": 12.0,
+        "terminal": 11.408333
+      },
+      "unsigned": [
+        1,
+        6
+      ],
+      "terminal_backlog": [
+        66,
+        137
+      ],
+      "engine_rpc_rps": 40.475
+    },
+    "late180": {
+      "start_seconds": 120.007,
+      "end_seconds": 300.009,
+      "rates_tps": {
+        "admitted": 11.999867,
+        "attempted": 11.999867,
+        "included": 13.799847,
+        "terminal": 13.316519
+      },
+      "unsigned": [
+        6,
+        6
+      ],
+      "terminal_backlog": [
+        374,
+        137
+      ],
+      "engine_rpc_rps": 42.938412
+    }
+  },
+  "sample_terminal_backlog_peak": {
+    "seconds": 150.016,
+    "count": 575
+  },
+  "original_response_counts": {
+    "202": 3600
+  },
+  "retry_client_counts": {
+    "dispatched": 3600,
+    "retry_dispatched": 100,
+    "retry_status_202": 100
+  },
+  "same_id_retry_extra_sends": {
+    "evm2": 0
+  },
+  "admission_response_p99_ms": 23.447,
+  "terminal_observed_upper_p99_ms": 50254.854,
+  "whole_engine_rpc_calls": 12495,
+  "engine_rpc_calls_per_original_intent": 3.470833333333333,
+  "independent_audit": "/tmp/engine-chaos03-independent-audit/audit.json",
+  "limits": [
+    "Replay timestamps measure node acceptance, not per-ID durable terminal time. The report retains final exact per-ID reconciliation, not first terminal timestamp for each faulted ID.",
+    "Rate spikes reflect draining earlier accumulated work, not increased sustainable capacity.",
+    "Qualified shallow reorg above retained checkpoint; no contradictory finalized checkpoint was injected."
+  ]
+}

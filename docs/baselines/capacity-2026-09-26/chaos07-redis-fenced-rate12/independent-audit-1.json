@@ -1,0 +1,349 @@
+{
+  "automatic_recovery": false,
+  "boundaries": [
+    "Original journal remains halted, checkpoint2478, no reattach/recover or replay performed. Original global custody pointer is untouched.",
+    "The3 original HTTP transport-unknown IDs have no journal admissions;909 acknowledged IDs are retained exactly. No independently restored node emits a business transaction.",
+    "Retained EVM clones used original pinned Anvil with no mining; saved pending pool was inspected separately and is not restored.113 observed mined receipts remain provisional at the saved heads;10 provider-accepted wires remain saved-pending.",
+    "One EVM signed attempt was never forwarded;5 acknowledged intents have no signed attempt. All these and additional mined-but-unreconciled intents remain within261 original nonterminal admissions.",
+    "Solana clone replayed retained blocks and advanced slots without sends.225 original finalized proofs matched;77 additional confirmed receipts are new observations, not journal settlement. At pinned restored finalized178,65 receipts remain above the cut.",
+    "All original regular Solana ledger hashes stayed unchanged; cold state/raw ledger/journal and keys remain private. Public evidence contains only IDs, digests, proof metadata and aggregate effects.",
+    "Original report safety=null and liveness=false remain unchanged. This review establishes custody and recorded-proof validity, not complete workload success, automatic Redis recovery, or sustained capacity.",
+    "Early Solana health/head readiness did not guarantee historical receipt lookup;3 bounded short attempts failed and stopped before the final bounded read succeeded.",
+    "Prior EVM55 isolated-fixture1980unknowns remain separate and unresolved."
+  ],
+  "capacity_selected": false,
+  "cold_inventory": {
+    "admissions": 909,
+    "checkpoint": 2478,
+    "client_response_evidence_sha256": "e0bd7890dc4df062111c1128f1d9656d6e7562ab5027d623deef38a3e1207371",
+    "cold_journal_sha256": "f323505182a117379fcc62763e2a73fa8363c9c234667569c9bf9943d4e81282",
+    "durable_attempts": 904,
+    "halt_category": "redis_checkpoint_mirror_failed",
+    "halted": true,
+    "http202_exactly_matches_admission_union": true,
+    "integrity_check": "ok",
+    "nonterminal_admissions": 261,
+    "observations_sha256": "038cf9523c95371096e1a4ba4fa683f1f4f4c823f130d580b8a2226b56a2b2b1",
+    "per_chain": {
+      "evm12": {
+        "admissions": 303,
+        "attempts": 302,
+        "provider_accepted": 301,
+        "state_admitted": 152,
+        "state_terminal": 151,
+        "unsigned": 1
+      },
+      "evm2": {
+        "admissions": 303,
+        "attempts": 300,
+        "provider_accepted": 300,
+        "state_admitted": 31,
+        "state_terminal": 272,
+        "unsigned": 3
+      },
+      "solana": {
+        "admissions": 303,
+        "attempts": 302,
+        "provider_accepted": 302,
+        "state_admitted": 78,
+        "state_terminal": 225,
+        "unsigned": 1
+      }
+    },
+    "provider_accepted_unique_wires": 903,
+    "report_sha256": "af24b4ad71e633c0970c5cc42adbfc36f553817c80095193ba66265a33715f0b",
+    "rpc_audit_sha256": {
+      "evm12": "14979cc700b421afe731d1f5f3c4bafb675f09182797976483304df9eee99203",
+      "evm2": "62037c38360625790a55f798139ba7c5c32c50d4cdf2a453c191044cb4e98cae",
+      "solana": "b7d714ad298a43d11798b0a47d9baecfef14c956337ec7f33846185a7a67a517"
+    },
+    "schema": "independent-cold-journal-custody-v1",
+    "scope": "Private cold-journal and captured client/RPC proof binding only; terminal rows are recorded claims pending separate restored-chain checks. No admission, replay, reset or clearing of halt.",
+    "terminal_proofs": 648,
+    "transport_unknown_ids_absent_from_journal": [
+      "74e73c8265f14864aaba5035e51d68ee-evm12-303",
+      "74e73c8265f14864aaba5035e51d68ee-evm2-303",
+      "74e73c8265f14864aaba5035e51d68ee-solana-303"
+    ]
+  },
+  "engine_log_levels": {
+    "ERROR": 7,
+    "WARN": 5
+  },
+  "engine_log_messages": {
+    "Error in send_flow": 2,
+    "Failed to complete job 74e73c8265f14864aaba5035e51d68ee-solana-302 handling: RedisError { message: \"broken pipe\" }": 1,
+    "Failed to complete job eoa_0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf_31337 handling: RedisError { message: \"broken pipe\" }": 1,
+    "Failed to complete job eoa_0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf_31338 handling: RedisError { message: \"Connection refused (os error 61)\" }": 1,
+    "Failed to pop batch jobs: broken pipe": 2,
+    "Failed to release EOA lock": 2,
+    "Nonce sync required, store was uninitialized, updating cached transaction count with current chain transaction count": 2,
+    "Retrying after error": 1
+  },
+  "engine_log_sha256": "22f4adbaaef22b0c6c887a905e89e6f8c27936fec97fa1312cd6728a0efaa9ab",
+  "fault_events": [
+    {
+      "accepted": 300,
+      "campaign_elapsed_seconds": 109.567884,
+      "event": "chaos_trigger",
+      "kind": "redis-restart",
+      "load_elapsed_seconds": 75.717205,
+      "phase": "load"
+    },
+    {
+      "campaign_elapsed_seconds": 109.572012,
+      "event": "redis_sigkill",
+      "load_elapsed_seconds": 75.721333,
+      "phase": "load"
+    },
+    {
+      "campaign_elapsed_seconds": 109.574658,
+      "event": "redis_loss_fail_closed_verified",
+      "health_status": 503,
+      "load_elapsed_seconds": 75.723978,
+      "mutation_status": 503,
+      "phase": "load"
+    },
+    {
+      "campaign_elapsed_seconds": 109.711247,
+      "classification": "fail_closed_operator_recovery_required",
+      "event": "redis_reattach_refused",
+      "load_elapsed_seconds": 75.860569,
+      "phase": "load"
+    }
+  ],
+  "nonterminal_journal_admissions_still_retained": 261,
+  "original_and_review_children_absent": [
+    {
+      "alive": false,
+      "name": "redis",
+      "pid": 63538
+    },
+    {
+      "alive": false,
+      "name": "evm12",
+      "pid": 63539
+    },
+    {
+      "alive": false,
+      "name": "evm2",
+      "pid": 63540
+    },
+    {
+      "alive": false,
+      "name": "solana",
+      "pid": 63545
+    },
+    {
+      "alive": false,
+      "name": "engine",
+      "pid": 63554
+    },
+    {
+      "alive": false,
+      "name": "redis",
+      "pid": 63583
+    },
+    {
+      "alive": false,
+      "name": "read-only-evm-clone-evm12",
+      "pid": 63763
+    },
+    {
+      "alive": false,
+      "name": "read-only-evm-clone-evm2",
+      "pid": 63764
+    },
+    {
+      "alive": false,
+      "name": "restored-solana-first-failed",
+      "pid": 63911
+    },
+    {
+      "alive": false,
+      "name": "restored-solana-second-failed",
+      "pid": 63967
+    },
+    {
+      "alive": false,
+      "name": "restored-solana-third-failed",
+      "pid": 64027
+    },
+    {
+      "alive": false,
+      "name": "read-only-solana-clone",
+      "pid": 64144
+    }
+  ],
+  "original_oracle_preserved": {
+    "liveness_failures": [
+      "Independent chain reconciliation unavailable after interrupted run"
+    ],
+    "liveness_pass": false,
+    "outcome": "incomplete",
+    "safety_failures": [],
+    "safety_pass": null
+  },
+  "original_report_outcome": "fail_closed_recovery_required",
+  "readiness_failures_retained": 3,
+  "recorded_terminal_proofs_independently_rechecked": 648,
+  "report": "chaos07-redis-restart-lease600-rate12-trigger300.json",
+  "report_sha256": "af24b4ad71e633c0970c5cc42adbfc36f553817c80095193ba66265a33715f0b",
+  "requested_fault_observed": true,
+  "restored_evm": {
+    "evm12": {
+      "balances": {
+        "nonce_delta": 296,
+        "receipt_fees": 5340152457281300,
+        "recipient_delta": 99,
+        "sender_spent": 5340152457281399
+      },
+      "classification": {
+        "admitted_no_signed_attempt": 1,
+        "canonical_depth_eligible": 199,
+        "canonical_provisional": 97,
+        "pending_in_saved_pool_not_restored": 5,
+        "signed_not_in_saved_pool_or_mined_history": 1
+      },
+      "genesis_hash": "0xb456ccd7bb2bf7bc761aa2d8603eb74c78ddea37eb3b708cee9dedb27ba8fb74",
+      "head": {
+        "hash": "0xf67be39d4e1c0a496c4c4034c2d0e75dff655e360fb861c17bfe4f726944f934",
+        "number": "0x9"
+      },
+      "head_unchanged": true,
+      "mined_outcomes": {
+        "revert:revert": 98,
+        "storage:success": 99,
+        "transfer:success": 99
+      },
+      "pool_sha256": "d216e9afb1d37aa70e920435663cdf1957e0c7e7b0d4d3703c2ef63cf6f55dbc",
+      "restored_pool_empty": true,
+      "saved_pool_hash_count": 5,
+      "snapshot_sha256": "82788b55ea7f7fa28767c17a6a3d4931c00e08f21d9c71ea292e193bd20ce998",
+      "terminal_proofs_rechecked": 151
+    },
+    "evm2": {
+      "balances": {
+        "nonce_delta": 295,
+        "receipt_fees": 9193841156244668,
+        "recipient_delta": 99,
+        "sender_spent": 9193841156244767
+      },
+      "classification": {
+        "admitted_no_signed_attempt": 3,
+        "canonical_depth_eligible": 279,
+        "canonical_provisional": 16,
+        "pending_in_saved_pool_not_restored": 5
+      },
+      "genesis_hash": "0xb5e882ba8f1fbe5ff276a74e6dc1d53cd8f74656f1a917b9b42f4dbad16fc978",
+      "head": {
+        "hash": "0xfeeb52b3f4975d794b903032a4312adb3aff566e115eb5f0fbe843b43172d9ab",
+        "number": "0x36"
+      },
+      "head_unchanged": true,
+      "mined_outcomes": {
+        "revert:revert": 98,
+        "storage:success": 98,
+        "transfer:success": 99
+      },
+      "pool_sha256": "3cbd1619b2244a10cf113ccadbedc371f53ac0fd9fd47ffd9976f96e01a51a82",
+      "restored_pool_empty": true,
+      "saved_pool_hash_count": 5,
+      "snapshot_sha256": "862d9353c8e8b15a2a5e91f98263e888232d7c89f26fe5cd3ac0e691663dcd15",
+      "terminal_proofs_rechecked": 272
+    }
+  },
+  "restored_solana": {
+    "at_initial_finalized_cut": 237,
+    "balances": {
+      "payer_spent": 1963151,
+      "receipt_fees": 1510000,
+      "recipient_delta": 453151
+    },
+    "confirmed_signed_intents": 302,
+    "genesis_hash": "Bqn1jEfEzW8mB9ZhSL5GjbkD4pzY5hmzGGaK1n69BdTN",
+    "genesis_scope": "Original RPC genesis was not captured. Both clone genesis files are exact hashes of preserved original ledger files; restored RPC hash is recorded.",
+    "initial_finalized_slot": 178,
+    "nonterminal_journal_intents_with_restored_confirmed_receipt": 77,
+    "original_regular_hashes_unchanged": true,
+    "slot_range": [
+      65,
+      209
+    ],
+    "terminal_proofs_rechecked": 225,
+    "unsigned_admissions": 1
+  },
+  "reviewed_at_utc": "2026-09-27T07:32:45.754340+00:00",
+  "schema": "independent-redis-fail-closed-custody-review-v1",
+  "source_and_evidence": {
+    "cold-journal-inventory.json": {
+      "bytes": 1986,
+      "sha256": "5091f821152471db87d1f605fd32be6bc9f589ea65c8e50a70bd1528dcfbdb10"
+    },
+    "cold-journal-observations.jsonl": {
+      "bytes": 870193,
+      "sha256": "038cf9523c95371096e1a4ba4fa683f1f4f4c823f130d580b8a2226b56a2b2b1"
+    },
+    "inventory.py": {
+      "bytes": 5446,
+      "sha256": "c3cefd6ec58d2e19e652fa2d20b67630ab37b9b41a2997cbe97494ee4e11684f"
+    },
+    "restore-evm.log": {
+      "bytes": 3575,
+      "sha256": "706ceb72d796be444c71da21d43f310ccc30af7acb5989a38096c23e49c1bc03"
+    },
+    "restore-solana-first-failed.log": {
+      "bytes": 378,
+      "sha256": "a8d2c2ac91a302dc3624082be42fc4f1e9871a60070eecf32dbf1b5524590d08"
+    },
+    "restore-solana-second-failed.log": {
+      "bytes": 295,
+      "sha256": "eceacb3e770252b798a4733363c60832d1e2c875b1a76c5af2d0187bf0b1e19f"
+    },
+    "restore-solana-third-failed.log": {
+      "bytes": 479,
+      "sha256": "ce2fc5b11ada9dba5f0edfa65ba06df2379b9e97a81be9cee19f8b0203a25f4c"
+    },
+    "restore-solana.log": {
+      "bytes": 1936,
+      "sha256": "f2f438494caa61d06d2604b8f90dba0fd9e06080e198a892ae9682b2b10d6d21"
+    },
+    "restore_evm.py": {
+      "bytes": 10068,
+      "sha256": "0167e5d9f40916ed640f13cd906cf5c399cf72702b6aa1b81626ae69e4f532ba"
+    },
+    "restore_solana.py": {
+      "bytes": 9999,
+      "sha256": "c03b2dfa3da046cc9022a41f5189683efcee55a043fcfcc58396b8f0d47b0753"
+    },
+    "restored-evm-observations.jsonl": {
+      "bytes": 317815,
+      "sha256": "ab6f1286254581b09d0eeb05f9be814fe3393df54dc59a12d6feacf21ac9d70e"
+    },
+    "restored-evm.json": {
+      "bytes": 3575,
+      "sha256": "545880407992e3e03edf4467a8855c6cc7e2a43093ea75fe3764414a6923001d"
+    },
+    "restored-solana-first-failed.json": {
+      "bytes": 1064,
+      "sha256": "557b7172de0aeedcc4530be7bd68d044b3ef9428ef157484667b6413957383b9"
+    },
+    "restored-solana-observations.jsonl": {
+      "bytes": 139450,
+      "sha256": "79990a5a7c0f99df7da5e2b4fa6d7e9554f37570929ecef7fba093628fc598d4"
+    },
+    "restored-solana-second-failed.json": {
+      "bytes": 1244,
+      "sha256": "c117ba09117962c6711d6d46a42fd389f1f1e39da645ec6c47a0e6c0121d49c0"
+    },
+    "restored-solana-third-failed.json": {
+      "bytes": 1417,
+      "sha256": "2bd709a0cd7f97b089f3092bf9b9b33a841dbb2bdce441a09954bc37371083de"
+    },
+    "restored-solana.json": {
+      "bytes": 1936,
+      "sha256": "9fba4f10e415160f11ff67f0cdab6a93c4df78b13cef06c4ef06d2ec4ae296f1"
+    }
+  },
+  "verdict": "Actual Redis-loss fail-closed behavior and retained custody verified; automatic recovery and complete settlement NOT achieved."
+}

@@ -1,5 +1,15 @@
 # Capacity and chaos campaign
 
+## Latest results — September 27
+
+Read the [results and operating envelope](RESULTS.md) and the
+[five-area production review](final-review/OUTCOME.md). The completed campaign
+includes individual rate screens, 15-minute EVM/shared runs, mixed transactions,
+response loss, send errors, an OP reorg, process/Redis crashes and explicit
+quarantine recovery. The original reports and failed experiments remain archived.
+
+The initial screens below are historical and do not override the later results.
+
 Method: [capacity and failure testing](../../design/capacity-campaign.md).
 Native chain support and simulation boundaries:
 [chain matrix](../../design/capacity-campaign-chain-matrix.md).

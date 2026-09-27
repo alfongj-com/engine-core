@@ -1,0 +1,220 @@
+{
+  "accepted_custody": "pass",
+  "allowed_resource_checks": 13,
+  "capacity_selected": false,
+  "drain": {
+    "client_pending": 0,
+    "http_inflight": 0,
+    "journal_unresolved": 0,
+    "node_pending": 0,
+    "redis_active": 0,
+    "redis_borrowed": 0,
+    "redis_delayed": 0,
+    "redis_pending": 0,
+    "redis_submitted": 0
+  },
+  "engine_error_count": 0,
+  "engine_log_levels": {
+    "WARN": 3
+  },
+  "engine_log_messages": {
+    "Gap replay response unknown; preserving wire and cooldown": 1,
+    "Nonce sync required, store was uninitialized, updating cached transaction count with current chain transaction count": 2
+  },
+  "engine_log_sha256": {
+    "engine-4.log": "d5b77c99f78aa557c803c74e5687672522e562c5b94c7a3704d2de6a4dc9848c"
+  },
+  "expected_retry_warning": [
+    {
+      "fields": {
+        "error": "server returned an error response: error code -32003: transaction already imported",
+        "message": "Gap replay response unknown; preserving wire and cooldown",
+        "nonce": 175
+      },
+      "timestamp": "2026-09-27T07:06:59.640479Z"
+    }
+  ],
+  "fault_events": [
+    {
+      "campaign_elapsed_seconds": 333.718938,
+      "error_type": "FaultError",
+      "event": "chaos_failed",
+      "load_elapsed_seconds": 300.009596,
+      "phase": "load"
+    }
+  ],
+  "final_exact_id_union": 11100,
+  "harness_errors": [
+    {
+      "error_type": "FaultError",
+      "phase": "chaos"
+    }
+  ],
+  "healthy_provider_probes": 369,
+  "limits": [
+    "No Redis kill, health503 test or exact reattach occurred: this is settled mixed work plus failed fault scheduling, not Redis disaster-recovery evidence.",
+    "Original HTTP statuses are aggregated; the exact final offered-ID union and aggregate rejection/retry accounting are checked, not an unavailable original per-ID HTTP log.",
+    "Captured storage effects and recorded2,400 getStorageAt calls per EVM chain cover success/revert slots; no fresh RPC was made.",
+    "Raw oracle eligible_for_rate_assessment is a generic reconciliation flag; this audit does not promote capacity or requested-fault liveness.",
+    "Original interrupted EVM55 fixture1,980unknowns remain separate."
+  ],
+  "observations_sha256": "e94d8ea7c3b16cece6de6e0692533881208730893bfedf0c30e9c3d4e6410a2f",
+  "observed_lease_loss_or_reap_messages": 0,
+  "original_http202": 7548,
+  "original_http429": 3552,
+  "original_offered_ids": 11100,
+  "owned_children_checked": [
+    {
+      "alive": false,
+      "name": "redis",
+      "pid": 63128
+    },
+    {
+      "alive": false,
+      "name": "evm12",
+      "pid": 63129
+    },
+    {
+      "alive": false,
+      "name": "evm2",
+      "pid": 63130
+    },
+    {
+      "alive": false,
+      "name": "solana",
+      "pid": 63135
+    },
+    {
+      "alive": false,
+      "name": "engine",
+      "pid": 63146
+    }
+  ],
+  "per_chain": {
+    "evm12": {
+      "balances": {
+        "canonical_executions": 3600,
+        "nonce_delta": 3600,
+        "receipt_fees": 4412543877932646,
+        "recipient_delta": 1200,
+        "sender_spent": 4412543877933846
+      },
+      "duplicate_probes": 100,
+      "extra_wire_forwards": 1,
+      "first_admissions_during_retry": 973,
+      "fixture_counts": {
+        "revert": 1200,
+        "storage": 1200,
+        "transfer": 1200
+      },
+      "nonce_range": [
+        0,
+        3599
+      ],
+      "original_http": {
+        "202": 2627,
+        "429": 973
+      },
+      "repeat_wires": [
+        {
+          "event": {
+            "elapsed_seconds": 342.989068,
+            "event": "send_forwarded",
+            "method": "eth_sendRawTransaction",
+            "sequence": 672,
+            "utc": "2026-09-27T07:06:59.636810+00:00",
+            "wire_digest": "9cfe4e021f48b6fb49eb87f0a0e87142b4238260246b7a620b80b6c21b58fe84"
+          },
+          "identity": "0x92d21871097cc0275461b979342c7dafa8945482f9ceb47191e7fb4d99ba3777",
+          "wire_digest": "9cfe4e021f48b6fb49eb87f0a0e87142b4238260246b7a620b80b6c21b58fe84"
+        }
+      ],
+      "retry_http202": 1073,
+      "rpc_audit_sha256": "37d1deed83183d7f4b55501ce3ad33462bed2d3d177e04d432c5e30c1f1bdea1",
+      "rpc_method_errors": {
+        "eth_sendRawTransaction": 1
+      }
+    },
+    "evm2": {
+      "balances": {
+        "canonical_executions": 3600,
+        "nonce_delta": 3600,
+        "receipt_fees": 57811512368848688,
+        "recipient_delta": 1200,
+        "sender_spent": 57811512368849888
+      },
+      "duplicate_probes": 0,
+      "extra_wire_forwards": 0,
+      "first_admissions_during_retry": 1245,
+      "fixture_counts": {
+        "revert": 1200,
+        "storage": 1200,
+        "transfer": 1200
+      },
+      "nonce_range": [
+        0,
+        3599
+      ],
+      "original_http": {
+        "202": 2355,
+        "429": 1245
+      },
+      "repeat_wires": [],
+      "retry_http202": 1245,
+      "rpc_audit_sha256": "1e5243017c11878324ff79f1a9e24bfebec0efb1de4f285bdd2a159abac1558e",
+      "rpc_method_errors": {}
+    },
+    "solana": {
+      "balances": {
+        "payer_spent": 25351950,
+        "receipt_fees": 19500000,
+        "recipient_delta": 5851950
+      },
+      "duplicate_probes": 0,
+      "extra_wire_forwards": 0,
+      "first_admissions_during_retry": 1334,
+      "fixture_counts": {
+        "multi_transfer": 1950,
+        "transfer": 1950
+      },
+      "nonce_range": null,
+      "original_http": {
+        "202": 2566,
+        "429": 1334
+      },
+      "repeat_wires": [],
+      "retry_http202": 1334,
+      "rpc_audit_sha256": "d1e2370afb2a76b1ae973aefdf93b1a773e95337e9141d91d394edc486b367df",
+      "rpc_method_errors": {}
+    }
+  },
+  "recovery_qualification": "failed_no_redis_restart_occurred",
+  "report": "chaos07-redis-restart-lease600.json",
+  "report_sha256": "435dce92763e0a2542a029c3db4218064d74dabb849d9942febb093490532169",
+  "requested_redis_fault": "not_triggered",
+  "retry_events": [
+    {
+      "campaign_elapsed_seconds": 446.693392,
+      "count": 3652,
+      "duplicate_limit": 100,
+      "event": "same_id_retry_started",
+      "load_elapsed_seconds": 412.98405,
+      "phase": "same_id_retry",
+      "unknown_enabled": true
+    },
+    {
+      "campaign_elapsed_seconds": 622.348082,
+      "event": "same_id_retry_completed",
+      "load_elapsed_seconds": 588.63874,
+      "phase": "same_id_retry",
+      "send_delta": {
+        "evm12": 973,
+        "evm2": 1210,
+        "solana": 1331
+      }
+    }
+  ],
+  "retry_interpretation": "3,652 additional HTTP202 responses comprise3,552 first admissions of originally429-rejected IDs plus100 already-terminal EVM12 duplicate probes. The retry-phase send_delta is sampled before final drain; it is not a total duplicate count. Final union has exactly11,100 unique IDs, one saved attempt and one finalized execution each.",
+  "reviewed_at_utc": "2026-09-27T07:14:16.070717+00:00",
+  "schema": "independent-chaos-redis-untriggered-review-v1"
+}

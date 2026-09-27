@@ -1,0 +1,52 @@
+{
+  "at_initial_finalized_cut": 237,
+  "balance_commitment": "confirmed",
+  "balances": {
+    "payer_spent": 1963151,
+    "receipt_fees": 1510000,
+    "recipient_delta": 453151
+  },
+  "classification_scope": "Slot qualification is pinned to initial restored finalized cut, not advanced to promote nonterminal journal outcomes.",
+  "cold_bytes": 187841076,
+  "cold_manifest_sha256": "0a2d6954f6c17135f643e39b9cce8f4b899137d72da7fc129deb6cbf5353eb07",
+  "cold_regular_files": 33,
+  "completed_observation_rows": 303,
+  "confirmed_signed_intents": 302,
+  "errors": [],
+  "final_finalized_slot": 179,
+  "genesis_hash": "Bqn1jEfEzW8mB9ZhSL5GjbkD4pzY5hmzGGaK1n69BdTN",
+  "genesis_scope": "Original RPC genesis was not captured. Both clone genesis files are exact hashes of preserved original ledger files; restored RPC hash is recorded.",
+  "history_null_reads": 2,
+  "initial_finalized_slot": 178,
+  "last_checked_id": "74e73c8265f14864aaba5035e51d68ee-solana-99",
+  "last_receipt_missing": false,
+  "no_engine_redis_or_sends": true,
+  "nonterminal_journal_intents_with_restored_confirmed_receipt": 77,
+  "observations_sha256": "79990a5a7c0f99df7da5e2b4fa6d7e9554f37570929ecef7fba093628fc598d4",
+  "original_mutation": false,
+  "original_regular_hashes_unchanged": true,
+  "owned_clone": {
+    "pid": 64144,
+    "stopped": true
+  },
+  "read_rpc_calls": {
+    "getBalance": 2,
+    "getGenesisHash": 1,
+    "getHealth": 1,
+    "getSignatureStatuses": 304,
+    "getSlot": 5,
+    "getTransaction": 304
+  },
+  "required_existing_terminal_slot": 172,
+  "reset_used": false,
+  "schema": "read-only-restored-solana-custody-v1",
+  "slot_range": [
+    65,
+    209
+  ],
+  "source_report_sha256": "af24b4ad71e633c0970c5cc42adbfc36f553817c80095193ba66265a33715f0b",
+  "startup_finalized_slot": 102,
+  "terminal_proofs_rechecked": 225,
+  "unsigned_admissions": 1,
+  "validator_sha256": "46e8e70b04a3bb020c3d90cf0aeef732a9c0e1663426f49a768d2f2a5ca779e6"
+}

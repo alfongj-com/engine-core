@@ -1,45 +1,54 @@
 # To Alfonso
 
-Updated September 27, 2026. Campaign in progress. [Draft PR #1](https://github.com/alfongj-com/engine-core/pull/1).
+Updated September 27, 2026. [Draft PR #1](https://github.com/alfongj-com/engine-core/pull/1).
 
-## Current measurements
+## How fast it went
 
-These are local, six-minute tests with one signer per chain and durable SQLite/Redis. **They are measured screens, not confirmed sustainable maxima or public-chain capacity.**
+Local tests, one signer per chain, durable SQLite and Redis. All offers at the
+rates below were accepted and reconciled exactly after drain:
 
-| Chain fixture | Offered TPS | Late completed TPS | Result |
-| --- | ---: | ---: | --- |
-| Ethereum-style, 12-second blocks |60|59.18|All 21,600 completed; backlog grew. |
-| OP execution, 2-second blocks |60|59.48|All 21,600 completed; backlog grew. |
-| Native Arbitrum Nitro |50|48.84|All 18,000 completed; stability needs confirmation. |
-| Native Solana |65|64.53|All 23,400 completed; small finality-backlog drift needs confirmation. |
+| Chain | Useful measured rate | What happened above it |
+|---|---|---|
+| EVM, 12-second blocks | **50 TPS for 15 minutes**; 45,000 outcomes | 55 TPS built unsigned work. |
+| OP execution, 2-second blocks | **55 TPS for 6 minutes**; 19,800 outcomes | Stability remains uncertain; the earlier 60 TPS screen grew queues. |
+| Native Arbitrum Nitro | **55 TPS for 6 minutes**; 19,800 outcomes | 65 TPS clearly overloaded. |
+| Solana | **60 TPS for 6 minutes**; 21,600 outcomes | 65 TPS showed backlog drift; 70 TPS rejected requests. |
+| All four together | **58.75 total TPS for 15 minutes**; 52,875 outcomes | 235 TPS rejected 29,495 requests and built a large queue. |
 
-The new Arbitrum dispatcher improved the adjacent comparison from 43.84 to 48.84 late TPS; drain ended at 365 rather than 395 seconds from load start. This ordered pair is not a randomized causal result. [Native evidence](docs/baselines/capacity-2026-09-26/native-dispatch-pair/README.md), [other chains](docs/baselines/capacity-2026-09-26/phase-fixed-screen-bd44836d17c9/README.md).
+The shared working rate was 15 EVM + 15 OP + 12.5 Nitro + 16.25 Solana TPS.
+These are measured working points and screens, not proven absolute maxima.
+The detailed report preserves different lease settings and the unchanged
+stability checks. Public-chain throughput, full rollup settlement and KMS remain
+untested by this campaign. **No paid RPC credits were used.**
 
-## Failures kept visible
+## What broke
 
-- Solana at 70 TPS rejected 45 of 25,200 requests and built backlog. Every accepted request later reconciled exactly; 70 is not a clean rate.
-- The earlier Nitro disk-full incident recovered all 14,400 accepted intents after disk repair.
-- A later EVM55 harness run stopped after a host-wide disk-allocation spike. It discarded its disposable node before receipt verification: 3,274 signed intents are preserved, but 1,980 final outcomes remain unverified. This failed run is not repaired or promoted. The harness now preserves interrupted Anvil history and uses sustained disk consumption for long forecasts. [Incident](docs/baselines/capacity-2026-09-26/evm55-projection-incident/README.md).
+Mixed transactions, 80 lost accepted responses, 60 injected send errors and an
+OP reorg/pool loss recovered exactly. The reorg replayed 253 original signed wires.
 
-The latest 155 integrated harness tests passed, including actual Ethereum/OP snapshot restores and cleanup with unresolved transactions. Engine's transaction code and durability settings were unchanged by these harness fixes. The prior Rust, queue, coverage and formal CI checks are green; the finite models do not prove the whole service.
+**Automatic crash recovery is the main blocker.** Killing Engine left SQLite
+one checkpoint ahead of Redis; restart refused to proceed. The Redis crash also
+required operator recovery. They retained 741 and 261 nonterminal test requests.
+The audit verified every recorded terminal proof without changing those states.
 
-## Shared results and current work
+Explicit Redis reconstruction worked: 413 completed records stayed completed,
+187 uncertain requests were quarantined, and five unsigned requests were retained.
+331 API probes produced no new sends. This preserves identity; it does not finish
+the 192 outstanding requests or prove resumed execution for that signer.
 
-With the production 600-second queue lease:
+An older disposable EVM test still has 1,980 unverified outcomes after losing node
+history. That evidence gap remains visible. The journal-reader bug found in this
+campaign is fixed; all **163 harness regressions pass**. The **61 formal-model
+outcomes** are bounded checks, not proof of the whole service.
 
-- **235 TPS offered:** 55,105 transactions accepted and reconciled; 29,495 rejected. Late completion was 41.19 TPS combined, with EVM queues growing while Solana progressed.
-- **47 TPS offered (12/12/10/13):** all 16,920 accepted and verified. Late completion was 47.11 TPS, with no Engine/RPC errors. This is a clean finite control, not an indefinite capacity guarantee.
+## Next priorities
 
-The earlier 10-second benchmark lease caused ownership churn under overload. Correcting it removed those errors but did not solve the shared throughput limit. [Corrected shared evidence](docs/baselines/capacity-2026-09-26/shared-lease600-1c3eec03d6cb/README.md).
+1. Make the journal-to-Redis update recoverable after a crash without weakening the fence.
+2. Measure storage/Redis wait times, then improve shared-chain fairness and Solana polling.
+3. Repeat on production hardware and full rollup stacks before a capped testnet run.
 
-Completed fault/control tests:
-
-| Test | Independently verified result |
-| --- | --- |
-| Lost accepted RPC responses, four chains | All 14,100 completed after 80 lost responses; original signed identities preserved. |
-| Mixed transactions, three chains | All 11,100 completed, including 2,400 expected EVM reverts with no persisted storage changes. |
-| Mixed transactions with send-RPC errors | All 11,100 completed after 60 pre-forward errors; no extra upstream sends or new identities. |
-
-All three drained completely. Their 100 duplicate-ID probes covered EVM only and produced no new sends. The OP reorg/pool-loss run has closed with a passing oracle; independent review is underway. Next are final rate brackets, then process and Redis failure tests. The harness now preserves owned EVM history for ordinary unresolved outcomes as well as unexpected interruptions.
-
-No paid RPC credits were used. Public RPC quotas, L1 settlement, KMS and production hardware remain unqualified. Nothing is needed from you to continue. Publishing the additional CI workflow steps still requires GitHub workflow permission. Rotate the shared dRPC key when the campaign ends.
+[Results and evidence](docs/baselines/capacity-2026-09-26/RESULTS.md),
+[five-area review](docs/baselines/capacity-2026-09-26/final-review/OUTCOME.md),
+[RPC sizing](docs/baselines/capacity-2026-09-26/final-review/RPC-SIZING.md).
+The additional CI workflow steps still need GitHub workflow permission.
+Rotate the shared dRPC key when finished using it.

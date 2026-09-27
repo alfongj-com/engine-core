@@ -1,0 +1,454 @@
+{
+  "checked_frozen_sources": {
+    "/Users/alfongj/Code/engine-core/docs/baselines/capacity-2026-09-26/supervisor-v4/runner.py": "0f2d64f85a240d932ba1f558a2c105445a76370d04287967dea877e55eebb040",
+    "/Users/alfongj/Code/engine-core/scripts/capacity_assess.py": "8ebafce9dd136ce0a0179ab04292836d8c0d685fe9b31f9b455e45665e4b6865",
+    "/Users/alfongj/Code/engine-core/scripts/capacity_campaign.py": "959d1aa819e380ab2c17d1afa59348110954412d891d53d24944d3831fa675d7",
+    "/Users/alfongj/Code/engine-core/scripts/capacity_faults.py": "59e2bc4d90bceca2682c27e35c5871ee538d4878a795f990fa90e6d5f90afa13",
+    "/Users/alfongj/Code/engine-core/scripts/capacity_resource_guard.py": "bbfda4901f49600cdff9fa907b73e2a64e8df534496083994fd4717c55979bb6",
+    "/private/tmp/engine-capacity-dispatch-plan/final-capacity-brackets-jobs.json": "85122de03f81518977bc33e3a0b0cdb97f5ddade7c2f12a6ebd86fbf6e6b7286",
+    "/tmp/engine-capacity-tools/nitro-drain-hook-v2.py": "424a26e6b8539d251df61396372951270ab1193372733099f94ec66608f92bd1"
+  },
+  "cohort": "7790eecfb337",
+  "original_review_required": null,
+  "privacy_and_provenance_checks": {
+    "evm55": {
+      "observation_rows_privacy_checked": 19800,
+      "rpc_events": {
+        "evm12": {
+          "rpc_faults_released": 1,
+          "send_accepted": 19800,
+          "send_forwarded": 19800
+        }
+      }
+    },
+    "native55": {
+      "observation_rows_privacy_checked": 19800,
+      "rpc_events": {
+        "nitro": {
+          "rpc_faults_released": 1,
+          "send_accepted": 19800,
+          "send_forwarded": 19800
+        }
+      }
+    },
+    "op55": {
+      "observation_rows_privacy_checked": 19800,
+      "rpc_events": {
+        "evm2": {
+          "rpc_faults_released": 1,
+          "send_accepted": 19800,
+          "send_forwarded": 19800
+        }
+      }
+    },
+    "shared5875": {
+      "observation_rows_privacy_checked": 21150,
+      "rpc_events": {
+        "evm12": {
+          "rpc_faults_released": 1,
+          "send_accepted": 5400,
+          "send_forwarded": 5400
+        },
+        "evm2": {
+          "rpc_faults_released": 1,
+          "send_accepted": 5400,
+          "send_forwarded": 5400
+        },
+        "nitro": {
+          "rpc_faults_released": 1,
+          "send_accepted": 4500,
+          "send_forwarded": 4500
+        },
+        "solana": {
+          "rpc_faults_released": 1,
+          "send_accepted": 5850,
+          "send_forwarded": 5850
+        }
+      }
+    },
+    "solana60": {
+      "observation_rows_privacy_checked": 21600,
+      "rpc_events": {
+        "solana": {
+          "rpc_faults_released": 1,
+          "send_accepted": 21600,
+          "send_forwarded": 21600
+        }
+      }
+    }
+  },
+  "sources": {
+    "archive-privacy-source.py": {
+      "lossless_gzip": false,
+      "source": "/tmp/engine-chaos-archive.py",
+      "source_bytes": 12481,
+      "source_sha256": "3af1736c8c27923dbd85578b6a43058910a2891cae4894fa3ace4481356aa90d"
+    },
+    "archive-source.py": {
+      "lossless_gzip": false,
+      "source": "/tmp/engine-final-brackets-archive.py",
+      "source_bytes": 11512,
+      "source_sha256": "0d568599651e7fef91ae344c5f3328b0d59d133895060856dcb78781e62a50cf"
+    },
+    "backlog-descriptor-source.py": {
+      "lossless_gzip": false,
+      "source": "/tmp/capacity-posthoc/describe_backlogs.py",
+      "source_bytes": 3667,
+      "source_sha256": "50ef35bd4a3226521e58f2a3115e30fd546d678e18a4648781f38bdc0bb37f83"
+    },
+    "compact-extractor-source.py": {
+      "lossless_gzip": false,
+      "source": "/tmp/engine-capacity-report-extract/extract.py",
+      "source_bytes": 12034,
+      "source_sha256": "c4c65f157513c50f7171aef0646b60630f58f7f81b8bc828d53ed44760b5033f"
+    },
+    "evm55/analyst-backlog-description.json": {
+      "lossless_gzip": false,
+      "source": "/private/tmp/capacity-final-bracket-lease600-evm55-7790eecfb337-backlog-description.json",
+      "source_bytes": 6718,
+      "source_sha256": "56bef0918334785978fb3812c66e0645ccd122c5e0e2a658aaade3a26d2ece0c"
+    },
+    "evm55/analyst-compact.json": {
+      "lossless_gzip": false,
+      "source": "/private/tmp/capacity-final-bracket-lease600-evm55-7790eecfb337-compact.json",
+      "source_bytes": 18800,
+      "source_sha256": "206b793c58154a811de47a0c32750ffbb64533c2f6436d56d0a7990e37af7dd3"
+    },
+    "evm55/analyst-summary.json": {
+      "lossless_gzip": false,
+      "source": "/private/tmp/capacity-final-bracket-lease600-evm55-7790eecfb337-summary.json",
+      "source_bytes": 4906,
+      "source_sha256": "ca9866611b64107e9a058abf25d3f557475f86244abb0b6c2f015160e1aaae12"
+    },
+    "evm55/evm12-rpc-audit.jsonl.gz": {
+      "lossless_gzip": true,
+      "source": "/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/engine-capacity-z_lihj_i/evm12-rpc.jsonl",
+      "source_bytes": 11615032,
+      "source_sha256": "0cb0545f6e86ed9e2a0783b569462e7ea250c7cc30efa72cf54c0dc7cd97432c"
+    },
+    "evm55/full-report.json.gz": {
+      "lossless_gzip": true,
+      "source": "/private/tmp/capacity-final-bracket-lease600-evm55-7790eecfb337.json",
+      "source_bytes": 4757042,
+      "source_sha256": "cf8299cef332b8cedbb56c9f946b02851a35fc2ae51962315252bbf9f18e8ee3"
+    },
+    "evm55/independent-audit.json": {
+      "lossless_gzip": false,
+      "source": "/tmp/engine-capacity-final-brackets-independent-audit/evm55.json",
+      "source_bytes": 2918,
+      "source_sha256": "a367917ad5d7ac529336342ce92424769a3b23ae23dcb6a84d1c2de97dda093e"
+    },
+    "evm55/observations.jsonl.gz": {
+      "lossless_gzip": false,
+      "source": "/private/tmp/capacity-final-bracket-lease600-evm55-7790eecfb337.observations.jsonl.gz",
+      "source_bytes": 2216768,
+      "source_sha256": "292c7895cf46463077253fbc7da2ea96d1abf3b0d6e957247c309efc4a3013fc"
+    },
+    "evm55/resource-preflight.jsonl": {
+      "lossless_gzip": false,
+      "source": "/private/tmp/capacity-final-bracket-lease600-evm55-7790eecfb337.resource-preflight.jsonl",
+      "source_bytes": 1229,
+      "source_sha256": "3ae3bc758c914dfc3e1ecaee7b10693992863930f0a467ca92f50207a63847f9"
+    },
+    "evm55/resources.jsonl": {
+      "lossless_gzip": false,
+      "source": "/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/engine-capacity-z_lihj_i/resource-guard.jsonl",
+      "source_bytes": 8649,
+      "source_sha256": "473671e77235856b8e7267fbfb23bafbe0a79e55dc8e1bfbda4b932554c95b26"
+    },
+    "evm55/strict-assessment.json": {
+      "lossless_gzip": false,
+      "source": "/private/tmp/capacity-final-bracket-lease600-evm55-7790eecfb337-assessment.json",
+      "source_bytes": 2973,
+      "source_sha256": "02de0d68add18b031211053f999dc5fa91cb6fb977fa0605b0956118696e6a03"
+    },
+    "frozen-jobs.json": {
+      "lossless_gzip": false,
+      "source": "/tmp/engine-capacity-dispatch-plan/final-capacity-brackets-jobs.json",
+      "source_bytes": 2142,
+      "source_sha256": "85122de03f81518977bc33e3a0b0cdb97f5ddade7c2f12a6ebd86fbf6e6b7286"
+    },
+    "interpretation-policy.md": {
+      "lossless_gzip": false,
+      "source": "/tmp/capacity-posthoc/interpretation-v1.md",
+      "source_bytes": 3683,
+      "source_sha256": "9ce1b79f2428ad6a20bc2d097496b741d8bc147a790ef1f64359d6c719a61e3f"
+    },
+    "native55/analyst-backlog-description.json": {
+      "lossless_gzip": false,
+      "source": "/private/tmp/capacity-final-bracket-lease600-native55-7790eecfb337-backlog-description.json",
+      "source_bytes": 7321,
+      "source_sha256": "726238f9f1dd64fd07a106e1446c45c6efae7a87675dcc138bc5206a78a8dee9"
+    },
+    "native55/analyst-compact.json": {
+      "lossless_gzip": false,
+      "source": "/private/tmp/capacity-final-bracket-lease600-native55-7790eecfb337-compact.json",
+      "source_bytes": 18704,
+      "source_sha256": "31720a0f0eaa70f697d7a94e445a216c69cad72294e66dd412799cf42ea70874"
+    },
+    "native55/analyst-summary.json": {
+      "lossless_gzip": false,
+      "source": "/private/tmp/capacity-final-bracket-lease600-native55-7790eecfb337-summary.json",
+      "source_bytes": 5897,
+      "source_sha256": "acc06ba09b4781b8169291f50fee6cbe9148906aa072dcdfc0dbf670226698cc"
+    },
+    "native55/full-report.json.gz": {
+      "lossless_gzip": true,
+      "source": "/private/tmp/capacity-final-bracket-lease600-native55-7790eecfb337.json",
+      "source_bytes": 4715618,
+      "source_sha256": "e37560c6a40c21da83458dc7b15711baae6bf987b99a4eb50de0f490ab09905b"
+    },
+    "native55/independent-audit.json": {
+      "lossless_gzip": false,
+      "source": "/tmp/engine-capacity-final-brackets-independent-audit/native55.json",
+      "source_bytes": 2940,
+      "source_sha256": "ea797a64cff0e550e2f2805f1f6a8dec5dddacfd95befa27cdd18b109b22b3a0"
+    },
+    "native55/nitro-rpc-audit.jsonl.gz": {
+      "lossless_gzip": true,
+      "source": "/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/engine-capacity-7383ud5c/nitro-rpc.jsonl",
+      "source_bytes": 11615542,
+      "source_sha256": "285f3d437821d1959e16c6f01a8f73fbf0cb1e49bebdeecf90ab6db7017d0a2c"
+    },
+    "native55/observations.jsonl.gz": {
+      "lossless_gzip": false,
+      "source": "/private/tmp/capacity-final-bracket-lease600-native55-7790eecfb337.observations.jsonl.gz",
+      "source_bytes": 2266992,
+      "source_sha256": "d596665303ea4a1d8d87c1ec5e7d9f909206b5924ea1b36bf7a1e8a3719e8a04"
+    },
+    "native55/resource-preflight.jsonl": {
+      "lossless_gzip": false,
+      "source": "/private/tmp/capacity-final-bracket-lease600-native55-7790eecfb337.resource-preflight.jsonl",
+      "source_bytes": 2793,
+      "source_sha256": "cb3a552cb424028fb490fe0174be85ce09850e937496f9329ee75fb6a1e0751f"
+    },
+    "native55/resources.jsonl": {
+      "lossless_gzip": false,
+      "source": "/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/engine-capacity-7383ud5c/resource-guard.jsonl",
+      "source_bytes": 21550,
+      "source_sha256": "dd2caf76f19da337db7682546df4ff82e05c498447ddfacae2824830e5c34288"
+    },
+    "native55/strict-assessment.json": {
+      "lossless_gzip": false,
+      "source": "/private/tmp/capacity-final-bracket-lease600-native55-7790eecfb337-assessment.json",
+      "source_bytes": 3255,
+      "source_sha256": "79f8dfce6ed70a8f16f5dfcc65e270036c5e0aebba86e030e842de4fce8e7f92"
+    },
+    "op55/analyst-backlog-description.json": {
+      "lossless_gzip": false,
+      "source": "/private/tmp/capacity-final-bracket-lease600-op55-7790eecfb337-backlog-description.json",
+      "source_bytes": 6788,
+      "source_sha256": "dbde678029e09359db0382ce2643567ec00fdc8b9c829478db0c0ea81e358a03"
+    },
+    "op55/analyst-compact.json": {
+      "lossless_gzip": false,
+      "source": "/private/tmp/capacity-final-bracket-lease600-op55-7790eecfb337-compact.json",
+      "source_bytes": 17767,
+      "source_sha256": "15c1747c94957733e8798fa772c1da9295289910ee0e095c02cb41ef1524d1c0"
+    },
+    "op55/analyst-summary.json": {
+      "lossless_gzip": false,
+      "source": "/private/tmp/capacity-final-bracket-lease600-op55-7790eecfb337-summary.json",
+      "source_bytes": 4875,
+      "source_sha256": "995d0cafe3151b161fda6e27acf64ceae439930210e5a08be9fda10ac025d26b"
+    },
+    "op55/evm2-rpc-audit.jsonl.gz": {
+      "lossless_gzip": true,
+      "source": "/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/engine-capacity-knmwnz9q/evm2-rpc.jsonl",
+      "source_bytes": 11615007,
+      "source_sha256": "163eabce948aa4f5e54ff9e7ff61a8368fec6ef84126c35cd2998ce096c0750c"
+    },
+    "op55/full-report.json.gz": {
+      "lossless_gzip": true,
+      "source": "/private/tmp/capacity-final-bracket-lease600-op55-7790eecfb337.json",
+      "source_bytes": 4709555,
+      "source_sha256": "f8425728ce0d85b03c3e5e761c9f6a2d1b7f2ffa7739e272e7c966dcfd08fe94"
+    },
+    "op55/independent-audit.json": {
+      "lossless_gzip": false,
+      "source": "/tmp/engine-capacity-final-brackets-independent-audit/op55.json",
+      "source_bytes": 2915,
+      "source_sha256": "6520d733392794cb6a06d6bdbb71e36dc60fc8f7a663a4dcd9ac35cc8489501b"
+    },
+    "op55/observations.jsonl.gz": {
+      "lossless_gzip": false,
+      "source": "/private/tmp/capacity-final-bracket-lease600-op55-7790eecfb337.observations.jsonl.gz",
+      "source_bytes": 2223306,
+      "source_sha256": "d3a3f69b9cf056ba4fb5c10188800421b1310100e12548daac93da0d27d45f73"
+    },
+    "op55/resource-preflight.jsonl": {
+      "lossless_gzip": false,
+      "source": "/private/tmp/capacity-final-bracket-lease600-op55-7790eecfb337.resource-preflight.jsonl",
+      "source_bytes": 1229,
+      "source_sha256": "d38873839fc36bcfb0f5d496bd5d64ebc6bc9cabffb934da8243315d077558d0"
+    },
+    "op55/resources.jsonl": {
+      "lossless_gzip": false,
+      "source": "/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/engine-capacity-knmwnz9q/resource-guard.jsonl",
+      "source_bytes": 8623,
+      "source_sha256": "af23f2a5000b1c972ad7b9af96090d481b66c9851e84880fd78b04a93e635454"
+    },
+    "op55/strict-assessment.json": {
+      "lossless_gzip": false,
+      "source": "/private/tmp/capacity-final-bracket-lease600-op55-7790eecfb337-assessment.json",
+      "source_bytes": 3089,
+      "source_sha256": "e57e2c68a4a1ec433b4d52780da155fabe26f2d7d4b5c12821584a975f7355db"
+    },
+    "shared5875/analyst-backlog-description.json": {
+      "lossless_gzip": false,
+      "source": "/private/tmp/capacity-final-bracket-lease600-shared5875-7790eecfb337-backlog-description.json",
+      "source_bytes": 26403,
+      "source_sha256": "f1a3598e8cbd7a00e2faf0db7ffbc91b6157363597eec082172e6bfc687e6a72"
+    },
+    "shared5875/analyst-compact.json": {
+      "lossless_gzip": false,
+      "source": "/private/tmp/capacity-final-bracket-lease600-shared5875-7790eecfb337-compact.json",
+      "source_bytes": 59907,
+      "source_sha256": "b22a6e5e7274b30ed9d1d38aec9a407ef3cb8270b58fd62e4fc88f0fdb20396f"
+    },
+    "shared5875/analyst-summary.json": {
+      "lossless_gzip": false,
+      "source": "/private/tmp/capacity-final-bracket-lease600-shared5875-7790eecfb337-summary.json",
+      "source_bytes": 17202,
+      "source_sha256": "6814d967d744384cabce7eefa8e9abe9978c670365cb4a7a3d5e6133be0e8699"
+    },
+    "shared5875/evm12-rpc-audit.jsonl.gz": {
+      "lossless_gzip": true,
+      "source": "/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/engine-capacity-bektz21v/evm12-rpc.jsonl",
+      "source_bytes": 3161107,
+      "source_sha256": "244d29ebb2019e2a9596fb2e32074317d1c429038adc8d0cb97bf6bcb23baaa4"
+    },
+    "shared5875/evm2-rpc-audit.jsonl.gz": {
+      "lossless_gzip": true,
+      "source": "/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/engine-capacity-bektz21v/evm2-rpc.jsonl",
+      "source_bytes": 3160968,
+      "source_sha256": "97356c0fca096be10031f871fe79d112b044db8bc34bba62ab9827d99255067a"
+    },
+    "shared5875/full-report.json.gz": {
+      "lossless_gzip": true,
+      "source": "/private/tmp/capacity-final-bracket-lease600-shared5875-7790eecfb337.json",
+      "source_bytes": 6305553,
+      "source_sha256": "243d6ff64f0efb7be0b0195bdea9d9ecff47092a18cd15ab9d2fba3e6df99c0e"
+    },
+    "shared5875/independent-audit.json": {
+      "lossless_gzip": false,
+      "source": "/tmp/engine-capacity-final-brackets-independent-audit/shared5875.json",
+      "source_bytes": 6558,
+      "source_sha256": "42ffaca7e39f933d07d40e51ad408514c28130578674b342184cdd568653131f"
+    },
+    "shared5875/nitro-rpc-audit.jsonl.gz": {
+      "lossless_gzip": true,
+      "source": "/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/engine-capacity-bektz21v/nitro-rpc.jsonl",
+      "source_bytes": 2633371,
+      "source_sha256": "9f67fbf6130ff6a89d7ffba064d0581c6ca2a95de66c531480a27bc13467b631"
+    },
+    "shared5875/observations.jsonl.gz": {
+      "lossless_gzip": false,
+      "source": "/private/tmp/capacity-final-bracket-lease600-shared5875-7790eecfb337.observations.jsonl.gz",
+      "source_bytes": 2771847,
+      "source_sha256": "38612edab3ad2d0e140d33c0bc0c5812769f16e13efe80e743baca12e14de110"
+    },
+    "shared5875/resource-preflight.jsonl": {
+      "lossless_gzip": false,
+      "source": "/private/tmp/capacity-final-bracket-lease600-shared5875-7790eecfb337.resource-preflight.jsonl",
+      "source_bytes": 2796,
+      "source_sha256": "174afc2630c4196857bfc831546779aff7d0aace1a5f3df2f5c1dcde63d9a7e5"
+    },
+    "shared5875/resources.jsonl": {
+      "lossless_gzip": false,
+      "source": "/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/engine-capacity-bektz21v/resource-guard.jsonl",
+      "source_bytes": 23887,
+      "source_sha256": "fadd99d89f70d384aaa39e949d525e530e378288a551963689079659483fb21c"
+    },
+    "shared5875/solana-rpc-audit.jsonl.gz": {
+      "lossless_gzip": true,
+      "source": "/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/engine-capacity-bektz21v/solana-rpc.jsonl",
+      "source_bytes": 3469726,
+      "source_sha256": "44ece74efc3a0970c0f863278a461797a055f8c0cbe4d00d94b082f64177946c"
+    },
+    "shared5875/strict-assessment.json": {
+      "lossless_gzip": false,
+      "source": "/private/tmp/capacity-final-bracket-lease600-shared5875-7790eecfb337-assessment.json",
+      "source_bytes": 9457,
+      "source_sha256": "6d9dfdc6a7b14007ebb7bf8104118e22a88653a728c8d0c8864a16adc16120b8"
+    },
+    "solana60/analyst-backlog-description.json": {
+      "lossless_gzip": false,
+      "source": "/private/tmp/capacity-final-bracket-lease600-solana60-7790eecfb337-backlog-description.json",
+      "source_bytes": 6915,
+      "source_sha256": "abd04c2e8caacd915aca87da5fccdb238d7e143e25052419266fe47604761383"
+    },
+    "solana60/analyst-compact.json": {
+      "lossless_gzip": false,
+      "source": "/private/tmp/capacity-final-bracket-lease600-solana60-7790eecfb337-compact.json",
+      "source_bytes": 15226,
+      "source_sha256": "765d140965a138b584b6571006939c03fbe52e8c1ec98ea3368aaa7cdb83ca18"
+    },
+    "solana60/analyst-summary.json": {
+      "lossless_gzip": false,
+      "source": "/private/tmp/capacity-final-bracket-lease600-solana60-7790eecfb337-summary.json",
+      "source_bytes": 4928,
+      "source_sha256": "a6fdaf29047397f895b68fb7079ad7cf01359045195d47c0822b55241d3e333d"
+    },
+    "solana60/full-report.json.gz": {
+      "lossless_gzip": true,
+      "source": "/private/tmp/capacity-final-bracket-lease600-solana60-7790eecfb337.json",
+      "source_bytes": 5510518,
+      "source_sha256": "c192d7e2f0ae2d3c31bde7a0acd0ef9470ade090b058d184342519d99943c1c4"
+    },
+    "solana60/independent-audit.json": {
+      "lossless_gzip": false,
+      "source": "/tmp/engine-capacity-final-brackets-independent-audit/solana60.json",
+      "source_bytes": 2663,
+      "source_sha256": "3eb8bbb286ae84313e0d2c330c20ea6fb6497bc5559dc2c0f5b70bc28029593b"
+    },
+    "solana60/observations.jsonl.gz": {
+      "lossless_gzip": false,
+      "source": "/private/tmp/capacity-final-bracket-lease600-solana60-7790eecfb337.observations.jsonl.gz",
+      "source_bytes": 3157753,
+      "source_sha256": "a9d7f7c5339f26587a972299236e80b9b9745e3d79c55ee4311918bfcbe38aac"
+    },
+    "solana60/resource-preflight.jsonl": {
+      "lossless_gzip": false,
+      "source": "/private/tmp/capacity-final-bracket-lease600-solana60-7790eecfb337.resource-preflight.jsonl",
+      "source_bytes": 1232,
+      "source_sha256": "fec5b2bbd8276a05ed4cd5070932637b0d1fa1e64a015aecebefb27110248393"
+    },
+    "solana60/resources.jsonl": {
+      "lossless_gzip": false,
+      "source": "/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/engine-capacity-xx2tylzw/resource-guard.jsonl",
+      "source_bytes": 9682,
+      "source_sha256": "a5388224653debe5d80b0c02b196eb37745ab2c6ebc55643370baa208b35b5cb"
+    },
+    "solana60/solana-rpc-audit.jsonl.gz": {
+      "lossless_gzip": true,
+      "source": "/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/engine-capacity-xx2tylzw/solana-rpc.jsonl",
+      "source_bytes": 12840466,
+      "source_sha256": "581c5574bb42953cd2e5be0297065195b75176c33999b87b7ea5ff4234a5b092"
+    },
+    "solana60/strict-assessment.json": {
+      "lossless_gzip": false,
+      "source": "/private/tmp/capacity-final-bracket-lease600-solana60-7790eecfb337-assessment.json",
+      "source_bytes": 3024,
+      "source_sha256": "74fa255495c2211fc3403f75ea784d610df309b7fe185d1de75198ee0316212a"
+    },
+    "strict-assessor-source.py": {
+      "lossless_gzip": false,
+      "source": "/Users/alfongj/Code/engine-core/scripts/capacity_assess.py",
+      "source_bytes": 8301,
+      "source_sha256": "8ebafce9dd136ce0a0179ab04292836d8c0d685fe9b31f9b455e45665e4b6865"
+    },
+    "supervisor-final-state.json": {
+      "lossless_gzip": false,
+      "source": "/tmp/engine-capacity-final-brackets-state.json",
+      "source_bytes": 7329,
+      "source_sha256": "0f2361c2fad3a70b3870ce1d15effef1b475dcd56cc90e82f7e32267cafa4791"
+    },
+    "supervisor-source.py": {
+      "lossless_gzip": false,
+      "source": "/Users/alfongj/Code/engine-core/docs/baselines/capacity-2026-09-26/supervisor-v4/runner.py",
+      "source_bytes": 17758,
+      "source_sha256": "0f2d64f85a240d932ba1f558a2c105445a76370d04287967dea877e55eebb040"
+    }
+  }
+}

@@ -1,0 +1,246 @@
+{
+  "chains": {
+    "evm12": {
+      "aggregation_seconds": 60,
+      "method": "sample quantiles; nominal phase only; descriptive, not a pass/fail test",
+      "sample_window_seconds": [
+        120.016,
+        360.001
+      ],
+      "terminal": {
+        "groups": [
+          {
+            "max": 2131,
+            "mean": 1908,
+            "median": 1923.0,
+            "min": 1580,
+            "p10": 1721.9,
+            "p90": 2061.4,
+            "sample_count": 12,
+            "start_seconds": 120.0
+          },
+          {
+            "max": 2184,
+            "mean": 1967.75,
+            "median": 1948.0,
+            "min": 1759,
+            "p10": 1806.0,
+            "p90": 2139.3,
+            "sample_count": 12,
+            "start_seconds": 180.0
+          },
+          {
+            "max": 2316,
+            "mean": 2053.5833333333335,
+            "median": 2038.0,
+            "min": 1880,
+            "p10": 1918.6,
+            "p90": 2196.6,
+            "sample_count": 12,
+            "start_seconds": 240.0
+          },
+          {
+            "max": 2244,
+            "mean": 2044.5,
+            "median": 2045.0,
+            "min": 1844,
+            "p10": 1868.6,
+            "p90": 2222.5,
+            "sample_count": 12,
+            "start_seconds": 300.0
+          }
+        ],
+        "last_180_seconds_range": [
+          1759,
+          2316
+        ],
+        "paired_phase_growth": [
+          {
+            "end_seconds": 300.016,
+            "growth": 126.0,
+            "start_seconds": 120.016
+          },
+          {
+            "end_seconds": 305.016,
+            "growth": -60.97361055577676,
+            "start_seconds": 125.016
+          },
+          {
+            "end_seconds": 310.015,
+            "growth": 64.94722111155511,
+            "start_seconds": 130.015
+          },
+          {
+            "end_seconds": 315.015,
+            "growth": 120.9757951590309,
+            "start_seconds": 135.015
+          },
+          {
+            "end_seconds": 320.01599999999996,
+            "growth": 177.0000000000016,
+            "start_seconds": 140.016
+          },
+          {
+            "end_seconds": 325.015,
+            "growth": 179.0,
+            "start_seconds": 145.015
+          },
+          {
+            "end_seconds": 330.01599999999996,
+            "growth": 241.9998000399919,
+            "start_seconds": 150.016
+          },
+          {
+            "end_seconds": 335.01599999999996,
+            "growth": -34.0,
+            "start_seconds": 155.016
+          },
+          {
+            "end_seconds": 340.006,
+            "growth": 649.8347686761444,
+            "start_seconds": 160.006
+          },
+          {
+            "end_seconds": 345.01599999999996,
+            "growth": -11.922923322681072,
+            "start_seconds": 165.016
+          },
+          {
+            "end_seconds": 350.01599999999996,
+            "growth": -12.003999999999905,
+            "start_seconds": 170.016
+          },
+          {
+            "end_seconds": 355.01599999999996,
+            "growth": 196.98255114320136,
+            "start_seconds": 175.016
+          }
+        ],
+        "paired_phase_growth_min_median_max": [
+          -60.97361055577676,
+          123.48789757951545,
+          649.8347686761444
+        ]
+      },
+      "unsigned": {
+        "groups": [
+          {
+            "max": 210,
+            "mean": 80.66666666666667,
+            "median": 51.5,
+            "min": 7,
+            "p10": 7.4,
+            "p90": 198.5,
+            "sample_count": 12,
+            "start_seconds": 120.0
+          },
+          {
+            "max": 282,
+            "mean": 105.83333333333333,
+            "median": 83.0,
+            "min": 1,
+            "p10": 4.3,
+            "p90": 249.7,
+            "sample_count": 12,
+            "start_seconds": 180.0
+          },
+          {
+            "max": 304,
+            "mean": 154.41666666666666,
+            "median": 129.5,
+            "min": 6,
+            "p10": 20.0,
+            "p90": 284.0,
+            "sample_count": 12,
+            "start_seconds": 240.0
+          },
+          {
+            "max": 297,
+            "mean": 128.16666666666666,
+            "median": 114.5,
+            "min": 1,
+            "p10": 5.2,
+            "p90": 271.1,
+            "sample_count": 12,
+            "start_seconds": 300.0
+          }
+        ],
+        "last_180_seconds_range": [
+          1,
+          304
+        ],
+        "paired_phase_growth": [
+          {
+            "end_seconds": 300.016,
+            "growth": -28.0,
+            "start_seconds": 120.016
+          },
+          {
+            "end_seconds": 305.016,
+            "growth": 122.96421431427308,
+            "start_seconds": 125.016
+          },
+          {
+            "end_seconds": 310.015,
+            "growth": 86.07157137145177,
+            "start_seconds": 130.015
+          },
+          {
+            "end_seconds": 315.015,
+            "growth": -6.999399879975982,
+            "start_seconds": 135.015
+          },
+          {
+            "end_seconds": 320.01599999999996,
+            "growth": 70.99999999999949,
+            "start_seconds": 140.016
+          },
+          {
+            "end_seconds": 325.015,
+            "growth": -22.0,
+            "start_seconds": 145.015
+          },
+          {
+            "end_seconds": 330.01599999999996,
+            "growth": 130.98420315936852,
+            "start_seconds": 150.016
+          },
+          {
+            "end_seconds": 335.01599999999996,
+            "growth": 165.0000000000009,
+            "start_seconds": 155.016
+          },
+          {
+            "end_seconds": 340.006,
+            "growth": -187.9026637292195,
+            "start_seconds": 160.006
+          },
+          {
+            "end_seconds": 345.01599999999996,
+            "growth": 289.9450878594231,
+            "start_seconds": 165.016
+          },
+          {
+            "end_seconds": 350.01599999999996,
+            "growth": -6.968800000000738,
+            "start_seconds": 170.016
+          },
+          {
+            "end_seconds": 355.01599999999996,
+            "growth": -44.00722021660633,
+            "start_seconds": 175.016
+          }
+        ],
+        "paired_phase_growth_min_median_max": [
+          -187.9026637292195,
+          32.015599999999374,
+          289.9450878594231
+        ]
+      }
+    }
+  },
+  "descriptor_sha256": "50ef35bd4a3226521e58f2a3115e30fd546d678e18a4648781f38bdc0bb37f83",
+  "interpretation_policy_sha256": "9ce1b79f2428ad6a20bc2d097496b741d8bc147a790ef1f64359d6c719a61e3f",
+  "report": "/tmp/capacity-final-bracket-lease600-evm55-7790eecfb337.json",
+  "report_sha256": "cf8299cef332b8cedbb56c9f946b02851a35fc2ae51962315252bbf9f18e8ee3"
+}

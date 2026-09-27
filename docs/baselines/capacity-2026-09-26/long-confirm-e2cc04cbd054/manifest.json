@@ -1,0 +1,149 @@
+{
+  "archive_wall_seconds": 5.111160583,
+  "files": {
+    "01-capacity-optional-confirm-lease600-evm50-900s/analyst-backlog-description.json": {
+      "bytes": 10433,
+      "sha256": "18acd370e354baacda3b22dca35627b0ea6e06739c5341f6ff6c5cca2873f794"
+    },
+    "01-capacity-optional-confirm-lease600-evm50-900s/analyst-compact.json": {
+      "bytes": 17653,
+      "sha256": "a78f5fe3a128c8079a63848ce36305986ea59fd329afb4020ccaa89556b53aaa"
+    },
+    "01-capacity-optional-confirm-lease600-evm50-900s/analyst-summary.json": {
+      "bytes": 6303,
+      "sha256": "35d10cc49d490e75be4ca5450c84a7293e4daa127108ffd88248442bc0bc41d5"
+    },
+    "01-capacity-optional-confirm-lease600-evm50-900s/evm12-rpc-audit.jsonl.gz": {
+      "bytes": 5619413,
+      "sha256": "fec7f9d45483074d79123afbf4cfd9483e4536c48068a858f2e22ee74761b9e0"
+    },
+    "01-capacity-optional-confirm-lease600-evm50-900s/full-report.json.gz": {
+      "bytes": 3795303,
+      "sha256": "a39c97e8bd8fb250c0198dfd0838c0f6808d58576a63514c6abefa753fd2e2c9"
+    },
+    "01-capacity-optional-confirm-lease600-evm50-900s/independent-audit.json": {
+      "bytes": 2928,
+      "sha256": "014e72bc81d81606196626222ad156005dbeb5b57accc9c1eae41ce12b422dbf"
+    },
+    "01-capacity-optional-confirm-lease600-evm50-900s/observations.jsonl.gz": {
+      "bytes": 5036818,
+      "sha256": "2e111f424ceda480eeb2a13085542b81c1d466a2fc7c416bfc69cabe2cf593e6"
+    },
+    "01-capacity-optional-confirm-lease600-evm50-900s/resource-preflight.jsonl": {
+      "bytes": 1229,
+      "sha256": "036d1450f1449f348596770e88f8638908e3bde5205bdc7dd52bd70c79ca0564"
+    },
+    "01-capacity-optional-confirm-lease600-evm50-900s/resources.jsonl": {
+      "bytes": 17923,
+      "sha256": "f816d40bbcd075c420ffba9eacc95e9e27ca978c2e345835097c9399b7f07cd0"
+    },
+    "01-capacity-optional-confirm-lease600-evm50-900s/strict-assessment.json": {
+      "bytes": 3392,
+      "sha256": "7d49d9734753f4c83f1fc88d8169beeb293046360e720d5dee78ed92de18f2ae"
+    },
+    "02-capacity-confirm-lease600-shared5875-900s/analyst-backlog-description.json": {
+      "bytes": 54069,
+      "sha256": "047f26b2d53fed2c512d385554580581a8910f964af6c0075296f17eb433c1aa"
+    },
+    "02-capacity-confirm-lease600-shared5875-900s/analyst-compact.json": {
+      "bytes": 58543,
+      "sha256": "b6d18297b2babcf1447423ec6e46079fced897d188f455cceb83f49586c80e2c"
+    },
+    "02-capacity-confirm-lease600-shared5875-900s/analyst-summary.json": {
+      "bytes": 24565,
+      "sha256": "5e27daaf21e306005190e441d410c6f0a9ef5747d47e22c8b76f641f02603a21"
+    },
+    "02-capacity-confirm-lease600-shared5875-900s/evm12-rpc-audit.jsonl.gz": {
+      "bytes": 1703225,
+      "sha256": "e8b9e1c75f94dcde5d366eaebef1eaf8624909e2581f1301fb13ab0d2e98ebdb"
+    },
+    "02-capacity-confirm-lease600-shared5875-900s/evm2-rpc-audit.jsonl.gz": {
+      "bytes": 1705437,
+      "sha256": "e0242175e8d65b0a669dd0c5d1c0932314da227d5c46130289389fd644c4b63d"
+    },
+    "02-capacity-confirm-lease600-shared5875-900s/full-report.json.gz": {
+      "bytes": 5282753,
+      "sha256": "b6628ea3be150349edf00f07211e008d0ddf25d3b9a671ba1df31d0429158dc5"
+    },
+    "02-capacity-confirm-lease600-shared5875-900s/independent-audit.json": {
+      "bytes": 4960,
+      "sha256": "ad6bea505cf694a17c305656a7507bd3668fef05c6d04d8dcf582333cfc59949"
+    },
+    "02-capacity-confirm-lease600-shared5875-900s/nitro-rpc-audit.jsonl.gz": {
+      "bytes": 1433352,
+      "sha256": "e5463fd777ccd520844e44aa86f9e0e130823a0b7cc7a9a95133e3ae3025be1d"
+    },
+    "02-capacity-confirm-lease600-shared5875-900s/observations.jsonl.gz": {
+      "bytes": 6932875,
+      "sha256": "9c638d5f912c1d2e360f1bab2044b4850d753b757fee4c933eef7aedf45ddd37"
+    },
+    "02-capacity-confirm-lease600-shared5875-900s/resource-preflight.jsonl": {
+      "bytes": 2796,
+      "sha256": "f615c78cfde759ff4c40e3fadc806311cd7b09b5586c5226f8d1067e988eb16e"
+    },
+    "02-capacity-confirm-lease600-shared5875-900s/resources.jsonl": {
+      "bytes": 44968,
+      "sha256": "f6c0bb77765d2db780a6fde602f3824b4e2f1921f40b1612fa62f0de16208cc1"
+    },
+    "02-capacity-confirm-lease600-shared5875-900s/solana-rpc-audit.jsonl.gz": {
+      "bytes": 2381953,
+      "sha256": "7ababe79dbbce4dcfedadaf7b3c3c9b083890f00ce4972a1f2b010abb745a08d"
+    },
+    "02-capacity-confirm-lease600-shared5875-900s/strict-assessment.json": {
+      "bytes": 12648,
+      "sha256": "91a67d390050c37861601ca5f559782888709ab256d08039ea53fc05d67f0c36"
+    },
+    "README.md": {
+      "bytes": 1611,
+      "sha256": "17fb9d8b37bbee8a6f0b442dd5c957db94e90323ac0cddf975317ed6b2e44a4e"
+    },
+    "archive-privacy-source.py": {
+      "bytes": 12481,
+      "sha256": "3af1736c8c27923dbd85578b6a43058910a2891cae4894fa3ace4481356aa90d"
+    },
+    "archive-source.py": {
+      "bytes": 11176,
+      "sha256": "fadc4fd680cb1219d0c440ea2920027c72b6f9c72a516ab1087ff56b87176146"
+    },
+    "audit-map.json": {
+      "bytes": 238,
+      "sha256": "6a0fca01e63fe6ff54c3ebd87b35b91515fe80d0db7b2c4d9a037b8b91471d5c"
+    },
+    "backlog-descriptor-source.py": {
+      "bytes": 3667,
+      "sha256": "50ef35bd4a3226521e58f2a3115e30fd546d678e18a4648781f38bdc0bb37f83"
+    },
+    "compact-extractor-source.py": {
+      "bytes": 12034,
+      "sha256": "c4c65f157513c50f7171aef0646b60630f58f7f81b8bc828d53ed44760b5033f"
+    },
+    "frozen-jobs.json": {
+      "bytes": 902,
+      "sha256": "b250472c8ac1ceafc05944e3204cda270bf3cce530a58064414633cf507bd7b7"
+    },
+    "interpretation-policy.md": {
+      "bytes": 3683,
+      "sha256": "9ce1b79f2428ad6a20bc2d097496b741d8bc147a790ef1f64359d6c719a61e3f"
+    },
+    "source-integrity.json": {
+      "bytes": 12519,
+      "sha256": "20910ddf6ee0fde5809706597ba1bad6e3378e38d0cbb4e44a69342abcbda02b"
+    },
+    "strict-assessor-source.py": {
+      "bytes": 8301,
+      "sha256": "8ebafce9dd136ce0a0179ab04292836d8c0d685fe9b31f9b455e45665e4b6865"
+    },
+    "summary.json": {
+      "bytes": 8593,
+      "sha256": "f2f342fa6b467e90a593761f12c3c0b408eeb5d5fd3bab6712668ac5b62ec721"
+    },
+    "supervisor-final-state.json": {
+      "bytes": 4388,
+      "sha256": "91599021c1695dc33b71bb592a53b760be90831b5d3b913e640da6f5ba02e76f"
+    },
+    "supervisor-source.py": {
+      "bytes": 17758,
+      "sha256": "0f2d64f85a240d932ba1f558a2c105445a76370d04287967dea877e55eebb040"
+    }
+  }
+}

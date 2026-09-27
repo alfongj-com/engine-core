@@ -1,0 +1,149 @@
+{
+  "schema": "final-bracket-readonly-summary-v1",
+  "report": "/tmp/capacity-final-bracket-lease600-evm55-7790eecfb337.json",
+  "report_sha256": "cf8299cef332b8cedbb56c9f946b02851a35fc2ae51962315252bbf9f18e8ee3",
+  "engine_binary_sha256": "35e307e16cafa7cbb17caafcf5ed90a840d58dddd2454542566619266e7a4c07",
+  "harness_sha256": {
+    "capacity_campaign.py": "959d1aa819e380ab2c17d1afa59348110954412d891d53d24944d3831fa675d7",
+    "capacity_faults.py": "59e2bc4d90bceca2682c27e35c5871ee538d4878a795f990fa90e6d5f90afa13",
+    "capacity_resource_guard.py": "bbfda4901f49600cdff9fa907b73e2a64e8df534496083994fd4717c55979bb6"
+  },
+  "oracle": {
+    "offered_intents": 19800,
+    "observed_intents": 19800,
+    "safety_pass": true,
+    "liveness_pass": true
+  },
+  "original_responses": {
+    "202": 19800
+  },
+  "original_client": {
+    "dispatched": 19800
+  },
+  "strict_assessment": {
+    "aggregation_seconds": 60.0,
+    "aligned_mean_backlogs": {
+      "terminal": [
+        1908.1971751049998,
+        1966.5937518292262,
+        2059.782156399107,
+        2038.5271067766942
+      ],
+      "unsigned": [
+        79.62294181499996,
+        108.6984753464688,
+        151.426599505198,
+        133.30083354171884
+      ]
+    },
+    "aligned_mean_slopes_tps": {
+      "terminal": 0.807005334458918,
+      "unsigned": 0.3396222036753502
+    },
+    "backlog_endpoints": {
+      "terminal": {
+        "end": 2012.0,
+        "growth": -17.0,
+        "start": 2029.0
+      },
+      "unsigned": {
+        "end": 124.0,
+        "growth": 95.0,
+        "start": 29.0
+      }
+    },
+    "classification": "unconfirmed_growth_or_cadence_ambiguity",
+    "complete_aggregation_windows": 4,
+    "from_seconds": 120.016,
+    "nominal_complete_block_cycles": 19.998749999999998,
+    "notes": [
+      "nominal_cadence_alignment; actual_block_head_series_not_recorded"
+    ],
+    "offered_tps": 55.0,
+    "one_transaction_rate_allowance_tps": 0.004166927099610393,
+    "original_candidate": false,
+    "persistent_growth_stages": [],
+    "reasons": [
+      "stage_rate_below_offered_beyond_one_transaction",
+      "unsigned_backlog_endpoint_growth",
+      "unsigned_backlog_positive_aligned_mean_trend",
+      "terminal_backlog_positive_aligned_mean_trend"
+    ],
+    "sample_interval_seconds": 5.0,
+    "stage_rates_tps": {
+      "admitted": 54.99927078775758,
+      "attempted": 54.60341271329459,
+      "included": 54.54924266099965,
+      "terminal": 55.07010854845095
+    },
+    "to_seconds": 360.001,
+    "window_seconds": 239.98499999999996
+  },
+  "late180_sample_window": {
+    "from_seconds": 180.015,
+    "to_seconds": 360.001,
+    "stage_rates_per_second": {
+      "admitted": 54.99872212283178,
+      "attempted": 54.332003600280025,
+      "included": 54.220883846521396,
+      "terminal": 55.12095385196627
+    },
+    "backlogs": {
+      "terminal": {
+        "end": 2012,
+        "growth": -22,
+        "growth_per_second": -0.12223172913448825,
+        "max": 2316,
+        "min": 1759,
+        "sample_ols_slope_per_second": 0.43805232112923337,
+        "sample_p10": 1853.0,
+        "sample_p50": 2012.0,
+        "sample_p90": 2190.0,
+        "start": 2034,
+        "time_weighted_mean": 2021.6329992332735
+      },
+      "unsigned": {
+        "end": 124,
+        "growth": 120,
+        "growth_per_second": 0.666718522551754,
+        "max": 304,
+        "min": 1,
+        "sample_ols_slope_per_second": 0.3502271919634893,
+        "sample_p10": 5.2,
+        "sample_p50": 115.0,
+        "sample_p90": 276.0,
+        "start": 4,
+        "time_weighted_mean": 131.14108319535967
+      }
+    },
+    "engine_rpc_requests_per_second": 165.79622859555744
+  },
+  "nominal_phase_differences": {
+    "terminal": [
+      -60.97361055577676,
+      123.48789757951545,
+      649.8347686761444
+    ],
+    "unsigned": [
+      -187.9026637292195,
+      32.015599999999374,
+      289.9450878594231
+    ]
+  },
+  "post_warmup_sample_rates": {
+    "admitted": 54.99927078775758,
+    "attempted": 54.60341271329459,
+    "included": 54.54924266099965,
+    "terminal": 55.07010854845095
+  },
+  "whole_rpc_calls_per_intent": 3.0317171717171716,
+  "admission_response_p99_ms": 25.986,
+  "all_drained_load_seconds": 400.315016,
+  "independent_audit": "/tmp/engine-capacity-final-brackets-independent-audit/evm55.json",
+  "interpretation": "Unconfirmed: clean exact completion but unsigned accumulation/full-window positive trends and positive median phase pairs prevent sustained promotion. Existing60TPS failed;50TPS repeat is the next lower qualification candidate if needed.",
+  "limits": [
+    "Local Anvil12s execution with100Mblockgas, explicittransfergas, no Ethereum mainnet capacity claim.",
+    "Terminal decreases at one endpoint do not offset positive unsigned accumulation.",
+    "RPC counts exclude observer/direct guard reads; sample and interpolated strict windows differ slightly and are separately labeled."
+  ]
+}

@@ -1,0 +1,461 @@
+{
+  "limitations": [
+    "Exact oracle/drain are reported results, not reverified per-ID here.",
+    "Inclusion is live observer knowledge, not direct sequencer throughput; observer errors and lag remain visible.",
+    "RPC mean uses counter differences; max is cumulative through endpoint, not a window maximum.",
+    "Completed-call time equivalent is a latency-sum signal, not measured send-only concurrent occupancy; proxy peak includes all RPC methods.",
+    "Flat observed attempt intervals may include observer delay; they do not prove disk or confirmation causation.",
+    "Local gas/chain/finality fixtures and finite windows do not establish public-chain maxima."
+  ],
+  "method": "Nearest existing load samples to configured post-warmup and last180 boundaries; actual sample duration denominators. Descriptive queue slopes/quantiles, no significance or stability verdict. Preserve original raw and strict assessments.",
+  "new_qualification_thresholds": false,
+  "reports": [
+    {
+      "binary_sha256": "35e307e16cafa7cbb17caafcf5ed90a840d58dddd2454542566619266e7a4c07",
+      "chains": {
+        "nitro": {
+          "admission_latency_ms": {
+            "http_service_latency_ms": {
+              "count": 19800,
+              "max": 37.301,
+              "p50": 7.685,
+              "p95": 12.812,
+              "p99": 18.458
+            },
+            "scheduled_to_http_start_lateness_ms": {
+              "count": 19800,
+              "max": 20.101,
+              "p50": 3.836,
+              "p95": 8.532,
+              "p99": 10.217
+            },
+            "scheduled_to_response_latency_ms": {
+              "count": 19800,
+              "max": 41.169,
+              "p50": 11.779,
+              "p95": 18.709,
+              "p99": 23.735
+            }
+          },
+          "admitted_http202": 19800,
+          "client_counts": {
+            "dispatched": 19800
+          },
+          "client_drop_counts": {},
+          "http_responses": {
+            "202": 19800
+          },
+          "offered": 19800,
+          "original_late_window_assessment": {
+            "admission_p99_limit_ms": 1000,
+            "capacity_candidate": true,
+            "disqualifiers": [],
+            "from_seconds": 180.016,
+            "rates_tps": {
+              "admitted": 54.994,
+              "attempted": 55.016,
+              "included": 55.016,
+              "terminal": 54.477
+            },
+            "relative_tolerance": 0.05,
+            "requires_repeated_confirmation": true,
+            "terminal_backlog_end": 436,
+            "terminal_backlog_growth_per_second": 0.517,
+            "terminal_backlog_start": 343,
+            "to_seconds": 360.017,
+            "unsigned_backlog_end": 117,
+            "unsigned_backlog_linear_trend_per_second": 0.018,
+            "unsigned_backlog_start": 121,
+            "unsigned_growth_detected": false,
+            "unsigned_monotonic_growth": false,
+            "unsigned_trend_threshold_per_second": 0.1,
+            "window_seconds": 180.001
+          },
+          "profile": {
+            "chain_id": 412346,
+            "depth": 2,
+            "drain_hook": [
+              "/tmp/engine-capacity-tools/nitro-drain-hook-v2.py",
+              "--max-seconds",
+              "1800"
+            ],
+            "external_url": "http://127.0.0.1:18547",
+            "family": "evm",
+            "label": "caller-owned local dev execution; no public qualification",
+            "network": "external",
+            "rate": 55.0
+          },
+          "transport_errors": [],
+          "whole_run_engine_rpc": {
+            "accepted_unique_wires": 19800,
+            "calls": {
+              "eth_blockNumber": 56,
+              "eth_estimateGas": 19800,
+              "eth_feeHistory": 19800,
+              "eth_getBalance": 1,
+              "eth_getBlockByNumber": 7297,
+              "eth_getCode": 2,
+              "eth_getTransactionCount": 149,
+              "eth_getTransactionReceipt": 19800,
+              "eth_sendRawTransaction": 19800
+            },
+            "calls_per_admitted": 4.379040404040404,
+            "forwarded_sends": 19800,
+            "http_transport": {
+              "active": 0,
+              "connection_attempts": 34,
+              "connection_reuses": 86671,
+              "connections_opened": 34,
+              "failures": [],
+              "owned_connections": 0,
+              "peak_active": 32,
+              "requests": 86705,
+              "responses": 86705,
+              "status_200": 86705
+            },
+            "proxy_failure_details": [],
+            "proxy_failures": [],
+            "proxy_overloads": 0,
+            "total_method_calls": 86705
+          },
+          "windows": {
+            "last180": {
+              "available": true,
+              "backlogs": {
+                "terminal": {
+                  "end": 437,
+                  "growth": 94,
+                  "growth_per_second": 0.5222483346389541,
+                  "max": 563,
+                  "min": 266,
+                  "sample_ols_slope_per_second": 0.194090890340878,
+                  "sample_p10": 280.6,
+                  "sample_p50": 373.0,
+                  "sample_p90": 521.6,
+                  "start": 343,
+                  "time_weighted_mean": 388.4961720308237
+                },
+                "unsigned": {
+                  "end": 117,
+                  "growth": -4,
+                  "growth_per_second": -0.022223333388891667,
+                  "max": 237,
+                  "min": 6,
+                  "sample_ols_slope_per_second": 0.025744356188585147,
+                  "sample_p10": 33.6,
+                  "sample_p50": 126.0,
+                  "sample_p90": 211.39999999999998,
+                  "start": 121,
+                  "time_weighted_mean": 125.250387519376
+                }
+              },
+              "counter_errors": [],
+              "cpu_one_core_percent": {
+                "campaign": 20.23990088393309,
+                "engine": 23.77896672611408,
+                "redis": 6.0947491819035395
+              },
+              "engine_rpc_methods": {
+                "eth_blockNumber": {
+                  "completed_call_time_equivalent": 0.0001660203343496964,
+                  "count": 26,
+                  "errors": 0,
+                  "max_ms_through_window_end": 1.7583750000085274,
+                  "mean_ms": 1.1493140769206234,
+                  "requests_per_second": 0.14445166702779583
+                },
+                "eth_estimateGas": {
+                  "completed_call_time_equivalent": 0.2312371599580064,
+                  "count": 9903,
+                  "errors": 0,
+                  "max_ms_through_window_end": 20.82554200001141,
+                  "mean_ms": 4.202828199333689,
+                  "requests_per_second": 55.01941763754854
+                },
+                "eth_feeHistory": {
+                  "completed_call_time_equivalent": 0.24688178627263582,
+                  "count": 9903,
+                  "errors": 0,
+                  "max_ms_through_window_end": 29.852958000020635,
+                  "mean_ms": 4.487175562253659,
+                  "requests_per_second": 55.01941763754854
+                },
+                "eth_getBlockByNumber": {
+                  "completed_call_time_equivalent": 0.02680846228978278,
+                  "count": 3316,
+                  "errors": 0,
+                  "max_ms_through_window_end": 6.387917000012067,
+                  "mean_ms": 1.4551513679132364,
+                  "requests_per_second": 18.423143379391192
+                },
+                "eth_getCode": {
+                  "completed_call_time_equivalent": 1.0562794806365283e-05,
+                  "count": 1,
+                  "errors": 0,
+                  "max_ms_through_window_end": 1.9012079999924936,
+                  "mean_ms": 1.9012079999924936,
+                  "requests_per_second": 0.005555833347222917
+                },
+                "eth_getTransactionCount": {
+                  "completed_call_time_equivalent": 0.0005524723069475038,
+                  "count": 65,
+                  "errors": 0,
+                  "max_ms_through_window_end": 3.749000000027536,
+                  "mean_ms": 1.529846815381356,
+                  "requests_per_second": 0.36112916756948954
+                },
+                "eth_getTransactionReceipt": {
+                  "completed_call_time_equivalent": 0.3243224411776038,
+                  "count": 9906,
+                  "errors": 0,
+                  "max_ms_through_window_end": 31.55854199999908,
+                  "mean_ms": 5.892905361396939,
+                  "requests_per_second": 55.036085137590206
+                },
+                "eth_sendRawTransaction": {
+                  "completed_call_time_equivalent": 8.581539568422956,
+                  "count": 9903,
+                  "errors": 0,
+                  "max_ms_through_window_end": 291.86458300000595,
+                  "mean_ms": 155.97292623043688,
+                  "requests_per_second": 55.01941763754854
+                }
+              },
+              "engine_rpc_requests_per_second": 239.02861809757152,
+              "from_seconds": 180.016,
+              "observed_attempt_plateaus_with_unsigned_work": {
+                "first_eight_intervals": [],
+                "intervals": 0,
+                "intervals_with_terminal_progress": 0,
+                "longest_single_sample_interval_seconds": 0,
+                "terminal_delta_total": 0,
+                "total_seconds": 0
+              },
+              "observer_duration_ms_max": 38.709,
+              "proxy_peak_all_method_inflight_through_end": 32,
+              "requested_from_seconds": 180.00833,
+              "requested_to_seconds": 360.00833,
+              "sample_gap_seconds": {
+                "max": 5.010000000000048,
+                "median": 5.0
+              },
+              "samples": 37,
+              "seconds": 179.991,
+              "stage_rates_per_second": {
+                "admitted": 54.99719430415965,
+                "attempted": 55.01941763754854,
+                "included": 55.01941763754854,
+                "terminal": 54.4749459695207
+              },
+              "to_seconds": 360.007
+            },
+            "post_warmup": {
+              "available": true,
+              "backlogs": {
+                "terminal": {
+                  "end": 437,
+                  "growth": 69,
+                  "growth_per_second": 0.28751078165431204,
+                  "max": 563,
+                  "min": 191,
+                  "sample_ols_slope_per_second": 0.45275089978687266,
+                  "sample_p10": 264.4,
+                  "sample_p50": 355.0,
+                  "sample_p90": 513.6,
+                  "start": 368,
+                  "time_weighted_mean": 367.54612672975236
+                },
+                "unsigned": {
+                  "end": 117,
+                  "growth": 63,
+                  "growth_per_second": 0.2625098441191545,
+                  "max": 237,
+                  "min": 5,
+                  "sample_ols_slope_per_second": 0.3357606761780664,
+                  "sample_p10": 13.400000000000002,
+                  "sample_p50": 108.0,
+                  "sample_p90": 207.4,
+                  "start": 54,
+                  "time_weighted_mean": 108.07508823247542
+                }
+              },
+              "counter_errors": [],
+              "cpu_one_core_percent": {
+                "campaign": 20.16742294502711,
+                "engine": 23.359209303682224,
+                "redis": 6.016892300127921
+              },
+              "engine_rpc_methods": {
+                "eth_blockNumber": {
+                  "completed_call_time_equivalent": 0.00016549873536915398,
+                  "count": 35,
+                  "errors": 0,
+                  "max_ms_through_window_end": 1.7583750000085274,
+                  "mean_ms": 1.134805914285104,
+                  "requests_per_second": 0.14583880228841917
+                },
+                "eth_estimateGas": {
+                  "completed_call_time_equivalent": 0.2314606096437026,
+                  "count": 13136,
+                  "errors": 0,
+                  "max_ms_through_window_end": 20.82554200001141,
+                  "mean_ms": 4.228719790575657,
+                  "requests_per_second": 54.73538591030497
+                },
+                "eth_feeHistory": {
+                  "completed_call_time_equivalent": 0.2509191193002993,
+                  "count": 13136,
+                  "errors": 0,
+                  "max_ms_through_window_end": 29.852958000020635,
+                  "mean_ms": 4.584221251522391,
+                  "requests_per_second": 54.73538591030497
+                },
+                "eth_getBlockByNumber": {
+                  "completed_call_time_equivalent": 0.02794614977645178,
+                  "count": 4571,
+                  "errors": 0,
+                  "max_ms_through_window_end": 6.387917000012067,
+                  "mean_ms": 1.4672553994750468,
+                  "requests_per_second": 19.046547578867543
+                },
+                "eth_getCode": {
+                  "completed_call_time_equivalent": 7.92199707485903e-06,
+                  "count": 1,
+                  "errors": 0,
+                  "max_ms_through_window_end": 1.9012079999924936,
+                  "mean_ms": 1.9012079999924936,
+                  "requests_per_second": 0.004166822922526262
+                },
+                "eth_getTransactionCount": {
+                  "completed_call_time_equivalent": 0.0005526297777825869,
+                  "count": 89,
+                  "errors": 0,
+                  "max_ms_through_window_end": 3.749000000027536,
+                  "mean_ms": 1.4901817190991105,
+                  "requests_per_second": 0.3708472401048373
+                },
+                "eth_getTransactionReceipt": {
+                  "completed_call_time_equivalent": 0.3228585964806952,
+                  "count": 13139,
+                  "errors": 0,
+                  "max_ms_through_window_end": 31.55854199999908,
+                  "mean_ms": 5.89718832696541,
+                  "requests_per_second": 54.747886379072554
+                },
+                "eth_sendRawTransaction": {
+                  "completed_call_time_equivalent": 8.658959055352154,
+                  "count": 13136,
+                  "errors": 0,
+                  "max_ms_through_window_end": 291.86458300000595,
+                  "mean_ms": 158.19672980001667,
+                  "requests_per_second": 54.73538591030497
+                }
+              },
+              "engine_rpc_requests_per_second": 238.52144455417078,
+              "from_seconds": 120.016,
+              "observed_attempt_plateaus_with_unsigned_work": {
+                "first_eight_intervals": [],
+                "intervals": 0,
+                "intervals_with_terminal_progress": 0,
+                "longest_single_sample_interval_seconds": 0,
+                "terminal_delta_total": 0,
+                "total_seconds": 0
+              },
+              "observer_duration_ms_max": 56.004,
+              "proxy_peak_all_method_inflight_through_end": 32,
+              "requested_from_seconds": 120.0,
+              "requested_to_seconds": 360.00833,
+              "sample_gap_seconds": {
+                "max": 5.010000000000048,
+                "median": 5.0
+              },
+              "samples": 49,
+              "seconds": 239.99099999999999,
+              "stage_rates_per_second": {
+                "admitted": 54.99789575442413,
+                "attempted": 54.73538591030497,
+                "included": 54.73538591030497,
+                "terminal": 54.710384972769816
+              },
+              "to_seconds": 360.007
+            }
+          }
+        }
+      },
+      "complete_zero_drain_reported": true,
+      "configuration": {
+        "durability": {
+          "redis_appendfsync": "everysec",
+          "sqlite": "WAL synchronous=FULL/fullfsync=ON"
+        },
+        "duration_seconds": 360.0,
+        "eoa_broadcast_concurrency": 32,
+        "eoa_max_inflight_per_wallet": 4096,
+        "http_concurrency": 128,
+        "max_schedule_lag_ms": 100.0,
+        "solana_confirmation_poll_seconds": 5,
+        "solana_workers": 100,
+        "warmup_seconds": 120.0
+      },
+      "drain": {
+        "client_pending": 0,
+        "http_inflight": 0,
+        "journal_unresolved": 0,
+        "node_pending": 0,
+        "redis_active": 0,
+        "redis_borrowed": 0,
+        "redis_delayed": 0,
+        "redis_pending": 0,
+        "redis_submitted": 0
+      },
+      "drain_reached_load_seconds": 370.136329,
+      "exact_oracle_liveness_reported": true,
+      "exact_oracle_safety_reported": true,
+      "execution_errors": [],
+      "harness_sha256": {
+        "capacity_campaign.py": "959d1aa819e380ab2c17d1afa59348110954412d891d53d24944d3831fa675d7",
+        "capacity_faults.py": "59e2bc4d90bceca2682c27e35c5871ee538d4878a795f990fa90e6d5f90afa13",
+        "capacity_resource_guard.py": "bbfda4901f49600cdff9fa907b73e2a64e8df534496083994fd4717c55979bb6"
+      },
+      "infrastructure_stop": null,
+      "observer_errors": 0,
+      "operator_review_required": null,
+      "oracle": {
+        "eligible_for_rate_assessment": true,
+        "expected_parked_intents": 0,
+        "liveness_failures": [],
+        "liveness_pass": true,
+        "observed_intents": 19800,
+        "offered_intents": 19800,
+        "outcome": "pass",
+        "safety_failures": [],
+        "safety_pass": true
+      },
+      "outcome": "pass",
+      "owned_children_stopped": true,
+      "preserved_strict_assessments": {
+        "nitro": {
+          "aligned_mean_slopes_tps": {
+            "terminal": 0.458530564871617,
+            "unsigned": 0.3410378123016872
+          },
+          "classification": "unconfirmed_growth_or_cadence_ambiguity",
+          "persistent_growth_stages": [],
+          "reasons": [
+            "stage_rate_below_offered_beyond_one_transaction",
+            "unsigned_backlog_endpoint_growth",
+            "unsigned_backlog_positive_aligned_mean_trend",
+            "terminal_backlog_endpoint_growth",
+            "terminal_backlog_positive_aligned_mean_trend"
+          ]
+        }
+      },
+      "report": "/tmp/capacity-final-bracket-lease600-native55-7790eecfb337.json",
+      "report_sha256_uncompressed": "e37560c6a40c21da83458dc7b15711baae6bf987b99a4eb50de0f490ab09905b",
+      "source_commit": "1ebe25cced2b7e65e0879c5231d54944d894b770",
+      "source_is_dirty": true,
+      "strict_assessment_sha256": "79f8dfce6ed70a8f16f5dfcc65e270036c5e0aebba86e030e842de4fce8e7f92"
+    }
+  ],
+  "schema": "capacity-compact-readonly-v1"
+}

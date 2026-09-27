@@ -1,6 +1,40 @@
 # Verification record
 
-Updated: **2026-09-26**. Upstream baseline: `b6b7a0bbdc737b3a2b09611305b71b1bf6aba6e8`. Each round below records its own source, tool versions and limitations. Earlier public-chain and benchmark results do not automatically qualify later runtime changes.
+Updated: **2026-09-27**. Upstream baseline: `b6b7a0bbdc737b3a2b09611305b71b1bf6aba6e8`. Each round below records its own source, tool versions and limitations. Earlier public-chain and benchmark results do not automatically qualify later runtime changes.
+
+## Capacity and crash campaign — 2026-09-27
+
+The [completed campaign](baselines/capacity-2026-09-26/RESULTS.md) pins Engine
+binary SHA-256 `35e307e16cafa7cbb17caafcf5ed90a840d58dddd2454542566619266e7a4c07`.
+EVM 50 TPS and four-chain 58.75 aggregate TPS each ran for 15 minutes, with
+45,000 and 52,875 exact outcomes. Higher inputs exposed queue growth or rejection;
+these working points are not confirmed absolute maxima or public-chain limits.
+
+Mixed execution, lost responses, send errors and an OP reorg recovered exactly.
+Actual process and Redis crashes exercised durable fences and exposed operator
+recovery requirements. Explicit Redis reconstruction quarantines uncertain
+attempts; it does not complete them. The report preserves all unresolved custody
+and failed experiments, including the earlier lost-history evidence gap.
+
+The ordered dispatcher has six actual Redis/SQLite/HTTP regressions and four
+compiled negative controls. The current [formal evidence](../formal/evidence/capacity-dispatch-review/README.md)
+records **61 expected model outcomes**, 76 source guards and three checker tests.
+The five production fee proofs remain separate. No whole-program, composition,
+wall-clock fairness or throughput proof is claimed.
+
+A reproduced sidecar-free WAL reader failure in the campaign was fixed without
+changing Engine. **163 integrated Python tests passed**, including actual
+Ethereum/OP snapshot restores; both targeted original-reader negative controls
+failed as expected. [Reader evidence](baselines/capacity-2026-09-26/journal-reader/README.md).
+The four existing Linux gates passed at `1ebe25cced2b7e65e0879c5231d54944d894b770`;
+[metadata](baselines/capacity-2026-09-26/final-review/ci-1ebe25c.json) identifies them.
+The additional capacity CI steps remain a [patch](baselines/capacity-2026-09-26/ci.patch)
+because the GitHub token lacks workflow permission. They are local verification,
+not an executed Linux gate.
+
+No paid RPC calls were used for this campaign. See the
+[five-area review](baselines/capacity-2026-09-26/final-review/OUTCOME.md) for performance,
+security, reliability, readability and remaining test/proof boundaries.
 
 ## Iterative production review — 2026-09-26
 

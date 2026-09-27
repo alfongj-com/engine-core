@@ -1,0 +1,110 @@
+[
+  {
+    "name": "capacity-final-bracket-lease600-native55",
+    "chains": [
+      "nitro=55"
+    ],
+    "seconds": 360,
+    "extra": [
+      "--warmup-seconds",
+      "120",
+      "--late-window-seconds",
+      "180",
+      "--max-schedule-lag-ms",
+      "100",
+      "--eoa-broadcast-concurrency",
+      "32",
+      "--http-concurrency",
+      "128",
+      "--solana-confirmation-poll-seconds",
+      "5"
+    ]
+  },
+  {
+    "name": "capacity-final-bracket-lease600-evm55",
+    "chains": [
+      "evm12=55"
+    ],
+    "seconds": 360,
+    "extra": [
+      "--warmup-seconds",
+      "120",
+      "--late-window-seconds",
+      "180",
+      "--max-schedule-lag-ms",
+      "100",
+      "--eoa-broadcast-concurrency",
+      "32",
+      "--http-concurrency",
+      "128",
+      "--solana-confirmation-poll-seconds",
+      "5"
+    ]
+  },
+  {
+    "name": "capacity-final-bracket-lease600-op55",
+    "chains": [
+      "evm2=55"
+    ],
+    "seconds": 360,
+    "extra": [
+      "--warmup-seconds",
+      "120",
+      "--late-window-seconds",
+      "180",
+      "--max-schedule-lag-ms",
+      "100",
+      "--eoa-broadcast-concurrency",
+      "32",
+      "--http-concurrency",
+      "128",
+      "--solana-confirmation-poll-seconds",
+      "5"
+    ]
+  },
+  {
+    "name": "capacity-final-bracket-lease600-solana60",
+    "chains": [
+      "solana=60"
+    ],
+    "seconds": 360,
+    "extra": [
+      "--warmup-seconds",
+      "120",
+      "--late-window-seconds",
+      "180",
+      "--max-schedule-lag-ms",
+      "100",
+      "--eoa-broadcast-concurrency",
+      "32",
+      "--http-concurrency",
+      "128",
+      "--solana-confirmation-poll-seconds",
+      "5"
+    ]
+  },
+  {
+    "name": "capacity-final-bracket-lease600-shared5875",
+    "chains": [
+      "evm12=15",
+      "evm2=15",
+      "nitro=12.5",
+      "solana=16.25"
+    ],
+    "seconds": 360,
+    "extra": [
+      "--warmup-seconds",
+      "120",
+      "--late-window-seconds",
+      "180",
+      "--max-schedule-lag-ms",
+      "100",
+      "--eoa-broadcast-concurrency",
+      "32",
+      "--http-concurrency",
+      "128",
+      "--solana-confirmation-poll-seconds",
+      "5"
+    ]
+  }
+]

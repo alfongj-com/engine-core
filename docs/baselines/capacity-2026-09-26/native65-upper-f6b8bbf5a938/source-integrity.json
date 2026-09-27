@@ -1,0 +1,147 @@
+{
+  "checked_frozen_sources": {
+    "/Users/alfongj/Code/engine-core/docs/baselines/capacity-2026-09-26/supervisor-v4/runner.py": "0f2d64f85a240d932ba1f558a2c105445a76370d04287967dea877e55eebb040",
+    "/Users/alfongj/Code/engine-core/scripts/capacity_assess.py": "8ebafce9dd136ce0a0179ab04292836d8c0d685fe9b31f9b455e45665e4b6865",
+    "/Users/alfongj/Code/engine-core/scripts/capacity_campaign.py": "959d1aa819e380ab2c17d1afa59348110954412d891d53d24944d3831fa675d7",
+    "/Users/alfongj/Code/engine-core/scripts/capacity_faults.py": "59e2bc4d90bceca2682c27e35c5871ee538d4878a795f990fa90e6d5f90afa13",
+    "/Users/alfongj/Code/engine-core/scripts/capacity_resource_guard.py": "bbfda4901f49600cdff9fa907b73e2a64e8df534496083994fd4717c55979bb6",
+    "/private/tmp/engine-capacity-dispatch-plan/native65-upper-jobs.json": "2b5730f9f4e189109e828e477018642d5a90eca492afcd206a6f220c1a6b9fef",
+    "/tmp/engine-capacity-tools/nitro-drain-hook-v2.py": "424a26e6b8539d251df61396372951270ab1193372733099f94ec66608f92bd1"
+  },
+  "cohort": "f6b8bbf5a938",
+  "original_review_required": null,
+  "privacy_and_provenance_checks": {
+    "01-capacity-upper-bracket-lease600-native65": {
+      "observation_rows_privacy_checked": 23400,
+      "rpc_events": {
+        "nitro": {
+          "rpc_faults_released": 1,
+          "send_accepted": 23400,
+          "send_forwarded": 23400
+        }
+      }
+    }
+  },
+  "sources": {
+    "01-capacity-upper-bracket-lease600-native65/analyst-backlog-description.json": {
+      "lossless_gzip": false,
+      "source": "/private/tmp/capacity-upper-bracket-lease600-native65-f6b8bbf5a938-backlog-description.json",
+      "source_bytes": 7033,
+      "source_sha256": "7fc3bd3a39e959f69a03d196b1cfdfe61563a36bb6eca5356fee28fb0c1d6378"
+    },
+    "01-capacity-upper-bracket-lease600-native65/analyst-compact.json": {
+      "lossless_gzip": false,
+      "source": "/private/tmp/capacity-upper-bracket-lease600-native65-f6b8bbf5a938-compact.json",
+      "source_bytes": 18854,
+      "source_sha256": "0e89e2ae435e3f72a33d1917188d46cff2a2da265023656af574defdbdd8d22f"
+    },
+    "01-capacity-upper-bracket-lease600-native65/analyst-summary.json": {
+      "lossless_gzip": false,
+      "source": "/private/tmp/capacity-upper-bracket-lease600-native65-f6b8bbf5a938-summary.json",
+      "source_bytes": 5005,
+      "source_sha256": "8ac75903b71a8c8cd2de0df45957c590f1b948169e60e54db91667a1467691b2"
+    },
+    "01-capacity-upper-bracket-lease600-native65/full-report.json.gz": {
+      "lossless_gzip": true,
+      "source": "/private/tmp/capacity-upper-bracket-lease600-native65-f6b8bbf5a938.json",
+      "source_bytes": 5535816,
+      "source_sha256": "449aab01938ac63019510cfbda94ea60b4483ed6a99d390562b54a0d7f5d5633"
+    },
+    "01-capacity-upper-bracket-lease600-native65/independent-audit.json": {
+      "lossless_gzip": false,
+      "source": "/tmp/engine-capacity-final-brackets-independent-audit/native65.json",
+      "source_bytes": 2940,
+      "source_sha256": "31984818336ea1985e58c2f732e0972615dd46fe24ebe4534468d01d89008891"
+    },
+    "01-capacity-upper-bracket-lease600-native65/nitro-rpc-audit.jsonl.gz": {
+      "lossless_gzip": true,
+      "source": "/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/engine-capacity-yz4zlcf1/nitro-rpc.jsonl",
+      "source_bytes": 13729358,
+      "source_sha256": "0e4ccf0c9ff276f6c1c83012f08504909fdd4ad6580b6513bc23526744ab85ad"
+    },
+    "01-capacity-upper-bracket-lease600-native65/observations.jsonl.gz": {
+      "lossless_gzip": false,
+      "source": "/private/tmp/capacity-upper-bracket-lease600-native65-f6b8bbf5a938.observations.jsonl.gz",
+      "source_bytes": 2669081,
+      "source_sha256": "e077d5b2643a6f38943b4f167b4dd7932540bcdbbcb5816a7ce471aed07a788b"
+    },
+    "01-capacity-upper-bracket-lease600-native65/resource-preflight.jsonl": {
+      "lossless_gzip": false,
+      "source": "/private/tmp/capacity-upper-bracket-lease600-native65-f6b8bbf5a938.resource-preflight.jsonl",
+      "source_bytes": 2793,
+      "source_sha256": "26fa1e725e3b98a916ff443a2be71660c844d3667e3c43fc75945ac61da95d6e"
+    },
+    "01-capacity-upper-bracket-lease600-native65/resources.jsonl": {
+      "lossless_gzip": false,
+      "source": "/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/engine-capacity-yz4zlcf1/resource-guard.jsonl",
+      "source_bytes": 21459,
+      "source_sha256": "6fe381e609d3df712d00cc45f8d313117d096cbc27645947f85d5a040414f200"
+    },
+    "01-capacity-upper-bracket-lease600-native65/strict-assessment.json": {
+      "lossless_gzip": false,
+      "source": "/private/tmp/capacity-upper-bracket-lease600-native65-f6b8bbf5a938-assessment.json",
+      "source_bytes": 3297,
+      "source_sha256": "eda78d892cb827e3d43090356dcd00f372353a08c04111695ebbc9b693dd9429"
+    },
+    "archive-privacy-source.py": {
+      "lossless_gzip": false,
+      "source": "/tmp/engine-chaos-archive.py",
+      "source_bytes": 12481,
+      "source_sha256": "3af1736c8c27923dbd85578b6a43058910a2891cae4894fa3ace4481356aa90d"
+    },
+    "archive-source.py": {
+      "lossless_gzip": false,
+      "source": "/tmp/engine-nominal-cohort-archive.py",
+      "source_bytes": 11176,
+      "source_sha256": "fadc4fd680cb1219d0c440ea2920027c72b6f9c72a516ab1087ff56b87176146"
+    },
+    "audit-map.json": {
+      "lossless_gzip": false,
+      "source": "/tmp/engine-capacity-dispatch-plan/native65-audit-map.json",
+      "source_bytes": 120,
+      "source_sha256": "cf8d6bdf4f964a229866b597e0d1bf104a21b809bacfefb20a8978f768c52222"
+    },
+    "backlog-descriptor-source.py": {
+      "lossless_gzip": false,
+      "source": "/tmp/capacity-posthoc/describe_backlogs.py",
+      "source_bytes": 3667,
+      "source_sha256": "50ef35bd4a3226521e58f2a3115e30fd546d678e18a4648781f38bdc0bb37f83"
+    },
+    "compact-extractor-source.py": {
+      "lossless_gzip": false,
+      "source": "/tmp/engine-capacity-report-extract/extract.py",
+      "source_bytes": 12034,
+      "source_sha256": "c4c65f157513c50f7171aef0646b60630f58f7f81b8bc828d53ed44760b5033f"
+    },
+    "frozen-jobs.json": {
+      "lossless_gzip": false,
+      "source": "/tmp/engine-capacity-dispatch-plan/native65-upper-jobs.json",
+      "source_bytes": 420,
+      "source_sha256": "2b5730f9f4e189109e828e477018642d5a90eca492afcd206a6f220c1a6b9fef"
+    },
+    "interpretation-policy.md": {
+      "lossless_gzip": false,
+      "source": "/tmp/capacity-posthoc/interpretation-v1.md",
+      "source_bytes": 3683,
+      "source_sha256": "9ce1b79f2428ad6a20bc2d097496b741d8bc147a790ef1f64359d6c719a61e3f"
+    },
+    "strict-assessor-source.py": {
+      "lossless_gzip": false,
+      "source": "/Users/alfongj/Code/engine-core/scripts/capacity_assess.py",
+      "source_bytes": 8301,
+      "source_sha256": "8ebafce9dd136ce0a0179ab04292836d8c0d685fe9b31f9b455e45665e4b6865"
+    },
+    "supervisor-final-state.json": {
+      "lossless_gzip": false,
+      "source": "/tmp/engine-capacity-native65-upper-state.json",
+      "source_bytes": 2915,
+      "source_sha256": "802f82e1d863980ace3d21d968c8adc892526e2c7334ee1a327cfa5a17d60a00"
+    },
+    "supervisor-source.py": {
+      "lossless_gzip": false,
+      "source": "/Users/alfongj/Code/engine-core/docs/baselines/capacity-2026-09-26/supervisor-v4/runner.py",
+      "source_bytes": 17758,
+      "source_sha256": "0f2d64f85a240d932ba1f558a2c105445a76370d04287967dea877e55eebb040"
+    }
+  }
+}

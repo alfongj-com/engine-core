@@ -1,0 +1,16 @@
+{
+  "aof_commands_parsed": 221558,
+  "aof_sha256": {
+    "appendonly.aof.1.incr.aof": "6e75a278b3eb0f3b139d5153f01b8e4f3a581445de9fa38426a1932caea63cda"
+  },
+  "captured_aof_marker_checkpoint": 13435,
+  "interpretation": "Persisted SQLite is ahead of the final captured Redis marker. This is consistent with a SIGKILL between durable journal commit and its Redis mirror, without proving instruction-level timing.",
+  "journal_checkpoint": 13436,
+  "journal_halt_category": "redis_checkpoint_mismatch",
+  "manifest_sha256": "ca465c5845ad4d4c0a2b4cda8853efeb9423cb4242a4eaaa5ecbaa00a4e75492",
+  "marker_set_commands": 13436,
+  "same_schema_deployment_epoch": true,
+  "schema": "captured-redis-marker-comparison-v1",
+  "source_scope": "Sequential read-only parsing of persisted AOF commands after owned Redis stopped; no Redis process, checkpoint change, reattach or replay.",
+  "sql_ahead_by": 1
+}

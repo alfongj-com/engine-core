@@ -1,6 +1,8 @@
 # Single-signer capacity campaign: chain matrix
 
-**Status:** native Nitro development node prepared; capacity results are separate. **Reviewed:** 2026-09-26.
+**Status:** local individual/shared capacity and fault tests executed; results are
+recorded in the [campaign evidence](../baselines/capacity-2026-09-26/README.md).
+**Reviewed:** 2026-09-27. Full rollup stacks remain unqualified.
 **Question:** what rate can one signer sustain on each tested chain, through
 faults, and what happens when those individually qualified rates share Engine?
 
@@ -18,10 +20,11 @@ Use the same Engine process, independent chain IDs, Redis namespace and recovery
 journal for the eventual simultaneous-chain test. Separate processes/journals
 would hide contention in the shared durable writer.
 
-## What is available now
+## Initial setup inventory
 
-Observed host: macOS ARM64, 10 logical CPUs, 16 GiB RAM; root reports about 25 GiB
-free disk before installation. Existing executables and the subsequently prepared
+Observed host: macOS ARM64, 10 logical CPUs, 16 GiB RAM; about 25 GiB
+free disk before installation. Disk figures in this setup inventory are historical;
+each later run records its own resource preflight. Existing executables and the subsequently prepared
 Nitro node are:
 
 | Component | Available path/version | Scope |
@@ -92,7 +95,10 @@ gas. [Flag definitions](https://github.com/ethereum-optimism/op-geth/blob/v1.101
 
 The official Lima 2.2.0 Darwin ARM64 archive was checksum-verified and extracted
 under `/tmp/engine-capacity-tools/`. Its named `engine-nitro` VZ guest has **4
-vCPUs, 4 GiB RAM, 12 GiB disk and no host-directory mounts**. Docker was installed
+vCPUs, 4 GiB RAM, initially 12 GiB disk and no host-directory mounts**. The guest
+disk was later expanded to 24 GiB during the independently verified
+[disk-full recovery](../baselines/capacity-2026-09-26/nitro-disk-incident-recovery/README.md).
+Docker was installed
 inside that guest. No host administrator password, Rosetta or OS-security change
 was needed. After installation, the host had about **15 GiB free** and the guest
 3.2 GiB free; this is insufficient headroom to casually add a full second stack.
@@ -205,9 +211,10 @@ roles for batcher-only and sequencer-only fault injection; test that topology
 before the measured run. Its current Nitro image `v3.11.3-beb2108` has both
 Linux AMD64 and ARM64 manifests in the [publisher's registry](https://hub.docker.com/v2/repositories/offchainlabs/nitro-node/tags/v3.11.3-beb2108).
 This verifies the Nitro image, **not every auxiliary image or complete ARM64
-stack startup**. A simple [nitro-devnode](https://github.com/OffchainLabs/nitro-devnode)
-is smaller but resets chain state on restart; it cannot substitute for this
-recovery/parent-settlement test.
+stack startup**. A smaller [nitro-devnode](https://github.com/OffchainLabs/nitro-devnode)
+does not supply parent-chain settlement. Preserve and verify its actual container
+and database when testing recovery; do not assume that every restart resets the
+chain or that recreating a disposable container preserves it.
 
 **Fallback:** use Linux CI for a one-stack smoke test, then a dedicated Linux
 host for isolated native capacity. Public-repository Ubuntu runners currently

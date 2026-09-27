@@ -1,0 +1,285 @@
+--- a/scripts/capacity_campaign.py
++++ b/scripts/capacity_campaign.py
+@@ -15,6 +15,7 @@
+ import argparse
+ import base64
+ from collections import Counter, OrderedDict
++from contextlib import closing, contextmanager
+ import concurrent.futures
+ from dataclasses import dataclass
+ from datetime import datetime, timezone
+@@ -59,6 +60,27 @@
+     "evm025": {"family": "evm", "chain_id": 31339, "block_seconds": 0.25},
+     "solana": {"family": "solana", "chain_id": "solana:local"},
+ }
++
++
++
++@contextmanager
++def journal_reader(path):
++    """Logical SQL read-only access to an existing, potentially live WAL ledger.
++
++    A read/write SQLite handle permits WAL/SHM bookkeeping when the last writer
++    removed the sidecars. It never creates the database. query_only prohibits
++    application writes; full sync also covers a last-reader checkpoint on close.
++    This is not a physically read-only forensic handle. Never use immutable=1
++    for a live ledger: doing so can hide committed WAL rows.
++    """
++    db = sqlite3.connect(Path(path).absolute().as_uri() + "?mode=rw", uri=True, timeout=2)
++    try:
++        db.execute("PRAGMA query_only=ON")
++        db.execute("PRAGMA synchronous=FULL")
++        db.execute("PRAGMA fullfsync=ON")
++        yield db
++    finally:
++        db.close()
+ 
+ 
+ def percentile(values, fraction):
+@@ -438,7 +460,7 @@
+ 
+     def poll(self):
+         observed = time.monotonic()
+-        with sqlite3.connect(f"file:{self.path}?mode=ro", uri=True, timeout=2) as db:
++        with journal_reader(self.path) as db:
+             db.execute("BEGIN")
+             for table, target in (("admissions", self.admitted), ("attempts", self.attempted), ("terminal_evidence", self.terminal)):
+                 column = "rowid" if table == "admissions" else "sequence"
+@@ -837,8 +859,8 @@
+                 def budget(*_):
+                     if time.monotonic() > deadline:
+                         raise TimeoutError("Custody backup deadline exceeded")
+-                with sqlite3.connect(f"file:{self.journal}?mode=ro", uri=True, timeout=2) as source:
+-                    with sqlite3.connect(backup) as target:
++                with journal_reader(self.journal) as source:
++                    with closing(sqlite3.connect(backup)) as target, target:
+                         source.backup(target, pages=128, progress=budget, sleep=.01)
+                         target.set_progress_handler(lambda: int(time.monotonic() > deadline), 10000)
+                         counts = {key: target.execute(query).fetchone()[0] for key, query in {
+@@ -1155,7 +1177,7 @@
+ 
+     def verify_nonterminal(self, ids):
+         """Provisional execution may never cross the durable terminal boundary."""
+-        with sqlite3.connect(f"file:{self.journal}?mode=ro", uri=True, timeout=2) as db:
++        with journal_reader(self.journal) as db:
+             db.execute("BEGIN")
+             for offset in range(0, len(ids), 500):
+                 batch = ids[offset:offset + 500]
+@@ -1169,7 +1191,7 @@
+ 
+     def durable_states(self, ids):
+         states = {}
+-        with sqlite3.connect(f"file:{self.journal}?mode=ro", uri=True, timeout=2) as db:
++        with journal_reader(self.journal) as db:
+             db.execute("BEGIN")
+             for offset in range(0, len(ids), 500):
+                 batch = ids[offset:offset + 500]
+@@ -1179,7 +1201,7 @@
+         return states
+ 
+     def chain_finality_inventory(self, chain):
+-        with sqlite3.connect(f"file:{self.journal}?mode=ro", uri=True, timeout=2) as db:
++        with journal_reader(self.journal) as db:
+             db.execute("BEGIN")
+             chain_id = self.profiles[chain]["chain_id"]
+             checkpoint = db.execute("SELECT evidence FROM chain_checkpoints WHERE chain_id=?", (chain_id,)).fetchone()
+@@ -1191,7 +1213,7 @@
+     def block_attempts(self, chain, block):
+         hashes = set(block["transactions"])
+         found = {}
+-        with sqlite3.connect(f"file:{self.journal}?mode=ro", uri=True, timeout=2) as db:
++        with journal_reader(self.journal) as db:
+             for txid, replay, encoded in db.execute("SELECT id,replay_key,payload FROM attempts"):
+                 attempt = json.loads(encoded)
+                 identity = attempt.get("transactionHash")
+@@ -1212,7 +1234,7 @@
+         paused = False
+         # Do not evade tip-pinning by injecting only before the first terminal.
+         def prior_terminal_count():
+-            with sqlite3.connect(f"file:{self.journal}?mode=ro", uri=True, timeout=2) as db:
++            with journal_reader(self.journal) as db:
+                 return sum(self.id_chain.get(txid) == chain for txid, in db.execute("SELECT id FROM admissions WHERE state='terminal'"))
+         wait_until(lambda: prior_terminal_count() >= self.args.reorg_min_transactions, max(60, self.args.seconds), cancelled=self.lifecycle_stopped)
+         prior_count = prior_terminal_count()
+@@ -1335,7 +1357,7 @@
+ 
+     def recovery_inventory_snapshot(self):
+         """Hash full immutable columns; never export stored payload credentials."""
+-        with sqlite3.connect(f"file:{self.journal}?mode=ro", uri=True, timeout=2) as db:
++        with journal_reader(self.journal) as db:
+             db.execute("BEGIN")
+             fields = ("deployment", "epoch", "namespace", "checkpoint", "halted")
+             control = dict(zip(fields, db.execute("SELECT deployment,epoch,namespace,checkpoint,halted FROM control").fetchone()))
+@@ -1636,7 +1658,7 @@
+         """Read durable flags, never infer them from a failed HTTP/process call."""
+         if not self.journal.is_file():
+             return False
+-        with sqlite3.connect(f"file:{self.journal}?mode=ro", uri=True, timeout=2) as db:
++        with journal_reader(self.journal) as db:
+             db.execute("BEGIN")
+             control = db.execute("SELECT halted,reason FROM control WHERE singleton=1").fetchone()
+             if control is None or control[0] not in (0, 1):
+@@ -1683,7 +1705,7 @@
+ 
+     def read_journal(self):
+         observations = {}
+-        with sqlite3.connect(f"file:{self.journal}?mode=ro", uri=True, timeout=2) as db:
++        with journal_reader(self.journal) as db:
+             db.execute("BEGIN")
+             control = db.execute("SELECT halted,reason FROM control").fetchone()
+             self.report["journal_halted"] = bool(control[0])
+--- /dev/null
++++ b/scripts/capacity_journal_reader_test.py
+@@ -0,0 +1,152 @@
++"""Actual SQLite WAL lifecycle regressions; no nodes or incident files."""
++from collections import Counter
++import json
++import hashlib
++from pathlib import Path
++import shutil
++import sqlite3
++import tempfile
++import threading
++import time
++from types import SimpleNamespace
++import unittest
++from unittest import mock
++
++import capacity_campaign as campaign
++
++
++class JournalReaderTests(unittest.TestCase):
++    def setUp(self):
++        self.tmp = tempfile.TemporaryDirectory(prefix='engine-journal-reader-test-')
++        self.addCleanup(self.tmp.cleanup)
++        self.root = Path(self.tmp.name)
++        self.path = self.root / 'live.sqlite'
++        self.writer = sqlite3.connect(self.path)
++        self.addCleanup(self.writer.close)
++        self.writer.execute('PRAGMA journal_mode=WAL')
++        self.writer.execute('PRAGMA wal_autocheckpoint=0')
++        self.writer.executescript('''
++            CREATE TABLE control(singleton INTEGER PRIMARY KEY, halted INTEGER, reason TEXT);
++            INSERT INTO control VALUES(1,1,'Redis checkpoint mirror failed');
++            CREATE TABLE chain_halts(chain_id TEXT PRIMARY KEY, reason TEXT);
++            CREATE TABLE admissions(id TEXT PRIMARY KEY,kind TEXT,state TEXT,replay_key TEXT);
++            CREATE TABLE attempts(sequence INTEGER PRIMARY KEY,id TEXT,replay_key TEXT,payload TEXT);
++            CREATE TABLE terminal_evidence(sequence INTEGER PRIMARY KEY,id TEXT,evidence TEXT);
++            INSERT INTO admissions VALUES('intent-1','eoa','admitted','evm:1:fixture:0');
++            INSERT INTO attempts VALUES(1,'intent-1','evm:1:fixture:0','{}');
++        ''')
++        self.writer.commit()
++
++    def checkpointed_without_sidecars(self):
++        # A consistent synthetic fixture: truncate only after all committed frames
++        # are checkpointed, then copy the database to a fresh path, not a hot copy.
++        self.assertEqual(self.writer.execute('PRAGMA wal_checkpoint(TRUNCATE)').fetchone(), (0, 0, 0))
++        dst = self.root / 'closed.sqlite'
++        shutil.copyfile(self.path, dst)
++        self.assertEqual(dst.read_bytes()[18:20], b'\x02\x02')
++        self.assertFalse(Path(str(dst) + '-wal').exists())
++        self.assertFalse(Path(str(dst) + '-shm').exists())
++        return dst
++
++    def test_closed_checkpointed_wal_without_sidecars_is_readable(self):
++        p = self.checkpointed_without_sidecars()
++        with campaign.journal_reader(p) as db:
++            self.assertEqual(db.execute('PRAGMA integrity_check').fetchone(), ('ok',))
++            self.assertEqual(db.execute('SELECT id FROM admissions').fetchall(), [('intent-1',)])
++            self.assertEqual(db.execute('PRAGMA query_only').fetchone(), (1,))
++            self.assertEqual(db.execute('PRAGMA synchronous').fetchone(), (2,))
++            self.assertEqual(db.execute('PRAGMA fullfsync').fetchone(), (1,))
++
++    def test_absent_database_is_not_created(self):
++        p = self.root / 'missing.sqlite'
++        with self.assertRaises(sqlite3.OperationalError):
++            with campaign.journal_reader(p):
++                self.fail('missing ledger yielded a connection')
++        self.assertFalse(p.exists())
++
++    def test_sql_mutations_fail_and_rows_remain(self):
++        with campaign.journal_reader(self.path) as db:
++            for sql in ("DELETE FROM admissions", "INSERT INTO admissions VALUES('bad','eoa','admitted',NULL)",
++                        'CREATE TABLE bad(value TEXT)'):
++                with self.subTest(sql=sql), self.assertRaises(sqlite3.OperationalError):
++                    db.execute(sql)
++        self.assertEqual(self.writer.execute('SELECT id FROM admissions').fetchall(), [('intent-1',)])
++
++    def test_live_committed_wal_visible_uncommitted_and_rollback_hidden(self):
++        self.writer.execute('PRAGMA wal_checkpoint(TRUNCATE)')
++        self.writer.execute("INSERT INTO admissions VALUES('committed','eoa','admitted',NULL)")
++        self.writer.commit()
++        self.assertGreater(Path(str(self.path) + '-wal').stat().st_size, 0)
++        self.writer.execute("INSERT INTO admissions VALUES('uncommitted','eoa','admitted',NULL)")
++        with campaign.journal_reader(self.path) as db:
++            self.assertEqual(db.execute('SELECT id FROM admissions ORDER BY id').fetchall(), [('committed',), ('intent-1',)])
++        self.writer.rollback()
++        with campaign.journal_reader(self.path) as db:
++            self.assertEqual(db.execute('SELECT id FROM admissions ORDER BY id').fetchall(), [('committed',), ('intent-1',)])
++
++    def test_connection_closes_on_normal_and_exception_paths(self):
++        for exceptional in (False, True):
++            handle = None
++            try:
++                with campaign.journal_reader(self.path) as handle:
++                    if exceptional:
++                        raise RuntimeError('fixture')
++            except RuntimeError:
++                pass
++            with self.assertRaises(sqlite3.ProgrammingError):
++                handle.execute('SELECT 1')
++
++    def test_reader_transaction_is_one_snapshot_then_next_reader_sees_commit(self):
++        with campaign.journal_reader(self.path) as db:
++            db.execute('BEGIN')
++            self.assertEqual(db.execute('SELECT COUNT(*) FROM admissions').fetchone(), (1,))
++            self.writer.execute("INSERT INTO admissions VALUES('next','eoa','admitted',NULL)")
++            self.writer.commit()
++            self.assertEqual(db.execute('SELECT COUNT(*) FROM admissions').fetchone(), (1,))
++        with campaign.journal_reader(self.path) as db:
++            self.assertEqual(db.execute('SELECT COUNT(*) FROM admissions').fetchone(), (2,))
++
++    def test_actual_observer_and_fence_can_read_closed_ledger(self):
++        p = self.checkpointed_without_sidecars()
++        observer = campaign.JournalObserver(p, {'intent-1': 'evm'}, time.monotonic(), {})
++        self.assertEqual(observer.poll(), {'evm': {'admitted': 1, 'attempted': 1, 'terminal': 0}})
++        c = campaign.Campaign.__new__(campaign.Campaign)
++        c.journal, c.report = p, {}
++        self.assertTrue(c.capture_durable_fences())
++        self.assertTrue(c.report['journal_halted'])
++        self.assertEqual(c.report['journal_halt_category'], 'redis_checkpoint_mirror_failed')
++
++    def test_actual_custody_backup_of_closed_ledger_keeps_original_verdict(self):
++        c = campaign.Campaign.__new__(campaign.Campaign)
++        c.journal, c.logs = self.checkpointed_without_sidecars(), self.root
++        c.report = {'outcome': 'fail_closed_recovery_required', 'oracle': {'safety_pass': None}}
++        c.children, c.profiles, c.proxies = {}, {}, {}
++        c.errors, c.statuses = [], {'intent-1': 202}
++        c.responses = {'evm': Counter({202: 1})}
++        c.projection_namespace, c.redis_port = 'fixture', 1
++        c.preserve_owned_anvil_history = mock.Mock()
++        real_connect = sqlite3.connect
++        backup_handles = []
++        def connect(*args, **kwargs):
++            handle = real_connect(*args, **kwargs)
++            if args[0] == self.root / 'interrupted-custody.sqlite':
++                backup_handles.append(handle)
++            return handle
++        with mock.patch.object(campaign, 'redis_command', return_value=0), mock.patch.object(campaign.sqlite3, 'connect', side_effect=connect):
++            c.capture_interrupted_custody()
++        evidence = c.report['custody']['journal']
++        self.assertTrue(evidence['available'], evidence)
++        self.assertEqual(len(backup_handles), 1)
++        with self.assertRaises(sqlite3.ProgrammingError):
++            backup_handles[0].execute('SELECT 1')
++        self.assertEqual(evidence['sha256'], hashlib.sha256(Path(evidence['backup']).read_bytes()).hexdigest())
++        self.assertEqual((evidence['admitted'], evidence['attempted_ids'], evidence['nonterminal']), (1, 1, 1))
++        self.assertEqual(c.report['outcome'], 'fail_closed_recovery_required')
++        self.assertIsNone(c.report['oracle']['safety_pass'])
++        self.assertTrue(c.report['operator_review_required'])
++        with campaign.journal_reader(Path(evidence['backup'])) as backup:
++            self.assertEqual(backup.execute('SELECT reason FROM control').fetchone(), ('Redis checkpoint mirror failed',))
++
++
++if __name__ == '__main__':
++    unittest.main()

@@ -1,0 +1,77 @@
+{
+  "accepted_custody": "pass",
+  "allowed_resource_checks": 10,
+  "capacity_note": "Settlement verdict only. Preserve original missing offers and apply unchanged strict rate/stability criteria separately; raw candidate is not maximum qualification.",
+  "drain": {
+    "client_pending": 0,
+    "http_inflight": 0,
+    "journal_unresolved": 0,
+    "node_pending": 0,
+    "redis_active": 0,
+    "redis_borrowed": 0,
+    "redis_delayed": 0,
+    "redis_pending": 0,
+    "redis_submitted": 0
+  },
+  "engine_error_count": 0,
+  "engine_log_levels": {},
+  "engine_log_messages": {},
+  "engine_log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "engine_unknown_categories": [],
+  "exact_settled_admitted_ids": 21600,
+  "harness_errors": [],
+  "healthy_provider_probes": 78,
+  "limitations": [
+    "Normal report retains aggregate original HTTP statuses rather than individual response records; exact admitted ID set and full missing-offer complement were checked against original expected namespace.",
+    "Previous interrupted EVM55 fixture1980unknown outcomes remain unresolved and separate."
+  ],
+  "missing_offers": 0,
+  "observations_sha256": "a9d7f7c5339f26587a972299236e80b9b9745e3d79c55ee4311918bfcbe38aac",
+  "observed_lease_loss_or_reap_messages": 0,
+  "original_offered_ids": 21600,
+  "original_offered_liveness": true,
+  "owned_children_checked": [
+    {
+      "alive": false,
+      "name": "redis",
+      "pid": 61148
+    },
+    {
+      "alive": false,
+      "name": "solana",
+      "pid": 61153
+    },
+    {
+      "alive": false,
+      "name": "engine",
+      "pid": 61167
+    }
+  ],
+  "per_chain": {
+    "solana": {
+      "audited_admitted_ids": 21600,
+      "balances": {
+        "payer_spent": 129600000,
+        "receipt_fees": 108000000,
+        "recipient_delta": 21600000
+      },
+      "client": {
+        "dispatched": 21600
+      },
+      "extra_same_wire_forwards": 0,
+      "method_errors": {},
+      "nonce_range": null,
+      "original_http": {
+        "202": 21600
+      },
+      "original_offered": 21600,
+      "rpc_audit_sha256": "581c5574bb42953cd2e5be0297065195b75176c33999b87b7ea5ff4234a5b092"
+    }
+  },
+  "queue_lease_seconds": "600",
+  "report": "capacity-final-bracket-lease600-solana60-7790eecfb337.json",
+  "report_sha256": "c192d7e2f0ae2d3c31bde7a0acd0ef9470ade090b058d184342519d99943c1c4",
+  "reviewed_at_utc": "2026-09-27T06:11:26.470030+00:00",
+  "schema": "independent-final-bracket-review-v1",
+  "scope": "Offline captured per-ID observations and private journal. Saved EVM envelope/Solana intent bytes checked; no fresh RPC or lifecycle action. Original provider proof sweep not repeated."
+}
