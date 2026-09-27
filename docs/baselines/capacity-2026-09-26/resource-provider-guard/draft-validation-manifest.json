@@ -1,0 +1,10 @@
+{
+  "status": "outside-repo integration patch; main untouched; only new supervisor-v4 archive authored",
+  "repository_tests": 86,
+  "prior_runner_tests": 11,
+  "passed": 97,
+  "patch_sha256": "8bbe9a8d47b41c990528af16d31ccfc9e65f79a9d1e6428b6d2c20382fc1e4cf",
+  "base_campaign_sha256": "cb7c57eb5cf2826ecdd9d8a3e08d3b27b8c472427decbcda404e5fc5619d8491",
+  "archived_runner_sha256": "0f2d64f85a240d932ba1f558a2c105445a76370d04287967dea877e55eebb040",
+  "validation_log_sha256": "3d66f2fbefda418d656248b898041056c4fa5f18e0a27b6256a22a85e65d1e78"
+}

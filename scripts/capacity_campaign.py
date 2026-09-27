@@ -42,7 +42,9 @@ import uuid
 
 from local_eoa_recovery import FROM, TO, ROOT, stop
 from local_solana_recovery import port
-from capacity_faults import KeepAliveHttp
+from capacity_faults import KeepAliveHttp, FaultError
+from capacity_resource_guard import (Budget, ResourcePolicy, GuardMonitor, ProviderAvailability,
+                                     resource_probe, provider_probe, GIB, MIB)
 
 # Separate from the RPC proxy client so transport pressure is attributable.
 LOCAL_HTTP = KeepAliveHttp()
@@ -91,9 +93,11 @@ def transport_error_details(error):
             "errno": getattr(cause, "errno", None)}
 
 
-def wait_until(check, seconds=60):
+def wait_until(check, seconds=60, cancelled=lambda: False):
     deadline = time.monotonic() + seconds
     while time.monotonic() < deadline:
+        if cancelled():
+            raise RuntimeError("Campaign lifecycle stopped")
         try:
             if check():
                 return
@@ -165,6 +169,8 @@ def campaign_outcome(oracle, report, execution_error=False):
         return "recovered_with_quarantine"
     if report.get("chaos_qualification", {}).get("qualified") is False and oracle.get("safety_pass"):
         return "unqualified_fault_scenario"
+    if report.get("infrastructure_stop"):
+        return "infrastructure_stop"
     if execution_error:
         return "error"
     return oracle.get("outcome", report.get("outcome", "error"))
@@ -534,6 +540,14 @@ class Campaign:
         self.stop_sampler = threading.Event()
         self.abort = threading.Event()
         self.recovery_required = False
+        self.infrastructure_stop = None
+        self.stop_guards = threading.Event()
+        self.lifecycle_stop = threading.Event()
+        self.chaos_thread = None
+        self.guard_threads = []
+        self.resource_monitor = None
+        self.provider_fences = {name: ProviderAvailability() for name in profiles}
+        self.provider_observations = []
         self.sample_lock = threading.Lock()
         self.included_signatures = set()
         self.finalized_signatures = set()
@@ -554,8 +568,8 @@ class Campaign:
             "engine_binary_sha256": hashlib.file_digest(args.engine_bin.open("rb"), "sha256").hexdigest() if hasattr(hashlib, "file_digest") else hashlib.sha256(args.engine_bin.read_bytes()).hexdigest(),
             "source_commit": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(),
             "source_status_porcelain": subprocess.check_output(["git", "status", "--porcelain"], cwd=ROOT, text=True).splitlines(),
-            "harness_sha256": {name: hashlib.sha256((Path(__file__) if name == "capacity_campaign.py" else ROOT / "scripts" / name).read_bytes()).hexdigest()
-                               for name in ("capacity_campaign.py", "capacity_faults.py")},
+            "harness_sha256": {name: hashlib.sha256(Path(__file__).with_name(name).read_bytes()).hexdigest()
+                               for name in ("capacity_campaign.py", "capacity_faults.py", "capacity_resource_guard.py")},
             "resources_scope": "Owned Engine/Redis/local nodes plus combined campaign+RPC proxy process; external node/VM CPU and memory require separate observation. ps CPU is its reported lifetime average.",
             "latency_note": "HTTP service/deadline latency is measured directly; HTTP-start lateness is measured immediately before the request call (not first socket byte), excluding retries. Scheduler tolerance is not an OS real-time guarantee. Durable attempt/terminal timestamps are observer upper bounds, sampled independently.",
         }
@@ -566,7 +580,20 @@ class Campaign:
                                 "load_elapsed_seconds": None if self.phase == "setup" else round(time.monotonic() - self.started, 6),
                                 "phase": self.phase, "event": event_name, **fields})
 
+    def lifecycle_stopped(self):
+        return bool(getattr(self, "infrastructure_stop", None) or
+                    (getattr(self, "lifecycle_stop", None) and self.lifecycle_stop.is_set()))
+
+    def require_lifecycle(self):
+        if self.lifecycle_stopped():
+            raise RuntimeError("Campaign lifecycle stopped")
+
+    def guarded_rpc(self, node, method, params):
+        self.require_lifecycle()
+        return node.call(method, params)
+
     def spawn(self, name, command, env=None, cwd=None):
+        self.require_lifecycle()
         path = self.logs / f"{name}-{len(self.streams)}.log"
         stream = path.open("x")
         os.chmod(path, 0o600)
@@ -577,6 +604,7 @@ class Campaign:
         return child
 
     def engine_command(self, flag, required=True):
+        self.require_lifecycle()
         result = subprocess.run([str(self.args.engine_bin), flag], cwd=ROOT / "server", env=self.env,
                                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=60)
         path = self.logs / (flag.lstrip("-") + f"-{len(self.events)}.log")
@@ -587,18 +615,200 @@ class Campaign:
         return result.returncode == 0
 
     def start_engine(self):
+        self.require_lifecycle()
         self.spawn("engine", [self.args.engine_bin], self.env, ROOT / "server")
-        wait_until(lambda: request(self.base + "/health")[0] == 200, 60)
+        wait_until(lambda: request(self.base + "/health")[0] == 200, 60, cancelled=self.lifecycle_stopped)
 
     def start_redis(self):
+        self.require_lifecycle()
         directory = self.logs / "redis"
         directory.mkdir(mode=0o700, exist_ok=True)
         self.spawn("redis", [self.args.redis_bin, "--bind", "127.0.0.1", "--port", self.redis_port,
                               "--dir", directory, "--save", "", "--appendonly", "yes", "--appendfsync", self.args.redis_fsync])
-        wait_until(lambda: redis_command(self.redis_port, "PING") == "PONG")
+        wait_until(lambda: redis_command(self.redis_port, "PING") == "PONG", cancelled=self.lifecycle_stopped)
+
+    def stop_for_infrastructure(self, detail):
+        """Only latch state here; lifecycle work stays on the owner thread."""
+        with self.lock:
+            if self.infrastructure_stop is not None:
+                return
+            self.infrastructure_stop = dict(detail)
+            self.report["infrastructure_stop"] = {**detail,
+                "load_seconds": None if self.phase == "setup" else time.monotonic() - self.started,
+                "campaign_elapsed_seconds": time.monotonic() - self.created}
+            self.report["operator_review_required"] = True
+            self.report["all_chain_capacity_candidate"] = False
+            self.abort.set()
+            self.stop_guards.set()
+            if getattr(self, "lifecycle_stop", None): self.lifecycle_stop.set()
+        self.event("infrastructure_stop", **detail)
+
+    def resource_preflight(self):
+        horizon = self.args.seconds + self.args.drain_seconds + 720
+        fixed_setup = 2 * GIB if any(p["family"] == "solana" for p in self.profiles.values()) else GIB // 4
+        budgets = {"host_bytes": Budget(8 * GIB, self.args.host_growth_mib_second * MIB, .02, fixed_setup)}
+        if self.args.native_resource_vm:
+            budgets.update({"guest_bytes": Budget(4 * GIB, self.args.guest_growth_mib_second * MIB),
+                            "guest_inodes": Budget(100000, self.args.guest_growth_inodes_second, .05)})
+        policy = ResourcePolicy(budgets, horizon, interval_seconds=60, setup_phase=True)
+        self.resource_monitor = GuardMonitor(policy,
+            lambda: resource_probe(self.args.resource_host_path, self.args.native_resource_vm,
+                expected_host_paths=(self.logs, self.args.resource_vm_directory) if self.args.native_resource_vm else (self.logs,)),
+            self.logs / "resource-guard.jsonl", self.stop_for_infrastructure)
+        self.report["resource_guard"] = {"evidence": str(self.logs / "resource-guard.jsonl"),
+            "horizon_seconds": horizon, "interval_seconds": 60,
+            "growth_budget_scope": "Explicit provisional shared-job growth ceilings; not a retention guarantee"}
+        if not self.resource_monitor.preflight()["allowed"]:
+            raise RuntimeError("Capacity resource preflight rejected; no services started")
+        self.resource_monitor.start()
+
+    def provider_guard_tick(self, chain, now=None):
+        profile = self.profiles[chain]
+        began = time.monotonic()
+        try:
+            success, category = provider_probe(self.nodes[chain].url, profile["family"], profile.get("chain_id"))
+        except Exception as error:
+            success, category = False, type(error).__name__
+        stamp = time.monotonic() if now is None else now
+        detail = self.provider_fences[chain].observe(stamp, success, category)
+        with self.lock:
+            self.provider_observations.append({"chain": chain, "load_seconds": stamp - self.started,
+                "ok": success, "category": category, "duration_ms": (time.monotonic() - began) * 1000})
+        if detail:
+            self.stop_for_infrastructure({**detail, "chain": chain})
+        return success
+
+    def start_provider_guards(self):
+        def monitor(chain):
+            deadline = time.monotonic() + 5
+            while not self.stop_guards.wait(max(0, deadline - time.monotonic())):
+                self.provider_guard_tick(chain)
+                deadline += 5
+                if deadline <= time.monotonic():
+                    deadline = time.monotonic() + 5
+        for chain in self.profiles:
+            thread = threading.Thread(target=monitor, args=(chain,), name="provider-guard-" + chain, daemon=True)
+            self.guard_threads.append(thread)
+            thread.start()
+
+    def join_chaos(self):
+        thread = getattr(self, "chaos_thread", None)
+        if thread:
+            thread.join(timeout=65)
+            if thread.is_alive():
+                self.errors.append({"phase": "cleanup", "error_type": "ChaosThreadDidNotStop"})
+
+    def close_guards(self):
+        self.stop_guards.set()
+        for thread in self.guard_threads:
+            thread.join(timeout=5)
+            if thread.is_alive():
+                self.errors.append({"phase": "cleanup", "error_type": "ProviderGuardDidNotStop"})
+        if self.resource_monitor:
+            try:
+                self.resource_monitor.close()
+            except Exception as error:
+                self.errors.append({"phase": "cleanup", "error_type": "ResourceGuardCleanupFailed",
+                                    "cause_type": type(error).__name__})
+        self.report["provider_guard"] = {"interval_seconds": 5, "failure_count": 3,
+            "minimum_failure_span_seconds": 10, "scope": "Direct read-only reachability/identity, not block or write progress",
+            "observations": self.provider_observations}
+
+    def capture_interrupted_custody(self):
+        self.report["operator_review_required"] = True
+        self.report["all_chain_capacity_candidate"] = False
+        self.report.setdefault("oracle", {"outcome": "incomplete", "safety_pass": None, "liveness_pass": False,
+            "safety_failures": [], "liveness_failures": ["Independent chain reconciliation unavailable after interrupted run"]})
+        try:
+            self._capture_interrupted_custody()
+        except Exception as error:
+            # Preserve the first incident and allow the finally cleanup/report path.
+            self.report.setdefault("custody", {})["capture_error"] = type(error).__name__
+            self.errors.append({"phase": "custody", "error_type": type(error).__name__})
+
+    def _capture_interrupted_custody(self):
+        """Private bounded inventory independent of unavailable chain RPC.
+
+        Historical ledger proofs are not a substitute for a fresh chain oracle.
+        Keep the consistent SQLite copy and original Redis AOF/audit paths; no
+        restarts, reattach, recovery, manual replay, or credential export.
+        """
+        if "custody" in self.report:
+            return
+        custody = {"independent_reconciliation_complete": False,
+                   "log_directory": str(self.logs), "chain_custody": {
+                       name: "caller_owned_external_state_retained" if profile.get("external_url")
+                             else "owned_node_state_not_qualified_for_resume"
+                       for name, profile in self.profiles.items()}}
+        self.report["custody"] = custody
+        self.report["operator_review_required"] = True
+        self.report["all_chain_capacity_candidate"] = False
+        deadline = time.monotonic() + 30
+        if "engine" in self.children:
+            stop(self.children["engine"])
+        try:
+            if not self.journal.is_file():
+                custody["journal"] = {"available": False, "reason": "not_created"}
+            else:
+                backup = self.logs / "interrupted-custody.sqlite"
+                fd = os.open(backup, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+                os.close(fd)
+                def budget(*_):
+                    if time.monotonic() > deadline:
+                        raise TimeoutError("Custody backup deadline exceeded")
+                with sqlite3.connect(f"file:{self.journal}?mode=ro", uri=True, timeout=2) as source:
+                    with sqlite3.connect(backup) as target:
+                        source.backup(target, pages=128, progress=budget, sleep=.01)
+                        target.set_progress_handler(lambda: int(time.monotonic() > deadline), 10000)
+                        counts = {key: target.execute(query).fetchone()[0] for key, query in {
+                            "admitted": "SELECT COUNT(*) FROM admissions",
+                            "terminal": "SELECT COUNT(*) FROM admissions WHERE state='terminal'",
+                            "attempt_rows": "SELECT COUNT(*) FROM attempts",
+                            "attempted_ids": "SELECT COUNT(DISTINCT id) FROM attempts",
+                            "terminal_evidence_rows": "SELECT COUNT(*) FROM terminal_evidence"}.items()}
+                        counts["unsigned"] = counts["admitted"] - counts["attempted_ids"]
+                        counts["nonterminal"] = counts["admitted"] - counts["terminal"]
+                digest = hashlib.sha256()
+                with backup.open("rb") as stream:
+                    for block in iter(lambda: stream.read(1024 * 1024), b""):
+                        budget(); digest.update(block)
+                custody["journal"] = {"available": True, "backup": str(backup), "sha256": digest.hexdigest(), **counts}
+        except (OSError, sqlite3.Error, TimeoutError) as error:
+            custody["journal"] = {"available": False, "reason": type(error).__name__}
+        # Fixed number of aggregate queue queries. No provider calls or per-ID RPC loops.
+        try:
+            # Queue aggregate keys only: six bounded calls, no SCAN/per-ID reads.
+            queue_counts = {}
+            for family in ("eoa_executor", "solana_executor"):
+                for suffix, command in (("pending", "LLEN"), ("active", "HLEN"), ("delayed", "ZCARD")):
+                    if time.monotonic() > deadline:
+                        raise TimeoutError("Custody deadline exceeded")
+                    key = f"twmq:{self.projection_namespace}_{family}:{suffix}"
+                    queue_counts[family + "_" + suffix] = redis_command(self.redis_port, command, key)
+            custody["redis_queue_counters"] = queue_counts
+            custody["redis_count_scope"] = "Queue indexes only; EOA transaction lifecycle retained in original AOF and authoritative journal"
+        except Exception as error:
+            custody["redis_counters_unavailable"] = type(error).__name__
+        custody["http_responses"] = {chain: dict(values) for chain, values in self.responses.items()}
+        custody["non_202_dispatched_ids"] = sum(status != 202 for status in self.statuses.values())
+        custody["transport_unknown_ids"] = sum(status == "transport_error" for status in self.statuses.values())
+        client_evidence = self.logs / "interrupted-client-responses.json"
+        private_json(client_evidence, self.statuses)
+        custody["dispatched_id_response_evidence"] = str(client_evidence)
+        custody["proxy"] = {name: proxy.snapshot() for name, proxy in self.proxies.items()}
+        retained = list((self.logs / "redis" / "appendonlydir").glob("*")) + list(self.logs.glob("*-rpc.jsonl"))
+        custody["retained_files"] = [{"path": str(path.relative_to(self.logs)), "bytes": path.stat().st_size}
+            for path in retained[:100] if path.is_file()]
+        custody["retained_files_listing_truncated"] = len(retained) > 100
+        custody["retention_scope"] = "Existing files retained; journal copied consistently; AOF stops/flushed during ordinary owned Redis cleanup"
+        # Null means unproven, not violated. No synthetic zero drain/accepted effect.
+        self.report.setdefault("oracle", {"outcome": "incomplete", "safety_pass": None, "liveness_pass": False,
+            "safety_failures": [], "liveness_failures": ["Independent chain reconciliation unavailable after interrupted run"]})
+        private_json(self.logs / "interrupted-custody-summary.json", custody)
 
     def setup(self):
         from capacity_faults import RpcFaultProxy, FaultPlan, EVM_COUNTER_CODE, EVM_REVERT_CODE
+        self.resource_preflight()
         self.start_redis()
         # Avoid inheriting arbitrary configured RPC/header/key overrides.
         self.env = {key: value for key, value in os.environ.items()
@@ -719,6 +929,9 @@ class Campaign:
         return solana_fixture(txid, self.payer, self.recipient, kind)
 
     def submit(self, offer, retry=False):
+        if self.infrastructure_stop:
+            self.dropped(offer, "infrastructure_stop")
+            return
         txid = f"{self.namespace}-{offer.chain}-{offer.index}"
         payload, _ = self.fixture(offer.chain, offer.index)
         path = "/v1/write/transaction" if self.profiles[offer.chain]["family"] == "evm" else "/v1/solana/transaction"
@@ -880,15 +1093,15 @@ class Campaign:
         def prior_terminal_count():
             with sqlite3.connect(f"file:{self.journal}?mode=ro", uri=True, timeout=2) as db:
                 return sum(self.id_chain.get(txid) == chain for txid, in db.execute("SELECT id FROM admissions WHERE state='terminal'"))
-        wait_until(lambda: prior_terminal_count() >= self.args.reorg_min_transactions, max(60, self.args.seconds))
+        wait_until(lambda: prior_terminal_count() >= self.args.reorg_min_transactions, max(60, self.args.seconds), cancelled=self.lifecycle_stopped)
         prior_count = prior_terminal_count()
         try:
-            node.call("evm_setIntervalMining", [0])
-            node.call("evm_setAutomine", [False])
+            self.guarded_rpc(node, "evm_setIntervalMining", [0])
+            self.guarded_rpc(node, "evm_setAutomine", [False])
             paused = True
             pending = lambda: int(node.call("eth_getTransactionCount", [FROM, "pending"]), 16) - int(node.call("eth_getTransactionCount", [FROM, "latest"]), 16)
-            wait_until(lambda: pending() >= self.args.reorg_min_transactions, 60)
-            node.call("evm_mine", [])
+            wait_until(lambda: pending() >= self.args.reorg_min_transactions, 60, cancelled=self.lifecycle_stopped)
+            self.guarded_rpc(node, "evm_mine", [])
             anchor_block = node.call("eth_getBlockByNumber", ["latest", False])
             anchor_number = int(anchor_block["number"], 16)
             anchors = self.block_attempts(chain, anchor_block)
@@ -897,16 +1110,16 @@ class Campaign:
             # Parent is one block short of granting the anchor depth eligibility.
             # These manually advanced heights are fault setup, not capacity data.
             for _ in range(depth - 1):
-                node.call("evm_mine", [])
+                self.guarded_rpc(node, "evm_mine", [])
             parent = node.call("eth_getBlockByNumber", ["latest", False])
             parent_number = int(parent["number"], 16)
             if parent_number != anchor_number + depth - 1:
                 raise RuntimeError("Reorg parent depth setup is inconsistent")
             self.verify_nonterminal(list(anchors))
-            snapshot = node.call("evm_snapshot", [])
-            wait_until(lambda: pending() >= self.args.reorg_min_transactions, 60)
+            snapshot = self.guarded_rpc(node, "evm_snapshot", [])
+            wait_until(lambda: pending() >= self.args.reorg_min_transactions, 60, cancelled=self.lifecycle_stopped)
             before_receipt_calls = self.proxies[chain].snapshot()["calls"].get("eth_getTransactionReceipt", 0)
-            node.call("evm_mine", [])
+            self.guarded_rpc(node, "evm_mine", [])
             provisional = node.call("eth_getBlockByNumber", ["latest", False])
             if int(provisional["number"], 16) != parent_number + 1:
                 raise RuntimeError("Mining pause failed to bound provisional finality head")
@@ -922,6 +1135,7 @@ class Campaign:
                 if int(node.call("eth_blockNumber", []), 16) != parent_number + 1:
                     raise RuntimeError("Provisional head advanced during finality safety check")
                 self.verify_nonterminal(ids)
+                self.require_lifecycle()
                 time.sleep(.2)
             self.verify_nonterminal(ids)
             # Candidate-nonce filtering can intentionally skip provisional receipt
@@ -942,7 +1156,7 @@ class Campaign:
                 "engine_receipt_calls_during_hold": self.proxies[chain].snapshot()["calls"].get("eth_getTransactionReceipt", 0) - before_receipt_calls,
                 "provisional_hold_seconds": self.args.reorg_hold_seconds,
                 "engine_process_restarted": False, "manual_signed_wire_replay": False}
-            if node.call("evm_revert", [snapshot]) is not True:
+            if self.guarded_rpc(node, "evm_revert", [snapshot]) is not True:
                 raise RuntimeError("Anvil did not restore actual parent snapshot")
             # The fixture deliberately combines a shallow reorg with total pool
             # loss. Capture later accepted transactions too; they can create many
@@ -951,7 +1165,7 @@ class Campaign:
             sends_before = self.proxies[chain].snapshot()["forwarded_sends"]
             pool_before, hashes_before = summarize_pool(node.call("txpool_content", []), FROM,
                 [proof["identity"] for proof in affected.values()])
-            node.call("anvil_dropAllTransactions", [])
+            self.guarded_rpc(node, "anvil_dropAllTransactions", [])
             drop_returned_at = time.monotonic() - self.started
             pool_after, hashes_after = summarize_pool(node.call("txpool_content", []), FROM,
                 [proof["identity"] for proof in affected.values()])
@@ -972,8 +1186,8 @@ class Campaign:
                 if node.call("eth_getTransactionReceipt", [proof["identity"]]) is not None:
                     raise RuntimeError("Orphaned receipt remained canonical after rollback")
             self.verify_nonterminal(ids)
-            node.call("evm_setNextBlockTimestamp", [int(provisional["timestamp"], 16) + 2])
-            node.call("evm_mine", [])
+            self.guarded_rpc(node, "evm_setNextBlockTimestamp", [int(provisional["timestamp"], 16) + 2])
+            self.guarded_rpc(node, "evm_mine", [])
             replacement = node.call("eth_getBlockByNumber", [hex(parent_number + 1), False])
             if replacement["hash"] == provisional["hash"]:
                 raise RuntimeError("Reorg did not produce different canonical branch")
@@ -982,7 +1196,7 @@ class Campaign:
             self.event("reorg_applied", chain=chain, orphaned_intents=len(ids), engine_alive=True)
         finally:
             if paused:
-                node.call("evm_setIntervalMining", [interval])
+                self.guarded_rpc(node, "evm_setIntervalMining", [interval])
                 self.event("interval_mining_restored", chain=chain, seconds=interval)
         # A rollback above the qualified depth boundary should remain live.
         # Preserve any unexpected durable conflict; never call it recovered.
@@ -1022,11 +1236,12 @@ class Campaign:
 
     def recover_redis_projection(self):
         """Explicit offline quarantine recovery; never label unknown IDs done."""
+        self.require_lifecycle()
         self.abort.set()  # Further scheduled offers are counted as aborted, not retried.
         if redis_command(self.redis_port, "FLUSHDB") != "OK":
             raise RuntimeError("Disposable Redis flush failed")
         self.event("owned_redis_flushed")
-        wait_until(lambda: request(self.base + "/health", timeout=3)[0] == 503, 30)
+        wait_until(lambda: request(self.base + "/health", timeout=3)[0] == 503, 30, cancelled=self.lifecycle_stopped)
         chain = self.args.chaos_chain or next(iter(self.profiles))
         payload, _ = self.fixture(chain, 0)
         path = "/v1/write/transaction" if self.profiles[chain]["family"] == "evm" else "/v1/solana/transaction"
@@ -1064,6 +1279,7 @@ class Campaign:
                 candidates = sorted(txid for txid, row in after["admissions"].items()
                                     if row["state"] == state and self.id_chain.get(txid) == name)
                 for txid in evenly_spaced(candidates, self.args.recovery_probe_count):
+                    self.require_lifecycle()
                     index = int(txid.rsplit("-", 1)[1])
                     payload, _ = self.fixture(name, index)
                     path = "/v1/write/transaction" if self.profiles[name]["family"] == "evm" else "/v1/solana/transaction"
@@ -1092,7 +1308,16 @@ class Campaign:
             return
         proxy = self.proxies[self.args.chaos_chain or next(iter(self.profiles))]
         try:
-            proxy.wait_for_accepted(self.args.chaos_after, timeout=self.args.seconds)
+            deadline = time.monotonic() + self.args.seconds
+            while True:
+                self.require_lifecycle()
+                try:
+                    proxy.wait_for_accepted(self.args.chaos_after, timeout=min(.5, max(.001, deadline - time.monotonic())))
+                    break
+                except FaultError:
+                    if time.monotonic() >= deadline:
+                        raise
+            self.require_lifecycle()
             self.event("chaos_trigger", kind=self.args.chaos, accepted=proxy.snapshot()["accepted_unique_wires"])
             if self.args.chaos == "reorg":
                 self.reorg(self.args.chaos_chain or next(iter(self.profiles)))
@@ -1103,30 +1328,39 @@ class Campaign:
                 self.recover_redis_projection()
                 return
             if self.args.chaos == "engine-crash":
+                self.require_lifecycle()
                 stop(self.children["engine"], crash=True)
                 self.event("engine_sigkill")
             else:
+                self.require_lifecycle()
                 stop(self.children["redis"], crash=True)
                 self.event("redis_sigkill")
-                wait_until(lambda: request(self.base + "/health", timeout=3)[0] == 503, 30)
+                wait_until(lambda: request(self.base + "/health", timeout=3)[0] == 503, 30, cancelled=self.lifecycle_stopped)
                 chain = self.args.chaos_chain or next(iter(self.profiles))
                 payload, _ = self.fixture(chain, 0)
                 path = "/v1/write/transaction" if self.profiles[chain]["family"] == "evm" else "/v1/solana/transaction"
+                self.require_lifecycle()
                 status, _ = request(self.base + path, payload, {"x-engine-signing-token": self.token}, timeout=5)
                 if status != 503: raise RuntimeError("Redis loss did not fail closed at mutation boundary")
                 self.event("redis_loss_fail_closed_verified", health_status=503, mutation_status=status)
                 # Ordinary startup/reattach remain fail closed on any journal/CAS gap.
                 stop(self.children["engine"], crash=True)
+                self.require_lifecycle()
                 self.start_redis()
+                self.require_lifecycle()
                 if not self.engine_command("--reattach-recovery", required=False):
                     self.recovery_required = True
                     self.abort.set()
                     self.event("redis_reattach_refused", classification="fail_closed_operator_recovery_required")
                     return
                 self.event("explicit_exact_checkpoint_reattach")
+            self.require_lifecycle()
             self.start_engine()
             self.event("chaos_recovered", kind=self.args.chaos)
         except Exception as error:
+            if self.lifecycle_stopped():
+                self.event("chaos_stopped_at_lifecycle_fence")
+                return
             # A failed restart is not itself proof of a recovery fence. Read
             # the durable state; keep arbitrary startup/RPC failures as errors.
             self.stop_for_durable_fence("chaos_failure")
@@ -1163,7 +1397,7 @@ class Campaign:
         while time.monotonic() < deadline:
             # No retry or long drain can heal a durable journal/chain halt.
             # Stop before another RPC sample; reconciliation still runs below.
-            if self.stop_for_durable_fence("drain"):
+            if self.infrastructure_stop or self.stop_for_durable_fence("drain"):
                 return self.samples[-1] if self.samples else None
             row = self.sample()
             if self.args.chaos == "reorg" and self.report.get("reorg"):
@@ -1186,7 +1420,7 @@ class Campaign:
         return self.sample()
 
     def retry_phase(self):
-        if self.recovery_required or self.finality_halted or self.stop_for_durable_fence("before_retry"):
+        if self.infrastructure_stop or self.recovery_required or self.finality_halted or self.stop_for_durable_fence("before_retry"):
             return
         ids = []
         if self.args.retry_unknown:
@@ -1199,7 +1433,7 @@ class Campaign:
         self.event("same_id_retry_started", count=len(ids), unknown_enabled=self.args.retry_unknown,
                    duplicate_limit=self.args.duplicate_count)
         for txid in ids:
-            if self.recovery_required or self.finality_halted:
+            if self.infrastructure_stop or self.recovery_required or self.finality_halted:
                 break
             chain = self.id_chain[txid]
             index = int(txid.rsplit("-", 1)[1])
@@ -1212,14 +1446,18 @@ class Campaign:
         self.wait_drain()
 
     def load(self):
+        if self.resource_monitor and not self.resource_monitor.begin_load()["allowed"]:
+            return
         self.started = time.monotonic()
         self.phase = "load"
         self.report["offered_started_utc"] = datetime.now(timezone.utc).isoformat()
         self.observer = JournalObserver(self.journal, self.id_chain, self.started, self.times)
         self.sample()
+        self.start_provider_guards()
         sampler = threading.Thread(target=self.sampling, name="campaign-observer", daemon=True)
         sampler.start()
         chaos = threading.Thread(target=self.chaos, name="campaign-chaos", daemon=True)
+        self.chaos_thread = chaos
         chaos.start()
         try:
             open_loop({name: p["rate"] for name, p in self.profiles.items()}, self.args.seconds, self.started,
@@ -1227,7 +1465,8 @@ class Campaign:
             # End sample's timestamp, rather than the request completion time,
             # defines the end of capacity measurement. No late-response catchup.
             self.report["offered_phase_end_seconds"] = time.monotonic() - self.started
-            self.sample()
+            if not self.infrastructure_stop:
+                self.sample()
             self.phase = "client_drain"
             self.pool.close()
             self.event("client_drained", peak_inflight=self.pool.peak)
@@ -1236,13 +1475,13 @@ class Campaign:
                 raise RuntimeError("Chaos worker did not finish within its bounded deadline")
             self.phase = "drain"
             for name, profile in self.profiles.items():
-                if profile.get("drain_hook") and not (self.recovery_required or self.finality_halted):
+                if profile.get("drain_hook") and not (self.infrastructure_stop or self.recovery_required or self.finality_halted):
                     self.spawn("drain-hook-" + name, profile["drain_hook"])
                     self.event("external_drain_hook_started", chain=name)
             for proxy in self.proxies.values(): proxy.release()
-            if not self.recovery_required and not self.projection_recovered and not self.finality_halted:
+            if not self.infrastructure_stop and not self.recovery_required and not self.projection_recovered and not self.finality_halted:
                 self.wait_drain()
-                if not self.recovery_required and not self.finality_halted:
+                if not self.infrastructure_stop and not self.recovery_required and not self.finality_halted:
                     self.retry_phase()
         finally:
             self.stop_sampler.set()
@@ -1454,13 +1693,20 @@ class Campaign:
         # Bounded batches prevent a large hidden future queue during verification.
         with concurrent.futures.ThreadPoolExecutor(max_workers=self.args.reconcile_concurrency) as pool:
             def one(txid):
+                if self.infrastructure_stop:
+                    return
                 chain = self.id_chain.get(txid)
                 if chain is None:
                     return  # Oracle reports unexpected durable intents, including NOOPs.
                 method = self.reconcile_evm if self.profiles[chain]["family"] == "evm" else self.reconcile_solana
                 method(chain, txid, observations[txid])
             for offset in range(0, len(ids), 256):
+                if self.infrastructure_stop:
+                    break
                 list(pool.map(one, ids[offset:offset + 256]))
+        if self.infrastructure_stop:
+            self.capture_interrupted_custody()
+            return
         drain = {"client_pending": self.pool.active, "http_inflight": self.pool.active,
                  "journal_unresolved": sum(row["state"] != "terminal" for row in observations.values()),
                  "node_pending": 0, **self.redis_drain()}
@@ -1546,7 +1792,7 @@ class Campaign:
         self.report["outcome"] = campaign_outcome(oracle, self.report, bool(self.errors or self.pool.failures))
         for chain, value in self.report["per_chain"].items():
             value["late_window"] = qualify_capacity(value["late_window"], oracle, self.report["rpc"][chain],
-                bool(self.errors or self.pool.failures or self.report["journal_halted"] or self.report.get("durable_chain_halts")
+                bool(self.infrastructure_stop or self.report.get("operator_review_required") or self.errors or self.pool.failures or self.report["journal_halted"] or self.report.get("durable_chain_halts")
                      or any(event["event"] == "observer_error" for event in self.events)))
         self.report["all_chain_capacity_candidate"] = all(value["late_window"]["capacity_candidate"] for value in self.report["per_chain"].values())
 
@@ -1554,13 +1800,34 @@ class Campaign:
         try:
             self.setup()
             self.load()
-            self.reconcile()
+            if self.infrastructure_stop:
+                self.capture_interrupted_custody()
+            else:
+                self.reconcile()
         except BaseException as error:
+            self.abort.set()
+            if getattr(self, "lifecycle_stop", None): self.lifecycle_stop.set()
+            # Finish already-dispatched HTTP outcomes before custody freezes them.
+            try:
+                self.pool.close()
+            except Exception as cleanup_error:
+                self.errors.append({"phase": "cleanup", "error_type": "ClientDrainFailed",
+                                    "cause_type": type(cleanup_error).__name__})
+            self.join_chaos()
             self.report.update({"outcome": "error", "error_type": type(error).__name__})
             self.errors.append({"phase": self.phase, "error_type": type(error).__name__})
+            if self.journal.is_file():
+                self.capture_interrupted_custody()
             raise
         finally:
             self.stop_sampler.set()
+            if getattr(self, "lifecycle_stop", None): self.lifecycle_stop.set()
+            self.join_chaos()
+            try:
+                self.close_guards()
+            except Exception as error:
+                self.errors.append({"phase": "cleanup", "error_type": "GuardCleanupFailed",
+                                    "cause_type": type(error).__name__})
             self.pool.close()
             for child in reversed(list(self.children.values())):
                 stop(child)
@@ -1579,6 +1846,10 @@ class Campaign:
             LOCAL_HTTP.close()
             self.report["campaign_http"] = LOCAL_HTTP.snapshot()
             for stream in self.streams: stream.close()
+            if self.infrastructure_stop:
+                self.report["all_chain_capacity_candidate"] = False
+                for value in self.report.get("per_chain", {}).values():
+                    value["late_window"]["capacity_candidate"] = False
             self.report["errors"] = self.errors
             self.report["events"] = self.events
             self.report.setdefault("samples", self.samples)
@@ -1600,6 +1871,15 @@ def assignments(values):
 
 def arguments(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--native-resource-vm", help="Required for external native profiles; read-only Lima disk/inode guard")
+    parser.add_argument("--resource-host-path", type=Path, default=Path(tempfile.gettempdir()))
+    parser.add_argument("--resource-vm-directory", type=Path, default=Path("/Users/alfongj/.lima/engine-nitro"))
+    parser.add_argument("--host-growth-mib-second", type=float, default=2,
+                        help="Provisional total host growth budget, including VM+journal+logs; guarded with factor2")
+    parser.add_argument("--guest-growth-mib-second", type=float, default=1,
+                        help="Provisional native guest growth budget; guarded with factor2")
+    parser.add_argument("--guest-growth-inodes-second", type=float, default=4,
+                        help="Provisional guest inode growth budget; guarded with factor2")
     parser.add_argument("--chain", action="append", required=True, help="PROFILE=TPS, repeated; evm12/evm2/evm025/solana or external name")
     parser.add_argument("--external-evm", action="append", default=[], help="NAME=http://127.0.0.1:PORT (caller-owned, funded dev node)")
     parser.add_argument("--external-drain-hook", action="append", default=[], help="NAME=/absolute/executable; starts only during drain; caller-owned local chain head ticker")
@@ -1645,6 +1925,15 @@ def arguments(argv=None):
     args = parser.parse_args(argv)
     rates, external, ids, networks, cadences, depths, hooks = (assignments(x) for x in (args.chain, args.external_evm, args.chain_id, args.network, args.block_seconds, args.depth, args.external_drain_hook))
     profiles = {}
+    if external and not args.native_resource_vm:
+        raise ValueError("External native profile requires --native-resource-vm and resource preflight")
+    if args.native_resource_vm and not external:
+        raise ValueError("Native resource guard requires an external native profile")
+    budgets = {"host_bytes": Budget(8 * GIB, args.host_growth_mib_second * MIB, .02)}
+    if args.native_resource_vm:
+        budgets.update({"guest_bytes": Budget(4 * GIB, args.guest_growth_mib_second * MIB),
+                        "guest_inodes": Budget(100000, args.guest_growth_inodes_second, .05)})
+    ResourcePolicy(budgets, args.seconds + args.drain_seconds + 720)
     for name, rate in rates.items():
         if not name.replace("_", "").isalnum(): raise ValueError("Profile names must be alphanumeric/underscore")
         if name in external:

@@ -32,6 +32,10 @@ class DurableFenceTests(unittest.TestCase):
         c.phase = 'load'
         c.lock = threading.Lock()
         c.abort, c.stop_sampler = threading.Event(), threading.Event()
+        c.infrastructure_stop = None
+        c.stop_guards = threading.Event()
+        c.guard_threads, c.provider_observations = [], []
+        c.resource_monitor = None
         c.recovery_required = c.finality_halted = c.projection_recovered = False
         c.report, c.events, c.samples, c.errors = {}, [], [], []
         c.profiles = {'evm2': {'family': 'evm', 'rate': 2}}

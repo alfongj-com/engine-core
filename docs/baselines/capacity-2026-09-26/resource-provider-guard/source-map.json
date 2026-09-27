@@ -1,0 +1,15 @@
+{
+  "git_head_when_archived": "cbdedae642c48d1c8d26911a874f13a8fc950486",
+  "scope": "Source byte hashes, not a claim that HEAD contains every pending documentation change",
+  "source_sha256": {
+    "scripts/capacity_campaign.py": "88b282be9ee049cb42ae9c576b70000766ba8dc912e63bd9401b7330d8e88909",
+    "scripts/capacity_resource_guard.py": "a23b228d7cc4c2007138d380b8dc16a1ddd9afdd7a28cdc68e0b545264b9bee7",
+    "scripts/capacity_infrastructure_test.py": "7185dd8be242cb95060d5835c575a285cf194768d69f5c9b040830c5f98d1507",
+    "scripts/capacity_resource_guard_test.py": "dc96892a9fd980f06ba76430ff589cd620563e9b93e9967c58630732b2539c8c",
+    "scripts/capacity_campaign_test.py": "9f9bd231c969e0a81af6811641b4cd63d783b0a97e0b6465b57206791d06e312",
+    "scripts/capacity_fence_test.py": "5f0ff6d12cbdc469b5429d23e130b97b2d38d7c6fbc429e20bb57d10ffbbbd15",
+    "scripts/capacity_faults.py": "59e2bc4d90bceca2682c27e35c5871ee538d4878a795f990fa90e6d5f90afa13",
+    "docs/baselines/capacity-2026-09-26/supervisor-v4/runner.py": "0f2d64f85a240d932ba1f558a2c105445a76370d04287967dea877e55eebb040"
+  },
+  "expected_engine_binary_sha256_from_root_smoke_plan": "35e307e16cafa7cbb17caafcf5ed90a840d58dddd2454542566619266e7a4c07"
+}

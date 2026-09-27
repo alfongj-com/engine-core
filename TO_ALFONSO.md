@@ -1,10 +1,10 @@
 # To Alfonso
 
-Updated September 26, 2026, 10:35 p.m. EDT. [Draft PR #1](https://github.com/alfongj-com/engine-core/pull/1).
+Updated September 26, 2026, 11:04 p.m. EDT. [Draft PR #1](https://github.com/alfongj-com/engine-core/pull/1).
 
 ## Status
 
-**The campaign is in recovery after the native Nitro node exited with a full VM disk. No production throughput limit is qualified.** The latest tests use one signer per chain, local nodes, a shared durable journal, and exact transaction-by-transaction reconciliation.
+**The Nitro disk incident is recovered. Individual capacity, shared load and planned chaos qualification are still in progress; no production throughput limit is qualified.** The latest tests use one signer per chain, local nodes, a shared durable journal, and exact transaction-by-transaction reconciliation.
 
 | Six-minute screen | Offered TPS | Terminal TPS after warmup | What happened |
 |---|---:|---:|---|
@@ -22,16 +22,15 @@ These are measured outcomes, **not sustainable-rate claims**. All accepted trans
 - OP execution at **55 TPS**: all 19,800 completed; terminal throughput was 55.4 TPS. Backlog measurements vary with block timing, so this needs a repeat before calling it sustainable.
 - Nitro at **40 TPS**: the node exited about two minutes into the run; its VM disk was full. Engine admitted 14,400 intents before the harness stopped. The preserved journal has 4,502 terminal records, 302 signed unresolved intents and 9,596 unsigned intents. This run has no final reconciliation and is not a capacity pass.
 
-The failed run's journal and Redis AOF have verified immutable backups. A cold copy of the original VM disk is also verified. The disk is expanded, Nitro reopened its original database, and all saved terminal blocks plus the 302 unresolved signed receipts match. Engine queue recovery is still pending. Recovery will retain the original chain, transaction IDs and signed bytes; it will not turn this interrupted run into a throughput result. The harness also needs to stop new offers earlier when the node remains unavailable.
+After verified backups and disk expansion, Nitro rebuilt its original state. Engine then resumed the original queue: **all 14,400 intents reconciled exactly**, with matching nonces, balances and fees, no changed signed identities, and no unresolved work. Queue drain took 181 seconds after restart; disk repair and checks took additional time. No new workload or manual transaction replay was used. The interrupted run remains a failed capacity test. The harness now checks disk reserves, stops intake after a sustained node outage, and preserves interrupted transaction custody.
 
 ## Work remaining
 
-1. Recover the interrupted Nitro workload and reconcile every original intent.
-2. Confirm individual rates on the final build. Solana's live observer is fixed and tested; its repeat has not run yet.
-3. Run all four chains together at the selected individual rates, then measure a sustainable shared rate if the combined load overloads the journal.
-4. Exercise mixed transactions, process kills, lost responses, RPC errors, reorgs and Redis recovery at measured load. Report safety and automatic recovery separately.
+1. Repeat individual rate tests on the validated dispatch implementation: Solana at 70 TPS, EVM and OP at 60, then an adjacent old/new Nitro comparison at 50. These are test inputs, not qualified limits.
+2. Run all four chains together at the selected individual rates, then measure a sustainable shared rate if the combined load overloads the journal.
+3. Exercise mixed transactions, process kills, lost responses, RPC errors, reorgs and Redis recovery at measured load. Report safety and automatic recovery separately.
 
-The current changes bound queue diagnostic history and fix Solana observer fairness. Workspace compilation, targeted Rust/Redis regressions and 99 distinct Python tests pass. All four existing CI workflows pass at `dd9282a`; newer changes are not pushed yet. All 61 finite formal-model cases pass, with 75 source-file hashes reviewed. These models and the prior fee-arithmetic proofs do not prove the whole service.
+The dispatch implementation is pushed at `cbdedae`: ordered durable authorization now overlaps bounded EVM sends. Workspace compilation, six new dispatch regressions, four negative controls and two actual Engine reorg tests pass. All 61 finite formal-model cases pass, with 76 source-file hashes reviewed. The updated harness has 131 distinct passing Python tests plus 11 supervisor tests. These models and the prior fee-arithmetic proofs do not prove the whole service. A small shared four-chain smoke also reconciled all 48 intents; it does not measure capacity.
 
 ## Limits
 

@@ -341,6 +341,7 @@ class EvidenceTests(unittest.TestCase):
         from types import SimpleNamespace
         instance = campaign.Campaign.__new__(campaign.Campaign)
         instance.namespace = "fixture"
+        instance.infrastructure_stop = None
         instance.profiles = {"evm": {"family": "evm"}}
         instance.fixture = lambda *_: ({}, {})
         instance.base, instance.token = "http://127.0.0.1:1", "fixture-token"
@@ -384,6 +385,7 @@ class EvidenceTests(unittest.TestCase):
                 instance.redis_port, instance.engine_port = 1, 2
                 instance.journal = Path(directory) / "journal.sqlite"
                 instance.report, instance.initial = {}, {}
+                instance.resource_preflight = lambda: None
                 instance.start_redis = lambda: None
                 seen = []
                 instance.engine_command = lambda *_: seen.append(dict(instance.env))

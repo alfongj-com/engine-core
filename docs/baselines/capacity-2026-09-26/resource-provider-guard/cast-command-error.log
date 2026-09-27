@@ -1,0 +1,11 @@
+WireDecodeTests (unittest.loader._FailedTest) ... ERROR
+
+======================================================================
+ERROR: WireDecodeTests (unittest.loader._FailedTest)
+----------------------------------------------------------------------
+AttributeError: module 'test_capacity_faults' has no attribute 'WireDecodeTests'
+
+----------------------------------------------------------------------
+Ran 1 test in 0.000s
+
+FAILED (errors=1)

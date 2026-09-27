@@ -1,0 +1,110 @@
+{
+  "schema": 1,
+  "scope": "Guard validation and six-second local integration evidence; no throughput conclusion",
+  "files": {
+    "README.md": {
+      "bytes": 3006,
+      "sha256": "5f499549bddb9e62d803c2faa3ad7220bf518b66f96befc363149a835a2f7e75"
+    },
+    "all4-transfer-observations.jsonl.gz": {
+      "bytes": 7503,
+      "sha256": "543cd61b3ed328016329879bcc0666c958ba93691f74ac2f87ad3ed678aca4b2"
+    },
+    "all4-transfer-resources.jsonl": {
+      "bytes": 4103,
+      "sha256": "3e3cc427d348576929885b7340f5b1c4e39d15b954cb7df40f4bc1563108112c"
+    },
+    "all4-transfer-smoke.json": {
+      "bytes": 958214,
+      "sha256": "ce09cc171700ad48804eff52dd12a01ff5c128b51381dfab27b8dad052746779"
+    },
+    "all4-transfer-smoke.log": {
+      "bytes": 195,
+      "sha256": "c0e14795f5637d3616f792e674c042b0c66ee4a9e3cc5783c56119d896721490"
+    },
+    "applied-tests-86-pass.log": {
+      "bytes": 9596,
+      "sha256": "db13f748fedd829196ba1aa3c213636ed6a604214cc5c91e2aa887ae88feb92b"
+    },
+    "applied-tests-command-error.log": {
+      "bytes": 11524,
+      "sha256": "b159c443ceb22bb3031d6103d266e3989aa7bf71fb7069ce2b3c2037d858ee98"
+    },
+    "cast-command-error.log": {
+      "bytes": 445,
+      "sha256": "e53b1fd218e136644e1e155ded573af92841977798d8242ea7e8408e0dfa9140"
+    },
+    "cast-corrected-3-pass.log": {
+      "bytes": 439,
+      "sha256": "9f98d490e3cdb5d00b911e721b7986f615e0ff11052b8771d67451621e8f3296"
+    },
+    "design.md": {
+      "bytes": 3915,
+      "sha256": "a5d36ca1fb16cc2f42dbf6ff90905118803bc45af9836a5e81ea14a49a4eb6ba"
+    },
+    "draft-integration-86-pass.log": {
+      "bytes": 9596,
+      "sha256": "3d66f2fbefda418d656248b898041056c4fa5f18e0a27b6256a22a85e65d1e78"
+    },
+    "draft-validation-manifest.json": {
+      "bytes": 547,
+      "sha256": "5165c65e821317a3d087ffaa9f5de57d98d6f50f4e6541718ed3b17295d35aa4"
+    },
+    "live-resource-preflight-result.json": {
+      "bytes": 1103,
+      "sha256": "11dbf2b62a8c4f0fd8347193ba754ccf8f435094f44441e0bbeed7459d389028"
+    },
+    "live-resource-preflight.jsonl": {
+      "bytes": 1734,
+      "sha256": "10ee8192550b0d8b4a1b5c95b976e010d54857f4b437bc1fa6ec59a66c826b44"
+    },
+    "other-tests-43-pass-2-skipped.log": {
+      "bytes": 6226,
+      "sha256": "50ad60178dcfedef788ea8953d40b0958d825a8a09ba0e83ea9b2f128489d34a"
+    },
+    "resource-integration.patch": {
+      "bytes": 95562,
+      "sha256": "8bbe9a8d47b41c990528af16d31ccfc9e65f79a9d1e6428b6d2c20382fc1e4cf"
+    },
+    "run-smokes-source.py": {
+      "bytes": 1950,
+      "sha256": "f021920ff6c8bc7902cd4350777b87a605143ab173d18accf43d021446213fa1"
+    },
+    "smoke-plans.json": {
+      "bytes": 4049,
+      "sha256": "90a01a1618264ea33c9101980ba07a43426447e19e79d418329a34bd719763c8"
+    },
+    "source-map.json": {
+      "bytes": 1219,
+      "sha256": "d340eb2f482ff7d0791412737d2cfd0787af2f403f0e166e2b6edc0e23b955f1"
+    },
+    "summary.json": {
+      "bytes": 3596,
+      "sha256": "eaec429a89f6c12d606d5a90ba86b602c7b69b231f1e176489827f09d3f047ab"
+    },
+    "supervisor-11-pass.log": {
+      "bytes": 3672,
+      "sha256": "e2b8bf6fc8945963003a49176541e829836ac6d6b8faa17842eb1a75b0de5956"
+    },
+    "supervisor-command-error.log": {
+      "bytes": 3299,
+      "sha256": "c2244292df28ac67f82d95a401cc8cf3833ecacab5fc8b8e221718baf27d8379"
+    },
+    "three-mixed-observations.jsonl.gz": {
+      "bytes": 3551,
+      "sha256": "45bc4b6847932a92bb89b6f24fa638f0af57a40b6fbaeae778fd6f6f05313382"
+    },
+    "three-mixed-resources.jsonl": {
+      "bytes": 1954,
+      "sha256": "74cdd593eb0bad9cd51ded5bf292caa8151cd3eeaaf382984565f75b590ba619"
+    },
+    "three-mixed-smoke.json": {
+      "bytes": 677631,
+      "sha256": "fa6c8e4d0fcf68abfab2bcf1fde0bba618afc98a617d8b07cec5878c401829b0"
+    },
+    "three-mixed-smoke.log": {
+      "bytes": 193,
+      "sha256": "d257f106ae8e06bd167ac792c49f201081ad8bba539d61c8b7631588f781e984"
+    }
+  }
+}

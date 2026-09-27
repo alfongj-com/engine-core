@@ -11,7 +11,7 @@
 +        env:
 +          PYTHONPATH: scripts
 +          CAST_BIN: /tmp/engine-foundry/cast
-+        run: python3 -m unittest test_capacity_faults capacity_campaign_test capacity_scenarios_test capacity_pool_test capacity_assess_test test_local_eoa_reorg -v
++        run: python3 -m unittest test_capacity_faults capacity_campaign_test capacity_scenarios_test capacity_pool_test capacity_assess_test capacity_fence_test capacity_resource_guard_test capacity_infrastructure_test test_local_eoa_reorg -v
        - name: Actual server crash recovery and duplicate admission
          run: |
            cargo build --locked --bin thirdweb-engine
