@@ -1,0 +1,26 @@
+{
+  "single-profile-lease-check.json": {
+    "bytes": 2805,
+    "sha256": "d5eb176aa8c735f0144f6613615bfe71a1ef61b450909832d76c57848df7cf40"
+  },
+  "README.md": {
+    "bytes": 1496,
+    "sha256": "5947bb13cec8c36d3b10387616f88cfdb8d67a8c9d1261a5015f00d005324be7"
+  },
+  "integrated-tests.log": {
+    "bytes": 18151,
+    "sha256": "2ce361bd0b75dbfc85508fa6b895c46d52568f2fe7da81f5552c471592bb3b8f"
+  },
+  "tested-campaign.py": {
+    "bytes": 133268,
+    "sha256": "6f95c10f8515dd107634422dfb626c232a7dab6c4c969aaa7459101a658c720b"
+  },
+  "change.patch": {
+    "bytes": 7014,
+    "sha256": "d5a1642fa3b1c9d83f1420a03406243539f0cf27234b7f61729ce4cafaecbba8"
+  },
+  "tested-campaign-tests.py": {
+    "bytes": 29982,
+    "sha256": "0749db387018be493e4e3a73f1382132a99c827d8ecbe1f655707091350db728"
+  }
+}

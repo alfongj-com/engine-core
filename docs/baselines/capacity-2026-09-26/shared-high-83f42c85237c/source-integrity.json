@@ -1,0 +1,165 @@
+{
+  "audit_allowlist_checked": {
+    "evm12": {
+      "events": {
+        "rpc_faults_released": 1,
+        "send_accepted": 15658,
+        "send_forwarded": 16438
+      },
+      "rows": 32097
+    },
+    "evm2": {
+      "events": {
+        "rpc_faults_released": 1,
+        "send_accepted": 13038,
+        "send_forwarded": 13039
+      },
+      "rows": 26078
+    },
+    "nitro": {
+      "events": {
+        "rpc_faults_released": 1,
+        "send_accepted": 11856,
+        "send_forwarded": 11856
+      },
+      "rows": 23713
+    },
+    "solana": {
+      "events": {
+        "rpc_faults_released": 1,
+        "send_accepted": 15190,
+        "send_forwarded": 15190
+      },
+      "rows": 30381
+    }
+  },
+  "frozen_source_checks": {
+    "/Users/alfongj/Code/engine-core/docs/baselines/capacity-2026-09-26/supervisor-v4/runner.py": {
+      "current_sha256": "0f2d64f85a240d932ba1f558a2c105445a76370d04287967dea877e55eebb040",
+      "frozen_sha256": "0f2d64f85a240d932ba1f558a2c105445a76370d04287967dea877e55eebb040"
+    },
+    "/Users/alfongj/Code/engine-core/scripts/capacity_assess.py": {
+      "current_sha256": "8ebafce9dd136ce0a0179ab04292836d8c0d685fe9b31f9b455e45665e4b6865",
+      "frozen_sha256": "8ebafce9dd136ce0a0179ab04292836d8c0d685fe9b31f9b455e45665e4b6865"
+    },
+    "/Users/alfongj/Code/engine-core/scripts/capacity_campaign.py": {
+      "current_sha256": "4243ddc37caf7247f09e6fd6e8490625d323aaf81f450c2665b07cc2eddcbe40",
+      "frozen_sha256": "4243ddc37caf7247f09e6fd6e8490625d323aaf81f450c2665b07cc2eddcbe40"
+    },
+    "/Users/alfongj/Code/engine-core/scripts/capacity_faults.py": {
+      "current_sha256": "59e2bc4d90bceca2682c27e35c5871ee538d4878a795f990fa90e6d5f90afa13",
+      "frozen_sha256": "59e2bc4d90bceca2682c27e35c5871ee538d4878a795f990fa90e6d5f90afa13"
+    },
+    "/Users/alfongj/Code/engine-core/scripts/capacity_resource_guard.py": {
+      "current_sha256": "bbfda4901f49600cdff9fa907b73e2a64e8df534496083994fd4717c55979bb6",
+      "frozen_sha256": "bbfda4901f49600cdff9fa907b73e2a64e8df534496083994fd4717c55979bb6"
+    },
+    "/private/tmp/engine-capacity-dispatch-plan/shared-individual-inputs-jobs.json": {
+      "current_sha256": "6020c8b749d569ecf82361ef39e0a3312282d42cbe1d90db142926a0f5d86114",
+      "frozen_sha256": "6020c8b749d569ecf82361ef39e0a3312282d42cbe1d90db142926a0f5d86114"
+    },
+    "/tmp/engine-capacity-tools/nitro-drain-hook-v2.py": {
+      "current_sha256": "424a26e6b8539d251df61396372951270ab1193372733099f94ec66608f92bd1",
+      "frozen_sha256": "424a26e6b8539d251df61396372951270ab1193372733099f94ec66608f92bd1"
+    }
+  },
+  "report_sha256": "45c5332cd337a17d202abfe41bf28995c976f66e9b2ed4145e11cd9fc23ef6ba",
+  "sources": {
+    "campaign.log": {
+      "lossless_gzip": false,
+      "source": "/private/tmp/capacity-shared-individual-inputs-83f42c85237c.log",
+      "source_bytes": 218,
+      "source_sha256": "3418565f1bd047a057c31bc83558caedb5ca80d7a8bd4c3fe1d64644ff07f783"
+    },
+    "evm12-rpc-audit.jsonl.gz": {
+      "lossless_gzip": true,
+      "source": "/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/engine-capacity-uko0gx2j/evm12-rpc.jsonl",
+      "source_bytes": 9379042,
+      "source_sha256": "5b282ed7eba5eb3e53022619edc36b6e2ee8518620b9300c9c8b8c05a286be1a"
+    },
+    "evm2-rpc-audit.jsonl.gz": {
+      "lossless_gzip": true,
+      "source": "/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/engine-capacity-uko0gx2j/evm2-rpc.jsonl",
+      "source_bytes": 7652396,
+      "source_sha256": "8381ccef991da5689f1029cf0d700bd83a5b601f117da9fa76d5ff0f252f5b35"
+    },
+    "frozen-jobs.json": {
+      "lossless_gzip": false,
+      "source": "/tmp/engine-capacity-dispatch-plan/shared-individual-inputs-jobs.json",
+      "source_bytes": 467,
+      "source_sha256": "6020c8b749d569ecf82361ef39e0a3312282d42cbe1d90db142926a0f5d86114"
+    },
+    "full-report.json.gz": {
+      "lossless_gzip": true,
+      "source": "/private/tmp/capacity-shared-individual-inputs-83f42c85237c.json",
+      "source_bytes": 18257485,
+      "source_sha256": "45c5332cd337a17d202abfe41bf28995c976f66e9b2ed4145e11cd9fc23ef6ba"
+    },
+    "nitro-rpc-audit.jsonl.gz": {
+      "lossless_gzip": true,
+      "source": "/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/engine-capacity-uko0gx2j/nitro-rpc.jsonl",
+      "source_bytes": 6957307,
+      "source_sha256": "68d61f13af4026b4508d794e4a3b99aaa99fe069f29b3fc88356d2c3d1a314d0"
+    },
+    "observations.jsonl.gz": {
+      "lossless_gzip": false,
+      "source": "/private/tmp/capacity-shared-individual-inputs-83f42c85237c.observations.jsonl.gz",
+      "source_bytes": 7220409,
+      "source_sha256": "71fab5e1f8062cf9e56ee3e234b7c7367a1dcd7b52bd8e11452b5a7cf231b7ea"
+    },
+    "prepare.log": {
+      "lossless_gzip": false,
+      "source": "/tmp/engine-capacity-shared-high-prepare.log",
+      "source_bytes": 3462,
+      "source_sha256": "d26b33ff51a87f2d88d4bffb1f7afee5e55ff21cc49190efae0351e5d2cb32e9"
+    },
+    "resource-preflight.jsonl": {
+      "lossless_gzip": false,
+      "source": "/private/tmp/capacity-shared-individual-inputs-83f42c85237c.resource-preflight.jsonl",
+      "source_bytes": 2796,
+      "source_sha256": "e9b1bef0397251e12abcd3319b3705318e2d0c8b520b5e54cba85dc8b22afb4d"
+    },
+    "resources.jsonl": {
+      "lossless_gzip": false,
+      "source": "/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/engine-capacity-uko0gx2j/resource-guard.jsonl",
+      "source_bytes": 37975,
+      "source_sha256": "b56926a208d1e9fa7b4e357dee294c6a2dc8efe20815c83f021f1015904e17fe"
+    },
+    "solana-rpc-audit.jsonl.gz": {
+      "lossless_gzip": true,
+      "source": "/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/engine-capacity-uko0gx2j/solana-rpc.jsonl",
+      "source_bytes": 9025088,
+      "source_sha256": "720b462df390a587495981dd54982efe0e763341374b39b7880eea49af4fa602"
+    },
+    "strict-assessment.json": {
+      "lossless_gzip": false,
+      "source": "/private/tmp/capacity-shared-individual-inputs-83f42c85237c-assessment.json",
+      "source_bytes": 10381,
+      "source_sha256": "b7b013f6c535105e18d3b7ea5fea42da9fc589d621e97971cb9d226387a62bb8"
+    },
+    "strict-assessor-source.py": {
+      "lossless_gzip": false,
+      "source": "/Users/alfongj/Code/engine-core/scripts/capacity_assess.py",
+      "source_bytes": 8301,
+      "source_sha256": "8ebafce9dd136ce0a0179ab04292836d8c0d685fe9b31f9b455e45665e4b6865"
+    },
+    "supervisor-final-state.json": {
+      "lossless_gzip": false,
+      "source": "/tmp/engine-capacity-shared-high-state.json",
+      "source_bytes": 3345,
+      "source_sha256": "903ed46e0d3a7756e4c8e65024ccd94cd911aedd0e80f78f9d984bb6686e3b51"
+    },
+    "supervisor-source.py": {
+      "lossless_gzip": false,
+      "source": "/Users/alfongj/Code/engine-core/docs/baselines/capacity-2026-09-26/supervisor-v4/runner.py",
+      "source_bytes": 17758,
+      "source_sha256": "0f2d64f85a240d932ba1f558a2c105445a76370d04287967dea877e55eebb040"
+    },
+    "supervisor.log": {
+      "lossless_gzip": false,
+      "source": "/tmp/engine-capacity-shared-high-supervisor.log",
+      "source_bytes": 2215,
+      "source_sha256": "d68f83d3fdcde0d97bf54e3f70477d8b34b41850b976bd05781f90372f68bbc3"
+    }
+  }
+}

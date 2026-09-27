@@ -1,0 +1,151 @@
+{
+  "schema": "independent-shared-closed-report-review-v1",
+  "reviewed_at_utc": "2026-09-27T04:36:49.702378+00:00",
+  "scope": "All captured per-ID observations compared with original private journal; no live RPC or lifecycle actions. Original RPC sweep was not independently repeated.",
+  "report": "capacity-shared-individual-inputs-83f42c85237c.json",
+  "report_sha256": "45c5332cd337a17d202abfe41bf28995c976f66e9b2ed4145e11cd9fc23ef6ba",
+  "observations_sha256": "71fab5e1f8062cf9e56ee3e234b7c7367a1dcd7b52bd8e11452b5a7cf231b7ea",
+  "accepted_custody": "pass for all55742 admitted IDs",
+  "complete_offered_workload": "incomplete;28858 of84600 original offered IDs absent",
+  "http_id_limit": "Normal report retains aggregate202/429 counts, not per-ID HTTP status map. Exact admitted/journal/proxy/observed ID union and exact complement in original-offer oracle were verified; HTTP status membership is only count-level corroborated.",
+  "per_chain": {
+    "evm12": {
+      "offered": 21600,
+      "captured_admitted_ids_exactly_audited": 15658,
+      "http202_count": 15658,
+      "http429_count": 5942,
+      "balance_reconciliation": {
+        "canonical_executions": 15658,
+        "nonce_delta": 15658,
+        "receipt_fees": 3929711984520000,
+        "recipient_delta": 15658,
+        "sender_spent": 3929711984535658
+      },
+      "nonce_range": [
+        0,
+        15657
+      ],
+      "proxy_accepted_unique_wires": 15658,
+      "extra_same_wire_forwards": 780
+    },
+    "evm2": {
+      "offered": 21600,
+      "captured_admitted_ids_exactly_audited": 13038,
+      "http202_count": 13038,
+      "http429_count": 8562,
+      "balance_reconciliation": {
+        "canonical_executions": 13038,
+        "nonce_delta": 13038,
+        "receipt_fees": 95422259784033000,
+        "recipient_delta": 13038,
+        "sender_spent": 95422259784046038
+      },
+      "nonce_range": [
+        0,
+        13037
+      ],
+      "proxy_accepted_unique_wires": 13038,
+      "extra_same_wire_forwards": 1
+    },
+    "nitro": {
+      "offered": 18000,
+      "captured_admitted_ids_exactly_audited": 11856,
+      "http202_count": 11856,
+      "http429_count": 6144,
+      "balance_reconciliation": {
+        "canonical_executions": 11856,
+        "nonce_delta": 11856,
+        "receipt_fees": 1125020800000000000,
+        "recipient_delta": 11856,
+        "sender_spent": 1125020800000011856
+      },
+      "nonce_range": [
+        140411,
+        152266
+      ],
+      "proxy_accepted_unique_wires": 11856,
+      "extra_same_wire_forwards": 0
+    },
+    "solana": {
+      "offered": 23400,
+      "captured_admitted_ids_exactly_audited": 15190,
+      "http202_count": 15190,
+      "http429_count": 8210,
+      "balance_reconciliation": {
+        "payer_spent": 91140000,
+        "receipt_fees": 75950000,
+        "recipient_delta": 15190000
+      },
+      "nonce_range": null,
+      "proxy_accepted_unique_wires": 15190,
+      "extra_same_wire_forwards": 0
+    }
+  },
+  "per_id_checks": [
+    "original admitted chain/payer/sender/recipient/value/instructions",
+    "one original durable attempt and one canonical finalized captured receipt per admitted ID",
+    "unique signature/hash plus raw-wire SHA256 and exact replay key",
+    "captured actual intent digest equals original admitted intent",
+    "terminal outcome/block or slot equals captured receipt",
+    "exact fee/effect balances and EVM contiguous nonce ranges"
+  ],
+  "drain": {
+    "client_pending": 0,
+    "http_inflight": 0,
+    "journal_unresolved": 0,
+    "node_pending": 0,
+    "redis_active": 0,
+    "redis_borrowed": 0,
+    "redis_delayed": 0,
+    "redis_pending": 0,
+    "redis_submitted": 0
+  },
+  "owned_children_checked": [
+    {
+      "name": "redis",
+      "pid": 56086,
+      "alive": false
+    },
+    {
+      "name": "evm12",
+      "pid": 56087,
+      "alive": false
+    },
+    {
+      "name": "evm2",
+      "pid": 56088,
+      "alive": false
+    },
+    {
+      "name": "solana",
+      "pid": 56093,
+      "alive": false
+    },
+    {
+      "name": "engine",
+      "pid": 56140,
+      "alive": false
+    },
+    {
+      "name": "drain-hook-nitro",
+      "pid": 56373,
+      "alive": false
+    }
+  ],
+  "healthy_provider_probes": 636,
+  "allowed_resource_checks": 16,
+  "harness_errors": [],
+  "engine_log_levels": {
+    "WARN": 840,
+    "ERROR": 15
+  },
+  "engine_log_diagnosis": {
+    "lost_eoa_lock": 15,
+    "gap_replay_already_imported": 1,
+    "gap_replay_nonce_too_low": 1,
+    "rebroadcast_already_imported": 779
+  },
+  "rpc_errors": "781 same-wire resend rejections; no new replacement wire/nonce identity",
+  "capacity_qualification": "rejected; all original offers remain in denominator",
+  "older_failed_evm55_incident": "Separate and unresolved; this fresh run changes none of its1980unknown intents"
+}

@@ -1,0 +1,199 @@
+{
+  "accepted_observed": 55742,
+  "all_offer_liveness_pass": false,
+  "capacity_selected": false,
+  "cohort": "83f42c85237c",
+  "drain": {
+    "client_pending": 0,
+    "http_inflight": 0,
+    "journal_unresolved": 0,
+    "node_pending": 0,
+    "redis_active": 0,
+    "redis_borrowed": 0,
+    "redis_delayed": 0,
+    "redis_pending": 0,
+    "redis_submitted": 0
+  },
+  "engine_binary_sha256": "35e307e16cafa7cbb17caafcf5ed90a840d58dddd2454542566619266e7a4c07",
+  "harness_sha256": {
+    "capacity_campaign.py": "4243ddc37caf7247f09e6fd6e8490625d323aaf81f450c2665b07cc2eddcbe40",
+    "capacity_faults.py": "59e2bc4d90bceca2682c27e35c5871ee538d4878a795f990fa90e6d5f90afa13",
+    "capacity_resource_guard.py": "bbfda4901f49600cdff9fa907b73e2a64e8df534496083994fd4717c55979bb6"
+  },
+  "independent_captured_evidence_audit": "pending; append without changing original report",
+  "offered_vector": {
+    "evm12": 60.0,
+    "evm2": 60.0,
+    "nitro": 50.0,
+    "solana": 65.0
+  },
+  "owned_children_stopped": true,
+  "per_chain": {
+    "evm12": {
+      "client": {
+        "dispatched": 21600
+      },
+      "late_window": {
+        "admission_p99_limit_ms": 1000,
+        "capacity_candidate": false,
+        "disqualifiers": [
+          "rate_or_admission_threshold_not_met",
+          "exact_reconciliation_failed",
+          "rpc_method_errors"
+        ],
+        "from_seconds": 180.018,
+        "rates_tps": {
+          "admitted": 41.343,
+          "attempted": 1.422,
+          "included": 1.422,
+          "terminal": 0.494
+        },
+        "relative_tolerance": 0.05,
+        "requires_repeated_confirmation": true,
+        "terminal_backlog_end": 15406,
+        "terminal_backlog_growth_per_second": 40.848,
+        "terminal_backlog_start": 8054,
+        "to_seconds": 360.001,
+        "unsigned_backlog_end": 15126,
+        "unsigned_backlog_linear_trend_per_second": 39.572,
+        "unsigned_backlog_start": 7941,
+        "unsigned_growth_detected": true,
+        "unsigned_monotonic_growth": true,
+        "unsigned_trend_threshold_per_second": 0.1,
+        "window_seconds": 179.98299999999998
+      },
+      "responses": {
+        "202": 15658,
+        "429": 5942
+      },
+      "rpc_method_errors": {
+        "eth_sendRawTransaction": 780
+      }
+    },
+    "evm2": {
+      "client": {
+        "dispatched": 21600
+      },
+      "late_window": {
+        "admission_p99_limit_ms": 1000,
+        "capacity_candidate": false,
+        "disqualifiers": [
+          "rate_or_admission_threshold_not_met",
+          "exact_reconciliation_failed",
+          "rpc_method_errors"
+        ],
+        "from_seconds": 180.018,
+        "rates_tps": {
+          "admitted": 32.659,
+          "attempted": 0.0,
+          "included": 0.006,
+          "terminal": 1.283
+        },
+        "relative_tolerance": 0.05,
+        "requires_repeated_confirmation": true,
+        "terminal_backlog_end": 12794,
+        "terminal_backlog_growth_per_second": 31.375,
+        "terminal_backlog_start": 7147,
+        "to_seconds": 360.001,
+        "unsigned_backlog_end": 12769,
+        "unsigned_backlog_linear_trend_per_second": 32.59,
+        "unsigned_backlog_start": 6891,
+        "unsigned_growth_detected": true,
+        "unsigned_monotonic_growth": true,
+        "unsigned_trend_threshold_per_second": 0.1,
+        "window_seconds": 179.98299999999998
+      },
+      "responses": {
+        "202": 13038,
+        "429": 8562
+      },
+      "rpc_method_errors": {
+        "eth_sendRawTransaction": 1
+      }
+    },
+    "nitro": {
+      "client": {
+        "dispatched": 18000
+      },
+      "late_window": {
+        "admission_p99_limit_ms": 1000,
+        "capacity_candidate": false,
+        "disqualifiers": [
+          "rate_or_admission_threshold_not_met",
+          "exact_reconciliation_failed"
+        ],
+        "from_seconds": 180.018,
+        "rates_tps": {
+          "admitted": 30.42,
+          "attempted": 0.011,
+          "included": 0.017,
+          "terminal": 0.933
+        },
+        "relative_tolerance": 0.05,
+        "requires_repeated_confirmation": true,
+        "terminal_backlog_end": 11675,
+        "terminal_backlog_growth_per_second": 29.486,
+        "terminal_backlog_start": 6368,
+        "to_seconds": 360.001,
+        "unsigned_backlog_end": 11587,
+        "unsigned_backlog_linear_trend_per_second": 30.523,
+        "unsigned_backlog_start": 6114,
+        "unsigned_growth_detected": true,
+        "unsigned_monotonic_growth": true,
+        "unsigned_trend_threshold_per_second": 0.1,
+        "window_seconds": 179.98299999999998
+      },
+      "responses": {
+        "202": 11856,
+        "429": 6144
+      },
+      "rpc_method_errors": {}
+    },
+    "solana": {
+      "client": {
+        "dispatched": 23400
+      },
+      "late_window": {
+        "admission_p99_limit_ms": 1000,
+        "capacity_candidate": false,
+        "disqualifiers": [
+          "rate_or_admission_threshold_not_met",
+          "exact_reconciliation_failed"
+        ],
+        "from_seconds": 180.018,
+        "rates_tps": {
+          "admitted": 38.854,
+          "attempted": 38.631,
+          "included": 38.737,
+          "terminal": 39.826
+        },
+        "relative_tolerance": 0.05,
+        "requires_repeated_confirmation": true,
+        "terminal_backlog_end": 681,
+        "terminal_backlog_growth_per_second": -0.972,
+        "terminal_backlog_start": 856,
+        "to_seconds": 360.001,
+        "unsigned_backlog_end": 76,
+        "unsigned_backlog_linear_trend_per_second": 0.05,
+        "unsigned_backlog_start": 36,
+        "unsigned_growth_detected": false,
+        "unsigned_monotonic_growth": false,
+        "unsigned_trend_threshold_per_second": 0.1,
+        "window_seconds": 179.98299999999998
+      },
+      "responses": {
+        "202": 15190,
+        "429": 8210
+      },
+      "rpc_method_errors": {}
+    }
+  },
+  "privacy_scope": "Generated observations copied unchanged from pinned sanitizing harness; per-ID independent audit follows. Digest-only full RPC audits checked against event/key/value allowlists; private signed payloads, journal, AOF, node files and credentials excluded.",
+  "production_default_lease_test": false,
+  "production_default_queue_lease_seconds": 600,
+  "queue_lease_seconds": 10,
+  "raw_outcome": "incomplete",
+  "safety_pass": true,
+  "supervisor_safely_settled": true,
+  "total_offered": 84600
+}

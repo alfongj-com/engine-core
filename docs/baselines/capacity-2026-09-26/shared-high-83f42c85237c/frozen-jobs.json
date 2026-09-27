@@ -1,0 +1,26 @@
+[
+  {
+    "name": "capacity-shared-individual-inputs",
+    "chains": [
+      "evm12=60",
+      "evm2=60",
+      "nitro=50",
+      "solana=65"
+    ],
+    "seconds": 360,
+    "extra": [
+      "--warmup-seconds",
+      "120",
+      "--late-window-seconds",
+      "180",
+      "--max-schedule-lag-ms",
+      "100",
+      "--eoa-broadcast-concurrency",
+      "32",
+      "--http-concurrency",
+      "128",
+      "--solana-confirmation-poll-seconds",
+      "5"
+    ]
+  }
+]

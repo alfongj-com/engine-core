@@ -1,0 +1,95 @@
+diff --git a/scripts/capacity_campaign.py b/scripts/capacity_campaign.py
+index 0d47039..7436c08 100644
+--- a/scripts/capacity_campaign.py
++++ b/scripts/capacity_campaign.py
+@@ -913,7 +913,7 @@ class Campaign:
+             "APP__REDIS__URL": f"redis://127.0.0.1:{self.redis_port}/", "APP__SERVER__HOST": "127.0.0.1",
+             "APP__SERVER__PORT": str(self.engine_port), "APP__RECOVERY__JOURNAL_PATH": str(self.journal),
+             "APP__QUEUE__EXECUTION_NAMESPACE": self.namespace, "APP__QUEUE__LOCAL_CONCURRENCY": "4",
+-            "APP__QUEUE__POLLING_INTERVAL_MS": "20", "APP__QUEUE__LEASE_DURATION_SECONDS": "10",
++            "APP__QUEUE__POLLING_INTERVAL_MS": "20", "APP__QUEUE__LEASE_DURATION_SECONDS": str(self.args.queue_lease_seconds),
+             "APP__QUEUE__EOA_MAX_INFLIGHT": str(self.args.max_inflight),
+             "APP__QUEUE__EOA_BROADCAST_CONCURRENCY": str(self.args.eoa_broadcast_concurrency),
+             "APP__QUEUE__EOA_EXECUTOR_WORKERS": str(sum(p["family"] == "evm" for p in self.profiles.values()) or 1),
+@@ -2011,6 +2011,8 @@ def arguments(argv=None):
+     parser.add_argument("--sample-seconds", type=float, default=5)
+     parser.add_argument("--depth", action="append", default=[], help="PROFILE=BLOCKS (default2); modeled depth finality, per EVM profile")
+     parser.add_argument("--max-inflight", type=int, default=4096)
++    parser.add_argument("--queue-lease-seconds", type=int, default=600,
++                        help="Fixed queue lease, 1..3600 seconds; default 600 matches production; use 10 only for explicit short-lease stress")
+     parser.add_argument("--eoa-broadcast-concurrency", type=int, default=32, help="Bounded concurrent EOA RPC sends1..128; preparation stays32")
+     parser.add_argument("--solana-workers", type=int, default=100)
+     parser.add_argument("--solana-confirmation-poll-seconds", type=int, default=1, help="Experimental runtime setting; accepted-send/status polling interval1..5s")
+@@ -2090,7 +2092,7 @@ def arguments(argv=None):
+     if args.solana_park_every and "solana" not in profiles: raise ValueError("Solana sparse rejection requires Solana profile")
+     ranges = [(args.seconds, 1, 3600), (args.drain_seconds, 1, 3600), (args.sample_seconds, .1, 60),
+               (args.http_timeout, .1, 60), (args.max_inflight, 1, 4096), (args.solana_workers, 1, 1000),
+-              (args.eoa_broadcast_concurrency, 1, 128), (args.http_concurrency, 1, 1024), (args.proxy_concurrency, 1, 1024), (args.reconcile_concurrency, 1, 128),
++              (args.queue_lease_seconds, 1, 3600), (args.eoa_broadcast_concurrency, 1, 128), (args.http_concurrency, 1, 1024), (args.proxy_concurrency, 1, 1024), (args.reconcile_concurrency, 1, 128),
+               (args.chaos_after, 1, 250000), (args.fault_count, 0, 250000),
+               (args.duplicate_count, 0, 250000), (args.max_intents, 1, 500000), (args.max_schedule_lag_ms, 0, 1000),
+               (args.solana_confirmation_poll_seconds, 1, 5), (args.reorg_min_transactions, 1, 10000), (args.reorg_hold_seconds, 6, 60), (args.recovery_probe_count, 1, 1000), (args.max_admission_p99_ms, 1, 60000), (args.solana_park_every, 0, 250000), (args.late_window_seconds, 1, 600), (args.warmup_seconds, 0, 1800)]
+diff --git a/scripts/capacity_campaign_test.py b/scripts/capacity_campaign_test.py
+index 184795a..ffe60f5 100644
+--- a/scripts/capacity_campaign_test.py
++++ b/scripts/capacity_campaign_test.py
+@@ -399,6 +399,59 @@ class EvidenceTests(unittest.TestCase):
+                 with self.assertRaises(ValueError):
+                     campaign.arguments(common + ["--eoa-broadcast-concurrency", invalid])
+ 
++    def _assert_queue_lease_setup(self, extra, expected):
++        with tempfile.TemporaryDirectory() as directory:
++            engine = Path(directory) / "engine"
++            engine.write_text("fixture")
++            args, _ = campaign.arguments(["--engine-bin", str(engine), "--report", directory + "/report.json",
++                                          "--chain", "evm12=1"] + extra)
++            instance = campaign.Campaign.__new__(campaign.Campaign)
++            instance.args, instance.profiles = args, {}
++            instance.token, instance.namespace = "fixture", "fixture"
++            instance.redis_port, instance.engine_port = 1, 2
++            instance.journal = Path(directory) / "journal.sqlite"
++            instance.report, instance.initial = {}, {}
++            instance.resource_preflight = lambda: None
++            instance.start_redis = lambda: None
++            seen = []
++            instance.engine_command = lambda *_: seen.append(dict(instance.env))
++            instance.start_engine = lambda: seen.append(dict(instance.env))
++            with patch.dict(os.environ, {"APP__QUEUE__LEASE_DURATION_SECONDS": "17"}):
++                instance.setup()
++            self.assertEqual(args.queue_lease_seconds, expected)
++            self.assertEqual(len(seen), 2)
++            self.assertTrue(all(env["APP__QUEUE__LEASE_DURATION_SECONDS"] == str(expected) for env in seen))
++            self.assertEqual(instance.report["queue_settings"]["APP__QUEUE__LEASE_DURATION_SECONDS"], str(expected))
++
++    def test_queue_lease_default_matches_both_production_config_layers_and_actual_setup(self):
++        import re
++        for name in ("server_base.yaml", "server_production.yaml"):
++            source = (campaign.ROOT / "server/configuration" / name).read_text()
++            configured = re.search(r"^  lease_duration_seconds: ([0-9]+)$", source, re.MULTILINE)
++            self.assertIsNotNone(configured)
++            self.assertEqual(int(configured.group(1)), 600)
++        self._assert_queue_lease_setup([], 600)
++
++    def test_explicit_short_queue_lease_is_recorded_and_reaches_init_and_engine(self):
++        self._assert_queue_lease_setup(["--queue-lease-seconds", "10"], 10)
++
++    def test_queue_lease_rejects_outside_bounds_and_non_integer_values(self):
++        import contextlib
++        import io
++        with tempfile.TemporaryDirectory() as directory:
++            engine = Path(directory) / "engine"
++            engine.write_text("fixture")
++            common = ["--engine-bin", str(engine), "--report", directory + "/report.json", "--chain", "evm12=1"]
++            for valid in ("1", "3600"):
++                args, _ = campaign.arguments(common + ["--queue-lease-seconds", valid])
++                self.assertEqual(args.queue_lease_seconds, int(valid))
++            for invalid in ("0", "-1", "3601"):
++                with self.assertRaises(ValueError):
++                    campaign.arguments(common + ["--queue-lease-seconds", invalid])
++            for invalid in ("1.5", "nan", "inf"):
++                with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
++                    campaign.arguments(common + ["--queue-lease-seconds", invalid])
++
+     def test_profile_bounds_and_individual_depths(self):
+         with tempfile.TemporaryDirectory() as directory:
+             engine = Path(directory) / "engine"

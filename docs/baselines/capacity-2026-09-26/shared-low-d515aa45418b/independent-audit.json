@@ -1,0 +1,137 @@
+{
+  "schema": "independent-shared-closed-report-review-v1",
+  "reviewed_at_utc": "2026-09-27T04:44:36.828653+00:00",
+  "scope": "All captured observations compared against original private journal; no fresh RPC or lifecycle action. Original RPC sweep not independently repeated.",
+  "report": "capacity-shared-scale020-d515aa45418b.json",
+  "report_sha256": "09771e178e24ec45ad38da6ef7222daf650212977e2acb2c0e03bae9df92cef7",
+  "observations_sha256": "fa67f2e3834800e4b22cab6040ab1b84a4aebdaf48f502f52116c3b76f4d6439",
+  "original_offered_ids": 16920,
+  "exact_admitted_and_observed_ids": 16920,
+  "missing_offers": 0,
+  "http_non202": 0,
+  "safety_and_settlement": "pass",
+  "per_chain": {
+    "evm12": {
+      "offered_and_audited_ids": 4320,
+      "balances": {
+        "canonical_executions": 4320,
+        "nonce_delta": 4320,
+        "receipt_fees": 17189372075400000,
+        "recipient_delta": 4320,
+        "sender_spent": 17189372075404320
+      },
+      "nonce_range": [
+        0,
+        4319
+      ],
+      "method_errors": 0,
+      "extra_wire_forwards": 0
+    },
+    "evm2": {
+      "offered_and_audited_ids": 4320,
+      "balances": {
+        "canonical_executions": 4320,
+        "nonce_delta": 4320,
+        "receipt_fees": 61047332613687000,
+        "recipient_delta": 4320,
+        "sender_spent": 61047332613691320
+      },
+      "nonce_range": [
+        0,
+        4319
+      ],
+      "method_errors": 0,
+      "extra_wire_forwards": 0
+    },
+    "nitro": {
+      "offered_and_audited_ids": 3600,
+      "balances": {
+        "canonical_executions": 3600,
+        "nonce_delta": 3600,
+        "receipt_fees": 341608000000000000,
+        "recipient_delta": 3600,
+        "sender_spent": 341608000000003600
+      },
+      "nonce_range": [
+        152267,
+        155866
+      ],
+      "method_errors": 0,
+      "extra_wire_forwards": 0
+    },
+    "solana": {
+      "offered_and_audited_ids": 4680,
+      "balances": {
+        "payer_spent": 28080000,
+        "receipt_fees": 23400000,
+        "recipient_delta": 4680000
+      },
+      "nonce_range": null,
+      "method_errors": 0,
+      "extra_wire_forwards": 0
+    }
+  },
+  "all_per_id_checks": [
+    "unique admitted ID equals original expected set",
+    "one original wire/attempt and one canonical finalized captured execution per ID",
+    "saved raw-wire digest and captured decoded intent equal original admission",
+    "replay key/nonce/signature and original terminal proof match captured receipt",
+    "per-ID effects and receipt fees sum to independent captured balances"
+  ],
+  "drain": {
+    "client_pending": 0,
+    "http_inflight": 0,
+    "journal_unresolved": 0,
+    "node_pending": 0,
+    "redis_active": 0,
+    "redis_borrowed": 0,
+    "redis_delayed": 0,
+    "redis_pending": 0,
+    "redis_submitted": 0
+  },
+  "owned_children_checked": [
+    {
+      "name": "redis",
+      "pid": 57169,
+      "alive": false
+    },
+    {
+      "name": "evm12",
+      "pid": 57170,
+      "alive": false
+    },
+    {
+      "name": "evm2",
+      "pid": 57171,
+      "alive": false
+    },
+    {
+      "name": "solana",
+      "pid": 57178,
+      "alive": false
+    },
+    {
+      "name": "engine",
+      "pid": 57236,
+      "alive": false
+    },
+    {
+      "name": "drain-hook-nitro",
+      "pid": 57478,
+      "alive": false
+    }
+  ],
+  "healthy_provider_probes": 324,
+  "allowed_resource_checks": 10,
+  "harness_errors": [],
+  "engine_log_levels": {
+    "WARN": 3
+  },
+  "engine_log_messages": {
+    "Nonce sync required, store was uninitialized, updating cached transaction count with current chain transaction count": 3
+  },
+  "rpc_method_errors": 0,
+  "transport_proxy_errors": 0,
+  "capacity_note": "Clean single screen; raw candidate true is not a maximum or repeated sustainable qualification. Apply unchanged strict stability assessment separately.",
+  "older_failed_evm55": "Separate1980unknown intents remain unresolved."
+}

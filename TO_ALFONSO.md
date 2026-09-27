@@ -1,6 +1,6 @@
 # To Alfonso
 
-Updated September 27, 2026, 12:19 a.m. EDT. [Draft PR #1](https://github.com/alfongj-com/engine-core/pull/1).
+Updated September 27, 2026, 12:47 a.m. EDT. [Draft PR #1](https://github.com/alfongj-com/engine-core/pull/1).
 
 ## Current measurements
 
@@ -21,10 +21,12 @@ The new Arbitrum dispatcher improved the adjacent comparison from 43.84 to 48.84
 - The earlier Nitro disk-full incident recovered all 14,400 accepted intents after disk repair.
 - A later EVM55 harness run stopped after a host-wide disk-allocation spike. It discarded its disposable node before receipt verification: 3,274 signed intents are preserved, but 1,980 final outcomes remain unverified. This failed run is not repaired or promoted. The harness now preserves interrupted Anvil history and uses sustained disk consumption for long forecasts. [Incident](docs/baselines/capacity-2026-09-26/evm55-projection-incident/README.md).
 
-The latest 144 integrated harness tests passed, including actual Ethereum/OP snapshot restores. Engine's transaction code and durability settings were unchanged by these harness fixes. The prior Rust, queue, coverage and formal CI checks are green; the finite models do not prove the whole service.
+The latest 147 integrated harness tests passed, including actual Ethereum/OP snapshot restores. Engine's transaction code and durability settings were unchanged by these harness fixes. The prior Rust, queue, coverage and formal CI checks are green; the finite models do not prove the whole service.
 
-## Next, already in progress
+## Shared results and current work
 
-Run all four together at 60/60/50/65 TPS, then reduce shared load if necessary and exercise mixed transactions, lost responses, process kills, reorgs and Redis recovery. Shared capacity and the planned high-load chaos matrix are not yet complete.
+With the campaign’s 10-second lease, shared 235 TPS accepted and eventually reconciled 55,742 transactions but rejected 28,858 requests. Shared 47 TPS (12/12/10/13 per chain) accepted and verified all 16,920 with no Engine/RPC errors. Neither is an indefinite capacity guarantee.
+
+The overload exposed a benchmark configuration mismatch: production defaults to a 600-second queue lease. The harness is corrected and the same shared high/low pair is being repeated with that setting. Then come the planned high-load fault tests. Original reports and failures remain visible; the new runs cannot retroactively qualify them.
 
 No paid RPC credits were used. Public RPC quotas, L1 settlement, KMS and production hardware remain unqualified. Nothing is needed from you to continue. Publishing the additional CI workflow steps still requires GitHub workflow permission. Rotate the shared dRPC key when the campaign ends.
