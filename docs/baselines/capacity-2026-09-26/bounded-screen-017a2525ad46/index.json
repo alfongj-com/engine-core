@@ -1,0 +1,360 @@
+{
+  "archived_utc": "2026-09-27T02:30:34.250227+00:00",
+  "campaign_id": "017a2525ad46",
+  "runs": [
+    {
+      "assets": [
+        {
+          "archive_bytes": 1605008,
+          "archive_path": "capacity-bounded-evm55-017a2525ad46.full.json.gz",
+          "archive_sha256": "091e66b71c01c22ca32b54f54a680e8b7e35b0faeec9f866d1fd0b070780e94d",
+          "encoding": "gzip",
+          "roundtrip_verified": true,
+          "source_bytes": 4744583,
+          "source_name": "capacity-bounded-evm55-017a2525ad46.json",
+          "source_sha256": "e02a08e9ea6485d1178b2cd996478c880aa4ac6034cd75a90c71db306f290c54"
+        },
+        {
+          "archive_bytes": 2216565,
+          "archive_path": "capacity-bounded-evm55-017a2525ad46.observations.jsonl.gz",
+          "archive_sha256": "7b2bf5f7998a7da0e52728ee1c57d24b198ee39b9a703671bfd0604c108a1d44",
+          "encoding": "gzip",
+          "roundtrip_verified": true,
+          "source_bytes": 2216565,
+          "source_name": "capacity-bounded-evm55-017a2525ad46.observations.jsonl.gz",
+          "source_sha256": "7b2bf5f7998a7da0e52728ee1c57d24b198ee39b9a703671bfd0604c108a1d44"
+        },
+        {
+          "archive_bytes": 3062,
+          "archive_path": "capacity-bounded-evm55-017a2525ad46-assessment.json",
+          "archive_sha256": "edf813c490293e4ac13d147fc018396dd6dc8ef1a265c483362ced5830506452",
+          "encoding": "original",
+          "roundtrip_verified": true,
+          "source_bytes": 3062,
+          "source_name": "capacity-bounded-evm55-017a2525ad46-assessment.json",
+          "source_sha256": "edf813c490293e4ac13d147fc018396dd6dc8ef1a265c483362ced5830506452"
+        },
+        {
+          "archive_bytes": 9261,
+          "archive_path": "capacity-bounded-evm55-017a2525ad46-readonly-analysis.json",
+          "archive_sha256": "2c6b1ee5cee737a0946b2873ad8ec155c66f57d256ed265acdb1f7414be04041",
+          "encoding": "original",
+          "roundtrip_verified": true,
+          "source_bytes": 9261,
+          "source_name": "capacity-bounded-evm55-017a2525ad46-readonly-analysis.json",
+          "source_sha256": "2c6b1ee5cee737a0946b2873ad8ec155c66f57d256ed265acdb1f7414be04041"
+        },
+        {
+          "archive_bytes": 6320,
+          "archive_path": "capacity-bounded-evm55-017a2525ad46-backlog-description.json",
+          "archive_sha256": "43331075b7ac612cd48eed141c1ab239ea921852d98458f7a368e4abd60ed441",
+          "encoding": "original",
+          "roundtrip_verified": true,
+          "source_bytes": 6320,
+          "source_name": "capacity-bounded-evm55-017a2525ad46-backlog-description.json",
+          "source_sha256": "43331075b7ac612cd48eed141c1ab239ea921852d98458f7a368e4abd60ed441"
+        },
+        {
+          "archive_bytes": 200,
+          "archive_path": "capacity-bounded-evm55-017a2525ad46.log",
+          "archive_sha256": "30de21fd28abdd98f798241fafa6120a60268753eb0ec9075140edc080c92f06",
+          "encoding": "original",
+          "roundtrip_verified": true,
+          "source_bytes": 200,
+          "source_name": "capacity-bounded-evm55-017a2525ad46.log",
+          "source_sha256": "30de21fd28abdd98f798241fafa6120a60268753eb0ec9075140edc080c92f06"
+        },
+        {
+          "archive_bytes": 2221950,
+          "archive_path": "capacity-bounded-evm55-017a2525ad46.rpc-audit.jsonl.gz",
+          "archive_sha256": "18726e0a8549410b4d98e793fbfd96f4cbd467b85d618173a17ddc48aa893a49",
+          "encoding": "gzip",
+          "roundtrip_verified": true,
+          "source_bytes": 11615199,
+          "source_name": "evm12-rpc.jsonl",
+          "source_sha256": "dcce2eee9c1708435ece225690c74ef44b33cfdfea2968508f9e7dc5d093f510"
+        }
+      ],
+      "binary_sha256": "300db9782868ddca5b6d552e7ead5d2621322a82c8297ffde8f6ecb067858b23",
+      "chain": "evm12",
+      "drain_seconds": 400.312737,
+      "durability": {
+        "redis_appendfsync": "everysec",
+        "sqlite": "WAL synchronous=FULL/fullfsync=ON"
+      },
+      "eoa_broadcast_concurrency": 32,
+      "harness_sha256": {
+        "capacity_campaign.py": "80d1e4c03cf456a29f318e5cc581cb6788e99e3f8d26a98bde1490105d08e763",
+        "capacity_faults.py": "59e2bc4d90bceca2682c27e35c5871ee538d4878a795f990fa90e6d5f90afa13"
+      },
+      "http_concurrency": 128,
+      "name": "capacity-bounded-evm55-017a2525ad46",
+      "oracle": {
+        "eligible_for_rate_assessment": true,
+        "expected_parked_intents": 0,
+        "liveness_failures": [],
+        "liveness_pass": true,
+        "observed_intents": 19800,
+        "offered_intents": 19800,
+        "outcome": "pass",
+        "safety_failures": [],
+        "safety_pass": true
+      },
+      "per_id_rows": 19800,
+      "profile": {
+        "block_seconds": 12.0,
+        "chain_id": 31337,
+        "depth": 2,
+        "family": "evm",
+        "label": "Anvil EVM execution with simulated block cadence; not Nitro or public-chain capacity",
+        "network": "ethereum",
+        "rate": 55.0
+      },
+      "source_commit": "dd9282a48640a97024dc277434ef3e4ebe8571b9",
+      "source_is_dirty": true,
+      "strict_classification": "observed_persistent_backlog_growth",
+      "strict_stage_rates_tps": {
+        "admitted": 54.998354091229174,
+        "attempted": 54.869181504152266,
+        "included": 55.090024959477304,
+        "terminal": 53.06909900037084
+      }
+    },
+    {
+      "assets": [
+        {
+          "archive_bytes": 1605045,
+          "archive_path": "capacity-bounded-op55-017a2525ad46.full.json.gz",
+          "archive_sha256": "19e3732fc14a5b73cfef88b0556df5b50267173cb2ba316229ca7ba308afae7a",
+          "encoding": "gzip",
+          "roundtrip_verified": true,
+          "source_bytes": 4697510,
+          "source_name": "capacity-bounded-op55-017a2525ad46.json",
+          "source_sha256": "3e7f600896cf9cd5964ee6b3ba06f0719c1b9abf14a68db96742815f76aac8eb"
+        },
+        {
+          "archive_bytes": 2221432,
+          "archive_path": "capacity-bounded-op55-017a2525ad46.observations.jsonl.gz",
+          "archive_sha256": "2d7dd93bc069ac15aed5e226668648b123018f25373affefdae3978a2cb69dfc",
+          "encoding": "gzip",
+          "roundtrip_verified": true,
+          "source_bytes": 2221432,
+          "source_name": "capacity-bounded-op55-017a2525ad46.observations.jsonl.gz",
+          "source_sha256": "2d7dd93bc069ac15aed5e226668648b123018f25373affefdae3978a2cb69dfc"
+        },
+        {
+          "archive_bytes": 3092,
+          "archive_path": "capacity-bounded-op55-017a2525ad46-assessment.json",
+          "archive_sha256": "abe168482e9e8123bc7d3f6f40ed3826a8f9ea70082171e0ba9c2189798bf4ad",
+          "encoding": "original",
+          "roundtrip_verified": true,
+          "source_bytes": 3092,
+          "source_name": "capacity-bounded-op55-017a2525ad46-assessment.json",
+          "source_sha256": "abe168482e9e8123bc7d3f6f40ed3826a8f9ea70082171e0ba9c2189798bf4ad"
+        },
+        {
+          "archive_bytes": 9237,
+          "archive_path": "capacity-bounded-op55-017a2525ad46-readonly-analysis.json",
+          "archive_sha256": "093d9d5937f077865ed913b0747be39832418d457c717c7613a8da8357ec05a0",
+          "encoding": "original",
+          "roundtrip_verified": true,
+          "source_bytes": 9237,
+          "source_name": "capacity-bounded-op55-017a2525ad46-readonly-analysis.json",
+          "source_sha256": "093d9d5937f077865ed913b0747be39832418d457c717c7613a8da8357ec05a0"
+        },
+        {
+          "archive_bytes": 6886,
+          "archive_path": "capacity-bounded-op55-017a2525ad46-backlog-description.json",
+          "archive_sha256": "bf94bd33333f0577d480de34e92b84947dd6a08bae46f7a94ff63120209cefca",
+          "encoding": "original",
+          "roundtrip_verified": true,
+          "source_bytes": 6886,
+          "source_name": "capacity-bounded-op55-017a2525ad46-backlog-description.json",
+          "source_sha256": "bf94bd33333f0577d480de34e92b84947dd6a08bae46f7a94ff63120209cefca"
+        },
+        {
+          "archive_bytes": 199,
+          "archive_path": "capacity-bounded-op55-017a2525ad46.log",
+          "archive_sha256": "8dc3cb43d1c80db38d52377002a1c7fefd82dca9e382f2127cec474f5956dfd9",
+          "encoding": "original",
+          "roundtrip_verified": true,
+          "source_bytes": 199,
+          "source_name": "capacity-bounded-op55-017a2525ad46.log",
+          "source_sha256": "8dc3cb43d1c80db38d52377002a1c7fefd82dca9e382f2127cec474f5956dfd9"
+        },
+        {
+          "archive_bytes": 2221294,
+          "archive_path": "capacity-bounded-op55-017a2525ad46.rpc-audit.jsonl.gz",
+          "archive_sha256": "e3e2ea8e5677a8eb432021ead3f8ebcd94aed8e51f69e7540eb2990b354d045f",
+          "encoding": "gzip",
+          "roundtrip_verified": true,
+          "source_bytes": 11615045,
+          "source_name": "evm2-rpc.jsonl",
+          "source_sha256": "f74e523fd54e0aa68f637244fff60f2a4d882e63c1356014a2dde0a3d3e80d60"
+        }
+      ],
+      "binary_sha256": "300db9782868ddca5b6d552e7ead5d2621322a82c8297ffde8f6ecb067858b23",
+      "chain": "evm2",
+      "drain_seconds": 370.126329,
+      "durability": {
+        "redis_appendfsync": "everysec",
+        "sqlite": "WAL synchronous=FULL/fullfsync=ON"
+      },
+      "eoa_broadcast_concurrency": 32,
+      "harness_sha256": {
+        "capacity_campaign.py": "80d1e4c03cf456a29f318e5cc581cb6788e99e3f8d26a98bde1490105d08e763",
+        "capacity_faults.py": "59e2bc4d90bceca2682c27e35c5871ee538d4878a795f990fa90e6d5f90afa13"
+      },
+      "http_concurrency": 128,
+      "name": "capacity-bounded-op55-017a2525ad46",
+      "oracle": {
+        "eligible_for_rate_assessment": true,
+        "expected_parked_intents": 0,
+        "liveness_failures": [],
+        "liveness_pass": true,
+        "observed_intents": 19800,
+        "offered_intents": 19800,
+        "outcome": "pass",
+        "safety_failures": [],
+        "safety_pass": true
+      },
+      "per_id_rows": 19800,
+      "profile": {
+        "block_seconds": 2.0,
+        "chain_id": 31338,
+        "depth": 2,
+        "family": "evm",
+        "label": "OP execution on Anvil; simulated cadence; no sequencer/derivation/L1 settlement; L1 fee predeploy state may be artificial",
+        "network": "optimism",
+        "rate": 55.0
+      },
+      "source_commit": "dd9282a48640a97024dc277434ef3e4ebe8571b9",
+      "source_is_dirty": true,
+      "strict_classification": "unconfirmed_growth_or_cadence_ambiguity",
+      "strict_stage_rates_tps": {
+        "admitted": 54.99789575442413,
+        "attempted": 54.41037372234793,
+        "included": 54.31453679512982,
+        "terminal": 55.41041122375423
+      }
+    }
+  ],
+  "schema": "capacity-bounded-screen-archive-v1",
+  "scope": "Two completed local finite screens plus interrupted Native incident. No maximum or public-chain qualification; original strict verdicts preserved. Recovery of original 14400-ID Native campaign not yet complete at this archive.",
+  "supporting_files": [
+    {
+      "archive_path": "nitro-incident-summary.json",
+      "archive_sha256": "b74f3c11e1292b14ccae915a0743e12985be941ea172a77659c1e37d3cf214f1"
+    },
+    {
+      "archive_bytes": 101922,
+      "archive_path": "nitro-continuity-observed.json",
+      "archive_sha256": "754c6853ef8495a9b29e223e67103163f4692be0c1d8791d3f2fc25563161445",
+      "encoding": "original",
+      "roundtrip_verified": true,
+      "source_bytes": 101922,
+      "source_name": "continuity-observed-1.json",
+      "source_sha256": "754c6853ef8495a9b29e223e67103163f4692be0c1d8791d3f2fc25563161445"
+    },
+    {
+      "archive_bytes": 465,
+      "archive_path": "nitro-restart-head-readiness.json",
+      "archive_sha256": "bd63d03be5501f24256e909c482c50c01a38d121a500884c1c21752e94fd4206",
+      "encoding": "original",
+      "roundtrip_verified": true,
+      "source_bytes": 465,
+      "source_name": "restart-head-readiness-1.json",
+      "source_sha256": "bd63d03be5501f24256e909c482c50c01a38d121a500884c1c21752e94fd4206"
+    },
+    {
+      "archive_bytes": 2536,
+      "archive_path": "nitro-persistence-research.json",
+      "archive_sha256": "bdcbcf69f6b0f40772d2613f3267d026bb0f39dd4eb165b5aef7504cd05085ce",
+      "encoding": "original",
+      "roundtrip_verified": true,
+      "source_bytes": 2536,
+      "source_name": "nitro-persistence-research.json",
+      "source_sha256": "bdcbcf69f6b0f40772d2613f3267d026bb0f39dd4eb165b5aef7504cd05085ce"
+    },
+    {
+      "archive_bytes": 1391,
+      "archive_path": "nitro-disk-repair.json",
+      "archive_sha256": "1b4f1dc982d98af5f9b120e6a4a12282b24290686bbebe6784b796f1f6dd8412",
+      "encoding": "original",
+      "roundtrip_verified": true,
+      "source_bytes": 1391,
+      "source_name": "disk-repair.json",
+      "source_sha256": "1b4f1dc982d98af5f9b120e6a4a12282b24290686bbebe6784b796f1f6dd8412"
+    },
+    {
+      "archive_bytes": 1625,
+      "archive_path": "nitro-cold-backup-metadata.json",
+      "archive_sha256": "b0ceff522e5eb86f5801298e159308a834207d244955fe37494d6f253fdf7274",
+      "encoding": "original",
+      "roundtrip_verified": true,
+      "source_bytes": 1625,
+      "source_name": "manifest.json",
+      "source_sha256": "b0ceff522e5eb86f5801298e159308a834207d244955fe37494d6f253fdf7274"
+    },
+    {
+      "archive_bytes": 4137,
+      "archive_path": "nitro-restart-replay.log",
+      "archive_sha256": "46e91c42f39ea1245a088973151199d238a3bfec5517b36a54c681a163de6889",
+      "encoding": "original",
+      "roundtrip_verified": true,
+      "source_bytes": 4137,
+      "source_name": "nitro-restart-replay.log",
+      "source_sha256": "46e91c42f39ea1245a088973151199d238a3bfec5517b36a54c681a163de6889"
+    },
+    {
+      "archive_bytes": 123,
+      "archive_path": "nitro-post-resize-df.log",
+      "archive_sha256": "fdfa94fb58306ad09a1dbb2206c45ad9001d6f0b816d4d8e746219e0bfeb607d",
+      "encoding": "original",
+      "roundtrip_verified": true,
+      "source_bytes": 123,
+      "source_name": "post_resize_df.log",
+      "source_sha256": "fdfa94fb58306ad09a1dbb2206c45ad9001d6f0b816d4d8e746219e0bfeb607d"
+    },
+    {
+      "archive_bytes": 228,
+      "archive_path": "nitro-post-resize-lsblk.log",
+      "archive_sha256": "f7339af426aeedeb77d4d913d765b853582b84ed73032a2f0a2f41640845b917",
+      "encoding": "original",
+      "roundtrip_verified": true,
+      "source_bytes": 228,
+      "source_name": "post_resize_lsblk.log",
+      "source_sha256": "f7339af426aeedeb77d4d913d765b853582b84ed73032a2f0a2f41640845b917"
+    },
+    {
+      "archive_bytes": 3683,
+      "archive_path": "interpretation-v1.md",
+      "archive_sha256": "9ce1b79f2428ad6a20bc2d097496b741d8bc147a790ef1f64359d6c719a61e3f",
+      "encoding": "original",
+      "roundtrip_verified": true,
+      "source_bytes": 3683,
+      "source_name": "interpretation-v1.md",
+      "source_sha256": "9ce1b79f2428ad6a20bc2d097496b741d8bc147a790ef1f64359d6c719a61e3f"
+    },
+    {
+      "archive_bytes": 3667,
+      "archive_path": "describe_backlogs.py",
+      "archive_sha256": "50ef35bd4a3226521e58f2a3115e30fd546d678e18a4648781f38bdc0bb37f83",
+      "encoding": "original",
+      "roundtrip_verified": true,
+      "source_bytes": 3667,
+      "source_name": "describe_backlogs.py",
+      "source_sha256": "50ef35bd4a3226521e58f2a3115e30fd546d678e18a4648781f38bdc0bb37f83"
+    },
+    {
+      "archive_bytes": 7257,
+      "archive_path": "archive_closed_reports.py",
+      "archive_sha256": "02bb3670634e9aea3fc64b71547e48bf2361b5938d0009788d059238a9cdf80e",
+      "encoding": "original",
+      "roundtrip_verified": true,
+      "source_bytes": 7257,
+      "source_name": "archive_bounded_screen.py",
+      "source_sha256": "02bb3670634e9aea3fc64b71547e48bf2361b5938d0009788d059238a9cdf80e"
+    }
+  ]
+}

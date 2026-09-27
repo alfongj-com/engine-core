@@ -1,0 +1,7 @@
+[
+  {"name":"capacity-final-nitro50-send32", "chains":["nitro=50"], "seconds":360, "extra":["--warmup-seconds","120","--late-window-seconds","180","--max-schedule-lag-ms","100","--eoa-broadcast-concurrency","32"]},
+  {"name":"capacity-final-nitro50-send64", "chains":["nitro=50"], "seconds":360, "extra":["--warmup-seconds","120","--late-window-seconds","180","--max-schedule-lag-ms","100","--eoa-broadcast-concurrency","64"]},
+  {"name":"capacity-final-evm12-60-send64", "chains":["evm12=60"], "seconds":360, "extra":["--warmup-seconds","120","--late-window-seconds","180","--max-schedule-lag-ms","100","--eoa-broadcast-concurrency","64"]},
+  {"name":"capacity-final-op60-send64", "chains":["evm2=60"], "seconds":360, "extra":["--warmup-seconds","120","--late-window-seconds","180","--max-schedule-lag-ms","100","--eoa-broadcast-concurrency","64"]},
+  {"name":"capacity-final-solana60-poll5", "chains":["solana=60"], "seconds":360, "extra":["--warmup-seconds","120","--late-window-seconds","180","--max-schedule-lag-ms","100","--eoa-broadcast-concurrency","64","--solana-confirmation-poll-seconds","5"]}
+]

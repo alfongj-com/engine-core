@@ -1,0 +1,900 @@
+--- a/twmq/src/lib.rs
++++ b/twmq/src/lib.rs
+@@ -1,3 +1,4 @@
++mod diagnostics;
+ pub mod error;
+ pub mod hooks;
+ pub mod job;
+@@ -1101,8 +1102,12 @@
+             created_at: now,
+         };
+ 
+-        let error_json = serde_json::to_string(&error_record)?;
+-        pipeline.lpush(self.job_errors_list_name(&job.job.id), error_json);
++        let error_json = crate::diagnostics::encode_record(&error_record)?;
++        crate::diagnostics::append_record(
++            pipeline,
++            &self.job_errors_list_name(&job.job.id),
++            error_json,
++        );
+ 
+         // Add to proper queue based on delay and position
+         if let Some(delay_duration) = delay {
+@@ -1165,8 +1170,12 @@
+             details: JobErrorType::fail(),
+             created_at: now,
+         };
+-        let error_json = serde_json::to_string(&error_record)?;
+-        pipeline.lpush(self.job_errors_list_name(&job.job.id), error_json);
++        let error_json = crate::diagnostics::encode_record(&error_record)?;
++        crate::diagnostics::append_record(
++            pipeline,
++            &self.job_errors_list_name(&job.job.id),
++            error_json,
++        );
+ 
+         // For "active" idempotency mode, remove from deduplication set immediately
+         if self.options.idempotency_mode == queue::IdempotencyMode::Active {
+@@ -1371,8 +1380,12 @@
+             details: JobErrorType::fail(),
+             created_at: now,
+         };
+-        let error_json = serde_json::to_string(&error_record)?;
+-        hook_pipeline.lpush(self.job_errors_list_name(&job.id), error_json);
++        let error_json = crate::diagnostics::encode_record(&error_record)?;
++        crate::diagnostics::append_record(
++            &mut hook_pipeline,
++            &self.job_errors_list_name(&job.id),
++            error_json,
++        );
+ 
+         // For "active" idempotency mode, remove from deduplication set immediately
+         if self.options.idempotency_mode == queue::IdempotencyMode::Active {
+@@ -1408,3 +1421,6 @@
+ 
+ #[cfg(test)]
+ mod lease_tests;
++
++#[cfg(test)]
++mod diagnostic_tests;
+--- a/twmq/src/multilane.rs
++++ b/twmq/src/multilane.rs
+@@ -1100,8 +1100,12 @@
+             created_at: now,
+         };
+ 
+-        let error_json = serde_json::to_string(&error_record)?;
+-        pipeline.lpush(self.job_errors_list_name(&job.job.id), error_json);
++        let error_json = crate::diagnostics::encode_record(&error_record)?;
++        crate::diagnostics::append_record(
++            pipeline,
++            &self.job_errors_list_name(&job.job.id),
++            error_json,
++        );
+ 
+         // Note: The actual requeuing logic needs to be handled by a separate operation
+         // since we need the lane_id from metadata. This will be done in the complete_job method.
+@@ -1139,8 +1143,12 @@
+             details: JobErrorType::fail(),
+             created_at: now,
+         };
+-        let error_json = serde_json::to_string(&error_record)?;
+-        pipeline.lpush(self.job_errors_list_name(&job.job.id), error_json);
++        let error_json = crate::diagnostics::encode_record(&error_record)?;
++        crate::diagnostics::append_record(
++            pipeline,
++            &self.job_errors_list_name(&job.job.id),
++            error_json,
++        );
+ 
+         // For "active" idempotency mode, remove from deduplication set immediately
+         if self.options.idempotency_mode == crate::queue::IdempotencyMode::Active {
+@@ -1393,8 +1401,12 @@
+             details: JobErrorType::fail(),
+             created_at: now,
+         };
+-        let error_json = serde_json::to_string(&error_record)?;
+-        hook_pipeline.lpush(self.job_errors_list_name(&job.id), error_json);
++        let error_json = crate::diagnostics::encode_record(&error_record)?;
++        crate::diagnostics::append_record(
++            &mut hook_pipeline,
++            &self.job_errors_list_name(&job.id),
++            error_json,
++        );
+ 
+         // For "active" idempotency mode, remove from deduplication set immediately
+         if self.options.idempotency_mode == crate::queue::IdempotencyMode::Active {
+@@ -1439,3 +1451,7 @@
+ #[cfg(test)]
+ #[path = "multilane_lease_tests.rs"]
+ mod lease_tests;
++
++#[cfg(test)]
++#[path = "multilane_diagnostic_tests.rs"]
++mod diagnostic_tests;
+--- /dev/null
++++ b/twmq/src/diagnostics.rs
+@@ -0,0 +1,114 @@
++//! Bounded inspection history; retry decisions use job metadata, never this list.
++use std::io::{self, Write};
++
++use redis::Pipeline;
++use serde::Serialize;
++
++use crate::{error::TwmqError, job::JobErrorRecord};
++
++pub(crate) const MAX_JOB_ERROR_RECORDS: usize = 100;
++pub(crate) const MAX_JOB_ERROR_RECORD_BYTES: usize = 16 * 1024;
++
++/// Serialize without allocating a second unbounded copy of a handler error.
++/// Small records keep their existing format. Oversized records get a distinct
++/// valid-JSON omission marker; no arbitrary prefix of the original is retained.
++pub(crate) fn encode_record<E: Serialize>(record: &JobErrorRecord<E>) -> Result<String, TwmqError> {
++    let mut writer = LimitedWriter {
++        bytes: Vec::with_capacity(1024),
++        exceeded: false,
++    };
++    match serde_json::to_writer(&mut writer, record) {
++        Ok(()) => Ok(String::from_utf8(writer.bytes).expect("serde_json emits UTF-8")),
++        Err(_) if writer.exceeded => Ok(serde_json::to_string(&serde_json::json!({
++            "attempt": record.attempt,
++            "created_at": record.created_at,
++            "details": record.details,
++            "diagnosticOmitted": {
++                "reason": "serialized_record_exceeds_limit",
++                "maxSerializedBytes": MAX_JOB_ERROR_RECORD_BYTES,
++            },
++        }))?),
++        Err(error) => Err(error.into()),
++    }
++}
++
++/// Both commands join the same existing owner-fenced completion transaction.
++/// LPUSH preserves newest-first order; LTRIM never changes key expiry.
++pub(crate) fn append_record(pipeline: &mut Pipeline, key: &str, record: String) {
++    pipeline
++        .lpush(key, record)
++        .ltrim(key, 0, (MAX_JOB_ERROR_RECORDS - 1) as isize);
++}
++
++struct LimitedWriter {
++    bytes: Vec<u8>,
++    exceeded: bool,
++}
++
++impl Write for LimitedWriter {
++    fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
++        if bytes.len() > MAX_JOB_ERROR_RECORD_BYTES.saturating_sub(self.bytes.len()) {
++            self.exceeded = true;
++            return Err(io::Error::other("job diagnostic size limit exceeded"));
++        }
++        self.bytes.extend_from_slice(bytes);
++        Ok(bytes.len())
++    }
++    fn flush(&mut self) -> io::Result<()> {
++        Ok(())
++    }
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++    use crate::job::{JobErrorType, RequeuePosition};
++    use std::time::Duration;
++
++    #[test]
++    fn diagnostic_bytes_include_json_escaping_and_exact_boundary() {
++        let record = |error| JobErrorRecord {
++            attempt: 17,
++            error,
++            created_at: 42,
++            details: JobErrorType::nack(Some(Duration::from_millis(200)), RequeuePosition::Last),
++        };
++        let overhead = serde_json::to_string(&record(String::new())).unwrap().len();
++        let exact = record("x".repeat(MAX_JOB_ERROR_RECORD_BYTES - overhead));
++        let encoded = encode_record(&exact).unwrap();
++        assert_eq!(encoded.len(), MAX_JOB_ERROR_RECORD_BYTES);
++        assert_eq!(encoded, serde_json::to_string(&exact).unwrap());
++        let oversized = record("\0".repeat(MAX_JOB_ERROR_RECORD_BYTES / 2));
++        let marker = encode_record(&oversized).unwrap();
++        assert!(marker.len() < MAX_JOB_ERROR_RECORD_BYTES);
++        let marker: serde_json::Value = serde_json::from_str(&marker).unwrap();
++        assert_eq!(marker["attempt"], 17);
++        assert_eq!(marker["created_at"], 42);
++        assert!(marker.get("error").is_none());
++        assert_eq!(
++            marker["details"],
++            serde_json::to_value(&oversized.details).unwrap()
++        );
++        assert_eq!(
++            marker["diagnosticOmitted"]["reason"],
++            "serialized_record_exceeds_limit"
++        );
++    }
++
++    #[test]
++    fn diagnostic_serializer_failures_keep_existing_error_semantics() {
++        struct Broken;
++        impl Serialize for Broken {
++            fn serialize<S: serde::Serializer>(&self, _: S) -> Result<S::Ok, S::Error> {
++                Err(serde::ser::Error::custom("handler serializer failed"))
++            }
++        }
++        let result = encode_record(&JobErrorRecord {
++            attempt: 1,
++            error: Broken,
++            created_at: 42,
++            details: JobErrorType::fail(),
++        });
++        assert!(matches!(result, Err(TwmqError::JsonError { .. })));
++    }
++}
+--- /dev/null
++++ b/twmq/src/diagnostic_tests.rs
+@@ -0,0 +1,330 @@
++use super::*;
++use crate::diagnostics::{MAX_JOB_ERROR_RECORD_BYTES, MAX_JOB_ERROR_RECORDS};
++use crate::lease_tests::{cleanup, redis_url};
++use serde::{Deserialize, Serialize};
++
++#[derive(Debug, Serialize, Deserialize, PartialEq)]
++pub(crate) enum DiagnosticError {
++    WorkRemaining { cycle: usize },
++    Remote { cycle: usize, message: String },
++}
++impl From<TwmqError> for DiagnosticError {
++    fn from(error: TwmqError) -> Self {
++        Self::Remote {
++            cycle: 0,
++            message: error.to_string(),
++        }
++    }
++}
++impl UserCancellable for DiagnosticError {
++    fn user_cancelled() -> Self {
++        Self::Remote {
++            cycle: 0,
++            message: "cancelled".into(),
++        }
++    }
++}
++pub(crate) struct Handler {
++    pub counter: String,
++}
++impl DurableExecution for Handler {
++    type Output = u64;
++    type ErrorData = DiagnosticError;
++    type JobData = u64;
++    async fn process(&self, job: &BorrowedJob<u64>) -> JobResult<u64, DiagnosticError> {
++        Ok(*job.data())
++    }
++    async fn on_nack(
++        &self,
++        _: &BorrowedJob<u64>,
++        _: NackHookData<'_, DiagnosticError>,
++        tx: &mut TransactionContext<'_>,
++    ) {
++        tx.pipeline().incr(&self.counter, 1);
++    }
++    async fn on_fail(
++        &self,
++        _: &BorrowedJob<u64>,
++        _: FailHookData<'_, DiagnosticError>,
++        tx: &mut TransactionContext<'_>,
++    ) {
++        tx.pipeline().incr(&self.counter, 1);
++    }
++    async fn on_queue_error(
++        &self,
++        _: &Job<Option<u64>>,
++        _: QueueInternalErrorHookData<'_>,
++        tx: &mut TransactionContext<'_>,
++    ) {
++        tx.pipeline().incr(&self.counter, 1);
++    }
++}
++async fn queue() -> Arc<Queue<Handler>> {
++    let name = format!("diagnostic-regression:{}", nanoid::nanoid!());
++    Queue::new(
++        &redis_url(),
++        &name,
++        Some(QueueOptions {
++            idempotency_mode: IdempotencyMode::Active,
++            ..Default::default()
++        }),
++        Handler {
++            counter: format!("twmq:{name}:hook-count"),
++        },
++    )
++    .await
++    .unwrap()
++    .arc()
++}
++async fn pop(queue: &Arc<Queue<Handler>>) -> BorrowedJob<u64> {
++    queue.pop_batch_jobs(1).await.unwrap().pop().unwrap()
++}
++fn nack(cycle: usize) -> JobResult<u64, DiagnosticError> {
++    let error = if cycle % 2 == 0 {
++        DiagnosticError::WorkRemaining { cycle }
++    } else {
++        DiagnosticError::Remote {
++            cycle,
++            message: "actual RPC failure".into(),
++        }
++    };
++    Err(JobError::Nack {
++        error,
++        delay: None,
++        position: RequeuePosition::Last,
++    })
++}
++
++#[tokio::test]
++#[ignore = "requires disposable Redis in TEST_REDIS_URL"]
++async fn diagnostics_bound_mixed_nacks_keep_order_attempts_and_existing_expiry() {
++    let queue = queue().await;
++    queue
++        .push(JobOptions::new(1).with_id("target"))
++        .await
++        .unwrap();
++    let mut conn = queue.redis.clone();
++    let key = queue.job_errors_list_name("target");
++    let mut seed = redis::pipe();
++    for _ in 0..MAX_JOB_ERROR_RECORDS + 20 {
++        seed.rpush(&key, "legacy").ignore();
++    }
++    seed.expire(&key, 600).ignore();
++    seed.query_async::<()>(&mut conn).await.unwrap();
++    let mut job = pop(&queue).await;
++    let first_attempt = job.job.attempts;
++    let count = MAX_JOB_ERROR_RECORDS + 7;
++    for cycle in 0..count {
++        assert_eq!(job.job.attempts, first_attempt + cycle as u32);
++        queue.complete_job(&job, nack(cycle)).await.unwrap();
++        assert_eq!(
++            conn.llen::<_, usize>(&key).await.unwrap(),
++            MAX_JOB_ERROR_RECORDS
++        );
++        job = pop(&queue).await;
++    }
++    assert_eq!(
++        job.job.attempts,
++        first_attempt + count as u32,
++        "retention must not reset retry metadata"
++    );
++    let rows: Vec<String> = conn.lrange(&key, 0, -1).await.unwrap();
++    for (offset, row) in rows.iter().enumerate() {
++        let record: JobErrorRecord<DiagnosticError> = serde_json::from_str(row).unwrap();
++        let cycle = count - 1 - offset;
++        match record.error {
++            DiagnosticError::WorkRemaining { cycle: observed }
++            | DiagnosticError::Remote {
++                cycle: observed, ..
++            } => assert_eq!(observed, cycle),
++        }
++        assert_eq!(record.attempt, first_attempt + cycle as u32);
++    }
++    let ttl: i64 = conn.ttl(&key).await.unwrap();
++    assert!(
++        ttl > 0 && ttl <= 600,
++        "append/trim must preserve existing expiry"
++    );
++    queue
++        .push(JobOptions::new(2).with_id("tail"))
++        .await
++        .unwrap();
++    queue.complete_job(&job, nack(count)).await.unwrap();
++    assert_eq!(
++        conn.lrange::<_, Vec<String>>(queue.pending_list_name(), 0, -1)
++            .await
++            .unwrap(),
++        ["tail", "target"]
++    );
++    let tail = pop(&queue).await;
++    assert_eq!(tail.id(), "tail");
++    queue.complete_job(&tail, Ok(2)).await.unwrap();
++    let target = pop(&queue).await;
++    queue.complete_job(&target, Ok(1)).await.unwrap();
++    assert_eq!(
++        conn.get::<_, usize>(&queue.handler.counter).await.unwrap(),
++        count + 1
++    );
++    cleanup(&mut conn, &format!("twmq:{}", queue.name())).await;
++}
++
++#[tokio::test]
++#[ignore = "requires disposable Redis in TEST_REDIS_URL"]
++async fn diagnostics_stale_nack_cannot_append_trim_or_change_new_owner() {
++    let queue = queue().await;
++    queue
++        .push(JobOptions::new(1).with_id("target"))
++        .await
++        .unwrap();
++    let old = pop(&queue).await;
++    let mut conn = queue.redis.clone();
++    let key = queue.job_errors_list_name("target");
++    let mut seed = redis::pipe();
++    for n in 0..MAX_JOB_ERROR_RECORDS + 2 {
++        seed.rpush(&key, n).ignore();
++    }
++    seed.query_async::<()>(&mut conn).await.unwrap();
++    let before: Vec<String> = conn.lrange(&key, 0, -1).await.unwrap();
++    let _: usize = conn
++        .del(queue.lease_key_name(old.id(), &old.lease_token))
++        .await
++        .unwrap();
++    let current = pop(&queue).await;
++    assert_ne!(old.lease_token, current.lease_token);
++    queue.complete_job(&old, nack(999)).await.unwrap();
++    assert_eq!(
++        conn.lrange::<_, Vec<String>>(&key, 0, -1).await.unwrap(),
++        before
++    );
++    assert_eq!(
++        conn.hget::<_, _, String>(queue.job_meta_hash_name("target"), "lease_token")
++            .await
++            .unwrap(),
++        current.lease_token
++    );
++    assert!(
++        !conn
++            .exists::<_, bool>(&queue.handler.counter)
++            .await
++            .unwrap()
++    );
++    queue.complete_job(&current, nack(1)).await.unwrap();
++    assert_eq!(
++        conn.llen::<_, usize>(&key).await.unwrap(),
++        MAX_JOB_ERROR_RECORDS
++    );
++    assert_eq!(
++        conn.get::<_, usize>(&queue.handler.counter).await.unwrap(),
++        1
++    );
++    let next = pop(&queue).await;
++    queue.complete_job(&next, Ok(1)).await.unwrap();
++    cleanup(&mut conn, &format!("twmq:{}", queue.name())).await;
++}
++
++#[tokio::test]
++#[ignore = "requires disposable Redis in TEST_REDIS_URL"]
++async fn diagnostics_oversize_nack_fail_and_queue_error_preserve_transitions() {
++    let queue = queue().await;
++    let mut conn = queue.redis.clone();
++    for site in ["nack", "fail", "deserialize"] {
++        queue.push(JobOptions::new(1).with_id(site)).await.unwrap();
++        let job = pop(&queue).await;
++        let key = queue.job_errors_list_name(site);
++        let mut seed = redis::pipe();
++        for _ in 0..MAX_JOB_ERROR_RECORDS + 1 {
++            seed.rpush(&key, "legacy").ignore();
++        }
++        seed.query_async::<()>(&mut conn).await.unwrap();
++        let error = DiagnosticError::Remote {
++            cycle: 77,
++            message: "\0".repeat(MAX_JOB_ERROR_RECORD_BYTES),
++        };
++        if site == "deserialize" {
++            let malformed = Job {
++                id: job.job.id.clone(),
++                data: None,
++                attempts: job.job.attempts,
++                created_at: job.job.created_at,
++                processed_at: job.job.processed_at,
++                finished_at: None,
++            };
++            queue
++                .complete_job_queue_error(&malformed, &job.lease_token, &error)
++                .await
++                .unwrap();
++        } else if site == "fail" {
++            queue
++                .complete_job(&job, Err(JobError::Fail(error)))
++                .await
++                .unwrap();
++        } else {
++            queue
++                .complete_job(
++                    &job,
++                    Err(JobError::Nack {
++                        error,
++                        delay: Some(Duration::from_secs(600)),
++                        position: RequeuePosition::First,
++                    }),
++                )
++                .await
++                .unwrap();
++            assert!(
++                conn.zscore::<_, _, Option<u64>>(queue.delayed_zset_name(), site)
++                    .await
++                    .unwrap()
++                    .is_some()
++            );
++            assert_eq!(
++                conn.hget::<_, _, String>(queue.job_meta_hash_name(site), "reentry_position")
++                    .await
++                    .unwrap(),
++                RequeuePosition::First.to_string()
++            );
++        }
++        assert_eq!(
++            conn.llen::<_, usize>(&key).await.unwrap(),
++            MAX_JOB_ERROR_RECORDS
++        );
++        let encoded: String = conn.lindex(&key, 0).await.unwrap();
++        assert!(encoded.len() <= MAX_JOB_ERROR_RECORD_BYTES);
++        let marker: serde_json::Value = serde_json::from_str(&encoded).unwrap();
++        assert_eq!(marker["attempt"], job.job.attempts);
++        assert_eq!(
++            marker["diagnosticOmitted"]["reason"],
++            "serialized_record_exceeds_limit"
++        );
++        assert!(marker.get("error").is_none());
++        assert_eq!(conn.ttl::<_, i64>(&key).await.unwrap(), -1, "no new expiry");
++        assert!(
++            !conn
++                .exists::<_, bool>(queue.lease_key_name(job.id(), &job.lease_token))
++                .await
++                .unwrap()
++        );
++        if site != "nack" {
++            assert!(
++                conn.lpos::<_, _, Option<usize>>(
++                    queue.failed_list_name(),
++                    site,
++                    redis::LposOptions::default()
++                )
++                .await
++                .unwrap()
++                .is_some()
++            );
++            assert!(
++                !conn
++                    .sismember::<_, _, bool>(queue.dedupe_set_name(), site)
++                    .await
++                    .unwrap()
++            );
++        }
++    }
++    assert_eq!(
++        conn.get::<_, usize>(&queue.handler.counter).await.unwrap(),
++        3
++    );
++    cleanup(&mut conn, &format!("twmq:{}", queue.name())).await;
++}
+--- /dev/null
++++ b/twmq/src/multilane_diagnostic_tests.rs
+@@ -0,0 +1,281 @@
++use super::*;
++use crate::IdempotencyMode;
++use crate::diagnostic_tests::{DiagnosticError, Handler};
++use crate::diagnostics::{MAX_JOB_ERROR_RECORD_BYTES, MAX_JOB_ERROR_RECORDS};
++use crate::lease_tests::{cleanup, redis_url};
++async fn queue() -> Arc<MultilaneQueue<Handler>> {
++    let name = format!("diagnostic-regression:{}", nanoid::nanoid!());
++    MultilaneQueue::new(
++        &redis_url(),
++        &name,
++        Some(QueueOptions {
++            idempotency_mode: IdempotencyMode::Active,
++            ..Default::default()
++        }),
++        Handler {
++            counter: format!("twmq_multilane:{name}:hook-count"),
++        },
++    )
++    .await
++    .unwrap()
++    .arc()
++}
++async fn pop(queue: &Arc<MultilaneQueue<Handler>>) -> BorrowedJob<u64> {
++    queue.pop_batch_jobs(1).await.unwrap().pop().unwrap().1
++}
++fn nack(cycle: usize) -> JobResult<u64, DiagnosticError> {
++    let error = if cycle % 2 == 0 {
++        DiagnosticError::WorkRemaining { cycle }
++    } else {
++        DiagnosticError::Remote {
++            cycle,
++            message: "actual RPC failure".into(),
++        }
++    };
++    Err(JobError::Nack {
++        error,
++        delay: None,
++        position: RequeuePosition::Last,
++    })
++}
++
++#[tokio::test]
++#[ignore = "requires disposable Redis in TEST_REDIS_URL"]
++async fn diagnostics_bound_mixed_nacks_keep_order_attempts_and_existing_expiry() {
++    let queue = queue().await;
++    queue
++        .push_to_lane("lane", JobOptions::new(1).with_id("target"))
++        .await
++        .unwrap();
++    let mut conn = queue.redis.clone();
++    let key = queue.job_errors_list_name("target");
++    let mut seed = redis::pipe();
++    for _ in 0..MAX_JOB_ERROR_RECORDS + 20 {
++        seed.rpush(&key, "legacy").ignore();
++    }
++    seed.expire(&key, 600).ignore();
++    seed.query_async::<()>(&mut conn).await.unwrap();
++    let mut job = pop(&queue).await;
++    let first_attempt = job.job.attempts;
++    let count = MAX_JOB_ERROR_RECORDS + 7;
++    for cycle in 0..count {
++        assert_eq!(job.job.attempts, first_attempt + cycle as u32);
++        queue.complete_job(&job, nack(cycle)).await.unwrap();
++        assert_eq!(
++            conn.llen::<_, usize>(&key).await.unwrap(),
++            MAX_JOB_ERROR_RECORDS
++        );
++        job = pop(&queue).await;
++    }
++    assert_eq!(
++        job.job.attempts,
++        first_attempt + count as u32,
++        "retention must not reset retry metadata"
++    );
++    let rows: Vec<String> = conn.lrange(&key, 0, -1).await.unwrap();
++    for (offset, row) in rows.iter().enumerate() {
++        let record: JobErrorRecord<DiagnosticError> = serde_json::from_str(row).unwrap();
++        let cycle = count - 1 - offset;
++        match record.error {
++            DiagnosticError::WorkRemaining { cycle: observed }
++            | DiagnosticError::Remote {
++                cycle: observed, ..
++            } => assert_eq!(observed, cycle),
++        }
++        assert_eq!(record.attempt, first_attempt + cycle as u32);
++    }
++    let ttl: i64 = conn.ttl(&key).await.unwrap();
++    assert!(
++        ttl > 0 && ttl <= 600,
++        "append/trim must preserve existing expiry"
++    );
++    queue
++        .push_to_lane("lane", JobOptions::new(2).with_id("tail"))
++        .await
++        .unwrap();
++    queue.complete_job(&job, nack(count)).await.unwrap();
++    assert_eq!(
++        conn.lrange::<_, Vec<String>>(queue.lane_pending_list_name("lane"), 0, -1)
++            .await
++            .unwrap(),
++        ["tail", "target"]
++    );
++    // Preserve existing multilane RPOP semantics; this diagnostic-only patch
++    // does not repair its pre-existing Last/RPUSH priority reversal.
++    let target = pop(&queue).await;
++    assert_eq!(target.id(), "target");
++    queue.complete_job(&target, Ok(1)).await.unwrap();
++    let tail = pop(&queue).await;
++    assert_eq!(tail.id(), "tail");
++    queue.complete_job(&tail, Ok(2)).await.unwrap();
++    assert_eq!(
++        conn.get::<_, usize>(&queue.handler.counter).await.unwrap(),
++        count + 1
++    );
++    cleanup(&mut conn, &format!("twmq_multilane:{}", queue.queue_id())).await;
++}
++
++#[tokio::test]
++#[ignore = "requires disposable Redis in TEST_REDIS_URL"]
++async fn diagnostics_stale_nack_cannot_append_trim_or_change_new_owner() {
++    let queue = queue().await;
++    queue
++        .push_to_lane("lane", JobOptions::new(1).with_id("target"))
++        .await
++        .unwrap();
++    let old = pop(&queue).await;
++    let mut conn = queue.redis.clone();
++    let key = queue.job_errors_list_name("target");
++    let mut seed = redis::pipe();
++    for n in 0..MAX_JOB_ERROR_RECORDS + 2 {
++        seed.rpush(&key, n).ignore();
++    }
++    seed.query_async::<()>(&mut conn).await.unwrap();
++    let before: Vec<String> = conn.lrange(&key, 0, -1).await.unwrap();
++    let _: usize = conn
++        .del(queue.lease_key_name(old.id(), &old.lease_token))
++        .await
++        .unwrap();
++    let _: usize = conn.zadd(queue.lanes_zset_name(), "lane", 0).await.unwrap();
++    let current = pop(&queue).await;
++    assert_ne!(old.lease_token, current.lease_token);
++    queue.complete_job(&old, nack(999)).await.unwrap();
++    assert_eq!(
++        conn.lrange::<_, Vec<String>>(&key, 0, -1).await.unwrap(),
++        before
++    );
++    assert_eq!(
++        conn.hget::<_, _, String>(queue.job_meta_hash_name("target"), "lease_token")
++            .await
++            .unwrap(),
++        current.lease_token
++    );
++    assert!(
++        !conn
++            .exists::<_, bool>(&queue.handler.counter)
++            .await
++            .unwrap()
++    );
++    queue.complete_job(&current, nack(1)).await.unwrap();
++    assert_eq!(
++        conn.llen::<_, usize>(&key).await.unwrap(),
++        MAX_JOB_ERROR_RECORDS
++    );
++    assert_eq!(
++        conn.get::<_, usize>(&queue.handler.counter).await.unwrap(),
++        1
++    );
++    let next = pop(&queue).await;
++    queue.complete_job(&next, Ok(1)).await.unwrap();
++    cleanup(&mut conn, &format!("twmq_multilane:{}", queue.queue_id())).await;
++}
++
++#[tokio::test]
++#[ignore = "requires disposable Redis in TEST_REDIS_URL"]
++async fn diagnostics_oversize_nack_fail_and_queue_error_preserve_transitions() {
++    let queue = queue().await;
++    let mut conn = queue.redis.clone();
++    for site in ["nack", "fail", "deserialize"] {
++        queue
++            .push_to_lane("lane", JobOptions::new(1).with_id(site))
++            .await
++            .unwrap();
++        let job = pop(&queue).await;
++        let key = queue.job_errors_list_name(site);
++        let mut seed = redis::pipe();
++        for _ in 0..MAX_JOB_ERROR_RECORDS + 1 {
++            seed.rpush(&key, "legacy").ignore();
++        }
++        seed.query_async::<()>(&mut conn).await.unwrap();
++        let error = DiagnosticError::Remote {
++            cycle: 77,
++            message: "\0".repeat(MAX_JOB_ERROR_RECORD_BYTES),
++        };
++        if site == "deserialize" {
++            let malformed = Job {
++                id: job.job.id.clone(),
++                data: None,
++                attempts: job.job.attempts,
++                created_at: job.job.created_at,
++                processed_at: job.job.processed_at,
++                finished_at: None,
++            };
++            queue
++                .complete_job_queue_error(&malformed, &job.lease_token, &error)
++                .await
++                .unwrap();
++        } else if site == "fail" {
++            queue
++                .complete_job(&job, Err(JobError::Fail(error)))
++                .await
++                .unwrap();
++        } else {
++            queue
++                .complete_job(
++                    &job,
++                    Err(JobError::Nack {
++                        error,
++                        delay: Some(Duration::from_secs(600)),
++                        position: RequeuePosition::First,
++                    }),
++                )
++                .await
++                .unwrap();
++            assert!(
++                conn.zscore::<_, _, Option<u64>>(queue.lane_delayed_zset_name("lane"), site)
++                    .await
++                    .unwrap()
++                    .is_some()
++            );
++            assert_eq!(
++                conn.hget::<_, _, String>(queue.job_meta_hash_name(site), "reentry_position")
++                    .await
++                    .unwrap(),
++                RequeuePosition::First.to_string()
++            );
++        }
++        assert_eq!(
++            conn.llen::<_, usize>(&key).await.unwrap(),
++            MAX_JOB_ERROR_RECORDS
++        );
++        let encoded: String = conn.lindex(&key, 0).await.unwrap();
++        assert!(encoded.len() <= MAX_JOB_ERROR_RECORD_BYTES);
++        let marker: serde_json::Value = serde_json::from_str(&encoded).unwrap();
++        assert_eq!(marker["attempt"], job.job.attempts);
++        assert_eq!(
++            marker["diagnosticOmitted"]["reason"],
++            "serialized_record_exceeds_limit"
++        );
++        assert!(marker.get("error").is_none());
++        assert_eq!(conn.ttl::<_, i64>(&key).await.unwrap(), -1, "no new expiry");
++        assert!(
++            !conn
++                .exists::<_, bool>(queue.lease_key_name(job.id(), &job.lease_token))
++                .await
++                .unwrap()
++        );
++        if site != "nack" {
++            assert!(
++                conn.lpos::<_, _, Option<usize>>(
++                    queue.failed_list_name(),
++                    site,
++                    redis::LposOptions::default()
++                )
++                .await
++                .unwrap()
++                .is_some()
++            );
++            assert!(
++                !conn
++                    .sismember::<_, _, bool>(queue.dedupe_set_name(), site)
++                    .await
++                    .unwrap()
++            );
++        }
++    }
++    assert_eq!(
++        conn.get::<_, usize>(&queue.handler.counter).await.unwrap(),
++        3
++    );
++    cleanup(&mut conn, &format!("twmq_multilane:{}", queue.queue_id())).await;
++}
+--- /dev/null
++++ b/docs/design/queue-diagnostics.md
+@@ -0,0 +1,35 @@
++# Queue diagnostic history
++
++## Contract
++
++Each TWMQ job retains its100 newest error/continuation diagnostics, newest first. Each newly serialized record is limited to16KiB, including JSON escaping. The limit applies to nack, terminal failure and deserialization-failure records in both queue variants. Normal `WorkRemaining` continuations remain inspectable.
++
++`LPUSH` and `LTRIM` execute in the existing lease-owner-fenced completion transaction. This does not change retry metadata, requeue position/delay, hooks, lease ownership, job retention or key expiry. Retry decisions never use diagnostic-list length.
++
++Ordinary records retain the existing `JobErrorRecord<E>` JSON byte-for-byte. Oversized records use a distinct omission envelope, for example:
++
++```json
++{
++  "attempt": 17,
++  "created_at": 42,
++  "details": {"nack": {"delay": null, "position": "last"}},
++  "diagnosticOmitted": {
++    "reason": "serialized_record_exceeds_limit",
++    "maxSerializedBytes": 16384
++  }
++}
++```
++
++Inspectors must recognize `diagnosticOmitted` before decoding an ordinary typed record. The marker preserves attempt/time/scheduling details; it does not retain a partial error string or fabricate a handler error variant. Serialization uses a bounded writer so an oversized error does not allocate a second unbounded JSON copy. A genuine handler serialization error retains its previous error behavior.
++
++## Existing data and limits
++
++The next diagnostic append trims an existing list to100 entries. Legacy oversized entries remain until naturally displaced; the total serialized-payload bound of100×16KiB applies after100 bounded replacements, not immediately to arbitrary old data. A very large legacy list can incur a one-time linear trim cost. There is no startup migration, age-based expiry or background rewrite.
++
++This is a per-job diagnostic bound, not a global Redis memory bound. Redis object overhead, total job count, job payloads/results and retained legacy entries remain separate capacity concerns. Diagnostic history is not the authoritative transaction-intent/replay journal.
++
++## Verification
++
++Real Redis tests cover both queue variants: more than100 alternating continuations/real errors, exact newest-first order, monotonic attempt metadata, existing TTL preservation, unchanged queue operations, oversized records at all six append sites and stale-owner fencing of both append and trim. Serializer tests cover exact16KiB boundary, escaped bytes, unchanged ordinary JSON and unrelated serialization failure. Removing LTRIM makes both count regressions fail (121 retained versus100).
++
++A separate pre-existing multilane queue-order issue is recorded in [the ordering audit](../audit-multilane-ordering.md); diagnostic retention does not alter it.
+--- /dev/null
++++ b/docs/audit-multilane-ordering.md
+@@ -0,0 +1,11 @@
++# Multilane queue ordering: open finding
++
++**Finding:** `MultilaneQueue` pops a lane with `RPOP` (`twmq/src/multilane.rs`, helper `pop_job_from_lane`) while new admissions and `RequeuePosition::Last` append with `RPUSH`. `First` uses `LPUSH`, including delayed reentry. The single queue pops with `LPOP`, consistent with those insertion positions.
++
++**Observed regression scenario:** after107 continuation/error cycles, enqueue another job `tail`, then nack `target` with `Last`. Redis contains `[tail,target]`. Multilane immediately pops `target`, while the single queue pops `tail`. The diagnostics regression exposed this existing behavior and explicitly preserves it in that narrow change.
++
++**Impact:** within one lane, a repeatedly nacked `Last` job can starve older pending jobs; continuous new arrivals can also prioritize newer work. This is a fairness/liveness issue, not evidence of duplicate execution or a lease-fencing defect. Cross-lane iteration does not remove starvation inside the affected lane.
++
++**Current production scope:** repository search finds no `MultilaneQueue`, `push_to_lane` or `job_for_lane` caller outside the TWMQ library/tests. `server/src/queue/manager.rs` constructs ordinary `Queue` for EOA, Solana, webhooks and both account-abstraction paths. Therefore the current EOA/Solana capacity campaigns do not execute this faulty pop path. External library consumers may be affected.
++
++**Follow-up:** separately define/test FIFO admission and immediate/delayed `First`/`Last` behavior with competing jobs, then align the pop direction. Do not silently combine that scheduling behavior change with diagnostic retention. A same-lane repeated-requeue regression should prove older jobs advance; existing lease/cancellation/pruning regressions must remain green.

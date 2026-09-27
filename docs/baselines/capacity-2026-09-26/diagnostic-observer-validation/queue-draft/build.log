@@ -1,0 +1,3 @@
+   Compiling twmq v0.1.0 (/tmp/engine-diagnostic-draft/twmq)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.03s
+  Executable unittests src/lib.rs (/tmp/engine-diagnostic-draft/target/debug/deps/twmq-395ea38072a245fa)

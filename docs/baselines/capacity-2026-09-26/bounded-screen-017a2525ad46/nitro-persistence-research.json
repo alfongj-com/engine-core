@@ -1,0 +1,28 @@
+{
+  "source_commit": "beb21087772a2668a1f13847697e1406305e4d89",
+  "source_urls": {
+    "dev_flags": "https://github.com/OffchainLabs/nitro/blob/beb21087772a2668a1f13847697e1406305e4d89/cmd/util/confighelpers/configuration.go#L196-L235",
+    "existing_database": "https://github.com/OffchainLabs/nitro/blob/beb21087772a2668a1f13847697e1406305e4d89/cmd/nitro/init/init.go#L1016-L1060",
+    "initialize": "https://github.com/OffchainLabs/nitro/blob/beb21087772a2668a1f13847697e1406305e4d89/cmd/nitro/init/init.go#L618-L658",
+    "init_defaults": "https://github.com/OffchainLabs/nitro/blob/beb21087772a2668a1f13847697e1406305e4d89/cmd/conf/init.go#L51",
+    "fake_init": "https://github.com/OffchainLabs/nitro/blob/beb21087772a2668a1f13847697e1406305e4d89/cmd/nitro/nitro.go#L628-L644"
+  },
+  "stopped_container": "engine-nitro-dev",
+  "container_chain_path": "/tmp/dev-test",
+  "guest_writable_layer_chain_path": "/var/lib/containerd/io.containerd.snapshotter.v1.overlayfs/snapshots/48/fs/tmp/dev-test",
+  "observed_du": "2.7G",
+  "source_sha256": {
+    "beb2108-cmd-nitro-nitro.go": "d9487e03e54ce939174e8a32f9298ff3c3609bead72aa182ac1ee0374881df65",
+    "beb2108-cmd-conf-init.go": "75b98b58d54bd3403d77361c781d336c689716f1153d3d34188349a6af206090",
+    "beb2108-cmd-util-confighelpers-configuration.go": "dcd980b70e4c77425c6eb73fc4ad6029a338d90a2bb14bd4119f38fb94e558ab",
+    "beb2108-cmd-nitro-init-init.go": "1c27f09591b1fc9026271ba4524a59584b669c93a8f6fa35f5ec63de623d59ea"
+  },
+  "conclusion": "--dev uses fixed persistence path and normally reopens existing database; it does not delete it or force new genesis. Old wrapper/doc reset wording was incorrect. Same-container restart after full backup and disk repair is a recovery attempt, not proof of intact historical state.",
+  "operator_preconditions": [
+    "Keep Engine and ticker stopped; back up stopped VM/disk and full dev-test state first.",
+    "Retain same container/writable layer; do not run wrapper with autofunding, remove container, initialize empty, or force database initialization.",
+    "After authorized restart, compare chain412346 genesis, stored Engine finality checkpoint hash and nonce/balances before any transaction or Engine resume.",
+    "Disk-full may have caused lost writes/corrupt partial storage; fail closed if saved checkpoint cannot be corroborated. Chain ID alone is insufficient."
+  ],
+  "actions_taken": "Read-only docker inspect and root filesystem find/du/ls/tail; fetched official source. No restart/container edit/VM edit/funding."
+}

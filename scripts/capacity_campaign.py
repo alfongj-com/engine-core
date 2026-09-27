@@ -14,7 +14,7 @@ Example (root/operator runs measurements after source freeze):
 """
 import argparse
 import base64
-from collections import Counter
+from collections import Counter, OrderedDict
 import concurrent.futures
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -23,6 +23,7 @@ import functools
 import hashlib
 import heapq
 import http.client
+import itertools
 import json
 import math
 import os
@@ -341,6 +342,8 @@ class JournalObserver:
         self.cursors = {"admissions": 0, "attempts": 0, "terminal_evidence": 0}
         self.admitted, self.attempted, self.terminal = set(), set(), set()
         self.signatures = {}
+        # Incremental live work; signatures retains complete reconciliation history.
+        self.pending_signatures = OrderedDict()
         self.outcomes = Counter()
         self.latencies = {chain: {"attempt_observed_upper_ms": [], "terminal_observed_upper_ms": []} for chain in set(id_chain.values())}
         self.unknown_ids = set()
@@ -369,7 +372,10 @@ class JournalObserver:
                     if table == "attempts":
                         value = json.loads(data)
                         if "signature" in value:
-                            self.signatures[value["signature"]] = txid
+                            signature = value["signature"]
+                            if signature not in self.signatures:
+                                self.pending_signatures[signature] = None
+                            self.signatures[signature] = txid
                     elif table == "terminal_evidence":
                         self.outcomes[(chain, json.loads(data).get("outcome", "unknown"))] += 1
             db.rollback()
@@ -531,7 +537,6 @@ class Campaign:
         self.sample_lock = threading.Lock()
         self.included_signatures = set()
         self.finalized_signatures = set()
-        self.sig_rotation = 0
         self.pool = BoundedPool(args.http_concurrency)
         self.report = {
             "campaign_started_utc": datetime.now(timezone.utc).isoformat(),
@@ -767,21 +772,29 @@ class Campaign:
                 if profile["family"] == "evm":
                     chains[name]["included"] = int(node.call("eth_getTransactionCount", [FROM, "latest"]), 16) - self.initial[name]["sender_nonce"]
                 else:
-                    pending = [sig for sig in self.observer.signatures if sig not in self.finalized_signatures]
-                    # Finite observer work; record lag instead of perturbing the sender.
-                    selected = pending[self.sig_rotation:self.sig_rotation + 2048]
-                    if not selected: selected, self.sig_rotation = pending[:2048], 0
-                    self.sig_rotation += len(selected)
+                    pending = self.observer.pending_signatures
+                    pending_count = len(pending)
+                    # One bounded wave: arrivals join behind waiting entries.
+                    # Rotate each <=256 batch BEFORE I/O so repeated failures
+                    # cannot pin other work behind it. No entry is lost on error.
+                    selected = list(itertools.islice(pending, 2048))
                     for offset in range(0, len(selected), 256):
                         batch = selected[offset:offset + 256]
+                        for signature in batch:
+                            pending.move_to_end(signature)
                         statuses = node.call("getSignatureStatuses", [batch, {"searchTransactionHistory": True}])["value"]
+                        if not isinstance(statuses, list) or len(statuses) != len(batch):
+                            raise RuntimeError("Local observer returned an invalid signature-status count")
+                        if any(status is not None and not isinstance(status, dict) for status in statuses):
+                            raise RuntimeError("Local observer returned an invalid signature-status entry")
                         for signature, status in zip(batch, statuses):
                             if status and status.get("confirmationStatus") in ("confirmed", "finalized"):
                                 self.included_signatures.add(signature)
                             if status and status.get("confirmationStatus") == "finalized":
                                 self.finalized_signatures.add(signature)
+                                del pending[signature]
                     chains[name]["included"] = len(self.included_signatures)
-                    chains[name]["observer_pending_signatures"] = len(pending)
+                    chains[name]["observer_pending_signatures"] = pending_count
                     chains[name]["finalized"] = len(self.finalized_signatures)
                 with self.lock:
                     chains[name]["client"] = dict(self.stats[name])
@@ -971,8 +984,8 @@ class Campaign:
             if paused:
                 node.call("evm_setIntervalMining", [interval])
                 self.event("interval_mining_restored", chain=chain, seconds=interval)
-        # Current tip-pinning code is expected to halt conservatively here. Keep
-        # the failure evidence and return promptly; never call it recovered.
+        # A rollback above the qualified depth boundary should remain live.
+        # Preserve any unexpected durable conflict; never call it recovered.
         deadline = time.monotonic() + 10
         while time.monotonic() < deadline:
             inventory = self.chain_finality_inventory(chain)
@@ -1114,6 +1127,9 @@ class Campaign:
             self.start_engine()
             self.event("chaos_recovered", kind=self.args.chaos)
         except Exception as error:
+            # A failed restart is not itself proof of a recovery fence. Read
+            # the durable state; keep arbitrary startup/RPC failures as errors.
+            self.stop_for_durable_fence("chaos_failure")
             if isinstance(error, ScenarioUnqualified):
                 self.report["chaos_qualification"] = {"qualified": False, "reason": str(error)}
                 self.event("chaos_unqualified", reason=str(error))
@@ -1145,6 +1161,10 @@ class Campaign:
         deadline = time.monotonic() + self.args.drain_seconds
         parked = {txid for txid, expected in self.expected.items() if expected.get("expected_to_park")}
         while time.monotonic() < deadline:
+            # No retry or long drain can heal a durable journal/chain halt.
+            # Stop before another RPC sample; reconciliation still runs below.
+            if self.stop_for_durable_fence("drain"):
+                return self.samples[-1] if self.samples else None
             row = self.sample()
             if self.args.chaos == "reorg" and self.report.get("reorg"):
                 inventory = self.chain_finality_inventory(self.report["reorg"]["chain"])
@@ -1166,6 +1186,8 @@ class Campaign:
         return self.sample()
 
     def retry_phase(self):
+        if self.recovery_required or self.finality_halted or self.stop_for_durable_fence("before_retry"):
+            return
         ids = []
         if self.args.retry_unknown:
             ids.extend(txid for txid, status in self.statuses.items() if status != 202)
@@ -1177,6 +1199,8 @@ class Campaign:
         self.event("same_id_retry_started", count=len(ids), unknown_enabled=self.args.retry_unknown,
                    duplicate_limit=self.args.duplicate_count)
         for txid in ids:
+            if self.recovery_required or self.finality_halted:
+                break
             chain = self.id_chain[txid]
             index = int(txid.rsplit("-", 1)[1])
             self.submit(Offer(chain, index, time.monotonic()), retry=True)
@@ -1212,13 +1236,14 @@ class Campaign:
                 raise RuntimeError("Chaos worker did not finish within its bounded deadline")
             self.phase = "drain"
             for name, profile in self.profiles.items():
-                if profile.get("drain_hook"):
+                if profile.get("drain_hook") and not (self.recovery_required or self.finality_halted):
                     self.spawn("drain-hook-" + name, profile["drain_hook"])
                     self.event("external_drain_hook_started", chain=name)
             for proxy in self.proxies.values(): proxy.release()
             if not self.recovery_required and not self.projection_recovered and not self.finality_halted:
                 self.wait_drain()
-                self.retry_phase()
+                if not self.recovery_required and not self.finality_halted:
+                    self.retry_phase()
         finally:
             self.stop_sampler.set()
             sampler.join(timeout=30)
@@ -1248,16 +1273,53 @@ class Campaign:
                 "late_window": assessment}
 
     def capture_durable_fences(self):
-        """Read durable classifications even if a fault interrupts reconciliation."""
+        """Read durable flags, never infer them from a failed HTTP/process call."""
         if not self.journal.is_file():
-            return
+            return False
         with sqlite3.connect(f"file:{self.journal}?mode=ro", uri=True, timeout=2) as db:
             db.execute("BEGIN")
-            self.report["journal_halted"] = bool(db.execute("SELECT halted FROM control").fetchone()[0])
-            # Identifiers alone are sufficient; raw stored diagnostics may contain
-            # unqualified upstream text and do not belong in public measurements.
-            self.report["durable_chain_halts"] = [row[0] for row in db.execute("SELECT chain_id FROM chain_halts ORDER BY chain_id")]
+            control = db.execute("SELECT halted,reason FROM control WHERE singleton=1").fetchone()
+            if control is None or control[0] not in (0, 1):
+                raise ValueError("Invalid durable control state")
+            chain_halts = [row[0] for row in db.execute("SELECT chain_id FROM chain_halts ORDER BY chain_id")]
             db.rollback()
+        # Only fixed categories enter a public report. The original reason
+        # remains in the private journal; arbitrary stored text is never copied.
+        categories = {
+            "ledger unavailable": "ledger_unavailable",
+            "Redis continuity unavailable": "redis_continuity_unavailable",
+            "Redis checkpoint mismatch": "redis_checkpoint_mismatch",
+            "Redis primary role changed": "redis_primary_role_changed",
+            "Redis process changed": "redis_process_changed",
+            "Redis checkpoint mirror failed": "redis_checkpoint_mirror_failed",
+            "terminal evidence conflict": "terminal_evidence_conflict",
+            "operator quarantine": "operator_quarantine",
+            "recovery incomplete": "recovery_incomplete",
+        }
+        self.report["journal_halted"] = bool(control[0])
+        self.report["journal_halt_category"] = categories.get(control[1], "unrecognized_private_reason") if control[0] else None
+        self.report["durable_chain_halts"] = chain_halts
+        return bool(control[0] or chain_halts)
+
+    def stop_for_durable_fence(self, context):
+        """Abort further offers/draining only with an actual durable halt row."""
+        try:
+            halted = self.capture_durable_fences()
+        except (sqlite3.Error, OSError, TypeError, ValueError):
+            self.report["durable_fence_read_unavailable"] = True
+            return False
+        if not halted:
+            return False
+        self.recovery_required |= self.report["journal_halted"]
+        self.finality_halted |= bool(self.report["durable_chain_halts"])
+        self.abort.set()
+        if "durable_fence_stop" not in self.report:
+            observation = {"context": context, "journal_halted": self.report["journal_halted"],
+                           "journal_halt_category": self.report["journal_halt_category"],
+                           "chain_ids": self.report["durable_chain_halts"]}
+            self.report["durable_fence_stop"] = observation
+            self.event("durable_fence_stop", **observation)
+        return True
 
     def read_journal(self):
         observations = {}
@@ -1440,7 +1502,11 @@ class Campaign:
             oracle["safety_failures"].extend(balance_errors)
             oracle.update({"safety_pass": False, "outcome": "unsafe"})
         fault_validated = True
-        if self.args.chaos in ("engine-crash", "redis-restart", "reorg", "redis-recover"):
+        if self.args.chaos == "engine-crash":
+            # A durable fence proves fail-closed custody, not recovered liveness.
+            # In particular recovery_required must not validate a failed restart.
+            fault_validated = any(event["event"] == "chaos_recovered" and event.get("kind") == "engine-crash" for event in self.events)
+        elif self.args.chaos in ("redis-restart", "reorg", "redis-recover"):
             fault_validated = any(event["event"] == "chaos_recovered" for event in self.events) or self.recovery_required
         elif self.args.chaos == "lost-send":
             fault_validated = all(proxy.snapshot()["dropped_responses"] == self.args.fault_count for proxy in self.proxies.values())
@@ -1504,7 +1570,7 @@ class Campaign:
                 self.report["rpc"] = {name: proxy.snapshot(include_wires=True) for name, proxy in self.proxies.items()}
             try:
                 self.capture_durable_fences()
-            except (sqlite3.Error, OSError, TypeError):
+            except (sqlite3.Error, OSError, TypeError, ValueError):
                 self.report["durable_fence_read_unavailable"] = True
             self.report["operator_recovery_required"] = self.recovery_required
             self.report["finality_checkpoint_conflict"] = self.finality_halted

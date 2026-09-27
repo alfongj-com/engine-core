@@ -1,0 +1,76 @@
+{
+  "records": [
+    {
+      "name": "workspace-unit",
+      "command": [
+        "/Users/alfongj/.cargo/bin/cargo",
+        "test",
+        "--locked",
+        "--workspace",
+        "--lib"
+      ],
+      "exit": 0,
+      "seconds": 11.139,
+      "log": "/tmp/engine-diagnostic-workspace-unit.log",
+      "sha256": "d57e466c38724d010e4815881cc17a98630b03522a829c2e63b19392ea626d65"
+    },
+    {
+      "name": "queue-redis",
+      "command": [
+        "/Users/alfongj/.cargo/bin/cargo",
+        "test",
+        "--locked",
+        "-p",
+        "twmq",
+        "--lib",
+        "--",
+        "--ignored",
+        "--test-threads=1"
+      ],
+      "exit": 0,
+      "seconds": 3.503,
+      "log": "/tmp/engine-diagnostic-queue-redis.log",
+      "sha256": "aa565ab32c034e2397230d66aa0d78176ca23d97e8befbe6792514a4c6cae74f"
+    },
+    {
+      "name": "executor-redis",
+      "command": [
+        "/Users/alfongj/.cargo/bin/cargo",
+        "test",
+        "--locked",
+        "-p",
+        "engine-executors",
+        "--lib",
+        "--",
+        "--ignored",
+        "--test-threads=1"
+      ],
+      "exit": 0,
+      "seconds": 30.325,
+      "log": "/tmp/engine-diagnostic-executor-redis.log",
+      "sha256": "2a752889168eb7efcb68f4f816ac0aef19e97869481ef0319d6fbf8ba855d719"
+    },
+    {
+      "name": "release",
+      "command": [
+        "/Users/alfongj/.cargo/bin/cargo",
+        "build",
+        "--locked",
+        "--release",
+        "-p",
+        "thirdweb-engine"
+      ],
+      "exit": 0,
+      "seconds": 44.035,
+      "log": "/tmp/engine-diagnostic-release.log",
+      "sha256": "2cdd0b0616752131c44a9aba55bdc034aa7b7b7010645d3d5f315d1db31e5fe4"
+    }
+  ],
+  "redis": {
+    "port": 58008,
+    "pid": 49128,
+    "exit": 0,
+    "folder": "/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/engine-diagnostic-redis-zfkm4p5j"
+  },
+  "engine_sha256": "300db9782868ddca5b6d552e7ead5d2621322a82c8297ffde8f6ecb067858b23"
+}

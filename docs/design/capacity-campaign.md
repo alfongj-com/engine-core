@@ -56,6 +56,14 @@ public-testnet checks and local timing simulations must be labeled separately.
 
 ### Tuning controls
 
+Capacity runs use `APP__QUEUE__EOA_MAX_INFLIGHT=4096`; the service default is
+50. This is the allowance for unconsumed nonces, not RPC concurrency. A signer
+offering 50 TPS across a 12-second block interval needs room for roughly 600
+transactions before inclusion, plus headroom. The measured rates therefore do
+not describe the default configuration. The campaign also uses one EOA worker
+per EVM chain, 100 Solana workers, a 20ms queue poll interval and local keys.
+AWS KMS signing throughput is a separate qualification.
+
 `APP__QUEUE__EOA_BROADCAST_CONCURRENCY` accepts 1–128 concurrent broadcast tasks
 per signer/chain worker; the default remains 32. It does not enlarge the nonce
 window, preparation concurrency, borrowed-receipt lookup limit, or sequential
@@ -75,6 +83,18 @@ late offers can produce bounded microbursts; this is not a hard real-time load
 generator. Reports include scheduled-to-HTTP-start lateness, distinct from
 response latency. Preserve both rounds; a later allowance does not repair an
 earlier missed offer.
+
+The final client permits 128 concurrent HTTP requests. Earlier screens used 64;
+both limits are bounded, and old client-capacity drops remain failed offers.
+Neither limit changes Engine's worker or RPC concurrency.
+
+Solana's live observer keeps a FIFO list of unresolved signatures. It rotates
+each selected batch before querying, removes finalized signatures, and appends
+new signatures behind waiting work. Each sample still queries at most 2,048
+signatures in batches of 256. Failures retain the pending work and disqualify
+the measurement. This fixes an older observer that could follow new arrivals
+and fail to revisit old signatures until load stopped. Full post-drain
+reconciliation remains independent of live sampling.
 
 ### Confirmation assessment
 

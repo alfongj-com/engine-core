@@ -1,3 +1,4 @@
+mod diagnostics;
 pub mod error;
 pub mod hooks;
 pub mod job;
@@ -1101,8 +1102,12 @@ impl<H: DurableExecution> Queue<H> {
             created_at: now,
         };
 
-        let error_json = serde_json::to_string(&error_record)?;
-        pipeline.lpush(self.job_errors_list_name(&job.job.id), error_json);
+        let error_json = crate::diagnostics::encode_record(&error_record)?;
+        crate::diagnostics::append_record(
+            pipeline,
+            &self.job_errors_list_name(&job.job.id),
+            error_json,
+        );
 
         // Add to proper queue based on delay and position
         if let Some(delay_duration) = delay {
@@ -1165,8 +1170,12 @@ impl<H: DurableExecution> Queue<H> {
             details: JobErrorType::fail(),
             created_at: now,
         };
-        let error_json = serde_json::to_string(&error_record)?;
-        pipeline.lpush(self.job_errors_list_name(&job.job.id), error_json);
+        let error_json = crate::diagnostics::encode_record(&error_record)?;
+        crate::diagnostics::append_record(
+            pipeline,
+            &self.job_errors_list_name(&job.job.id),
+            error_json,
+        );
 
         // For "active" idempotency mode, remove from deduplication set immediately
         if self.options.idempotency_mode == queue::IdempotencyMode::Active {
@@ -1371,8 +1380,12 @@ impl<H: DurableExecution> Queue<H> {
             details: JobErrorType::fail(),
             created_at: now,
         };
-        let error_json = serde_json::to_string(&error_record)?;
-        hook_pipeline.lpush(self.job_errors_list_name(&job.id), error_json);
+        let error_json = crate::diagnostics::encode_record(&error_record)?;
+        crate::diagnostics::append_record(
+            &mut hook_pipeline,
+            &self.job_errors_list_name(&job.id),
+            error_json,
+        );
 
         // For "active" idempotency mode, remove from deduplication set immediately
         if self.options.idempotency_mode == queue::IdempotencyMode::Active {
@@ -1408,3 +1421,6 @@ impl<H: DurableExecution> Queue<H> {
 
 #[cfg(test)]
 mod lease_tests;
+
+#[cfg(test)]
+mod diagnostic_tests;

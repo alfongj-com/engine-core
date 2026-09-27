@@ -1,0 +1,47 @@
+{
+  "kind": "offline_harness_validation",
+  "runtime_workloads_executed": false,
+  "public_rpc_calls": 0,
+  "python_command": "CAST_BIN=/tmp/engine-capacity-tools/cast PYTHONPATH=scripts python3 -m unittest test_capacity_faults capacity_campaign_test capacity_scenarios_test capacity_pool_test capacity_assess_test test_local_eoa_reorg test_testnet_evm_write test_testnet_solana_write -v",
+  "python_tests": {
+    "passed": 84,
+    "failed": 0,
+    "skipped": 0,
+    "seconds": 15.875,
+    "modules": {
+      "test_capacity_faults": 28,
+      "capacity_campaign_test": 20,
+      "capacity_scenarios_test": 8,
+      "capacity_pool_test": 7,
+      "capacity_assess_test": 4,
+      "test_local_eoa_reorg": 7,
+      "test_testnet_evm_write": 5,
+      "test_testnet_solana_write": 5
+    }
+  },
+  "supervisor_tests": {
+    "passed": 10,
+    "skipped": 0,
+    "seconds": 0.483
+  },
+  "hook_tests": {
+    "passed": 3,
+    "skipped": 0,
+    "seconds": 2.396
+  },
+  "campaign_sha256": "0b941352b417152cdb136835fbe085d86c5429836699195966ee0e3d46dce9ec",
+  "campaign_tests_sha256": "6c7968ae361244025efe4f8ec26c0f2d5ee0183a9d55b0304e8eb0cc922851dd",
+  "cast_sha256": "da3334cc53dc92415c2a65a102a385ca30e3cdcf3e15a711ce206180a60c51fc",
+  "evidence_sha256": {
+    "python-tests-initial-flake.log": "f21475c3e59bce6d621c7735cfb323676dfb9bad6d1d13e03be08309cf96b8c1",
+    "denied-browser-isolated-before.log": "e67ffe70ba5eaecbe24698c8b13fd8db32f852cf4d615343b8cf07fd91f456ed",
+    "python-tests-final.log": "9fa4aa657a2e81cae2e5faebb02ed6df5672029b39daa057159ba6c496c45bdc",
+    "nitro-drain-hook-v2.py": "424a26e6b8539d251df61396372951270ab1193372733099f94ec66608f92bd1",
+    "test_nitro_drain_hook_v2.py": "3854a0d5edc7a368297ffaa8af65aa72fbea4d1c50843caabd3d7b80300f7ac7",
+    "nitro-hook-tests.log": "89fe8726fab9670aa19cbf277a993bee317fde1daec6f6ca57ca938cc0ea63e3",
+    "sequential-supervisor-v2.py": "a8f7b00a2485ba3fd3fd3998e5ba38e4db992ce1b355ecd00504031d731748ad",
+    "test_sequential_v2.py": "288a404b2f9acced5e92a94aa9701fe6cb735dabb3dda8fca8fbae92ef6d88f6",
+    "sequential-tests.log": "792de2faf81b207890941bf93c7115c0b1d40937d220b1e1287878d178476428",
+    "final-screen-jobs.json": "0cf526546d60de8ea1db574eec4df5f158d7374d356abb3b51abcfe2f1922541"
+  }
+}

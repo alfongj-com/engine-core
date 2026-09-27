@@ -1,0 +1,246 @@
+{
+  "chains": {
+    "evm12": {
+      "aggregation_seconds": 60,
+      "method": "sample quantiles; nominal phase only; descriptive, not a pass/fail test",
+      "sample_window_seconds": [
+        120.016,
+        360.008
+      ],
+      "terminal": {
+        "groups": [
+          {
+            "max": 3235,
+            "mean": 2652.25,
+            "median": 2612.0,
+            "min": 2278,
+            "p10": 2280.4,
+            "p90": 3198.0,
+            "sample_count": 12,
+            "start_seconds": 120.0
+          },
+          {
+            "max": 3192,
+            "mean": 2856.4166666666665,
+            "median": 2865.5,
+            "min": 2504,
+            "p10": 2608.8,
+            "p90": 3103.1,
+            "sample_count": 12,
+            "start_seconds": 180.0
+          },
+          {
+            "max": 3340,
+            "mean": 3043.1666666666665,
+            "median": 3050.5,
+            "min": 2713,
+            "p10": 2825.2,
+            "p90": 3230.6,
+            "sample_count": 12,
+            "start_seconds": 240.0
+          },
+          {
+            "max": 3392,
+            "mean": 3180.5833333333335,
+            "median": 3185.5,
+            "min": 2976,
+            "p10": 3014.9,
+            "p90": 3336.3,
+            "sample_count": 12,
+            "start_seconds": 300.0
+          }
+        ],
+        "last_180_seconds_range": [
+          2504,
+          3392
+        ],
+        "paired_phase_growth": [
+          {
+            "end_seconds": 300.016,
+            "growth": 460.0,
+            "start_seconds": 120.016
+          },
+          {
+            "end_seconds": 305.016,
+            "growth": 760.0,
+            "start_seconds": 125.016
+          },
+          {
+            "end_seconds": 310.01599999999996,
+            "growth": 930.0000000000023,
+            "start_seconds": 130.016
+          },
+          {
+            "end_seconds": 315.01599999999996,
+            "growth": 883.0000000000005,
+            "start_seconds": 135.016
+          },
+          {
+            "end_seconds": 320.012,
+            "growth": 646.1192000000005,
+            "start_seconds": 140.012
+          },
+          {
+            "end_seconds": 325.01599999999996,
+            "growth": 719.9999999999964,
+            "start_seconds": 145.016
+          },
+          {
+            "end_seconds": 330.01599999999996,
+            "growth": 1054.9999999999995,
+            "start_seconds": 150.016
+          },
+          {
+            "end_seconds": 335.01599999999996,
+            "growth": 560.0000000000023,
+            "start_seconds": 155.016
+          },
+          {
+            "end_seconds": 340.01599999999996,
+            "growth": 253.00000000000136,
+            "start_seconds": 160.016
+          },
+          {
+            "end_seconds": 345.01599999999996,
+            "growth": 48.23980815347477,
+            "start_seconds": 165.016
+          },
+          {
+            "end_seconds": 350.014,
+            "growth": 47.8800959232608,
+            "start_seconds": 170.014
+          },
+          {
+            "end_seconds": 355.01599999999996,
+            "growth": -22.99999999999909,
+            "start_seconds": 175.016
+          }
+        ],
+        "paired_phase_growth_min_median_max": [
+          -22.99999999999909,
+          603.0596000000014,
+          1054.9999999999995
+        ]
+      },
+      "unsigned": {
+        "groups": [
+          {
+            "max": 951,
+            "mean": 606.1666666666666,
+            "median": 642.0,
+            "min": 156,
+            "p10": 220.5,
+            "p90": 867.6,
+            "sample_count": 12,
+            "start_seconds": 120.0
+          },
+          {
+            "max": 1107,
+            "mean": 695.5833333333334,
+            "median": 702.0,
+            "min": 319,
+            "p10": 375.8,
+            "p90": 980.4,
+            "sample_count": 12,
+            "start_seconds": 180.0
+          },
+          {
+            "max": 1168,
+            "mean": 830.25,
+            "median": 824.0,
+            "min": 573,
+            "p10": 638.1,
+            "p90": 996.9,
+            "sample_count": 12,
+            "start_seconds": 240.0
+          },
+          {
+            "max": 1184,
+            "mean": 934.4166666666666,
+            "median": 937.5,
+            "min": 651,
+            "p10": 769.0,
+            "p90": 1129.7,
+            "sample_count": 12,
+            "start_seconds": 300.0
+          }
+        ],
+        "last_180_seconds_range": [
+          319,
+          1184
+        ],
+        "paired_phase_growth": [
+          {
+            "end_seconds": 300.016,
+            "growth": 468.0,
+            "start_seconds": 120.016
+          },
+          {
+            "end_seconds": 305.016,
+            "growth": 123.0,
+            "start_seconds": 125.016
+          },
+          {
+            "end_seconds": 310.01599999999996,
+            "growth": 47.9999999999975,
+            "start_seconds": 130.016
+          },
+          {
+            "end_seconds": 315.01599999999996,
+            "growth": 47.999999999999545,
+            "start_seconds": 135.016
+          },
+          {
+            "end_seconds": 320.012,
+            "growth": 246.90639999999962,
+            "start_seconds": 140.012
+          },
+          {
+            "end_seconds": 325.01599999999996,
+            "growth": 62.00000000000307,
+            "start_seconds": 145.016
+          },
+          {
+            "end_seconds": 330.01599999999996,
+            "growth": -155.00000000000034,
+            "start_seconds": 150.016
+          },
+          {
+            "end_seconds": 335.01599999999996,
+            "growth": 169.9999999999983,
+            "start_seconds": 155.016
+          },
+          {
+            "end_seconds": 340.01599999999996,
+            "growth": 559.9999999999977,
+            "start_seconds": 160.016
+          },
+          {
+            "end_seconds": 345.01599999999996,
+            "growth": 778.7961630695463,
+            "start_seconds": 165.016
+          },
+          {
+            "end_seconds": 350.014,
+            "growth": 773.1019184652283,
+            "start_seconds": 170.014
+          },
+          {
+            "end_seconds": 355.01599999999996,
+            "growth": 815.999999999999,
+            "start_seconds": 175.016
+          }
+        ],
+        "paired_phase_growth_min_median_max": [
+          -155.00000000000034,
+          208.45319999999896,
+          815.999999999999
+        ]
+      }
+    }
+  },
+  "descriptor_sha256": "50ef35bd4a3226521e58f2a3115e30fd546d678e18a4648781f38bdc0bb37f83",
+  "interpretation_policy_sha256": "9ce1b79f2428ad6a20bc2d097496b741d8bc147a790ef1f64359d6c719a61e3f",
+  "report": "/private/tmp/capacity-final-evm12-60-send64-132b012af02d.json",
+  "report_sha256": "687889cdd796a6a44cd80ea6cffab74c68af6a61ba03c0157d7d08710a26b02b"
+}

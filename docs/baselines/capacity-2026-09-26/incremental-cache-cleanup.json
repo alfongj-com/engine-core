@@ -1,0 +1,25 @@
+{
+  "action": "remove rebuildable Rust incremental compilation cache only",
+  "path": "/Users/alfongj/Code/engine-core/target/debug/incremental",
+  "utc": "2026-09-27T01:36:04.880921+00:00",
+  "before_disk_bytes": {
+    "total": 245107195904,
+    "used": 232666206208,
+    "free": 12440989696
+  },
+  "du_allocated_size_before": "40GiB",
+  "engine_sha256": "bb34deeec74afce0b52d03edb9ec73a84497429db0cc2e460590b9127c0d77ce",
+  "preserved": [
+    "debug/deps",
+    "release binaries",
+    "all source",
+    "all journals and WAL files",
+    "all benchmark logs and evidence"
+  ],
+  "after_disk_bytes": {
+    "total": 245107195904,
+    "used": 206016589824,
+    "free": 39090606080
+  },
+  "engine_sha256_after": "bb34deeec74afce0b52d03edb9ec73a84497429db0cc2e460590b9127c0d77ce"
+}

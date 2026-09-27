@@ -1,0 +1,146 @@
+{
+  "schema": "sha256-archive-manifest-v1",
+  "recorded_utc": "2026-09-27T02:32:27.980175+00:00",
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 4993,
+      "sha256": "fa6182a9a4ee2be517cf87b52174dda01ce32a80b65654bdca18b07821d26a46"
+    },
+    {
+      "path": "archive_closed_reports.py",
+      "bytes": 7257,
+      "sha256": "02bb3670634e9aea3fc64b71547e48bf2361b5938d0009788d059238a9cdf80e"
+    },
+    {
+      "path": "capacity-bounded-evm55-017a2525ad46-assessment.json",
+      "bytes": 3062,
+      "sha256": "edf813c490293e4ac13d147fc018396dd6dc8ef1a265c483362ced5830506452"
+    },
+    {
+      "path": "capacity-bounded-evm55-017a2525ad46-backlog-description.json",
+      "bytes": 6320,
+      "sha256": "43331075b7ac612cd48eed141c1ab239ea921852d98458f7a368e4abd60ed441"
+    },
+    {
+      "path": "capacity-bounded-evm55-017a2525ad46-readonly-analysis.json",
+      "bytes": 9261,
+      "sha256": "2c6b1ee5cee737a0946b2873ad8ec155c66f57d256ed265acdb1f7414be04041"
+    },
+    {
+      "path": "capacity-bounded-evm55-017a2525ad46.full.json.gz",
+      "bytes": 1605008,
+      "sha256": "091e66b71c01c22ca32b54f54a680e8b7e35b0faeec9f866d1fd0b070780e94d"
+    },
+    {
+      "path": "capacity-bounded-evm55-017a2525ad46.log",
+      "bytes": 200,
+      "sha256": "30de21fd28abdd98f798241fafa6120a60268753eb0ec9075140edc080c92f06"
+    },
+    {
+      "path": "capacity-bounded-evm55-017a2525ad46.observations.jsonl.gz",
+      "bytes": 2216565,
+      "sha256": "7b2bf5f7998a7da0e52728ee1c57d24b198ee39b9a703671bfd0604c108a1d44"
+    },
+    {
+      "path": "capacity-bounded-evm55-017a2525ad46.rpc-audit.jsonl.gz",
+      "bytes": 2221950,
+      "sha256": "18726e0a8549410b4d98e793fbfd96f4cbd467b85d618173a17ddc48aa893a49"
+    },
+    {
+      "path": "capacity-bounded-op55-017a2525ad46-assessment.json",
+      "bytes": 3092,
+      "sha256": "abe168482e9e8123bc7d3f6f40ed3826a8f9ea70082171e0ba9c2189798bf4ad"
+    },
+    {
+      "path": "capacity-bounded-op55-017a2525ad46-backlog-description.json",
+      "bytes": 6886,
+      "sha256": "bf94bd33333f0577d480de34e92b84947dd6a08bae46f7a94ff63120209cefca"
+    },
+    {
+      "path": "capacity-bounded-op55-017a2525ad46-readonly-analysis.json",
+      "bytes": 9237,
+      "sha256": "093d9d5937f077865ed913b0747be39832418d457c717c7613a8da8357ec05a0"
+    },
+    {
+      "path": "capacity-bounded-op55-017a2525ad46.full.json.gz",
+      "bytes": 1605045,
+      "sha256": "19e3732fc14a5b73cfef88b0556df5b50267173cb2ba316229ca7ba308afae7a"
+    },
+    {
+      "path": "capacity-bounded-op55-017a2525ad46.log",
+      "bytes": 199,
+      "sha256": "8dc3cb43d1c80db38d52377002a1c7fefd82dca9e382f2127cec474f5956dfd9"
+    },
+    {
+      "path": "capacity-bounded-op55-017a2525ad46.observations.jsonl.gz",
+      "bytes": 2221432,
+      "sha256": "2d7dd93bc069ac15aed5e226668648b123018f25373affefdae3978a2cb69dfc"
+    },
+    {
+      "path": "capacity-bounded-op55-017a2525ad46.rpc-audit.jsonl.gz",
+      "bytes": 2221294,
+      "sha256": "e3e2ea8e5677a8eb432021ead3f8ebcd94aed8e51f69e7540eb2990b354d045f"
+    },
+    {
+      "path": "describe_backlogs.py",
+      "bytes": 3667,
+      "sha256": "50ef35bd4a3226521e58f2a3115e30fd546d678e18a4648781f38bdc0bb37f83"
+    },
+    {
+      "path": "index.json",
+      "bytes": 15619,
+      "sha256": "b4836ee9eba31509ea0644c53bffa385aa8616227ac6e149aa90d6e205f9967f"
+    },
+    {
+      "path": "interpretation-v1.md",
+      "bytes": 3683,
+      "sha256": "9ce1b79f2428ad6a20bc2d097496b741d8bc147a790ef1f64359d6c719a61e3f"
+    },
+    {
+      "path": "nitro-cold-backup-metadata.json",
+      "bytes": 1625,
+      "sha256": "b0ceff522e5eb86f5801298e159308a834207d244955fe37494d6f253fdf7274"
+    },
+    {
+      "path": "nitro-continuity-observed.json",
+      "bytes": 101922,
+      "sha256": "754c6853ef8495a9b29e223e67103163f4692be0c1d8791d3f2fc25563161445"
+    },
+    {
+      "path": "nitro-disk-repair.json",
+      "bytes": 1391,
+      "sha256": "1b4f1dc982d98af5f9b120e6a4a12282b24290686bbebe6784b796f1f6dd8412"
+    },
+    {
+      "path": "nitro-incident-summary.json",
+      "bytes": 5690,
+      "sha256": "b74f3c11e1292b14ccae915a0743e12985be941ea172a77659c1e37d3cf214f1"
+    },
+    {
+      "path": "nitro-persistence-research.json",
+      "bytes": 2536,
+      "sha256": "bdcbcf69f6b0f40772d2613f3267d026bb0f39dd4eb165b5aef7504cd05085ce"
+    },
+    {
+      "path": "nitro-post-resize-df.log",
+      "bytes": 123,
+      "sha256": "fdfa94fb58306ad09a1dbb2206c45ad9001d6f0b816d4d8e746219e0bfeb607d"
+    },
+    {
+      "path": "nitro-post-resize-lsblk.log",
+      "bytes": 228,
+      "sha256": "f7339af426aeedeb77d4d913d765b853582b84ed73032a2f0a2f41640845b917"
+    },
+    {
+      "path": "nitro-restart-head-readiness.json",
+      "bytes": 465,
+      "sha256": "bd63d03be5501f24256e909c482c50c01a38d121a500884c1c21752e94fd4206"
+    },
+    {
+      "path": "nitro-restart-replay.log",
+      "bytes": 4137,
+      "sha256": "46e91c42f39ea1245a088973151199d238a3bfec5517b36a54c681a163de6889"
+    }
+  ]
+}

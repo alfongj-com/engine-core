@@ -1,0 +1,638 @@
+{
+  "archived_utc": "2026-09-27T01:42:23.275486+00:00",
+  "campaign_id": "132b012af02d",
+  "runs": [
+    {
+      "assets": [
+        {
+          "archive_bytes": 1470130,
+          "archive_path": "capacity-final-nitro50-send32-132b012af02d.full.json.gz",
+          "archive_sha256": "4dc76e8e9b924f9cb1f0041084e69daddc5f1f961a5b1b88345dbd8ba2961ae2",
+          "encoding": "gzip",
+          "source_bytes": 4464898,
+          "source_path": "/private/tmp/capacity-final-nitro50-send32-132b012af02d.json",
+          "source_sha256": "e396df25e60023532cbc8ef11b5d0ee47dea1e740f7c2a031be516e4c515b864"
+        },
+        {
+          "archive_bytes": 3256,
+          "archive_path": "capacity-final-nitro50-send32-132b012af02d-assessment.json",
+          "archive_sha256": "b4460c0df87f28df0c1047181e2d41156aaddc52c2500d8c8995d1dfc49b87dc",
+          "encoding": "original",
+          "source_bytes": 3256,
+          "source_path": "/private/tmp/capacity-final-nitro50-send32-132b012af02d-assessment.json",
+          "source_sha256": "b4460c0df87f28df0c1047181e2d41156aaddc52c2500d8c8995d1dfc49b87dc"
+        },
+        {
+          "archive_bytes": 2047352,
+          "archive_path": "capacity-final-nitro50-send32-132b012af02d.observations.jsonl.gz",
+          "archive_sha256": "02d170cae454ad70adfe68fdd388b7b683bebebd8a8bb03c4c99f6e4f149a8d9",
+          "encoding": "original",
+          "source_bytes": 2047352,
+          "source_path": "/private/tmp/capacity-final-nitro50-send32-132b012af02d.observations.jsonl.gz",
+          "source_sha256": "02d170cae454ad70adfe68fdd388b7b683bebebd8a8bb03c4c99f6e4f149a8d9"
+        },
+        {
+          "archive_bytes": 2038144,
+          "archive_path": "capacity-final-nitro50-send32-132b012af02d.rpc-audit.jsonl.gz",
+          "archive_sha256": "2415ae1631d944d6852cc8e05f4c6a39519e4f84fe3e11d63d1c2f07e2797c60",
+          "encoding": "gzip",
+          "source_bytes": 10559394,
+          "source_path": "/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/engine-capacity-_cwck52o/nitro-rpc.jsonl",
+          "source_sha256": "1a3bdcf79dbccddca3ef56bb1b64c8809594835ddcd69febf2ad7d3944a58254"
+        },
+        {
+          "archive_bytes": 208,
+          "archive_path": "capacity-final-nitro50-send32-132b012af02d.log",
+          "archive_sha256": "2d887c918f7f4dea8e04a4dd6c1f64607e9b86f8437d8016fc9aaa5b18a0c5c5",
+          "encoding": "original",
+          "source_bytes": 208,
+          "source_path": "/private/tmp/capacity-final-nitro50-send32-132b012af02d.log",
+          "source_sha256": "2d887c918f7f4dea8e04a4dd6c1f64607e9b86f8437d8016fc9aaa5b18a0c5c5"
+        },
+        {
+          "archive_bytes": 7095,
+          "archive_path": "capacity-final-nitro50-send32-132b012af02d-backlog-description.json",
+          "archive_sha256": "7ebb061922e3aa19db4238ebb96d768aadd9e43b73f3f936021daf249bfc91ab",
+          "encoding": "original",
+          "source_bytes": 7095,
+          "source_path": "/tmp/capacity-final-nitro50-send32-132b012af02d-backlog-description.json",
+          "source_sha256": "7ebb061922e3aa19db4238ebb96d768aadd9e43b73f3f936021daf249bfc91ab"
+        }
+      ],
+      "binary_sha256": "bb34deeec74afce0b52d03edb9ec73a84497429db0cc2e460590b9127c0d77ce",
+      "broadcast_concurrency": 32,
+      "chain": "nitro",
+      "client": {
+        "dispatched": 18000
+      },
+      "derived_window_analysis": {
+        "path": "capacity-final-nitro50-send32-132b012af02d-window-analysis.json",
+        "sha256": "3457ece876e873b18b41da5936dda5c2027729306a00856a7ae1686246a05633"
+      },
+      "drain_seconds": 455.299627,
+      "harness_sha256": {
+        "capacity_campaign.py": "0b941352b417152cdb136835fbe085d86c5429836699195966ee0e3d46dce9ec",
+        "capacity_faults.py": "59e2bc4d90bceca2682c27e35c5871ee538d4878a795f990fa90e6d5f90afa13"
+      },
+      "http_concurrency": 64,
+      "name": "capacity-final-nitro50-send32",
+      "offered": 18000,
+      "oracle": {
+        "eligible_for_rate_assessment": true,
+        "expected_parked_intents": 0,
+        "liveness_failures": [],
+        "liveness_pass": true,
+        "observed_intents": 18000,
+        "offered_intents": 18000,
+        "outcome": "pass",
+        "safety_failures": [],
+        "safety_pass": true
+      },
+      "per_id_rows": 18000,
+      "profile": {
+        "chain_id": 412346,
+        "depth": 2,
+        "drain_hook": [
+          "/tmp/engine-capacity-tools/nitro-drain-hook-v2.py",
+          "--max-seconds",
+          "1800"
+        ],
+        "external_url": "http://127.0.0.1:18547",
+        "family": "evm",
+        "label": "caller-owned local dev execution; no public qualification",
+        "network": "external",
+        "rate": 50.0
+      },
+      "report_sha256": "e396df25e60023532cbc8ef11b5d0ee47dea1e740f7c2a031be516e4c515b864",
+      "responses": {
+        "202": 18000
+      },
+      "solana_poll_seconds": 1,
+      "source_commit": "dd9282a48640a97024dc277434ef3e4ebe8571b9",
+      "strict_classification": "observed_persistent_backlog_growth",
+      "strict_stage_rates_tps": {
+        "admitted": 49.996666611110186,
+        "attempted": 36.800613343555725,
+        "included": 36.658944315738594,
+        "terminal": 38.392306538442305
+      }
+    },
+    {
+      "assets": [
+        {
+          "archive_bytes": 1474051,
+          "archive_path": "capacity-final-nitro50-send64-132b012af02d.full.json.gz",
+          "archive_sha256": "b11e8c1913fd39e6a0ddb47000ff13e700f8900afce3147378162a13b49df720",
+          "encoding": "gzip",
+          "source_bytes": 4563341,
+          "source_path": "/private/tmp/capacity-final-nitro50-send64-132b012af02d.json",
+          "source_sha256": "767a27a6c0da693f59e535b9af2dc32b4eef9198da3583a0bac374d0c785c9c5"
+        },
+        {
+          "archive_bytes": 3277,
+          "archive_path": "capacity-final-nitro50-send64-132b012af02d-assessment.json",
+          "archive_sha256": "c1a24e3c75f27bad2a194325375179d6276e42e1f59a3e52b7c0892c353f8576",
+          "encoding": "original",
+          "source_bytes": 3277,
+          "source_path": "/private/tmp/capacity-final-nitro50-send64-132b012af02d-assessment.json",
+          "source_sha256": "c1a24e3c75f27bad2a194325375179d6276e42e1f59a3e52b7c0892c353f8576"
+        },
+        {
+          "archive_bytes": 2035274,
+          "archive_path": "capacity-final-nitro50-send64-132b012af02d.observations.jsonl.gz",
+          "archive_sha256": "c4581a57c167b9b32fbea8619b7165f588104ce149d3409a21d138ba63a7eb14",
+          "encoding": "original",
+          "source_bytes": 2035274,
+          "source_path": "/private/tmp/capacity-final-nitro50-send64-132b012af02d.observations.jsonl.gz",
+          "source_sha256": "c4581a57c167b9b32fbea8619b7165f588104ce149d3409a21d138ba63a7eb14"
+        },
+        {
+          "archive_bytes": 2058103,
+          "archive_path": "capacity-final-nitro50-send64-132b012af02d.rpc-audit.jsonl.gz",
+          "archive_sha256": "712577e8e10ad13297612a4144004bf576766a07bc72c6e81ae1f605c04935b9",
+          "encoding": "gzip",
+          "source_bytes": 10559946,
+          "source_path": "/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/engine-capacity-ieqcgk4c/nitro-rpc.jsonl",
+          "source_sha256": "32936aed5fa1f91a33a427b3e771eede67c45b51587a6a9de2ec2f30b014e700"
+        },
+        {
+          "archive_bytes": 208,
+          "archive_path": "capacity-final-nitro50-send64-132b012af02d.log",
+          "archive_sha256": "a97bd65934b036358a671b5abfd85067815d83a06c4643a13d1e5842ef80c7f6",
+          "encoding": "original",
+          "source_bytes": 208,
+          "source_path": "/private/tmp/capacity-final-nitro50-send64-132b012af02d.log",
+          "source_sha256": "a97bd65934b036358a671b5abfd85067815d83a06c4643a13d1e5842ef80c7f6"
+        },
+        {
+          "archive_bytes": 7089,
+          "archive_path": "capacity-final-nitro50-send64-132b012af02d-backlog-description.json",
+          "archive_sha256": "7b5b853289c39ac19201fd2ffad7e76697387d709af1c90aeb57a6dbf559e558",
+          "encoding": "original",
+          "source_bytes": 7089,
+          "source_path": "/tmp/capacity-final-nitro50-send64-132b012af02d-backlog-description.json",
+          "source_sha256": "7b5b853289c39ac19201fd2ffad7e76697387d709af1c90aeb57a6dbf559e558"
+        }
+      ],
+      "binary_sha256": "bb34deeec74afce0b52d03edb9ec73a84497429db0cc2e460590b9127c0d77ce",
+      "broadcast_concurrency": 64,
+      "chain": "nitro",
+      "client": {
+        "dispatched": 18000
+      },
+      "derived_window_analysis": {
+        "path": "capacity-final-nitro50-send64-132b012af02d-window-analysis.json",
+        "sha256": "9aec5528ecf51e3dbec465a97a362f2adb212cda2d1f639aa74ce50cbd39c516"
+      },
+      "drain_seconds": 510.424029,
+      "harness_sha256": {
+        "capacity_campaign.py": "0b941352b417152cdb136835fbe085d86c5429836699195966ee0e3d46dce9ec",
+        "capacity_faults.py": "59e2bc4d90bceca2682c27e35c5871ee538d4878a795f990fa90e6d5f90afa13"
+      },
+      "http_concurrency": 64,
+      "name": "capacity-final-nitro50-send64",
+      "offered": 18000,
+      "oracle": {
+        "eligible_for_rate_assessment": true,
+        "expected_parked_intents": 0,
+        "liveness_failures": [],
+        "liveness_pass": true,
+        "observed_intents": 18000,
+        "offered_intents": 18000,
+        "outcome": "pass",
+        "safety_failures": [],
+        "safety_pass": true
+      },
+      "per_id_rows": 18000,
+      "profile": {
+        "chain_id": 412346,
+        "depth": 2,
+        "drain_hook": [
+          "/tmp/engine-capacity-tools/nitro-drain-hook-v2.py",
+          "--max-seconds",
+          "1800"
+        ],
+        "external_url": "http://127.0.0.1:18547",
+        "family": "evm",
+        "label": "caller-owned local dev execution; no public qualification",
+        "network": "external",
+        "rate": 50.0
+      },
+      "report_sha256": "767a27a6c0da693f59e535b9af2dc32b4eef9198da3583a0bac374d0c785c9c5",
+      "responses": {
+        "202": 18000
+      },
+      "solana_poll_seconds": 1,
+      "source_commit": "dd9282a48640a97024dc277434ef3e4ebe8571b9",
+      "strict_classification": "observed_persistent_backlog_growth",
+      "strict_stage_rates_tps": {
+        "admitted": 50.0014583758693,
+        "attempted": 27.400799189976375,
+        "included": 27.734142245815505,
+        "terminal": 27.454967436550234
+      }
+    },
+    {
+      "assets": [
+        {
+          "archive_bytes": 1746774,
+          "archive_path": "capacity-final-evm12-60-send64-132b012af02d.full.json.gz",
+          "archive_sha256": "68ff61f2b85713bb31a4f5bef1250e4674a9bf015e8dabaa9a3ce1002b9d1edf",
+          "encoding": "gzip",
+          "source_bytes": 5148016,
+          "source_path": "/private/tmp/capacity-final-evm12-60-send64-132b012af02d.json",
+          "source_sha256": "687889cdd796a6a44cd80ea6cffab74c68af6a61ba03c0157d7d08710a26b02b"
+        },
+        {
+          "archive_bytes": 3042,
+          "archive_path": "capacity-final-evm12-60-send64-132b012af02d-assessment.json",
+          "archive_sha256": "a20a0bbc3512c07f9b5f45d436e0a79d549af9ebc092ae776e46dc973df5cf11",
+          "encoding": "original",
+          "source_bytes": 3042,
+          "source_path": "/private/tmp/capacity-final-evm12-60-send64-132b012af02d-assessment.json",
+          "source_sha256": "a20a0bbc3512c07f9b5f45d436e0a79d549af9ebc092ae776e46dc973df5cf11"
+        },
+        {
+          "archive_bytes": 2417726,
+          "archive_path": "capacity-final-evm12-60-send64-132b012af02d.observations.jsonl.gz",
+          "archive_sha256": "ce4fed60847cc82db6390e4fc7a4cbd8f7cf54dc610441b7854d04eb4e4ceede",
+          "encoding": "original",
+          "source_bytes": 2417726,
+          "source_path": "/private/tmp/capacity-final-evm12-60-send64-132b012af02d.observations.jsonl.gz",
+          "source_sha256": "ce4fed60847cc82db6390e4fc7a4cbd8f7cf54dc610441b7854d04eb4e4ceede"
+        },
+        {
+          "archive_bytes": 2419867,
+          "archive_path": "capacity-final-evm12-60-send64-132b012af02d.rpc-audit.jsonl.gz",
+          "archive_sha256": "3ef57b138df0f41a131a8d9f96715b9a82a142d001d3a651b1c278e79d979136",
+          "encoding": "gzip",
+          "source_bytes": 12672270,
+          "source_path": "/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/engine-capacity-kcof51hj/evm12-rpc.jsonl",
+          "source_sha256": "bcb6adb17e6a96164903afaa00c52c37a703472c68508b7d525a17e6481c94c1"
+        },
+        {
+          "archive_bytes": 209,
+          "archive_path": "capacity-final-evm12-60-send64-132b012af02d.log",
+          "archive_sha256": "17fc0e68456c3c725d993b849a59d563e89b30f9bb649045ca294856cc06293e",
+          "encoding": "original",
+          "source_bytes": 209,
+          "source_path": "/private/tmp/capacity-final-evm12-60-send64-132b012af02d.log",
+          "source_sha256": "17fc0e68456c3c725d993b849a59d563e89b30f9bb649045ca294856cc06293e"
+        },
+        {
+          "archive_bytes": 6803,
+          "archive_path": "capacity-final-evm12-60-send64-132b012af02d-backlog-description.json",
+          "archive_sha256": "fb0cb48bb26640be394388f0ac27d264831d7e6512a9902f979898454281f5bc",
+          "encoding": "original",
+          "source_bytes": 6803,
+          "source_path": "/tmp/capacity-final-evm12-60-send64-132b012af02d-backlog-description.json",
+          "source_sha256": "fb0cb48bb26640be394388f0ac27d264831d7e6512a9902f979898454281f5bc"
+        }
+      ],
+      "binary_sha256": "bb34deeec74afce0b52d03edb9ec73a84497429db0cc2e460590b9127c0d77ce",
+      "broadcast_concurrency": 64,
+      "chain": "evm12",
+      "client": {
+        "dispatched": 21600
+      },
+      "derived_window_analysis": {
+        "path": "capacity-final-evm12-60-send64-132b012af02d-window-analysis.json",
+        "sha256": "272b330cb38215fcd02dd1a3a3346794ba824129bcadf0b362d65f36fad277ad"
+      },
+      "drain_seconds": 410.38263,
+      "harness_sha256": {
+        "capacity_campaign.py": "0b941352b417152cdb136835fbe085d86c5429836699195966ee0e3d46dce9ec",
+        "capacity_faults.py": "59e2bc4d90bceca2682c27e35c5871ee538d4878a795f990fa90e6d5f90afa13"
+      },
+      "http_concurrency": 64,
+      "name": "capacity-final-evm12-60-send64",
+      "offered": 21600,
+      "oracle": {
+        "eligible_for_rate_assessment": true,
+        "expected_parked_intents": 0,
+        "liveness_failures": [],
+        "liveness_pass": true,
+        "observed_intents": 21600,
+        "offered_intents": 21600,
+        "outcome": "pass",
+        "safety_failures": [],
+        "safety_pass": true
+      },
+      "per_id_rows": 21600,
+      "profile": {
+        "block_seconds": 12.0,
+        "chain_id": 31337,
+        "depth": 2,
+        "family": "evm",
+        "label": "Anvil EVM execution with simulated block cadence; not Nitro or public-chain capacity",
+        "network": "ethereum",
+        "rate": 60.0
+      },
+      "report_sha256": "687889cdd796a6a44cd80ea6cffab74c68af6a61ba03c0157d7d08710a26b02b",
+      "responses": {
+        "202": 21600
+      },
+      "solana_poll_seconds": 1,
+      "source_commit": "dd9282a48640a97024dc277434ef3e4ebe8571b9",
+      "strict_classification": "observed_persistent_backlog_growth",
+      "strict_stage_rates_tps": {
+        "admitted": 59.99783326110871,
+        "attempted": 57.08523617453916,
+        "included": 56.5352178405947,
+        "terminal": 58.01860062002068
+      }
+    },
+    {
+      "assets": [
+        {
+          "archive_bytes": 1747725,
+          "archive_path": "capacity-final-op60-send64-132b012af02d.full.json.gz",
+          "archive_sha256": "84f28b6437524ccb35ce998cc15b262802d6184b524f05a5e2747b875a307a2e",
+          "encoding": "gzip",
+          "source_bytes": 5101534,
+          "source_path": "/private/tmp/capacity-final-op60-send64-132b012af02d.json",
+          "source_sha256": "eb9c784912c6383510597cc2d8e8c1be500894a9a47753efc029af70dc9cd373"
+        },
+        {
+          "archive_bytes": 3274,
+          "archive_path": "capacity-final-op60-send64-132b012af02d-assessment.json",
+          "archive_sha256": "144cb0e8ceec10295a2f016aceecdb11d443811155a0235c761a72fd5ebb7615",
+          "encoding": "original",
+          "source_bytes": 3274,
+          "source_path": "/private/tmp/capacity-final-op60-send64-132b012af02d-assessment.json",
+          "source_sha256": "144cb0e8ceec10295a2f016aceecdb11d443811155a0235c761a72fd5ebb7615"
+        },
+        {
+          "archive_bytes": 2422600,
+          "archive_path": "capacity-final-op60-send64-132b012af02d.observations.jsonl.gz",
+          "archive_sha256": "9a31547a7be62e7e182051381f195a2eea2373b60a11f4436753e4ed67af5551",
+          "encoding": "original",
+          "source_bytes": 2422600,
+          "source_path": "/private/tmp/capacity-final-op60-send64-132b012af02d.observations.jsonl.gz",
+          "source_sha256": "9a31547a7be62e7e182051381f195a2eea2373b60a11f4436753e4ed67af5551"
+        },
+        {
+          "archive_bytes": 2423256,
+          "archive_path": "capacity-final-op60-send64-132b012af02d.rpc-audit.jsonl.gz",
+          "archive_sha256": "50d24b994406df04e55966af0ccbf51841b7ec8f15dcfb166ac337b06a72b422",
+          "encoding": "gzip",
+          "source_bytes": 12672282,
+          "source_path": "/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/engine-capacity-vc0vpvgf/evm2-rpc.jsonl",
+          "source_sha256": "427a2c282f0b7cab59243a78161a51a1a0f2bb11e664086838d42fc47c61bed7"
+        },
+        {
+          "archive_bytes": 205,
+          "archive_path": "capacity-final-op60-send64-132b012af02d.log",
+          "archive_sha256": "5ed5a09fd9d8c3eafccf9a03fcb6de053200d7812708425cfe272463cee1fdb1",
+          "encoding": "original",
+          "source_bytes": 205,
+          "source_path": "/private/tmp/capacity-final-op60-send64-132b012af02d.log",
+          "source_sha256": "5ed5a09fd9d8c3eafccf9a03fcb6de053200d7812708425cfe272463cee1fdb1"
+        },
+        {
+          "archive_bytes": 6874,
+          "archive_path": "capacity-final-op60-send64-132b012af02d-backlog-description.json",
+          "archive_sha256": "7245886aef0979ce1b765f5ce5c8aeb67b11bfa10f7a087323a4b9ac0b8168e6",
+          "encoding": "original",
+          "source_bytes": 6874,
+          "source_path": "/tmp/capacity-final-op60-send64-132b012af02d-backlog-description.json",
+          "source_sha256": "7245886aef0979ce1b765f5ce5c8aeb67b11bfa10f7a087323a4b9ac0b8168e6"
+        }
+      ],
+      "binary_sha256": "bb34deeec74afce0b52d03edb9ec73a84497429db0cc2e460590b9127c0d77ce",
+      "broadcast_concurrency": 64,
+      "chain": "evm2",
+      "client": {
+        "dispatched": 21600
+      },
+      "derived_window_analysis": {
+        "path": "capacity-final-op60-send64-132b012af02d-window-analysis.json",
+        "sha256": "0746d0394516aa83b8ff131891c99ace65e103c0fd71ff6458a06640932c299c"
+      },
+      "drain_seconds": 380.197756,
+      "harness_sha256": {
+        "capacity_campaign.py": "0b941352b417152cdb136835fbe085d86c5429836699195966ee0e3d46dce9ec",
+        "capacity_faults.py": "59e2bc4d90bceca2682c27e35c5871ee538d4878a795f990fa90e6d5f90afa13"
+      },
+      "http_concurrency": 64,
+      "name": "capacity-final-op60-send64",
+      "offered": 21600,
+      "oracle": {
+        "eligible_for_rate_assessment": true,
+        "expected_parked_intents": 0,
+        "liveness_failures": [],
+        "liveness_pass": true,
+        "observed_intents": 21600,
+        "offered_intents": 21600,
+        "outcome": "pass",
+        "safety_failures": [],
+        "safety_pass": true
+      },
+      "per_id_rows": 21600,
+      "profile": {
+        "block_seconds": 2.0,
+        "chain_id": 31338,
+        "depth": 2,
+        "family": "evm",
+        "label": "OP execution on Anvil; simulated cadence; no sequencer/derivation/L1 settlement; L1 fee predeploy state may be artificial",
+        "network": "optimism",
+        "rate": 60.0
+      },
+      "report_sha256": "eb9c784912c6383510597cc2d8e8c1be500894a9a47753efc029af70dc9cd373",
+      "responses": {
+        "202": 21600
+      },
+      "solana_poll_seconds": 1,
+      "source_commit": "dd9282a48640a97024dc277434ef3e4ebe8571b9",
+      "strict_classification": "observed_persistent_backlog_growth",
+      "strict_stage_rates_tps": {
+        "admitted": 60.002500104171006,
+        "attempted": 57.63573482228426,
+        "included": 57.63573482228426,
+        "terminal": 57.63156798199925
+      }
+    },
+    {
+      "assets": [
+        {
+          "archive_bytes": 2516073,
+          "archive_path": "capacity-final-solana60-poll5-132b012af02d.full.json.gz",
+          "archive_sha256": "083a45db9df202150c7813130374d71396dfa1f59581eb7004a368dd9eaa5f28",
+          "encoding": "gzip",
+          "source_bytes": 5504243,
+          "source_path": "/private/tmp/capacity-final-solana60-poll5-132b012af02d.json",
+          "source_sha256": "9f45d57f8e65e5a33d2054615f0be91a8c7d0aec9767cb5d624fdafc9f317087"
+        },
+        {
+          "archive_bytes": 3280,
+          "archive_path": "capacity-final-solana60-poll5-132b012af02d-assessment.json",
+          "archive_sha256": "75c53ab9fdfdaab029f443386b7dddc48c5b6474b8a39f74f8a7507cd9e8c558",
+          "encoding": "original",
+          "source_bytes": 3280,
+          "source_path": "/private/tmp/capacity-final-solana60-poll5-132b012af02d-assessment.json",
+          "source_sha256": "75c53ab9fdfdaab029f443386b7dddc48c5b6474b8a39f74f8a7507cd9e8c558"
+        },
+        {
+          "archive_bytes": 3156650,
+          "archive_path": "capacity-final-solana60-poll5-132b012af02d.observations.jsonl.gz",
+          "archive_sha256": "94bb3dba11239e91ff96fe3e638103b9e294cf6c0844e6ff36e9964fd977989a",
+          "encoding": "original",
+          "source_bytes": 3156650,
+          "source_path": "/private/tmp/capacity-final-solana60-poll5-132b012af02d.observations.jsonl.gz",
+          "source_sha256": "94bb3dba11239e91ff96fe3e638103b9e294cf6c0844e6ff36e9964fd977989a"
+        },
+        {
+          "archive_bytes": 3229730,
+          "archive_path": "capacity-final-solana60-poll5-132b012af02d.rpc-audit.jsonl.gz",
+          "archive_sha256": "9fe02ec3650687423e5dec96a9d712ddc37048d8e4b5314694a1d7a7da5ce6da",
+          "encoding": "gzip",
+          "source_bytes": 12839401,
+          "source_path": "/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/engine-capacity-ypkixkd3/solana-rpc.jsonl",
+          "source_sha256": "f71c0536918209e9fe601a829f73b57ed8d4e7f016d2e7d39f9efd97439c3bdc"
+        },
+        {
+          "archive_bytes": 214,
+          "archive_path": "capacity-final-solana60-poll5-132b012af02d.log",
+          "archive_sha256": "b19e028aa34bcc2897ab92057d14ea6781373ef7e303f196e40580d5d181e232",
+          "encoding": "original",
+          "source_bytes": 214,
+          "source_path": "/private/tmp/capacity-final-solana60-poll5-132b012af02d.log",
+          "source_sha256": "b19e028aa34bcc2897ab92057d14ea6781373ef7e303f196e40580d5d181e232"
+        },
+        {
+          "archive_bytes": 7048,
+          "archive_path": "capacity-final-solana60-poll5-132b012af02d-backlog-description.json",
+          "archive_sha256": "48481e073e7e208746eca6b3bc137463dca2dcffe05835071ce68ae1927c1dd0",
+          "encoding": "original",
+          "source_bytes": 7048,
+          "source_path": "/tmp/capacity-final-solana60-poll5-132b012af02d-backlog-description.json",
+          "source_sha256": "48481e073e7e208746eca6b3bc137463dca2dcffe05835071ce68ae1927c1dd0"
+        }
+      ],
+      "binary_sha256": "bb34deeec74afce0b52d03edb9ec73a84497429db0cc2e460590b9127c0d77ce",
+      "broadcast_concurrency": 64,
+      "chain": "solana",
+      "client": {
+        "dispatched": 21598,
+        "dropped_client_capacity": 2
+      },
+      "derived_window_analysis": {
+        "path": "capacity-final-solana60-poll5-132b012af02d-window-analysis.json",
+        "sha256": "62b9e5148ec97335449797781d0b68cce619e4057db6897764914cd2fe66c7b3"
+      },
+      "drain_seconds": 385.446274,
+      "drop_analysis": {
+        "path": "solana-drop-and-observer-analysis.json",
+        "sha256": "2cc8cb13ac99aaebe9dfef0bd8cd3d35754ec54cc9f7ce0dc58fc10788444c93"
+      },
+      "harness_sha256": {
+        "capacity_campaign.py": "0b941352b417152cdb136835fbe085d86c5429836699195966ee0e3d46dce9ec",
+        "capacity_faults.py": "59e2bc4d90bceca2682c27e35c5871ee538d4878a795f990fa90e6d5f90afa13"
+      },
+      "http_concurrency": 64,
+      "name": "capacity-final-solana60-poll5",
+      "offered": 21600,
+      "oracle": {
+        "eligible_for_rate_assessment": false,
+        "expected_parked_intents": 0,
+        "liveness_failures": [
+          "3f6fc484ea404dd9b59c7be49cd3ff17-solana-20312: offered intent not admitted",
+          "3f6fc484ea404dd9b59c7be49cd3ff17-solana-20313: offered intent not admitted"
+        ],
+        "liveness_pass": false,
+        "observed_intents": 21598,
+        "offered_intents": 21600,
+        "outcome": "incomplete",
+        "safety_failures": [],
+        "safety_pass": true
+      },
+      "per_id_rows": 21598,
+      "profile": {
+        "chain_id": "solana:local",
+        "family": "solana",
+        "label": "local Agave validator; not public-cluster capacity",
+        "rate": 60.0
+      },
+      "report_sha256": "9f45d57f8e65e5a33d2054615f0be91a8c7d0aec9767cb5d624fdafc9f317087",
+      "responses": {
+        "202": 21598
+      },
+      "solana_poll_seconds": 5,
+      "source_commit": "dd9282a48640a97024dc277434ef3e4ebe8571b9",
+      "strict_classification": "unconfirmed_growth_or_cadence_ambiguity",
+      "strict_stage_rates_tps": {
+        "admitted": 59.84391081332217,
+        "attempted": 59.4522294586047,
+        "included": 52.92698476192857,
+        "terminal": 59.881412219624906
+      }
+    }
+  ],
+  "schema": "capacity-final-screen-archive-v1",
+  "scope": "Immutable closed reports. Local finite profiles only; neither throughput maximum nor public-chain qualification. Original strict verdicts retained. No source/runtime changes.",
+  "supporting_files": [
+    {
+      "archive_bytes": 6383,
+      "archive_path": "supervisor-state.json",
+      "archive_sha256": "203360159ac02ed11467dd0e48f47af37f44aa9a04cd3ca342ffa57092697c43",
+      "encoding": "original",
+      "source_bytes": 6383,
+      "source_path": "/tmp/engine-capacity-final-screen-state.json",
+      "source_sha256": "203360159ac02ed11467dd0e48f47af37f44aa9a04cd3ca342ffa57092697c43"
+    },
+    {
+      "archive_bytes": 1107,
+      "archive_path": "jobs.json",
+      "archive_sha256": "0cf526546d60de8ea1db574eec4df5f158d7374d356abb3b51abcfe2f1922541",
+      "encoding": "original",
+      "source_bytes": 1107,
+      "source_path": "/tmp/engine-capacity-final-screen-jobs.json",
+      "source_sha256": "0cf526546d60de8ea1db574eec4df5f158d7374d356abb3b51abcfe2f1922541"
+    },
+    {
+      "archive_bytes": 3667,
+      "archive_path": "describe_backlogs.py",
+      "archive_sha256": "50ef35bd4a3226521e58f2a3115e30fd546d678e18a4648781f38bdc0bb37f83",
+      "encoding": "original",
+      "source_bytes": 3667,
+      "source_path": "/tmp/capacity-posthoc/describe_backlogs.py",
+      "source_sha256": "50ef35bd4a3226521e58f2a3115e30fd546d678e18a4648781f38bdc0bb37f83"
+    },
+    {
+      "archive_bytes": 3683,
+      "archive_path": "interpretation-v1.md",
+      "archive_sha256": "9ce1b79f2428ad6a20bc2d097496b741d8bc147a790ef1f64359d6c719a61e3f",
+      "encoding": "original",
+      "source_bytes": 3683,
+      "source_path": "/tmp/capacity-posthoc/interpretation-v1.md",
+      "source_sha256": "9ce1b79f2428ad6a20bc2d097496b741d8bc147a790ef1f64359d6c719a61e3f"
+    },
+    {
+      "archive_bytes": 3022,
+      "archive_path": "native-broadcast-comparison.md",
+      "archive_sha256": "94e700888f4c0f97f8a3ee8f446d543f6e7fc85b867d9500c944db0dfa5fa683",
+      "encoding": "original",
+      "source_bytes": 3022,
+      "source_path": "/Users/alfongj/Code/engine-core/docs/baselines/capacity-2026-09-26/native-broadcast-comparison.md",
+      "source_sha256": "94e700888f4c0f97f8a3ee8f446d543f6e7fc85b867d9500c944db0dfa5fa683"
+    },
+    {
+      "archive_bytes": 33297,
+      "archive_path": "native-broadcast-comparison-data.json",
+      "archive_sha256": "c9ca536d602ae63e94813312f9cfb0221f2faabbd74aab91a12a8756bb9e37fd",
+      "encoding": "original",
+      "source_bytes": 33297,
+      "source_path": "/Users/alfongj/Code/engine-core/docs/baselines/capacity-2026-09-26/native-broadcast-comparison-data.json",
+      "source_sha256": "c9ca536d602ae63e94813312f9cfb0221f2faabbd74aab91a12a8756bb9e37fd"
+    },
+    {
+      "archive_bytes": 7960,
+      "archive_path": "archive_closed_reports.py",
+      "archive_sha256": "14e900f5ce70bb64f437348695c4d1df07b18c282d5e61a5ef844dfb50f54cfd",
+      "encoding": "original",
+      "source_bytes": 7960,
+      "source_path": "/tmp/archive_final_screen_132b012af02d.py",
+      "source_sha256": "14e900f5ce70bb64f437348695c4d1df07b18c282d5e61a5ef844dfb50f54cfd"
+    }
+  ]
+}

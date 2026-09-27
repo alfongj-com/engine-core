@@ -1,0 +1,343 @@
+{
+  "binary_sha256": "bb34deeec74afce0b52d03edb9ec73a84497429db0cc2e460590b9127c0d77ce",
+  "report": "/private/tmp/capacity-final-nitro50-send64-132b012af02d.json",
+  "report_sha256": "767a27a6c0da693f59e535b9af2dc32b4eef9198da3583a0bac374d0c785c9c5",
+  "window_method": "Closest existing load samples; rates from cumulative counter deltas over actual sample times. CPU percent is one-core time, not a bottleneck attribution. Included Solana counts are observer-lagged.",
+  "windows": {
+    "120-360": {
+      "backlogs": {
+        "terminal": [
+          1369,
+          6780
+        ],
+        "unsigned": [
+          1197,
+          6621
+        ]
+      },
+      "cpu_one_core_percent": {
+        "campaign": 9.90445554662011,
+        "engine": 9.966957369589947,
+        "redis": 2.795914880850691
+      },
+      "engine_rpc_rps": 113.72415028771672,
+      "from_seconds": 120.008,
+      "methods": {
+        "eth_blockNumber": {
+          "count": 26,
+          "mean_ms": 0.5938350000069301,
+          "rps": 0.10833649314771682
+        },
+        "eth_estimateGas": {
+          "count": 6400,
+          "mean_ms": 4.09822221093698,
+          "rps": 26.66744446713029
+        },
+        "eth_feeHistory": {
+          "count": 6400,
+          "mean_ms": 4.211893549375059,
+          "rps": 26.66744446713029
+        },
+        "eth_getBlockByNumber": {
+          "count": 1136,
+          "mean_ms": 1.348608579225714,
+          "rps": 4.733471392915627
+        },
+        "eth_getCode": {
+          "count": 1,
+          "mean_ms": 1.0059999999612046,
+          "rps": 0.004166788197989108
+        },
+        "eth_getTransactionCount": {
+          "count": 52,
+          "mean_ms": 0.7684566346143769,
+          "rps": 0.21667298629543363
+        },
+        "eth_getTransactionReceipt": {
+          "count": 6622,
+          "mean_ms": 6.434447459830394,
+          "rps": 27.592471447083874
+        },
+        "eth_sendRawTransaction": {
+          "count": 6656,
+          "mean_ms": 248.88838815369598,
+          "rps": 27.734142245815505
+        }
+      },
+      "rates_tps": {
+        "admitted": 50.0014583758693,
+        "attempted": 27.400799189976375,
+        "included": 27.734142245815505,
+        "terminal": 27.454967436550234
+      },
+      "to_seconds": 360.001
+    },
+    "180-360": {
+      "backlogs": {
+        "terminal": [
+          2787,
+          6780
+        ],
+        "unsigned": [
+          2463,
+          6621
+        ]
+      },
+      "cpu_one_core_percent": {
+        "campaign": 9.844881994755323,
+        "engine": 9.905995822036534,
+        "redis": 2.794568647495444
+      },
+      "engine_rpc_rps": 112.97724343304148,
+      "from_seconds": 180.009,
+      "methods": {
+        "eth_blockNumber": {
+          "count": 19,
+          "mean_ms": 0.5880680000072253,
+          "rps": 0.10556024712209432
+        },
+        "eth_estimateGas": {
+          "count": 4864,
+          "mean_ms": 4.138831829152391,
+          "rps": 27.023423263256145
+        },
+        "eth_feeHistory": {
+          "count": 4864,
+          "mean_ms": 4.2721182777549895,
+          "rps": 27.023423263256145
+        },
+        "eth_getBlockByNumber": {
+          "count": 824,
+          "mean_ms": 1.3418796601942844,
+          "rps": 4.577981243610828
+        },
+        "eth_getCode": {
+          "count": 1,
+          "mean_ms": 1.0059999999612046,
+          "rps": 0.005555802480110227
+        },
+        "eth_getTransactionCount": {
+          "count": 38,
+          "mean_ms": 0.758602947369157,
+          "rps": 0.21112049424418863
+        },
+        "eth_getTransactionReceipt": {
+          "count": 4861,
+          "mean_ms": 6.453029820406722,
+          "rps": 27.006755855815815
+        },
+        "eth_sendRawTransaction": {
+          "count": 4864,
+          "mean_ms": 245.97981195970374,
+          "rps": 27.023423263256145
+        }
+      },
+      "rates_tps": {
+        "admitted": 50.12444997555447,
+        "attempted": 27.023423263256145,
+        "included": 27.023423263256145,
+        "terminal": 27.940130672474332
+      },
+      "to_seconds": 360.001
+    },
+    "240-360": {
+      "backlogs": {
+        "terminal": [
+          4495,
+          6780
+        ],
+        "unsigned": [
+          4205,
+          6621
+        ]
+      },
+      "cpu_one_core_percent": {
+        "campaign": 10.300600868383992,
+        "engine": 10.258931771019977,
+        "redis": 2.858500079171285
+      },
+      "engine_rpc_rps": 124.5822672989258,
+      "from_seconds": 240.008,
+      "methods": {
+        "eth_blockNumber": {
+          "count": 14,
+          "mean_ms": 0.5832946428634094,
+          "rps": 0.11667347261923615
+        },
+        "eth_estimateGas": {
+          "count": 3584,
+          "mean_ms": 4.251279234374217,
+          "rps": 29.868408990524454
+        },
+        "eth_feeHistory": {
+          "count": 3584,
+          "mean_ms": 4.368176182756845,
+          "rps": 29.868408990524454
+        },
+        "eth_getBlockByNumber": {
+          "count": 600,
+          "mean_ms": 1.3466841733333952,
+          "rps": 5.000291683681549
+        },
+        "eth_getCode": {
+          "count": 1,
+          "mean_ms": 1.0059999999612046,
+          "rps": 0.008333819472802583
+        },
+        "eth_getTransactionCount": {
+          "count": 28,
+          "mean_ms": 0.7512052500006562,
+          "rps": 0.2333469452384723
+        },
+        "eth_getTransactionReceipt": {
+          "count": 3554,
+          "mean_ms": 6.592360746200897,
+          "rps": 29.61839440634038
+        },
+        "eth_sendRawTransaction": {
+          "count": 3584,
+          "mean_ms": 246.93980127790104,
+          "rps": 29.868408990524454
+        }
+      },
+      "rates_tps": {
+        "admitted": 50.002916836815494,
+        "attempted": 29.868408990524454,
+        "included": 29.868408990524454,
+        "terminal": 30.960139341461595
+      },
+      "to_seconds": 360.001
+    },
+    "300-360": {
+      "backlogs": {
+        "terminal": [
+          5792,
+          6780
+        ],
+        "unsigned": [
+          5413,
+          6621
+        ]
+      },
+      "cpu_one_core_percent": {
+        "campaign": 10.2511959728635,
+        "engine": 10.334539029553447,
+        "redis": 2.8670011501341808
+      },
+      "engine_rpc_rps": 124.79789308752689,
+      "from_seconds": 300.008,
+      "methods": {
+        "eth_blockNumber": {
+          "count": 7,
+          "mean_ms": 0.5457795714310772,
+          "rps": 0.11668027936592604
+        },
+        "eth_estimateGas": {
+          "count": 1792,
+          "mean_ms": 4.425013550780741,
+          "rps": 29.870151517677066
+        },
+        "eth_feeHistory": {
+          "count": 1792,
+          "mean_ms": 4.601094915737333,
+          "rps": 29.870151517677066
+        },
+        "eth_getBlockByNumber": {
+          "count": 296,
+          "mean_ms": 1.327169351351873,
+          "rps": 4.933908956044872
+        },
+        "eth_getCode": {
+          "count": 1,
+          "mean_ms": 1.0059999999612046,
+          "rps": 0.016668611337989435
+        },
+        "eth_getTransactionCount": {
+          "count": 14,
+          "mean_ms": 0.7343093571461985,
+          "rps": 0.23336055873185207
+        },
+        "eth_getTransactionReceipt": {
+          "count": 1793,
+          "mean_ms": 6.230741471276317,
+          "rps": 29.886820129015053
+        },
+        "eth_sendRawTransaction": {
+          "count": 1792,
+          "mean_ms": 248.31703156752206,
+          "rps": 29.870151517677066
+        }
+      },
+      "rates_tps": {
+        "admitted": 50.005834013968304,
+        "attempted": 29.870151517677066,
+        "included": 29.870151517677066,
+        "terminal": 33.53724601203474
+      },
+      "to_seconds": 360.001
+    },
+    "330-360": {
+      "backlogs": {
+        "terminal": [
+          6271,
+          6780
+        ],
+        "unsigned": [
+          5888,
+          6621
+        ]
+      },
+      "cpu_one_core_percent": {
+        "campaign": 10.436116297679401,
+        "engine": 10.069351827153907,
+        "redis": 2.834089090424116
+      },
+      "engine_rpc_rps": 125.7335289410511,
+      "from_seconds": 330.009,
+      "methods": {
+        "eth_blockNumber": {
+          "count": 4,
+          "mean_ms": 0.543843500011576,
+          "rps": 0.1333688983728996
+        },
+        "eth_estimateGas": {
+          "count": 768,
+          "mean_ms": 4.651012851563081,
+          "rps": 25.606828487596726
+        },
+        "eth_feeHistory": {
+          "count": 768,
+          "mean_ms": 4.78184022656248,
+          "rps": 25.606828487596726
+        },
+        "eth_getBlockByNumber": {
+          "count": 176,
+          "mean_ms": 1.37224906818225,
+          "rps": 5.868231528407583
+        },
+        "eth_getTransactionCount": {
+          "count": 8,
+          "mean_ms": 0.7777238749966386,
+          "rps": 0.2667377967457992
+        },
+        "eth_getTransactionReceipt": {
+          "count": 1025,
+          "mean_ms": 6.4534067824377574,
+          "rps": 34.17578020805553
+        },
+        "eth_sendRawTransaction": {
+          "count": 1022,
+          "mean_ms": 250.0932222681007,
+          "rps": 34.07575353427585
+        }
+      },
+      "rates_tps": {
+        "admitted": 50.04667911443058,
+        "attempted": 25.606828487596726,
+        "included": 34.07575353427585,
+        "terminal": 33.075486796479105
+      },
+      "to_seconds": 360.001
+    }
+  }
+}

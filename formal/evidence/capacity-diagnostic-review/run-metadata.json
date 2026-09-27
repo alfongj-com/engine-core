@@ -1,0 +1,43 @@
+{
+  "started_at": "2026-09-27T01:49:45.639695+00:00",
+  "base_commit": "dd9282a48640a97024dc277434ef3e4ebe8571b9",
+  "working_tree_candidate": true,
+  "source_map_sha256": "d43ec0c5431e11cb3ff2b2bce90baffb0d77e00e1bb444a70f84c0e8b7de467b",
+  "model_manifest_sha256": "437106b5cc73de6b0b10202996f0b5ae63a0941803e09e8c729c421f4da9ff95",
+  "scope": "Finite model rerun over reviewed diagnostic-only source change; release build separately owned by root.",
+  "environment": {
+    "JAVA": "/tmp/engine-core-formal/jdk-21.0.12.1+1-jre/Contents/Home/bin/java",
+    "TLA_JAR": "/tmp/engine-core-formal/tla2tools-1.7.4.jar"
+  },
+  "finished_at": "2026-09-27T01:54:58.957786+00:00",
+  "summed_model_seconds": 210.9,
+  "commands": [
+    {
+      "argv": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "formal",
+        "-p",
+        "test_*.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "log": "checker-tests.log"
+    },
+    {
+      "argv": [
+        "python3",
+        "formal/check.py",
+        "--results",
+        "formal/evidence/capacity-diagnostic-review"
+      ],
+      "exit_code": 0,
+      "log": "runner.log"
+    }
+  ],
+  "release_binary_sha256": "300db9782868ddca5b6d552e7ead5d2621322a82c8297ffde8f6ecb067858b23",
+  "release_build_scope": "Built and validated separately by root; digest links artifacts, not a machine-code proof."
+}

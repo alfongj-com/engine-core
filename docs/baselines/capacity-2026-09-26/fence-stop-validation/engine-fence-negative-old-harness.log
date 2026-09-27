@@ -1,0 +1,14 @@
+test_restart_fence_aborts_every_remaining_offer_without_claiming_recovery (capacity_fence_test.DurableFenceTests) ... FAIL
+
+======================================================================
+FAIL: test_restart_fence_aborts_every_remaining_offer_without_claiming_recovery (capacity_fence_test.DurableFenceTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/alfongj/Code/engine-core/scripts/capacity_fence_test.py", line 67, in test_restart_fence_aborts_every_remaining_offer_without_claiming_recovery
+    self.assertTrue(c.recovery_required)
+AssertionError: False is not true
+
+----------------------------------------------------------------------
+Ran 1 test in 0.004s
+
+FAILED (failures=1)

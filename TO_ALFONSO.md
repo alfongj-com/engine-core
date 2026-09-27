@@ -1,35 +1,40 @@
 # To Alfonso
 
-Updated September 26, 2026. Work is in [draft PR #1](https://github.com/alfongj-com/engine-core/pull/1).
+Updated September 26, 2026, 10:35 p.m. EDT. [Draft PR #1](https://github.com/alfongj-com/engine-core/pull/1).
 
-## What the review found
+## Status
 
-**The implementation is safer and faster, but 50 TPS per chain in production is not yet qualified.** I reviewed all five areas, fixed the concrete findings, and repeated the affected tests and measurements.
+**The campaign is in recovery after the native Nitro node exited with a full VM disk. No production throughput limit is qualified.** The latest tests use one signer per chain, local nodes, a shared durable journal, and exact transaction-by-transaction reconciliation.
 
-| Area | Result |
-|---|---|
-| Performance | The final six-minute EVM run reached 50.1 attempted and 50.5 terminal TPS in its last minute, after fixing a scheduling delay. Solana reached roughly 50 terminal TPS after startup. Public chains and concurrent chains sharing one journal remain unqualified. |
-| Security | Final outcomes must match that request's durable signed attempt. Added legacy API authentication and Solana cluster checks. Bundled EIP-7702 is disabled until independent execution attribution exists; direct EOA type-4 transactions remain supported. |
-| Reliability | Fixed nonce-counter rollback and recycling after ambiguous send errors. Original bytes and nonce survive uncertainty. Reorg and Solana crash/lost-response tests produced no duplicate effects. Redis recovery retains its independent journal and quarantine rules. |
-| Readability | Split streaming export into its own module, named the journal operations, simplified send outcomes and bounded queue work. Clippy completes, but substantial warnings remain, mostly large error types. The whole repository is not yet clean. |
-| Tests and proofs | Added failure-path, identity, capacity and recovery regressions. All 56 finite model cases pass; five production fee-arithmetic proofs pass and two deliberate mutations are rejected. Queue coverage now includes Redis regressions: 64.2%, up from 41.2%. This is not workspace coverage or a proof of the whole service. |
+| Six-minute screen | Offered TPS | Terminal TPS after warmup | What happened |
+|---|---:|---:|---|
+| Ethereum-like, 12-second blocks | 60 | 58.0 | Unsigned backlog grew; all 21,600 requests eventually completed. |
+| OP execution, 2-second blocks | 60 | 57.6 | Backlog grew; all 21,600 eventually completed. |
+| Native Arbitrum Nitro, 32 concurrent sends | 50 | 38.4 | Backlog grew; all 18,000 eventually completed. |
+| Native Arbitrum Nitro, 64 concurrent sends | 50 | 27.5 | Worse in this ordered comparison; all 18,000 eventually completed. The default stays 32. |
+| Native Solana, 5-second status polling | 60 | 59.9 | The client missed 2 requests; all 21,598 admitted requests completed. Late unsigned backlog needs another measurement. |
 
-All four Linux CI workflows passed at `f309177`, including the real-chain recovery/load scenarios. [Exact CI results](docs/baselines/review-2026-09-26/ci/SUMMARY.md).
+These are measured outcomes, **not sustainable-rate claims**. All accepted transactions in the five screens above reconciled exactly. That statement does not include the later failed Nitro run. Increasing concurrency did not establish an improvement. [Full reports, hashes and limitations](docs/baselines/capacity-2026-09-26/final-screen-132b012af02d/README.md).
 
-## Actual load results
+## Latest findings
 
-All runs used one signer, local nodes, SQLite FULL sync and Redis AOF every-second sync. EVM used an inflight window of 1,024; the default remains 50. They completed with the exact expected effects. “Terminal” means Engine recorded the outcome after the configured finality checks.
+- Ethereum-like at **55 TPS**: all 19,800 intents completed, but terminal throughput was 53.1 TPS after warmup and backlog grew. Next candidate: 50 TPS.
+- OP execution at **55 TPS**: all 19,800 completed; terminal throughput was 55.4 TPS. Backlog measurements vary with block timing, so this needs a repeat before calling it sustainable.
+- Nitro at **40 TPS**: the node exited about two minutes into the run; its VM disk was full. Engine admitted 14,400 intents before the harness stopped. The preserved journal has 4,502 terminal records, 302 signed unresolved intents and 9,596 unsigned intents. This run has no final reconciliation and is not a capacity pass.
 
-- **Earlier delayed-finality EVM:** 12,000 requests over four minutes; about 49.7 included TPS near the end. All finalized after releasing the test checkpoint. Premature receipt queries fell from 43,489 to zero.
-- **Final EVM, 12-second blocks:** 18,000 requests over six minutes; all completed by 375.1 seconds. The scheduling change raised last-minute attempted TPS from 45.1 to 50.1 and terminal TPS from 47.7 to 50.5. Unsigned backlog fell from 505 to 12; admission p99 stayed below 24ms.
-- **Final Solana:** 3,000 requests over one minute; 49.7 terminal TPS over the roughly 40-second interval after startup, all completed by 80.1 seconds. Admission p99 was 248ms.
+The failed run's journal and Redis AOF have verified immutable backups. A cold copy of the original VM disk is also verified. The disk is expanded, Nitro reopened its original database, and all saved terminal blocks plus the 302 unresolved signed receipts match. Engine queue recovery is still pending. Recovery will retain the original chain, transaction IDs and signed bytes; it will not turn this interrupted run into a throughput result. The harness also needs to stop new offers earlier when the node remains unavailable.
 
-[Measurements, limitations and exact build hashes](docs/baselines/review-2026-09-26/README.md).
+## Work remaining
 
-## Next work before production
+1. Recover the interrupted Nitro workload and reconcile every original intent.
+2. Confirm individual rates on the final build. Solana's live observer is fixed and tested; its repeat has not run yet.
+3. Run all four chains together at the selected individual rates, then measure a sustainable shared rate if the combined load overloads the journal.
+4. Exercise mixed transactions, process kills, lost responses, RPC errors, reorgs and Redis recovery at measured load. Report safety and automatic recovery separately.
 
-1. Qualify production storage; if durable writes still limit capacity, design and test batching or independent journal partitions. A separate debug-build probe measured 53–57 three-stage intents/second, excluding other Engine work; it is not a production capacity limit. Qualify complete finality windows, real RPC quotas, realistic transaction gas/compute, and concurrent chains.
-2. Replace legacy KMS credential payloads with immutable key references and worker-role credentials. Current legacy credentials can remain in journal history and backups.
-3. Add evidence-based operator reconciliation for quarantined/parked attempts. Rejected NOOPs can require manual reconciliation. Multi-host operation and loss of both journal and Redis remain unsupported.
+The current changes bound queue diagnostic history and fix Solana observer fairness. Workspace compilation, targeted Rust/Redis regressions and 99 distinct Python tests pass. All four existing CI workflows pass at `dd9282a`; newer changes are not pushed yet. All 61 finite formal-model cases pass, with 75 source-file hashes reviewed. These models and the prior fee-arithmetic proofs do not prove the whole service.
 
-No paid RPC credits were used for this review. Nothing is needed from you to finish it. Deployment still needs storage, endpoint and signer qualification, plus resolution of the upstream repository's missing license. Rotate the shared dRPC key when the campaign ends.
+## Limits
+
+All measurements share one Mac with the nodes and load generator. EVM/OP use Anvil; Nitro and Solana use native development nodes. Rollup L1 settlement, public RPC quotas, AWS KMS throughput, production storage and multi-host recovery remain unqualified. New capacity-harness CI steps are prepared but publishing workflow changes requires GitHub workflow permission.
+
+No paid RPC credits were used for this local campaign. Nothing is needed from you while this work continues. Rotate the shared dRPC key when the campaign ends.

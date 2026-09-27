@@ -1,0 +1,323 @@
+{
+  "schema": "diagnostic-observer-validation-v1",
+  "engine_sha256": "300db9782868ddca5b6d552e7ead5d2621322a82c8297ffde8f6ecb067858b23",
+  "scope": "Local validation of bounded queue diagnostics, test-harness observer fairness and strict-assessor observer-error rejection. Separate overlapping suites; no sum of subtests and no new TLA model. Full61 formal outcome recorded separately. Python90 is the earlier completed gate; the subsequent assessor gate has5tests, four overlapping and one new.",
+  "files": [
+    {
+      "source": "/tmp/engine-diagnostic-validation.json",
+      "path": "validation.json",
+      "bytes": 1927,
+      "sha256": "84c971d5cdf7bd1aa93fc6f6c5022133145145c16abd3cd1aac414dce03fc631"
+    },
+    {
+      "source": "/tmp/engine-diagnostic-workspace-no-run.log",
+      "path": "workspace-no-run.log",
+      "bytes": 4782,
+      "sha256": "4b89d0668f45a2fe62969bfff1828bb7eb3b836954f471aa3fdb6bd86d38c46a"
+    },
+    {
+      "source": "/tmp/engine-diagnostic-workspace-unit.log",
+      "path": "workspace-unit.log",
+      "bytes": 29882,
+      "sha256": "d57e466c38724d010e4815881cc17a98630b03522a829c2e63b19392ea626d65"
+    },
+    {
+      "source": "/tmp/engine-diagnostic-queue-redis.log",
+      "path": "queue-redis.log",
+      "bytes": 3226,
+      "sha256": "aa565ab32c034e2397230d66aa0d78176ca23d97e8befbe6792514a4c6cae74f"
+    },
+    {
+      "source": "/tmp/engine-diagnostic-executor-redis.log",
+      "path": "executor-redis.log",
+      "bytes": 7396,
+      "sha256": "2a752889168eb7efcb68f4f816ac0aef19e97869481ef0319d6fbf8ba855d719"
+    },
+    {
+      "source": "/tmp/engine-diagnostic-release.log",
+      "path": "release.log",
+      "bytes": 520,
+      "sha256": "2cdd0b0616752131c44a9aba55bdc034aa7b7b7010645d3d5f315d1db31e5fe4"
+    },
+    {
+      "source": "/tmp/engine-diagnostic-python-tests.log",
+      "path": "python-tests.log",
+      "bytes": 9450,
+      "sha256": "9ff5ad671d68ee3a405ee030834ac94f6d3ffbc1cb0391a7b861f8adae07c428"
+    },
+    {
+      "source": "/tmp/engine-diagnostic-validate.py",
+      "path": "validate.py",
+      "bytes": 2304,
+      "sha256": "f92a88bbfbb076a77b2cd053381b417b821faca29182ac4b1f5700ab0411f240"
+    },
+    {
+      "source": "/tmp/engine-diagnostic-draft/bounded-diagnostics.patch",
+      "path": "queue-draft/bounded-diagnostics.patch",
+      "bytes": 34637,
+      "sha256": "a6bcfe9d547e0633559f7633a852c579826be9a7e348bdf16b9e8d399287d5c8"
+    },
+    {
+      "source": "/tmp/engine-diagnostic-draft/README.md",
+      "path": "queue-draft/README.md",
+      "bytes": 2807,
+      "sha256": "5bf0a4e609c81d48aaae755738766a849af686face17d08e128cd7de9e46e2c7"
+    },
+    {
+      "source": "/tmp/engine-diagnostic-draft/validation.json",
+      "path": "queue-draft/validation.json",
+      "bytes": 1240,
+      "sha256": "67896cf9a4be253e3f2eb52e17fd162fd0e4d4472b874f19b2776d45832b762c"
+    },
+    {
+      "source": "/tmp/engine-diagnostic-draft/tests-final.log",
+      "path": "queue-draft/tests-final.log",
+      "bytes": 1149,
+      "sha256": "a4a93203c0458ab91b6731acb3f0268bf0647073b89cb9d1e0f3d617f97b6251"
+    },
+    {
+      "source": "/tmp/engine-diagnostic-draft/mutation-no-trim.log",
+      "path": "queue-draft/mutation-no-trim.log",
+      "bytes": 1591,
+      "sha256": "b3d22eada0abee3db840575899bf0eda4a08f184e7d2cc168fb4fc9f132539df"
+    },
+    {
+      "source": "/tmp/engine-diagnostic-draft/build.log",
+      "path": "queue-draft/build.log",
+      "bytes": 239,
+      "sha256": "f732fee888ed3c0c49e3cb41ce6bc204212ae6847adcc80c63876bc499ba97ce"
+    },
+    {
+      "source": "/tmp/engine-diagnostic-draft/twmq/src/diagnostics.rs",
+      "path": "queue-draft/twmq/src/diagnostics.rs",
+      "bytes": 4266,
+      "sha256": "4deced248ddbf94a1b97b6635afa8269b30f2dd69a10d3af206e2c22891440a8"
+    },
+    {
+      "source": "/tmp/engine-diagnostic-draft/twmq/src/diagnostic_tests.rs",
+      "path": "queue-draft/twmq/src/diagnostic_tests.rs",
+      "bytes": 10709,
+      "sha256": "69f2c27fa363fefb3b51102787dc5b8527a88ab28d5f11374c1ed207cf797cee"
+    },
+    {
+      "source": "/tmp/engine-diagnostic-draft/twmq/src/multilane_diagnostic_tests.rs",
+      "path": "queue-draft/twmq/src/multilane_diagnostic_tests.rs",
+      "bytes": 9750,
+      "sha256": "fa1a36455db6c9b899a7a0bf96d7c567882aa38843615a86348361460c3a04b8"
+    },
+    {
+      "source": "/tmp/engine-diagnostic-draft/Cargo.toml",
+      "path": "queue-draft/Cargo.toml",
+      "bytes": 2100,
+      "sha256": "633bedd9323d59bc51ad96209657715edcd39f7597f5eb5e4467f6025f584682"
+    },
+    {
+      "source": "/tmp/engine-diagnostic-draft/Cargo.lock",
+      "path": "queue-draft/Cargo.lock",
+      "bytes": 38617,
+      "sha256": "db8e066326c05495478d98d4017808ca91da4975792c515e8990c2eadee602e4"
+    },
+    {
+      "source": "/tmp/engine-solana-observer-draft/solana-observer.patch",
+      "path": "observer-draft/solana-observer.patch",
+      "bytes": 13036,
+      "sha256": "247528c781808ff55ffb7bfb2f4528a1b9860f0d184cd1243a87ecbdff5c3a13"
+    },
+    {
+      "source": "/tmp/engine-solana-observer-draft/README.md",
+      "path": "observer-draft/README.md",
+      "bytes": 3276,
+      "sha256": "ade9b29c99f2dd786ab055ecb6ecb0bfc431713ae3c464b822dd89a0575d2a7c"
+    },
+    {
+      "source": "/tmp/engine-solana-observer-draft/source-hashes.json",
+      "path": "observer-draft/source-hashes.json",
+      "bytes": 438,
+      "sha256": "c9219bd95ed6d16eab60e2b8bff1845c89fffb2698abc99f8c58934fb203e4f1"
+    },
+    {
+      "source": "/tmp/engine-solana-observer-draft/campaign-tests.log",
+      "path": "observer-draft/campaign-tests.log",
+      "bytes": 2888,
+      "sha256": "e5c1c6dde909b38722a6e8a4f26610cf209a55d87ce4291aea5345a3bfe0d9ff"
+    },
+    {
+      "source": "/tmp/engine-solana-observer-draft/legacy-starvation-control.log",
+      "path": "observer-draft/legacy-starvation-control.log",
+      "bytes": 923,
+      "sha256": "f262ced5c028493096fdaaf29e7191a2d3e244aa609ecd21e3547281200d3e18"
+    },
+    {
+      "source": "/tmp/engine-solana-observer-draft/scripts/capacity_campaign.py",
+      "path": "observer-draft/scripts/capacity_campaign.py",
+      "bytes": 106065,
+      "sha256": "80d1e4c03cf456a29f318e5cc581cb6788e99e3f8d26a98bde1490105d08e763"
+    },
+    {
+      "source": "/tmp/engine-solana-observer-draft/scripts/capacity_campaign_test.py",
+      "path": "observer-draft/scripts/capacity_campaign_test.py",
+      "bytes": 26706,
+      "sha256": "b4786689bca2525922df2133bc8aa9480b1b407d956d31b6c1c4f8fdedd6e605"
+    },
+    {
+      "source": "git HEAD:scripts/capacity_campaign.py",
+      "path": "observer-draft/legacy-capacity-campaign.py",
+      "bytes": 105171,
+      "sha256": "0b941352b417152cdb136835fbe085d86c5429836699195966ee0e3d46dce9ec"
+    },
+    {
+      "source": "/tmp/engine-diagnostic-assessor-tests.log",
+      "path": "assessor-targeted-tests.log",
+      "bytes": 597,
+      "sha256": "712a1c011841cdee0875afaab1e7feb8fa472552ae5475f1e211f5826f30ed7f"
+    },
+    {
+      "source": "/tmp/engine-capacity-assessor-observer-draft/old-assessor-negative.log",
+      "path": "assessor-draft/old-assessor-negative.log",
+      "bytes": 893,
+      "sha256": "d04d7bf6fb57ce29c0d3c79dccff6ed23b53cd39d5321a3ccd642614572aea62"
+    },
+    {
+      "source": "/tmp/engine-capacity-assessor-observer-draft/capacity_assess.py",
+      "path": "assessor-draft/capacity_assess.py",
+      "bytes": 8301,
+      "sha256": "8ebafce9dd136ce0a0179ab04292836d8c0d685fe9b31f9b455e45665e4b6865"
+    },
+    {
+      "source": "/tmp/engine-capacity-assessor-observer-draft/tests.log",
+      "path": "assessor-draft/tests.log",
+      "bytes": 597,
+      "sha256": "712a1c011841cdee0875afaab1e7feb8fa472552ae5475f1e211f5826f30ed7f"
+    },
+    {
+      "source": "/tmp/engine-capacity-assessor-observer-draft/capacity_assess_test.py",
+      "path": "assessor-draft/capacity_assess_test.py",
+      "bytes": 3089,
+      "sha256": "cb7079a8d571ad75031c81559f7d7747672354ddfa41d3e540b20e3c27fff9a0"
+    },
+    {
+      "source": "/tmp/engine-capacity-assessor-observer-draft/observer-error-gate.patch",
+      "path": "assessor-draft/observer-error-gate.patch",
+      "bytes": 2285,
+      "sha256": "b015d11b3f733ab0cfff581db0d7c6089f5b32d24af80b8e15000c15c2750a85"
+    }
+  ],
+  "workspace_lib_results_by_crate": [
+    {
+      "crate_binary": "engine_aa_core",
+      "passed": 5,
+      "failed": 0,
+      "ignored": 0
+    },
+    {
+      "crate_binary": "engine_aa_types",
+      "passed": 0,
+      "failed": 0,
+      "ignored": 0
+    },
+    {
+      "crate_binary": "engine_core",
+      "passed": 20,
+      "failed": 0,
+      "ignored": 25
+    },
+    {
+      "crate_binary": "engine_eip7702_core",
+      "passed": 1,
+      "failed": 0,
+      "ignored": 0
+    },
+    {
+      "crate_binary": "engine_executors",
+      "passed": 37,
+      "failed": 0,
+      "ignored": 61
+    },
+    {
+      "crate_binary": "engine_integration_tests",
+      "passed": 0,
+      "failed": 0,
+      "ignored": 0
+    },
+    {
+      "crate_binary": "engine_solana_core",
+      "passed": 2,
+      "failed": 0,
+      "ignored": 0
+    },
+    {
+      "crate_binary": "thirdweb_core",
+      "passed": 1,
+      "failed": 0,
+      "ignored": 0
+    },
+    {
+      "crate_binary": "thirdweb_engine",
+      "passed": 24,
+      "failed": 0,
+      "ignored": 6
+    },
+    {
+      "crate_binary": "twmq",
+      "passed": 2,
+      "failed": 0,
+      "ignored": 32
+    }
+  ],
+  "separate_suites": {
+    "queue_redis": {
+      "passed": 32,
+      "filtered_out": 2
+    },
+    "executor_redis": {
+      "passed": 61,
+      "filtered_out": 37
+    },
+    "isolated_queue_draft": {
+      "passed": 8,
+      "seconds": 0.26,
+      "note": "Overlaps integrated queue suite; includes two serializer tests also in normal unit gate."
+    },
+    "queue_negative_control": {
+      "expected_failures": 2,
+      "observed_retention": 121,
+      "required_retention": 100
+    },
+    "observer_campaign_module": {
+      "passed": 26,
+      "seconds": 1.541,
+      "note": "Includes six new observer regression methods; subset of Python90."
+    },
+    "observer_legacy_negative_control": {
+      "expected_assertion_failures": 1,
+      "fixture_errors": 0
+    },
+    "python90_point_in_time": {
+      "passed": 90,
+      "seconds": 17.859,
+      "exit": 0,
+      "confirmed_by_root_session": 60497
+    },
+    "assessor_targeted_final": {
+      "passed": 5,
+      "seconds": 0.004,
+      "overlap_with_python90": 4,
+      "new_cases": 1,
+      "negative_control": "Original assessor fails intended observer-error capacity-promotion assertion."
+    }
+  },
+  "current_observer_sources": {
+    "scripts/capacity_campaign.py": {
+      "sha256": "80d1e4c03cf456a29f318e5cc581cb6788e99e3f8d26a98bde1490105d08e763",
+      "matches_tested_draft": true
+    },
+    "scripts/capacity_campaign_test.py": {
+      "sha256": "b4786689bca2525922df2133bc8aa9480b1b407d956d31b6c1c4f8fdedd6e605",
+      "matches_tested_draft": true
+    }
+  },
+  "final_assessor_sources": {
+    "scripts/capacity_assess.py": "8ebafce9dd136ce0a0179ab04292836d8c0d685fe9b31f9b455e45665e4b6865",
+    "scripts/capacity_assess_test.py": "cb7079a8d571ad75031c81559f7d7747672354ddfa41d3e540b20e3c27fff9a0"
+  }
+}

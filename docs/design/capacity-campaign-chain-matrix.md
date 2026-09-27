@@ -136,11 +136,21 @@ the campaign terminates it, with a hard 600-second deadline. It validates chain
 `cast` child on SIGTERM/SIGINT. A live smoke advanced block 3→4 while key-1
 remained at nonce zero / 900 ETH; a blocked-child fixture verified SIGTERM
 cleanup. Run either ticker only during drain and account for its RPCs separately.
-Stop shuts down the container and VM; a
-subsequent Nitro `--dev` restart resets chain state and must use a **fresh Engine
-journal/namespace**. `start` funds a zero-balance key-1 account from the public
-development allocation. Restart/refunding is an operational recipe, not yet a
-node-recovery qualification.
+Stop shuts down the container and VM. **Restarting the same preserved container
+does not inherently reset its chain:** the exact running Nitro commit expands
+`--dev` to the fixed `/tmp/dev-test` database path and normally reopens existing
+state. The previous blanket reset statement was incorrect.
+[Dev flags](https://github.com/OffchainLabs/nitro/blob/beb21087772a2668a1f13847697e1406305e4d89/cmd/util/confighelpers/configuration.go#L196-L235),
+[existing-database initialization](https://github.com/OffchainLabs/nitro/blob/beb21087772a2668a1f13847697e1406305e4d89/cmd/nitro/init/init.go#L1016-L1047).
+
+The data lives in this container's writable layer; deleting/recreating the
+container or losing that directory can lose the chain. After an unclean stop,
+back up the stopped state, repair the infrastructure, and verify the original
+genesis, durable Engine checkpoint, signer nonce and transaction evidence before
+resuming. Keep the existing Engine journal; a fresh journal is not a recovery
+procedure. The helper's `start` may fund a zero-balance key-1 account and retains
+an obsolete reset warning, so it must not be used for incident recovery. No
+restart or crash-integrity guarantee follows solely from the persistence path.
 
 To preserve this chain while other isolated profiles run:
 

@@ -39,6 +39,25 @@ terminal-list entries. `Poll` uses the actual corrected guard: a success-list ID
 wins over deferred cancellation only when no recovered pending or delayed work
 exists. It does not assume that the list entry belongs to the current admission.
 
+## Diagnostic retention correspondence
+
+The [diagnostic helper](../twmq/src/diagnostics.rs) keeps the newest 100 records
+and bounds each newly serialized record to 16 KiB. All six single/multilane
+completion sites append and trim inside the existing lease-fenced transaction.
+Attempt metadata, retry/backoff inputs, queue operations and expiry are unchanged;
+no protocol decision reads the diagnostic list length. Oversized records retain
+key presence through an explicit omission envelope, including for the Solana
+admission orphan check.
+
+Diagnostic values and their size are outside this model's state. These writes
+project to the same completion action; they add no protocol transition or new
+TLC case. The successful-command assumption below still applies: Redis does not
+roll back prior writes after a command error. Byte limits, serialization, TTL,
+legacy turnover and inspection compatibility require implementation evidence.
+[The retention review](evidence/capacity-diagnostic-review/README.md) records that
+evidence and the unchanged 61-case rerun. No global memory, fairness or throughput
+bound follows from this per-job diagnostic cap.
+
 ## Properties
 
 - `FencedEffects`: every committed completion used the current, still-live lease.

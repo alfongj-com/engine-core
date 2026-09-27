@@ -1,0 +1,20 @@
+--- engine-capacity-sequential-v2.py
++++ engine-capacity-sequential-v3.py
+@@ -27,7 +27,7 @@
+                 'redis_submitted', 'redis_active', 'redis_delayed', 'journal_unresolved', 'node_pending'}
+ EXTRAS = {'--warmup-seconds': (0, 600), '--late-window-seconds': (30, 900),
+           '--max-schedule-lag-ms': (100, 100), '--eoa-broadcast-concurrency': (1, 128),
+-          '--solana-confirmation-poll-seconds': (1, 5)}
++          '--solana-confirmation-poll-seconds': (1, 5), '--http-concurrency': (1, 1024)}
+ 
+ 
+ def sha(path):
+@@ -101,7 +101,7 @@
+                   Path('/tmp/engine-finality/solana-release/bin/solana')]
+     frozen = {str(path): sha(path) for path in paths}
+     if frozen[str(ENGINE)] != args.expect_engine_sha: raise RuntimeError('Explicit Engine hash does not match')
+-    return {'schema': 'local-capacity-sequential-v2', 'id': uuid.uuid4().hex[:12], 'jobs': jobs,
++    return {'schema': 'local-capacity-sequential-v3', 'id': uuid.uuid4().hex[:12], 'jobs': jobs,
+             'frozen_sha256': frozen, 'runs': [], 'active': None, 'review_required': None,
+             'config': {'drain_seconds': args.drain_seconds, 'setup_seconds': 120,
+                        'verification_seconds': 600, 'output_dir': str(args.output_dir.resolve())}}

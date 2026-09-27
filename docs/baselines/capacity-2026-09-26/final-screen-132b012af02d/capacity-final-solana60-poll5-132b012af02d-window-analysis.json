@@ -1,0 +1,253 @@
+{
+  "binary_sha256": "bb34deeec74afce0b52d03edb9ec73a84497429db0cc2e460590b9127c0d77ce",
+  "report": "/private/tmp/capacity-final-solana60-poll5-132b012af02d.json",
+  "report_sha256": "9f45d57f8e65e5a33d2054615f0be91a8c7d0aec9767cb5d624fdafc9f317087",
+  "window_method": "Closest existing load samples; rates from cumulative counter deltas over actual sample times. CPU percent is one-core time, not a bottleneck attribution. Included Solana counts are observer-lagged.",
+  "windows": {
+    "120-360": {
+      "backlogs": {
+        "terminal": [
+          1180,
+          1171
+        ],
+        "unsigned": [
+          1,
+          95
+        ]
+      },
+      "cpu_one_core_percent": {
+        "campaign": 18.45902554679134,
+        "engine": 19.000712526719756,
+        "redis": 8.967002929276514,
+        "solana": 120.87119933664181
+      },
+      "engine_rpc_rps": 412.9904871432679,
+      "from_seconds": 120.014,
+      "methods": {
+        "getLatestBlockhash": {
+          "count": 14267,
+          "mean_ms": 0.6391122464426823,
+          "rps": 59.44806263568218
+        },
+        "getSignatureStatuses": {
+          "count": 56199,
+          "mean_ms": 5.989951627982543,
+          "rps": 234.1712814230534
+        },
+        "getTransaction": {
+          "count": 14386,
+          "mean_ms": 8.72599225093834,
+          "rps": 59.9439145634628
+        },
+        "sendTransaction": {
+          "count": 14262,
+          "mean_ms": 2.6613727996070757,
+          "rps": 59.427228521069544
+        }
+      },
+      "rates_tps": {
+        "admitted": 59.84391081332217,
+        "attempted": 59.4522294586047,
+        "included": 52.92698476192857,
+        "terminal": 59.881412219624906
+      },
+      "to_seconds": 360.005
+    },
+    "180-360": {
+      "backlogs": {
+        "terminal": [
+          1194,
+          1171
+        ],
+        "unsigned": [
+          0,
+          95
+        ]
+      },
+      "cpu_one_core_percent": {
+        "campaign": 18.384150406684746,
+        "engine": 18.911951642295218,
+        "redis": 8.950397795457576,
+        "solana": 120.8553713498378
+      },
+      "engine_rpc_rps": 410.81270278679057,
+      "from_seconds": 180.013,
+      "methods": {
+        "getLatestBlockhash": {
+          "count": 10667,
+          "mean_ms": 0.6886033232396419,
+          "rps": 59.2637450553358
+        },
+        "getSignatureStatuses": {
+          "count": 41814,
+          "mean_ms": 5.77416481542043,
+          "rps": 232.31032490332905
+        },
+        "getTransaction": {
+          "count": 10800,
+          "mean_ms": 8.466754578425782,
+          "rps": 60.002666785190456
+        },
+        "sendTransaction": {
+          "count": 10662,
+          "mean_ms": 2.8449559395983237,
+          "rps": 59.235966042935246
+        }
+      },
+      "rates_tps": {
+        "admitted": 59.791546290946265,
+        "attempted": 59.2637450553358,
+        "included": 52.885683808169254,
+        "terminal": 59.919329747988805
+      },
+      "to_seconds": 360.005
+    },
+    "240-360": {
+      "backlogs": {
+        "terminal": [
+          1174,
+          1171
+        ],
+        "unsigned": [
+          22,
+          95
+        ]
+      },
+      "cpu_one_core_percent": {
+        "campaign": 18.242882858857268,
+        "engine": 18.80125341689447,
+        "redis": 8.967264484298951,
+        "solana": 120.72471498099875
+      },
+      "engine_rpc_rps": 406.427095139676,
+      "from_seconds": 240.013,
+      "methods": {
+        "getLatestBlockhash": {
+          "count": 7077,
+          "mean_ms": 0.7648521798781943,
+          "rps": 58.978931928795255
+        },
+        "getSignatureStatuses": {
+          "count": 27402,
+          "mean_ms": 5.502686361688715,
+          "rps": 228.3652243482899
+        },
+        "getTransaction": {
+          "count": 7187,
+          "mean_ms": 8.133527069291322,
+          "rps": 59.89565971064738
+        },
+        "sendTransaction": {
+          "count": 7102,
+          "mean_ms": 2.9990165026747615,
+          "rps": 59.187279151943464
+        }
+      },
+      "rates_tps": {
+        "admitted": 59.74564970998067,
+        "attempted": 59.1372758183879,
+        "included": 52.41182745516368,
+        "terminal": 59.77065137675846
+      },
+      "to_seconds": 360.005
+    },
+    "300-360": {
+      "backlogs": {
+        "terminal": [
+          1182,
+          1171
+        ],
+        "unsigned": [
+          1,
+          95
+        ]
+      },
+      "cpu_one_core_percent": {
+        "campaign": 17.836603377285858,
+        "engine": 18.353364783543665,
+        "redis": 8.901631965860412,
+        "solana": 120.38873793528823
+      },
+      "engine_rpc_rps": 392.58864125089616,
+      "from_seconds": 300.016,
+      "methods": {
+        "getLatestBlockhash": {
+          "count": 3467,
+          "mean_ms": 1.0373255284102871,
+          "rps": 57.79392888696263
+        },
+        "getSignatureStatuses": {
+          "count": 13033,
+          "mean_ms": 5.08626441839915,
+          "rps": 217.25649702445457
+        },
+        "getTransaction": {
+          "count": 3588,
+          "mean_ms": 7.242303773411014,
+          "rps": 59.81096534364636
+        },
+        "sendTransaction": {
+          "count": 3463,
+          "mean_ms": 3.4283854363263835,
+          "rps": 57.727249995832594
+        }
+      },
+      "rates_tps": {
+        "admitted": 59.37755255130109,
+        "attempted": 57.81059860974514,
+        "included": 50.059177515877934,
+        "terminal": 59.56091950190871
+      },
+      "to_seconds": 360.005
+    },
+    "330-360": {
+      "backlogs": {
+        "terminal": [
+          1159,
+          1171
+        ],
+        "unsigned": [
+          23,
+          95
+        ]
+      },
+      "cpu_one_core_percent": {
+        "campaign": 17.137903440917594,
+        "engine": 17.871432381968535,
+        "redis": 8.902373966391027,
+        "solana": 119.93198186182984
+      },
+      "engine_rpc_rps": 366.73112830088,
+      "from_seconds": 330.013,
+      "methods": {
+        "getLatestBlockhash": {
+          "count": 1702,
+          "mean_ms": 1.5857627949468238,
+          "rps": 56.748466257668674
+        },
+        "getSignatureStatuses": {
+          "count": 5803,
+          "mean_ms": 3.6163701407888458,
+          "rps": 193.48492931448374
+        },
+        "getTransaction": {
+          "count": 1787,
+          "mean_ms": 5.21792397425793,
+          "rps": 59.58255534809279
+        },
+        "sendTransaction": {
+          "count": 1707,
+          "mean_ms": 4.361052998242173,
+          "rps": 56.9151773806348
+        }
+      },
+      "rates_tps": {
+        "admitted": 59.482528674313116,
+        "attempted": 57.08188850360092,
+        "included": 46.779141104294446,
+        "terminal": 59.082421979194415
+      },
+      "to_seconds": 360.005
+    }
+  }
+}

@@ -1,0 +1,229 @@
+--- a/scripts/capacity_campaign.py
++++ b/scripts/capacity_campaign.py
+@@ -14,7 +14,7 @@
+ """
+ import argparse
+ import base64
+-from collections import Counter
++from collections import Counter, OrderedDict
+ import concurrent.futures
+ from dataclasses import dataclass
+ from datetime import datetime, timezone
+@@ -23,6 +23,7 @@
+ import hashlib
+ import heapq
+ import http.client
++import itertools
+ import json
+ import math
+ import os
+@@ -341,6 +342,8 @@
+         self.cursors = {"admissions": 0, "attempts": 0, "terminal_evidence": 0}
+         self.admitted, self.attempted, self.terminal = set(), set(), set()
+         self.signatures = {}
++        # Incremental live work; signatures retains complete reconciliation history.
++        self.pending_signatures = OrderedDict()
+         self.outcomes = Counter()
+         self.latencies = {chain: {"attempt_observed_upper_ms": [], "terminal_observed_upper_ms": []} for chain in set(id_chain.values())}
+         self.unknown_ids = set()
+@@ -369,7 +372,10 @@
+                     if table == "attempts":
+                         value = json.loads(data)
+                         if "signature" in value:
+-                            self.signatures[value["signature"]] = txid
++                            signature = value["signature"]
++                            if signature not in self.signatures:
++                                self.pending_signatures[signature] = None
++                            self.signatures[signature] = txid
+                     elif table == "terminal_evidence":
+                         self.outcomes[(chain, json.loads(data).get("outcome", "unknown"))] += 1
+             db.rollback()
+@@ -531,7 +537,6 @@
+         self.sample_lock = threading.Lock()
+         self.included_signatures = set()
+         self.finalized_signatures = set()
+-        self.sig_rotation = 0
+         self.pool = BoundedPool(args.http_concurrency)
+         self.report = {
+             "campaign_started_utc": datetime.now(timezone.utc).isoformat(),
+@@ -767,21 +772,29 @@
+                 if profile["family"] == "evm":
+                     chains[name]["included"] = int(node.call("eth_getTransactionCount", [FROM, "latest"]), 16) - self.initial[name]["sender_nonce"]
+                 else:
+-                    pending = [sig for sig in self.observer.signatures if sig not in self.finalized_signatures]
+-                    # Finite observer work; record lag instead of perturbing the sender.
+-                    selected = pending[self.sig_rotation:self.sig_rotation + 2048]
+-                    if not selected: selected, self.sig_rotation = pending[:2048], 0
+-                    self.sig_rotation += len(selected)
++                    pending = self.observer.pending_signatures
++                    pending_count = len(pending)
++                    # One bounded wave: arrivals join behind waiting entries.
++                    # Rotate each <=256 batch BEFORE I/O so repeated failures
++                    # cannot pin other work behind it. No entry is lost on error.
++                    selected = list(itertools.islice(pending, 2048))
+                     for offset in range(0, len(selected), 256):
+                         batch = selected[offset:offset + 256]
++                        for signature in batch:
++                            pending.move_to_end(signature)
+                         statuses = node.call("getSignatureStatuses", [batch, {"searchTransactionHistory": True}])["value"]
++                        if not isinstance(statuses, list) or len(statuses) != len(batch):
++                            raise RuntimeError("Local observer returned an invalid signature-status count")
++                        if any(status is not None and not isinstance(status, dict) for status in statuses):
++                            raise RuntimeError("Local observer returned an invalid signature-status entry")
+                         for signature, status in zip(batch, statuses):
+                             if status and status.get("confirmationStatus") in ("confirmed", "finalized"):
+                                 self.included_signatures.add(signature)
+                             if status and status.get("confirmationStatus") == "finalized":
+                                 self.finalized_signatures.add(signature)
++                                del pending[signature]
+                     chains[name]["included"] = len(self.included_signatures)
+-                    chains[name]["observer_pending_signatures"] = len(pending)
++                    chains[name]["observer_pending_signatures"] = pending_count
+                     chains[name]["finalized"] = len(self.finalized_signatures)
+                 with self.lock:
+                     chains[name]["client"] = dict(self.stats[name])
+--- a/scripts/capacity_campaign_test.py
++++ b/scripts/capacity_campaign_test.py
+@@ -171,6 +171,142 @@
+         self.assertFalse(result["sustainable"])
+ 
+ 
++class SolanaLiveObserverTests(unittest.TestCase):
++    """Actual sampling with deterministic status RPC and journal input."""
++    def fixture(self, status):
++        from types import SimpleNamespace
++        instance = campaign.Campaign.__new__(campaign.Campaign)
++        instance.started = campaign.time.monotonic()
++        instance.phase = "load"
++        instance.sample_lock, instance.lock = threading.Lock(), threading.Lock()
++        instance.profiles = {"solana": {"family": "solana"}}
++        instance.included_signatures, instance.finalized_signatures = set(), set()
++        instance.samples = []
++        instance.stats, instance.responses = {"solana": {}}, {"solana": {}}
++        instance.resources = lambda: {}
++        observer = SimpleNamespace(signatures={}, pending_signatures=campaign.OrderedDict())
++        observer.poll = lambda: {"solana": {"admitted": len(observer.signatures), "attempted": len(observer.signatures), "terminal": 0}}
++        instance.observer = observer
++        calls = []
++        def call(method, params):
++            self.assertEqual(method, "getSignatureStatuses")
++            batch, options = params
++            self.assertEqual(options, {"searchTransactionHistory": True})
++            self.assertGreater(len(batch), 0)
++            self.assertLessEqual(len(batch), 256)
++            self.assertEqual(len(set(batch)), len(batch))
++            calls.append(list(batch))
++            return {"value": status(list(batch), len(calls))}
++        instance.nodes = {"solana": SimpleNamespace(call=call)}
++        instance.proxies = {"solana": SimpleNamespace(snapshot=lambda: {})}
++        def add(signatures):
++            for signature in signatures:
++                if signature not in observer.signatures:
++                    observer.pending_signatures[signature] = None
++                observer.signatures[signature] = signature
++        return instance, calls, add
++
++    def test_continuous_arrivals_revisit_old_signatures_before_intake_stops(self):
++        seen = campaign.Counter()
++        def status(batch, _):
++            result = []
++            for signature in batch:
++                seen[signature] += 1
++                result.append({"confirmationStatus": "finalized" if seen[signature] > 1 else "confirmed"})
++            return result
++        instance, calls, add = self.fixture(status)
++        add(["old0", "old1", "old2"])
++        instance.sample()
++        for tick in range(4):
++            add([f"new{tick}"])
++            instance.sample()
++        self.assertTrue({"old0", "old1", "old2", "new0", "new1", "new2"} <= instance.finalized_signatures)
++        self.assertEqual(set(instance.observer.pending_signatures), {"new3"})
++        self.assertEqual(calls[1], ["old0", "old1", "old2", "new0"])
++        self.assertEqual(seen["old0"], 2)
++
++    def test_removals_do_not_skip_waiting_signatures_and_wave_is_bounded(self):
++        def status(batch, _):
++            return [{"confirmationStatus": "finalized" if int(signature[1:]) % 2 == 0 else "confirmed"} for signature in batch]
++        instance, calls, add = self.fixture(status)
++        add([f"s{i}" for i in range(4100)])
++        instance.sample()
++        self.assertEqual(len(calls), 8)
++        self.assertEqual([s for batch in calls for s in batch], [f"s{i}" for i in range(2048)])
++        add(["s4100", "s4101"])
++        instance.sample()
++        self.assertEqual(len(calls), 16)
++        self.assertEqual([s for batch in calls[8:] for s in batch], [f"s{i}" for i in range(2048, 4096)])
++        instance.sample()
++        self.assertEqual(calls[16][:4], ["s4096", "s4097", "s4098", "s4099"])
++        self.assertNotIn("s0", instance.observer.pending_signatures)
++        self.assertIn("s1", instance.observer.pending_signatures)
++        self.assertEqual(set(instance.observer.signatures), {f"s{i}" for i in range(4102)})
++        self.assertLessEqual(len(calls) - 16, 8)
++
++    def test_partial_rpc_failure_keeps_unprocessed_work_for_next_sample(self):
++        def status(batch, call_number):
++            if call_number == 2:
++                raise RuntimeError("temporary fixture failure")
++            return [{"confirmationStatus": "finalized"} for _ in batch]
++        instance, calls, add = self.fixture(status)
++        add([f"s{i}" for i in range(600)])
++        with self.assertRaisesRegex(RuntimeError, "temporary fixture"):
++            instance.sample()
++        self.assertEqual(len(instance.finalized_signatures), 256)
++        self.assertEqual(set(instance.observer.pending_signatures), {f"s{i}" for i in range(256, 600)})
++        # Failed 256..511 batch rotated; untouched work gets its turn first.
++        self.assertEqual(list(instance.observer.pending_signatures)[:88], [f"s{i}" for i in range(512, 600)])
++        instance.sample()
++        self.assertEqual(calls[2][0], "s512")
++        self.assertEqual(len(instance.finalized_signatures), 600)
++        self.assertEqual(len(instance.observer.pending_signatures), 0)
++
++    def test_repeated_first_batch_errors_do_not_starve_other_pending_work(self):
++        for malformed in (False, True):
++            with self.subTest(malformed=malformed):
++                def status(batch, _):
++                    if malformed: return []
++                    raise RuntimeError("temporary fixture failure")
++                instance, calls, add = self.fixture(status)
++                add([f"s{i}" for i in range(600)])
++                for tick in range(3):
++                    add([f"new{tick}"])
++                    with self.assertRaises(RuntimeError): instance.sample()
++                self.assertEqual(len(calls), 3)  # No hidden second wave after errors.
++                self.assertTrue({f"s{i}" for i in range(600)} <= {s for batch in calls for s in batch})
++                self.assertEqual(len(instance.observer.pending_signatures), 603)
++                self.assertFalse(instance.finalized_signatures)
++
++    def test_wrong_status_count_cannot_remove_or_silently_skip_pending_work(self):
++        for reply in ([], [{"confirmationStatus": "finalized"}] * 3, {}, [{"confirmationStatus": "finalized"}, 3]):
++            with self.subTest(reply=reply):
++                instance, calls, add = self.fixture(lambda *_: reply)
++                add(["a", "b"])
++                with self.assertRaisesRegex(RuntimeError, "invalid signature-status"):
++                    instance.sample()
++                self.assertEqual(set(instance.observer.pending_signatures), {"a", "b"})
++                self.assertFalse(instance.finalized_signatures)
++
++    def test_incremental_journal_enqueues_once_without_reviving_finalized(self):
++        with tempfile.TemporaryDirectory() as directory:
++            path = Path(directory) / "journal.sqlite"
++            with sqlite3.connect(path) as db:
++                db.executescript("CREATE TABLE admissions(id TEXT,kind TEXT); CREATE TABLE attempts(sequence INTEGER PRIMARY KEY,id TEXT,payload TEXT); CREATE TABLE terminal_evidence(sequence INTEGER PRIMARY KEY,id TEXT,evidence TEXT);")
++                db.execute("INSERT INTO attempts VALUES(?,?,?)", (1, "one", json.dumps({"signature": "sig1"})))
++            observer = campaign.JournalObserver(path, {"one": "solana", "two": "solana"}, 0, {})
++            observer.poll()
++            self.assertEqual(list(observer.pending_signatures), ["sig1"])
++            del observer.pending_signatures["sig1"]  # Sampling removes finalized work.
++            with sqlite3.connect(path) as db:
++                db.execute("INSERT INTO attempts VALUES(?,?,?)", (2, "one", json.dumps({"signature": "sig1"})))
++                db.execute("INSERT INTO attempts VALUES(?,?,?)", (3, "two", json.dumps({"signature": "sig2"})))
++            observer.poll()
++            observer.poll()
++            self.assertEqual(list(observer.pending_signatures), ["sig2"])
++            self.assertEqual(observer.signatures, {"sig1": "one", "sig2": "two"})
++
++
+ class EvidenceTests(unittest.TestCase):
+     def test_publish_is_private_atomic_no_overwrite(self):
+         with tempfile.TemporaryDirectory() as directory:

@@ -1,0 +1,15 @@
+test_continuous_arrivals_revisit_old_signatures_before_intake_stops (capacity_campaign_test.SolanaLiveObserverTests) ... FAIL
+
+======================================================================
+FAIL: test_continuous_arrivals_revisit_old_signatures_before_intake_stops (capacity_campaign_test.SolanaLiveObserverTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/engine-solana-observer-draft/scripts/capacity_campaign_test.py", line 223, in test_continuous_arrivals_revisit_old_signatures_before_intake_stops
+    self.assertTrue({"old0", "old1", "old2", "new0", "new1", "new2"} <= instance.finalized_signatures)
+AssertionError: False is not true
+
+----------------------------------------------------------------------
+Ran 1 test in 0.001s
+
+FAILED (failures=1)
+EXPECTED NEGATIVE: original observer fails the continuous-arrival fairness assertion.

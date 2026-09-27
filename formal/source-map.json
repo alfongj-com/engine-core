@@ -528,6 +528,20 @@
       ]
     },
     {
+      "path": "twmq/src/diagnostic_tests.rs",
+      "sha256": "69f2c27fa363fefb3b51102787dc5b8527a88ab28d5f11374c1ed207cf797cee",
+      "models": [
+        "QueueLease"
+      ]
+    },
+    {
+      "path": "twmq/src/diagnostics.rs",
+      "sha256": "4deced248ddbf94a1b97b6635afa8269b30f2dd69a10d3af206e2c22891440a8",
+      "models": [
+        "QueueLease"
+      ]
+    },
+    {
       "path": "twmq/src/lease_tests.rs",
       "sha256": "f47204c1d6dbca88db8f55c22bcfae7a8bda5eef27fe5522155991587ea274fe",
       "models": [
@@ -536,14 +550,21 @@
     },
     {
       "path": "twmq/src/lib.rs",
-      "sha256": "ef23d394d4d03a8b4b46eaf0c9682ed4f29388b3e58fbf8c13eee152f7574a75",
+      "sha256": "56bb3197f7cb6734514f4d471c4882ad609381e5288837f38959f650b3431dc5",
       "models": [
         "QueueLease"
       ]
     },
     {
       "path": "twmq/src/multilane.rs",
-      "sha256": "b2ca7e42df805c9341e34fc3294e3e3eddf3368336da797c6889e86eec30a4ab",
+      "sha256": "c3df7e9d12d0a88d12afb7b837ca225479602ce999644e82017882e7051deefb",
+      "models": [
+        "QueueLease"
+      ]
+    },
+    {
+      "path": "twmq/src/multilane_diagnostic_tests.rs",
+      "sha256": "fa1a36455db6c9b899a7a0bf96d7c567882aa38843615a86348361460c3a04b8",
       "models": [
         "QueueLease"
       ]
@@ -674,6 +695,19 @@
         "server/tests/api_safety.rs"
       ],
       "reason": "Actual QueueConfig accepts integer/environment-text broadcast concurrency1..128 with default32, wired through manager/handler/worker. Only existing new/recycled/borrowed ordered send buffers are configured; normal preparation stays32, NOOP combined prepare/send uses min(setting,32), borrowed receipt reads have a local32 permit cap released before send, gap replay and fee bumps stay sequential. Layered EngineConfig tests verify omitted/default/numeric/text/range/type handling; fixture additions retain32. Nonce windows, batch reservation, signed wire, journal preauthorization, ordered result attribution and unknown-response handling retain their prior transitions. Nondeterministic authorized dispatch was already modeled; no new TLA case or count is warranted. The models do not verify futures/Tokio scheduling, actual global/per-worker concurrency, RPC rates, wall-clock fairness, lease-loss overlap, or capacity. This is an experimental per-worker setting, not evidence of a throughput gain."
+    },
+    "diagnostic_retention_followup": {
+      "date": "2026-09-27",
+      "base_commit": "dd9282a48640a97024dc277434ef3e4ebe8571b9",
+      "status": "Applied formatted source independently reviewed; isolated eight-test Redis/serializer suite passed and both no-trim negative controls failed as intended. Full finite-model rerun recorded separately.",
+      "paths": [
+        "twmq/src/lib.rs",
+        "twmq/src/multilane.rs",
+        "twmq/src/diagnostics.rs",
+        "twmq/src/diagnostic_tests.rs",
+        "twmq/src/multilane_diagnostic_tests.rs"
+      ],
+      "reason": "All six single/multilane nack, failure and deserialization-failure append sites retain the same owner-fenced completion boundary and add newest-first LTRIM100. Metadata attempts, retry/backoff inputs, queue order/delay, lease state, hook pipeline, dedupe, cancellation and expiry operations do not change. Whole-tree reader review found no retry/protocol decision based on diagnostic cardinality; Solana orphan detection observes key existence, preserved by oversized-record omission markers. Bounded serialization preserves ordinary JobErrorRecord JSON, emits a distinct valid omission envelope above16KiB and preserves unrelated Serialize errors. Diagnostic inspection/size/order are outside QueueLease protocol variables, so these writes project to the same existing completion action (or stutter over diagnostic-only state); no new theorem or model/configuration is added. The model still assumes valid Redis key types and successful EXEC commands: Redis command errors may partially execute, and this patch does not strengthen that excluded failure boundary. Serializer byte bounds, TTL behavior, stale-owner append/trim rejection, attempt increments and legacy trim/turnover costs are implementation checks, not TLC proofs. External typed inspectors must recognize omission envelopes; legacy oversized entries age out, first large trim can be linear, and total/global retention remains outside the per-job cap."
     }
   }
 }

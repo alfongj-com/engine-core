@@ -1,0 +1,169 @@
+{
+  "active": null,
+  "config": {
+    "drain_seconds": 1800,
+    "output_dir": "/private/tmp",
+    "setup_seconds": 120,
+    "verification_seconds": 600
+  },
+  "frozen_sha256": {
+    "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/bin/python3.9": "bdea59019a38eb6600cc9e71e984a97fedadc406448431281e7657030f54987e",
+    "/Users/alfongj/Code/engine-core/scripts/capacity_assess.py": "b21a97c6580fe0c7ee48804732b4840c58164ac037d97db559819e246cfef3dd",
+    "/Users/alfongj/Code/engine-core/scripts/capacity_campaign.py": "0b941352b417152cdb136835fbe085d86c5429836699195966ee0e3d46dce9ec",
+    "/Users/alfongj/Code/engine-core/scripts/capacity_faults.py": "59e2bc4d90bceca2682c27e35c5871ee538d4878a795f990fa90e6d5f90afa13",
+    "/Users/alfongj/Code/engine-core/target/release/thirdweb-engine": "bb34deeec74afce0b52d03edb9ec73a84497429db0cc2e460590b9127c0d77ce",
+    "/private/tmp/engine-capacity-final-screen-jobs.json": "0cf526546d60de8ea1db574eec4df5f158d7374d356abb3b51abcfe2f1922541",
+    "/private/tmp/engine-capacity-sequential-v2.py": "a8f7b00a2485ba3fd3fd3998e5ba38e4db992ce1b355ecd00504031d731748ad",
+    "/tmp/engine-capacity-tools/cast": "da3334cc53dc92415c2a65a102a385ca30e3cdcf3e15a711ce206180a60c51fc",
+    "/tmp/engine-capacity-tools/nitro-drain-hook-v2.py": "424a26e6b8539d251df61396372951270ab1193372733099f94ec66608f92bd1",
+    "/tmp/engine-finality/anvil": "cad9ae8b74a37fd417e2b8d29b2caca869ba10fd015a1e92059ed15973188e66",
+    "/tmp/engine-finality/solana-release/bin/solana": "5cfbfb188edd6c0466d7a65dd9e8c1cbbb682a691e28281dde35b029555e35e9",
+    "/tmp/engine-finality/solana-release/bin/solana-keygen": "bde132e0af570fac97e15a6c24368183c4311c9f746b7b90738142ce6e9303ee",
+    "/tmp/engine-finality/solana-release/bin/solana-test-validator": "46e8e70b04a3bb020c3d90cf0aeef732a9c0e1663426f49a768d2f2a5ca779e6",
+    "/tmp/redis-7.4.2/src/redis-server": "7f82251c903404546f80b808de5b6641b8a7e757333c5ed2caf4d5753fe6a5b3"
+  },
+  "id": "132b012af02d",
+  "jobs": [
+    {
+      "chains": [
+        "nitro=50"
+      ],
+      "extra": [
+        "--warmup-seconds",
+        "120",
+        "--late-window-seconds",
+        "180",
+        "--max-schedule-lag-ms",
+        "100",
+        "--eoa-broadcast-concurrency",
+        "32"
+      ],
+      "name": "capacity-final-nitro50-send32",
+      "seconds": 360
+    },
+    {
+      "chains": [
+        "nitro=50"
+      ],
+      "extra": [
+        "--warmup-seconds",
+        "120",
+        "--late-window-seconds",
+        "180",
+        "--max-schedule-lag-ms",
+        "100",
+        "--eoa-broadcast-concurrency",
+        "64"
+      ],
+      "name": "capacity-final-nitro50-send64",
+      "seconds": 360
+    },
+    {
+      "chains": [
+        "evm12=60"
+      ],
+      "extra": [
+        "--warmup-seconds",
+        "120",
+        "--late-window-seconds",
+        "180",
+        "--max-schedule-lag-ms",
+        "100",
+        "--eoa-broadcast-concurrency",
+        "64"
+      ],
+      "name": "capacity-final-evm12-60-send64",
+      "seconds": 360
+    },
+    {
+      "chains": [
+        "evm2=60"
+      ],
+      "extra": [
+        "--warmup-seconds",
+        "120",
+        "--late-window-seconds",
+        "180",
+        "--max-schedule-lag-ms",
+        "100",
+        "--eoa-broadcast-concurrency",
+        "64"
+      ],
+      "name": "capacity-final-op60-send64",
+      "seconds": 360
+    },
+    {
+      "chains": [
+        "solana=60"
+      ],
+      "extra": [
+        "--warmup-seconds",
+        "120",
+        "--late-window-seconds",
+        "180",
+        "--max-schedule-lag-ms",
+        "100",
+        "--eoa-broadcast-concurrency",
+        "64",
+        "--solana-confirmation-poll-seconds",
+        "5"
+      ],
+      "name": "capacity-final-solana60-poll5",
+      "seconds": 360
+    }
+  ],
+  "review_required": null,
+  "runs": [
+    {
+      "assessment": "/private/tmp/capacity-final-nitro50-send32-132b012af02d-assessment.json",
+      "assessment_sha256": "b4460c0df87f28df0c1047181e2d41156aaddc52c2500d8c8995d1dfc49b87dc",
+      "capacity_selected": false,
+      "exit": 2,
+      "name": "capacity-final-nitro50-send32",
+      "report": "/private/tmp/capacity-final-nitro50-send32-132b012af02d.json",
+      "report_sha256": "e396df25e60023532cbc8ef11b5d0ee47dea1e740f7c2a031be516e4c515b864",
+      "safely_settled": true
+    },
+    {
+      "assessment": "/private/tmp/capacity-final-nitro50-send64-132b012af02d-assessment.json",
+      "assessment_sha256": "c1a24e3c75f27bad2a194325375179d6276e42e1f59a3e52b7c0892c353f8576",
+      "capacity_selected": false,
+      "exit": 2,
+      "name": "capacity-final-nitro50-send64",
+      "report": "/private/tmp/capacity-final-nitro50-send64-132b012af02d.json",
+      "report_sha256": "767a27a6c0da693f59e535b9af2dc32b4eef9198da3583a0bac374d0c785c9c5",
+      "safely_settled": true
+    },
+    {
+      "assessment": "/private/tmp/capacity-final-evm12-60-send64-132b012af02d-assessment.json",
+      "assessment_sha256": "a20a0bbc3512c07f9b5f45d436e0a79d549af9ebc092ae776e46dc973df5cf11",
+      "capacity_selected": false,
+      "exit": 2,
+      "name": "capacity-final-evm12-60-send64",
+      "report": "/private/tmp/capacity-final-evm12-60-send64-132b012af02d.json",
+      "report_sha256": "687889cdd796a6a44cd80ea6cffab74c68af6a61ba03c0157d7d08710a26b02b",
+      "safely_settled": true
+    },
+    {
+      "assessment": "/private/tmp/capacity-final-op60-send64-132b012af02d-assessment.json",
+      "assessment_sha256": "144cb0e8ceec10295a2f016aceecdb11d443811155a0235c761a72fd5ebb7615",
+      "capacity_selected": false,
+      "exit": 2,
+      "name": "capacity-final-op60-send64",
+      "report": "/private/tmp/capacity-final-op60-send64-132b012af02d.json",
+      "report_sha256": "eb9c784912c6383510597cc2d8e8c1be500894a9a47753efc029af70dc9cd373",
+      "safely_settled": true
+    },
+    {
+      "assessment": "/private/tmp/capacity-final-solana60-poll5-132b012af02d-assessment.json",
+      "assessment_sha256": "75c53ab9fdfdaab029f443386b7dddc48c5b6474b8a39f74f8a7507cd9e8c558",
+      "capacity_selected": false,
+      "exit": 1,
+      "name": "capacity-final-solana60-poll5",
+      "report": "/private/tmp/capacity-final-solana60-poll5-132b012af02d.json",
+      "report_sha256": "9f45d57f8e65e5a33d2054615f0be91a8c7d0aec9767cb5d624fdafc9f317087",
+      "safely_settled": true
+    }
+  ],
+  "schema": "local-capacity-sequential-v2"
+}

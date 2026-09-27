@@ -1,0 +1,15 @@
+test_observer_error_cannot_be_promoted_despite_complete_exact_reconciliation (capacity_assess_test.AssessmentTests) ... FAIL
+
+======================================================================
+FAIL: test_observer_error_cannot_be_promoted_despite_complete_exact_reconciliation (capacity_assess_test.AssessmentTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/engine-capacity-assessor-observer-draft/capacity_assess_test.py", line 35, in test_observer_error_cannot_be_promoted_despite_complete_exact_reconciliation
+    self.assertIn('observer_error',result['reasons'])
+AssertionError: 'observer_error' not found in []
+
+----------------------------------------------------------------------
+Ran 1 test in 0.001s
+
+FAILED (failures=1)
+EXPECTED NEGATIVE CONTROL: original assessor rejected by observer-error regression

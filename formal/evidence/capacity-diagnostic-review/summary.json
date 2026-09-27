@@ -1,0 +1,19 @@
+{
+  "passed": true,
+  "expected_outcomes": 61,
+  "reviewed_source_files": 75,
+  "checker_safeguards_passed": 3,
+  "configuration_kinds": {
+    "positive": 14,
+    "fault": 31,
+    "boundary": 11,
+    "witness": 5
+  },
+  "summed_positive_distinct_states": 3164944,
+  "summed_model_seconds": 210.9,
+  "source_map_sha256": "d43ec0c5431e11cb3ff2b2bce90baffb0d77e00e1bb444a70f84c0e8b7de467b",
+  "model_manifest_sha256": "437106b5cc73de6b0b10202996f0b5ae63a0941803e09e8c729c421f4da9ff95",
+  "report_sha256": "e0a36092c219af685c18cadea273c67152eb753899294a7fd266dbf004f27068",
+  "release_binary_sha256": "300db9782868ddca5b6d552e7ead5d2621322a82c8297ffde8f6ecb067858b23",
+  "scope": "Same61finitecases and state spaces; diagnostic-only logical correspondence reviewed manually. No refinement/composition/throughput/global-memory claim."
+}

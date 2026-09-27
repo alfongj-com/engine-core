@@ -27,5 +27,7 @@ journal identity abstractions; `Finality` still separates provisional inclusion
 from a qualified terminal outcome. These models do not prove mempool recovery
 timing, wall-clock liveness, node encoding or implementation refinement. Mapping
 the helper does not formally verify its unrelated capacity-campaign functions.
-The suite remains 61 cases. This review does **not** claim a new TLC run; a later
-combined source gate is required after the pending index change is frozen.
+The suite remains 61 cases. This oracle-only review did not run TLC. The later
+[combined index/broadcast review](../capacity-index-broadcast-review/README.md)
+passes the full suite with this reviewed oracle and the frozen runtime changes;
+it preserves this original failure record.

@@ -1,0 +1,210 @@
+TLC2 Version 2.19 of 08 August 2024 (rev: 5a47802)
+Running breadth-first search Model-Checking with fp 0 and seed 1 with 1 worker on 10 cores with 1820MB heap and 64MB offheap memory [pid: 49198] (Mac OS X 26.6.2 aarch64, Eclipse Adoptium 21.0.12.1 x86_64, MSBDiskFPSet, DiskStateQueue).
+Parsing file /Users/alfongj/Code/engine-core/formal/tla/EoaRecovery.tla
+Parsing file /private/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/Naturals.tla
+Parsing file /private/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/FiniteSets.tla
+Parsing file /private/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/TLC.tla
+Parsing file /private/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/Sequences.tla
+Semantic processing of module Naturals
+Semantic processing of module Sequences
+Semantic processing of module FiniteSets
+Semantic processing of module TLC
+Semantic processing of module EoaRecovery
+Starting... (2026-09-26 21:50:16)
+Computing initial states...
+Finished computing initial states: 1 distinct state generated at 2026-09-26 21:50:16.
+Error: Invariant OneIntentPerNonce is violated.
+Error: The behavior up to this point is:
+State 1: <Initial predicate>
+/\ durable = {}
+/\ running = TRUE
+/\ state = (a :> "pending" @@ b :> "pending")
+/\ latest = 0
+/\ sent = {}
+/\ nextNonce = 0
+/\ reverted = {}
+/\ ledger = {}
+/\ receipts = {}
+/\ prepared = (w1 :> None @@ w2 :> None)
+
+State 2: <Prepare line 33, col 5 to line 38, col 47 of module EoaRecovery>
+/\ durable = {}
+/\ running = TRUE
+/\ state = (a :> "pending" @@ b :> "pending")
+/\ latest = 0
+/\ sent = {}
+/\ nextNonce = 0
+/\ reverted = {}
+/\ ledger = {}
+/\ receipts = {}
+/\ prepared = (w1 :> [intent |-> a, nonce |-> 0, fee |-> 0] @@ w2 :> None)
+
+State 3: <Prepare line 33, col 5 to line 38, col 47 of module EoaRecovery>
+/\ durable = {}
+/\ running = TRUE
+/\ state = (a :> "pending" @@ b :> "pending")
+/\ latest = 0
+/\ sent = {}
+/\ nextNonce = 0
+/\ reverted = {}
+/\ ledger = {}
+/\ receipts = {}
+/\ prepared = ( w1 :> [intent |-> a, nonce |-> 0, fee |-> 0] @@
+  w2 :> [intent |-> b, nonce |-> 0, fee |-> 0] )
+
+State 4: <Reserve line 41, col 5 to line 48, col 70 of module EoaRecovery>
+/\ durable = {[intent |-> a, nonce |-> 0, fee |-> 0]}
+/\ running = TRUE
+/\ state = (a :> "active" @@ b :> "pending")
+/\ latest = 0
+/\ sent = {}
+/\ nextNonce = 1
+/\ reverted = {}
+/\ ledger = {}
+/\ receipts = {}
+/\ prepared = (w1 :> None @@ w2 :> [intent |-> b, nonce |-> 0, fee |-> 0])
+
+State 5: <Reserve line 41, col 5 to line 48, col 70 of module EoaRecovery>
+/\ durable = {[intent |-> a, nonce |-> 0, fee |-> 0], [intent |-> b, nonce |-> 0, fee |-> 0]}
+/\ running = TRUE
+/\ state = (a :> "active" @@ b :> "active")
+/\ latest = 0
+/\ sent = {}
+/\ nextNonce = 1
+/\ reverted = {}
+/\ ledger = {}
+/\ receipts = {}
+/\ prepared = (w1 :> None @@ w2 :> None)
+
+The coverage statistics at 2026-09-26 21:50:16
+<Init line 18, col 1 to line 18, col 4 of module EoaRecovery>: 2:2
+  line 19, col 5 to line 28, col 21 of module EoaRecovery: 2
+<Prepare line 32, col 1 to line 32, col 13 of module EoaRecovery>: 15:23
+  line 33, col 8 to line 33, col 14 of module EoaRecovery: 23
+  line 33, col 19 to line 33, col 36 of module EoaRecovery: 92
+  |line 33, col 19 to line 33, col 29 of module EoaRecovery: 69
+  |line 33, col 33 to line 33, col 36 of module EoaRecovery: 69
+  line 34, col 8 to line 34, col 27 of module EoaRecovery: 54
+  |line 34, col 8 to line 34, col 15 of module EoaRecovery: 31
+  line 34, col 32 to line 34, col 53 of module EoaRecovery: 23
+  line 35, col 8 to line 36, col 57 of module EoaRecovery: 23
+  line 37, col 8 to line 38, col 47 of module EoaRecovery: 23
+<Reserve line 40, col 1 to line 40, col 10 of module EoaRecovery>: 11:30
+  line 41, col 8 to line 41, col 14 of module EoaRecovery: 16
+  line 41, col 19 to line 41, col 36 of module EoaRecovery: 47
+  |line 41, col 19 to line 41, col 29 of module EoaRecovery: 31
+  |line 41, col 33 to line 41, col 36 of module EoaRecovery: 31
+  line 43, col 11 to line 43, col 26 of module EoaRecovery: 16
+  line 43, col 32 to line 43, col 58 of module EoaRecovery: 29
+  |line 43, col 32 to line 43, col 46 of module EoaRecovery: 16
+  line 43, col 63 to line 43, col 81 of module EoaRecovery: 27
+  |line 43, col 63 to line 43, col 69 of module EoaRecovery: 14
+  |line 43, col 73 to line 43, col 81 of module EoaRecovery: 14
+  line 44, col 11 to line 44, col 56 of module EoaRecovery: 29
+  |line 44, col 20 to line 44, col 56 of module EoaRecovery: 30
+  line 45, col 11 to line 45, col 34 of module EoaRecovery: 29
+  |line 45, col 24 to line 45, col 34 of module EoaRecovery: 30
+  line 46, col 11 to line 46, col 37 of module EoaRecovery: 29
+  |line 46, col 22 to line 46, col 37 of module EoaRecovery: 30
+  line 47, col 8 to line 47, col 48 of module EoaRecovery: 29
+  |line 47, col 20 to line 47, col 48 of module EoaRecovery: 30
+  line 48, col 8 to line 48, col 70 of module EoaRecovery: 29
+<Discard line 50, col 1 to line 50, col 10 of module EoaRecovery>: 0:14
+  line 51, col 8 to line 51, col 25 of module EoaRecovery: 44
+  |line 51, col 8 to line 51, col 18 of module EoaRecovery: 30
+  |line 51, col 22 to line 51, col 25 of module EoaRecovery: 30
+  line 52, col 8 to line 52, col 48 of module EoaRecovery: 14
+  line 53, col 8 to line 54, col 47 of module EoaRecovery: 14
+<Broadcast line 58, col 1 to line 58, col 12 of module EoaRecovery>: 4:4
+  line 59, col 8 to line 59, col 14 of module EoaRecovery: 4
+  line 59, col 19 to line 59, col 31 of module EoaRecovery: 108
+  |line 59, col 19 to line 59, col 19 of module EoaRecovery: 104
+  |line 59, col 25 to line 59, col 31 of module EoaRecovery: 104
+  line 59, col 36 to line 59, col 48 of module EoaRecovery: 8
+  |line 59, col 36 to line 59, col 36 of module EoaRecovery: 4
+  |line 59, col 45 to line 59, col 48 of module EoaRecovery: 4
+  line 60, col 8 to line 60, col 28 of module EoaRecovery: 4
+  line 61, col 8 to line 62, col 47 of module EoaRecovery: 4
+<Bump line 65, col 1 to line 65, col 7 of module EoaRecovery>: 4:4
+  line 66, col 8 to line 66, col 14 of module EoaRecovery: 4
+  line 66, col 19 to line 66, col 31 of module EoaRecovery: 108
+  |line 66, col 19 to line 66, col 19 of module EoaRecovery: 104
+  |line 66, col 25 to line 66, col 31 of module EoaRecovery: 104
+  line 66, col 36 to line 66, col 44 of module EoaRecovery: 8
+  |line 66, col 36 to line 66, col 40 of module EoaRecovery: 4
+  line 67, col 8 to line 67, col 42 of module EoaRecovery: 8
+  |line 67, col 8 to line 67, col 27 of module EoaRecovery: 4
+  |line 67, col 36 to line 67, col 42 of module EoaRecovery: 4
+  line 68, col 8 to line 68, col 53 of module EoaRecovery: 4
+  line 69, col 8 to line 70, col 47 of module EoaRecovery: 4
+<Mine line 72, col 1 to line 72, col 14 of module EoaRecovery>: 0:0
+  line 73, col 8 to line 73, col 50 of module EoaRecovery: 224
+  line 74, col 8 to line 74, col 32 of module EoaRecovery: 0
+  line 75, col 8 to line 75, col 64 of module EoaRecovery: 0
+  line 76, col 8 to line 77, col 47 of module EoaRecovery: 0
+<ObserveNonce line 79, col 1 to line 79, col 15 of module EoaRecovery>: 0:13
+  line 80, col 8 to line 80, col 14 of module EoaRecovery: 13
+  line 80, col 19 to line 80, col 46 of module EoaRecovery: 52
+  |line 80, col 19 to line 80, col 19 of module EoaRecovery: 39
+  |line 80, col 25 to line 80, col 46 of module EoaRecovery: 39
+  line 81, col 8 to line 81, col 18 of module EoaRecovery: 13
+  line 82, col 8 to line 83, col 49 of module EoaRecovery: 13
+<ReadReceipt line 85, col 1 to line 85, col 14 of module EoaRecovery>: 0:0
+  line 86, col 8 to line 86, col 30 of module EoaRecovery: 104
+  line 87, col 8 to line 87, col 36 of module EoaRecovery: 0
+  line 88, col 8 to line 89, col 47 of module EoaRecovery: 0
+<MissingReceipt line 93, col 1 to line 93, col 17 of module EoaRecovery>: 0:0
+  line 94, col 8 to line 94, col 32 of module EoaRecovery: 104
+  line 95, col 8 to line 95, col 33 of module EoaRecovery: 0
+  line 96, col 8 to line 97, col 47 of module EoaRecovery: 0
+<Confirm line 99, col 1 to line 99, col 10 of module EoaRecovery>: 0:0
+  line 100, col 8 to line 100, col 45 of module EoaRecovery: 104
+  line 102, col 8 to line 103, col 79 of module EoaRecovery: 0
+  line 104, col 8 to line 104, col 55 of module EoaRecovery: 0
+  line 105, col 8 to line 106, col 47 of module EoaRecovery: 0
+<UnsafeRequeue line 110, col 1 to line 110, col 16 of module EoaRecovery>: 0:0
+  line 113, col 8 to line 113, col 54 of module EoaRecovery: 0
+  line 114, col 8 to line 114, col 55 of module EoaRecovery: 0
+  line 115, col 8 to line 116, col 47 of module EoaRecovery: 0
+<Crash line 118, col 1 to line 118, col 5 of module EoaRecovery>: 3:13
+  line 119, col 8 to line 119, col 14 of module EoaRecovery: 13
+  line 120, col 8 to line 120, col 23 of module EoaRecovery: 13
+  line 121, col 8 to line 121, col 43 of module EoaRecovery: 13
+  line 122, col 8 to line 123, col 38 of module EoaRecovery: 13
+<Restart line 124, col 1 to line 124, col 7 of module EoaRecovery>: 0:1
+  line 125, col 8 to line 125, col 15 of module EoaRecovery: 15
+  |line 125, col 9 to line 125, col 15 of module EoaRecovery: 14
+  line 125, col 20 to line 125, col 34 of module EoaRecovery: 1
+  line 126, col 8 to line 127, col 48 of module EoaRecovery: 1
+<Reorg line 131, col 1 to line 131, col 5 of module EoaRecovery>: 0:0
+  line 133, col 8 to line 133, col 19 of module EoaRecovery: 0
+  line 133, col 24 to line 133, col 37 of module EoaRecovery: 0
+  line 133, col 42 to line 133, col 55 of module EoaRecovery: 0
+  line 133, col 60 to line 133, col 70 of module EoaRecovery: 0
+  line 134, col 8 to line 134, col 71 of module EoaRecovery: 0
+<Next line 156, col 1 to line 156, col 4 of module EoaRecovery (164 8 164 56)>: 0:0
+  line 141, col 11 to line 141, col 49 of module EoaRecovery: 0
+  line 142, col 11 to line 142, col 82 of module EoaRecovery: 0
+  line 143, col 11 to line 143, col 36 of module EoaRecovery: 0
+  line 144, col 11 to line 144, col 83 of module EoaRecovery: 0
+  line 60, col 8 to line 60, col 28 of module EoaRecovery: 0
+  line 61, col 8 to line 62, col 47 of module EoaRecovery: 0
+  line 74, col 8 to line 74, col 32 of module EoaRecovery: 0
+  line 75, col 8 to line 75, col 64 of module EoaRecovery: 0
+  line 76, col 8 to line 77, col 47 of module EoaRecovery: 0
+  line 150, col 16 to line 150, col 94 of module EoaRecovery: 0
+  line 151, col 16 to line 151, col 56 of module EoaRecovery: 0
+  line 152, col 16 to line 152, col 44 of module EoaRecovery: 0
+  line 153, col 16 to line 153, col 44 of module EoaRecovery: 0
+  line 154, col 11 to line 154, col 76 of module EoaRecovery: 0
+<TypeOK line 169, col 1 to line 169, col 6 of module EoaRecovery>
+  line 170, col 5 to line 176, col 26 of module EoaRecovery: 38
+<OneIntentPerNonce line 177, col 1 to line 177, col 17 of module EoaRecovery>
+  line 177, col 22 to line 177, col 83 of module EoaRecovery: 38
+  |line 177, col 44 to line 177, col 83 of module EoaRecovery: 41
+  |line 177, col 34 to line 177, col 40 of module EoaRecovery: 38
+End of statistics.
+96 states generated, 38 distinct states found, 22 states left on queue.
+The depth of the complete state graph search is 5.
+The average outdegree of the complete state graph is 3 (minimum is 0, the maximum 5 and the 95th percentile is 5).
+Finished in 00s at (2026-09-26 21:50:16)

@@ -1,0 +1,8 @@
+test_bounds_reject_without_cast (__main__.HookTests) ... ok
+test_deadline_and_at_most_one_initiation_per_second (__main__.HookTests) ... ok
+test_owner_signal_reaps_blocked_cast_child (__main__.HookTests) ... ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 2.396s
+
+OK

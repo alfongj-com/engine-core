@@ -1,0 +1,10 @@
+test_browser_origin_host_and_path_never_reach_gateway (test_testnet_evm_write.GuardTests) ... ok
+test_concurrent_attempts_reserve_before_any_response (test_testnet_evm_write.GuardTests) ... ok
+test_same_nonce_different_signature_rejects (test_testnet_evm_write.GuardTests) ... ok
+test_truncated_or_trailing_rlp_rejects (test_testnet_evm_write.GuardTests) ... ok
+test_wrong_intent_or_spending_limits_reject_before_reservation (test_testnet_evm_write.GuardTests) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 2.532s
+
+OK

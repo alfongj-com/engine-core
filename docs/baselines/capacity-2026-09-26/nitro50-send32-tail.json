@@ -1,0 +1,125 @@
+{
+  "attempts": 18000,
+  "binary_sha256": "bb34deeec74afce0b52d03edb9ec73a84497429db0cc2e460590b9127c0d77ce",
+  "chain_halts": [],
+  "drain": {
+    "client_pending": 0,
+    "http_inflight": 0,
+    "journal_unresolved": 0,
+    "node_pending": 0,
+    "redis_active": 0,
+    "redis_borrowed": 0,
+    "redis_delayed": 0,
+    "redis_pending": 0,
+    "redis_submitted": 0
+  },
+  "final_40": {
+    "acceptance_utc_first": "2026-09-27T01:02:46.620135+00:00",
+    "acceptance_utc_last": "2026-09-27T01:02:46.870875+00:00",
+    "checkpoint_blocks": [
+      3193
+    ],
+    "count": 40,
+    "matching_accepted_events": 40,
+    "nonce_max": 71998,
+    "nonce_min": 71959,
+    "receipt_blocks": [
+      3188,
+      3189
+    ]
+  },
+  "interpretation": "The total drain mostly completed initial dispatch. Final 40 waited less than approximately 10 seconds after acceptance for depth/poll completion; no evidence of nonce-gap recovery or replacement.",
+  "journal_halted": false,
+  "owned_children_stopped": true,
+  "report": {
+    "original_path": "/tmp/capacity-final-nitro50-send32-132b012af02d.json",
+    "sha256": "e396df25e60023532cbc8ef11b5d0ee47dea1e740f7c2a031be516e4c515b864"
+  },
+  "rpc_audit": {
+    "events": {
+      "rpc_faults_released": 1,
+      "send_accepted": 18000,
+      "send_forwarded": 18000
+    },
+    "original_path": "/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/engine-capacity-_cwck52o/nitro-rpc.jsonl",
+    "sha256": "1a3bdcf79dbccddca3ef56bb1b64c8809594835ddcd69febf2ad7d3944a58254"
+  },
+  "samples": [
+    {
+      "admitted": 17999,
+      "attempted": 14567,
+      "included": 14439,
+      "phase": "load",
+      "seconds": 360.009,
+      "terminal": 14376
+    },
+    {
+      "admitted": 18000,
+      "attempted": 17767,
+      "included": 17738,
+      "phase": "drain",
+      "seconds": 440.009,
+      "terminal": 17448
+    },
+    {
+      "admitted": 18000,
+      "attempted": 17767,
+      "included": 17767,
+      "phase": "drain",
+      "seconds": 440.229,
+      "terminal": 17448
+    },
+    {
+      "admitted": 18000,
+      "attempted": 18000,
+      "included": 17928,
+      "phase": "drain",
+      "seconds": 445.008,
+      "terminal": 17706
+    },
+    {
+      "admitted": 18000,
+      "attempted": 18000,
+      "included": 17960,
+      "phase": "drain",
+      "seconds": 445.238,
+      "terminal": 17706
+    },
+    {
+      "admitted": 18000,
+      "attempted": 18000,
+      "included": 18000,
+      "phase": "drain",
+      "seconds": 450.008,
+      "terminal": 17960
+    },
+    {
+      "admitted": 18000,
+      "attempted": 18000,
+      "included": 18000,
+      "phase": "drain",
+      "seconds": 450.245,
+      "terminal": 17960
+    },
+    {
+      "admitted": 18000,
+      "attempted": 18000,
+      "included": 18000,
+      "phase": "drain",
+      "seconds": 455.014,
+      "terminal": 18000
+    },
+    {
+      "admitted": 18000,
+      "attempted": 18000,
+      "included": 18000,
+      "phase": "drain",
+      "seconds": 455.253,
+      "terminal": 18000
+    }
+  ],
+  "scope": "Read-only post-run explanation; no RPC requests or mutation performed.",
+  "states": {
+    "terminal": 18000
+  }
+}

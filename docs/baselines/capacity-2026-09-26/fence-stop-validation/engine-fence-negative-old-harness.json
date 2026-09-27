@@ -1,0 +1,14 @@
+{
+  "command": [
+    "python3",
+    "-m",
+    "unittest",
+    "capacity_fence_test.DurableFenceTests.test_restart_fence_aborts_every_remaining_offer_without_claiming_recovery",
+    "-v"
+  ],
+  "original_harness": "80d1e4c03cf456a29f318e5cc581cb6788e99e3f8d26a98bde1490105d08e763",
+  "exit": 1,
+  "expected": "old harness lacks durable-fence abort",
+  "log": "/tmp/engine-fence-negative-old-harness.log",
+  "sha256": "83bc2702abc8a324a028b4e973d14a944bdfb1eb7844de5231657818aef9b668"
+}

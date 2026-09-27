@@ -1,0 +1,57 @@
+{
+  "utc": "2026-09-27T02:24:03Z",
+  "vm_status": "Stopped",
+  "copy_method": "APFS clone cp -c -p; independently hashed source and copy",
+  "files": [
+    {
+      "name": "disk",
+      "bytes": 12884901888,
+      "sha256": "0377d5a3b000e729515f9f2b4ccc8fbae9c920a9db1e18bf806090398db90de4"
+    },
+    {
+      "name": "lima.yaml",
+      "bytes": 7220,
+      "sha256": "69e4a52e7086671fcefb63f19eed1bb584e81c9103f62283c41af0c7c3fab3a8"
+    },
+    {
+      "name": "vz-identifier",
+      "bytes": 70,
+      "sha256": "60cbf3ae5275e3c2fc0351b6e4d8bba6e240efe7aab21d0147d7816e4b88dac8"
+    },
+    {
+      "name": "vz-efi",
+      "bytes": 131072,
+      "sha256": "192c3b2476bce93d9f7cb2a1d5f9f7d66a550a7f7175fb9943ce1be6af367daa"
+    },
+    {
+      "name": "lima-version",
+      "bytes": 6,
+      "sha256": "c3f991ed0f7bc00c631591ef0ad097ef1df20e91a43276d49a33cd9f451d7634"
+    },
+    {
+      "name": "cloud-config.yaml",
+      "bytes": 1242,
+      "sha256": "156df82ecaa78941d70c012a7d8411b4b61e23e8662a2e6a8b0428ab5c02af34"
+    },
+    {
+      "name": "cidata.iso",
+      "bytes": 19857408,
+      "sha256": "af5d21160f059bd809000a98420bb03bd28f72fc1a0aad53d2adc559be479795"
+    },
+    {
+      "name": "serialv.log",
+      "bytes": 649,
+      "sha256": "adceebe08b729971040c7b809a96baa14d62a344f257b76e225b0e377069291d"
+    },
+    {
+      "name": "ha.stderr.log",
+      "bytes": 1169310,
+      "sha256": "639d93e60e3eca331eb9baf29437f1058a3ce0eeefb3ea919f1de92f8b7aa301"
+    },
+    {
+      "name": "ha.stdout.log",
+      "bytes": 2615,
+      "sha256": "aabff87303e93e1cbd454e26bfedd9cc3e24a85e2ff0eeb44ea17d70899c69ed"
+    }
+  ]
+}
