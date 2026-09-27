@@ -196,6 +196,12 @@ async fn main() -> anyhow::Result<()> {
 
     // Initialize metrics registry and executor metrics
     let metrics_registry = Arc::new(prometheus::Registry::new());
+    engine_core::recovery::metrics::register(&metrics_registry)
+        .expect("Failed to register journal metrics");
+    twmq::metrics::initialize_metrics(
+        twmq::metrics::QueueMetrics::new(&metrics_registry)
+            .expect("Failed to create queue timing metrics"),
+    );
     let executor_metrics =
         ExecutorMetrics::new(&metrics_registry).expect("Failed to create executor metrics");
 

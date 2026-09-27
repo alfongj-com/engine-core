@@ -33,6 +33,7 @@ rusqlite = { version = "0.40.2", features = ["bundled"] }
 fs2 = "0.4.3"
 sha2 = { workspace = true }
 tokio = { workspace = true, features = ["rt", "sync"] }
+prometheus = { workspace = true }
 
 [dev-dependencies]
 tokio = { workspace = true }

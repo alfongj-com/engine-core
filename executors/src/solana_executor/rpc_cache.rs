@@ -19,6 +19,11 @@ use std::{
 };
 use tracing::info;
 
+use crate::metrics::{
+    ExecutorFamily, ExecutorOperation, MetricChain, OperationTimer,
+    record_status_request_signatures,
+};
+
 // Solana SDK ClusterType constants, independently checked against official public
 // RPCs. See docs/design/confirmation-identity.md for provenance and limitations.
 const DEVNET_GENESIS: &str = "EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG";
@@ -34,6 +39,7 @@ pub(super) struct BoundedRpcSender {
     client: reqwest::Client,
     next_id: AtomicU64,
     stats: Mutex<RpcTransportStats>,
+    metric_chain: MetricChain,
 }
 
 impl BoundedRpcSender {
@@ -55,6 +61,30 @@ impl BoundedRpcSender {
             client,
             next_id: AtomicU64::new(1),
             stats: Mutex::new(RpcTransportStats::default()),
+            metric_chain: MetricChain::Unknown,
+        }
+    }
+
+    /// Cluster labels are fixed configuration, never the credential-bearing URL.
+    fn with_chain_id(mut self, chain_id: SolanaChainId) -> Self {
+        self.metric_chain = MetricChain::Solana(chain_id);
+        self
+    }
+
+    fn metric_operation(request: &RpcRequest) -> ExecutorOperation {
+        match request {
+            RpcRequest::GetSignatureStatuses => ExecutorOperation::RpcGetSignatureStatuses,
+            RpcRequest::GetTransaction => ExecutorOperation::RpcGetTransaction,
+            RpcRequest::GetBlockHeight => ExecutorOperation::RpcGetBlockHeight,
+            RpcRequest::GetLatestBlockhash => ExecutorOperation::RpcGetLatestBlockhash,
+            RpcRequest::IsBlockhashValid => ExecutorOperation::RpcIsBlockhashValid,
+            RpcRequest::GetRecentPrioritizationFees => {
+                ExecutorOperation::RpcGetRecentPrioritizationFees
+            }
+            RpcRequest::SendTransaction => ExecutorOperation::RpcSendTransaction,
+            RpcRequest::GetGenesisHash => ExecutorOperation::RpcGetGenesisHash,
+            RpcRequest::SimulateTransaction => ExecutorOperation::RpcSimulateTransaction,
+            _ => ExecutorOperation::RpcOther,
         }
     }
 
@@ -132,8 +162,20 @@ impl BoundedRpcSender {
 #[async_trait::async_trait]
 impl RpcSender for BoundedRpcSender {
     async fn send(&self, request: RpcRequest, params: Value) -> ClientResult<Value> {
+        let timer = OperationTimer::start(
+            ExecutorFamily::Solana,
+            self.metric_chain,
+            Self::metric_operation(&request),
+        );
+        if matches!(request, RpcRequest::GetSignatureStatuses) {
+            if let Some(signatures) = params.get(0).and_then(Value::as_array) {
+                // Count only; signatures, URLs and response bodies are never labels.
+                record_status_request_signatures(self.metric_chain, signatures.len());
+            }
+        }
         let started = Instant::now();
         let result = self.send_once(request, params).await;
+        timer.finish_result(&result);
         let mut stats = self.stats.lock().unwrap_or_else(|p| p.into_inner());
         stats.request_count += 1;
         stats.elapsed_time += started.elapsed();
@@ -221,7 +263,7 @@ impl SolanaRpcCache {
 
                 // Create RPC client
                 Arc::new(RpcClient::new_sender(
-                    BoundedRpcSender::new(rpc_url),
+                    BoundedRpcSender::new(rpc_url).with_chain_id(chain_id),
                     RpcClientConfig::default(),
                 ))
             })
