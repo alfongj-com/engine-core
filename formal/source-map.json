@@ -672,8 +672,8 @@
         "scripts/capacity_faults.py"
       ],
       "reason": "The strict process oracle now separates a retained attempt from transmissions: one unchanged durable wire must have an additional accepted Engine-only proxy send after the fault, then match the independently fetched signed transaction, canonical receipt/block, reserved nonce, outcome and delayed terminal proof. Terminal admission replay must add no send or attempt. The explicit legacy comparison option alone accepts an execution-equivalent fee replacement. Seven offline unittest methods include positive witnesses and adversarial evidence substitutions; their synthetic signatures do not verify cryptography. Normal and reverted real Anvil process cases passed against unchanged runtime binary a3d360eba3dc470bd830ec9d3a32e0be8e11b6764f9bbf6efeb319f080eb8515. Finality covers provisional versus terminal observations; EoaRecovery/DisasterRecovery cover retained identity and durable membership. Repeated identical dispatch is a stutter in the identity abstractions, not a new protocol transition. No model changes or new TLC cases are justified by this test-only oracle correction. Actual mempool eviction, timing, request pacing, node encoding and implementation/model composition remain outside those proofs. The capacity_faults.py mapping guards the shared raw-wire encoding and Engine-only accepted-send counter dependency; it does not claim formal coverage of the full capacity harness.",
-      "evidence": "formal/evidence/capacity-oracle-review/README.md",
-      "implementation_evidence": "docs/baselines/capacity-2026-09-26/reorg-oracle/validation.json"
+      "evidence": "https://github.com/alfongj-com/engine-core/blob/load-tests/formal/evidence/capacity-oracle-review/README.md",
+      "implementation_evidence": "https://github.com/alfongj-com/engine-core/blob/load-tests/docs/baselines/capacity-2026-09-26/reorg-oracle/validation.json"
     },
     "history_index_followup": {
       "date": "2026-09-27",
@@ -727,8 +727,8 @@
         "executors/src/eoa/worker/send_dispatch_tests.rs"
       ],
       "reason": "Both new/recycled production paths first reserve signed borrowed wires as a batch, then authorize each wire in input order through immutable admission/wire validation and independent journal commit/mirror. Redis worker ownership is read on both sides of awaited authorization. One authorized network wait can overlap the next authorization; ordered bounded results retain ID association. First authorization error stops the producer; shared first-poll failure flag suppresses buffered unstarted sends, while already-started calls drain before returning that error. Entire batch remains borrowed on authorization error/cancellation; RPC errors remain Uncertain rather than terminal/recyclable. EoaRecovery already permits independent retained-identity Broadcast; DisasterRecovery permits authorized Send during later AttemptCommit/Mirror and late execution after halt/crash. Suppressed send is conservative non-delivery, not a new safety transition. Models do not represent whole-batch barriers, first-poll revocation, Tokio buffers/Arc/atomics, worker-owner reads, ordered responses, cancellation/draining mechanics, recycled preparation, concurrency/rate/fairness or throughput; no new theorem/configuration/refinement proof is claimed. Six new real Redis/SQLite/HTTP regressions verify these implementation cuts, including both actual entry points and real higher nonce4 around holes2/3. Four runtime mutations (whole-batch barrier, missing producer stop, missing post-owner fence, missing first-poll suppression) fail intended assertions/deadlines; compilation succeeds. A prior fixture with recycled nonces above highest submitted1 was correctly rejected by cleanup and repaired, not accepted as a runtime bug.",
-      "evidence": "formal/evidence/capacity-dispatch-review/README.md",
-      "implementation_evidence": "docs/baselines/capacity-2026-09-26/dispatch-validation/README.md"
+      "evidence": "https://github.com/alfongj-com/engine-core/blob/load-tests/formal/evidence/capacity-dispatch-review/README.md",
+      "implementation_evidence": "https://github.com/alfongj-com/engine-core/blob/load-tests/docs/baselines/capacity-2026-09-26/dispatch-validation/README.md"
     }
   }
 }

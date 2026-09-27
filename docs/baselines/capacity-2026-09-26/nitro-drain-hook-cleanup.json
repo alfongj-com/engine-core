@@ -1,7 +1,0 @@
-{
-  "active_child_sigterm_cleanup_passed": true,
-  "hook_exit": 0,
-  "stdout": "{\"event\": \"drain_ticker_start\", \"chain_id\": 412346, \"wallet\": \"0x3f1eae7d46d88f08fc2f8ed27fcb2ab183eb2d0e\", \"max_seconds\": 600}\n{\"event\": \"drain_ticker_stop\", \"broadcasts\": 0, \"elapsed_seconds\": 0.22202249999999998, \"terminated_by_owner\": true}\n",
-  "stderr": "",
-  "network_calls": 0
-}

@@ -37,7 +37,7 @@ Five tests cover populated pre-index restart and exact export/Redis-token preser
 
 All five regressions passed in the September 26 capacity validation. Existing
 journal, configuration and executor suites also passed; the validation record is
-in the [capacity evidence](../baselines/capacity-2026-09-26/README.md).
+in the [capacity evidence](https://github.com/alfongj-com/engine-core/blob/load-tests/docs/baselines/capacity-2026-09-26/README.md).
 
 Query-plan evidence motivating this change was read from a stopped test journal:
 terminal lookup used `SCAN terminal_evidence`; both ordered attempt lookups used

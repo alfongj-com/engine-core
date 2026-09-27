@@ -1,8 +1,0 @@
-test_cast_recovers_real_wire_hash_and_sender_without_node_history (test_capacity_faults.EvmDecoderTests) ... ok
-test_legacy_access_list_and_type4_layout_agree_with_independent_cast (test_capacity_faults.EvmDecoderTests) ... ok
-test_real_captured_wire_rejects_changed_rpc_signature_nonce_or_fees (test_capacity_faults.EvmDecoderTests) ... ok
-
-----------------------------------------------------------------------
-Ran 3 tests in 0.037s
-
-OK

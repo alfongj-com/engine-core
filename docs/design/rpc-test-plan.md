@@ -2,7 +2,7 @@
 
 Date: September 17, 2026. Updated for the configured-provider and Solana recovery changes in this fork. Prices are public USD rates, using monthly billing where applicable. This document separates estimated transaction demand from published provider quotas. Executed measurements are recorded in the verification report.
 
-**September 27 review:** dRPC method pricing was rechecked; other provider comparisons retain their September 17 scope. The simple request tables below are historical planning scenarios, preceding current finality checks and scheduling. Use the [current method mix and restart-safe budget](../baselines/capacity-2026-09-26/rpc-budget.md) for new runs; the provider account balance remains unqueried.
+**September 27 review:** dRPC method pricing was rechecked; other provider comparisons retain their September 17 scope. The simple request tables below are historical planning scenarios, preceding current finality checks and scheduling. Use the [current method mix and restart-safe budget](https://github.com/alfongj-com/engine-core/blob/load-tests/docs/baselines/capacity-2026-09-26/rpc-budget.md) for new runs; the provider account balance remains unqueried.
 
 ## Recommendation
 
@@ -108,7 +108,7 @@ Alfonso originally supplied an existing dRPC key with $50 in credit; its current
 
 The gateway counts each method in a batch, including failed requests. It persists reservations before forwarding and preserves the ceiling across restarts. Two million calls is the absolute limit. Its estimates do not replace the provider's invoice or account balance, and do not include another application's use of the same key. The actual counter and reserved upper bound are recorded with the results.
 
-Use short ramps and preserve at least 25% of remaining calls for reconciliation. The September 27 metadata review found 374,000 calls reserved: restarting leaves 1,626,000 calls, of which at most 1,219,500 should fund new work. Unused in-memory reservations are forfeited on restart; do not reset or reclaim them. See the [current budget record](../baselines/capacity-2026-09-26/rpc-budget.md). A read-only capacity probe does not need funded wallets; transaction submission does.
+Use short ramps and preserve at least 25% of remaining calls for reconciliation. The September 27 metadata review found 374,000 calls reserved: restarting leaves 1,626,000 calls, of which at most 1,219,500 should fund new work. Unused in-memory reservations are forfeited on restart; do not reset or reclaim them. See the [current budget record](https://github.com/alfongj-com/engine-core/blob/load-tests/docs/baselines/capacity-2026-09-26/rpc-budget.md). A read-only capacity probe does not need funded wallets; transaction submission does.
 
 For scale, 100 EVM transactions/s in the ten-wallet model consumes about **1.063 billion calls per 30 days**, approximately **$6,376 at dRPC's flat rate**. The cheapest short experiment need not be the cheapest continuous deployment.
 
@@ -122,4 +122,4 @@ For scale, 100 EVM transactions/s in the ten-wallet model consumes about **1.063
 
 The local environment signer currently provides one EVM identity. Configure and qualify its outstanding window first; tests that independently require many funded wallets still need a reviewed key-reference selection mechanism. Smart accounts, bundlers, paymasters, ERC-4337 and EIP-7702 require separate qualification and pricing.
 
-Published quotas only establish whether a plan could fit. See [verification](../verification.md) and [the handoff](../../TO_ALFONSO.md) for what actually ran and the remaining funding or capacity limits.
+Published quotas only establish whether a plan could fit. See [verification](https://github.com/alfongj-com/engine-core/blob/load-tests/docs/verification.md) and [the handoff](https://github.com/alfongj-com/engine-core/blob/load-tests/TO_ALFONSO.md) for what actually ran and the remaining funding or capacity limits.

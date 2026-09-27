@@ -54,7 +54,7 @@ project to the same completion action; they add no protocol transition or new
 TLC case. The successful-command assumption below still applies: Redis does not
 roll back prior writes after a command error. Byte limits, serialization, TTL,
 legacy turnover and inspection compatibility require implementation evidence.
-[The retention review](evidence/capacity-diagnostic-review/README.md) records that
+[The retention review](https://github.com/alfongj-com/engine-core/blob/load-tests/formal/evidence/capacity-diagnostic-review/README.md) records that
 evidence and the unchanged 61-case rerun. No global memory, fairness or throughput
 bound follows from this per-job diagnostic cap.
 
@@ -198,7 +198,7 @@ and does not introduce a reference-counting schema. The queue baseline harness
 retains the entire measured workload, so its previous throughput figures do not
 qualify this pruning-heavy case.
 
-A [focused benchmark](evidence/pruning/README.md) compares the actual old and new
+A [focused benchmark](https://github.com/alfongj-com/engine-core/blob/load-tests/formal/evidence/pruning/README.md) compares the actual old and new
 single-queue Lua scripts. At default retention, median Redis service time across
 four rounds rises from about 6–7 µs to 123–127 µs per single-entry prune. At
 10,000 successes / 100,000 failures it reaches about 1.2 ms. These fixtures have

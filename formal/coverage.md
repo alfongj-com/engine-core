@@ -36,10 +36,10 @@ Model composition and Rust-to-TLA+ refinement are not machine-checked.
 | Shutdown, deadlines and bounded concurrency preserve work | Process/queue tests | Tokio scheduling, wall-clock jumps, resource exhaustion and fairness models |
 | Useful EOA send/recovery progress can continue without a timer delay while polling-only work stays delayed | Real Redis scheduling regression through production result decision and TWMQ lease completion | No wall-clock/fairness proof; mixed-progress unknown retries can run sooner; local matched load is measured separately; public-chain capacity remains unqualified |
 | EOA broadcast tuning retains identity and result association | Reviewed ordered send buffers and durable gates; real EngineConfig range/default tests; existing executor identity/error regressions | Default 32, configurable 1–128 per worker; preparation/read caps remain separate. No formal concurrency/rate bound or measured gain; higher-setting process qualification is separate |
-| Throughput and resource use meet production targets | Local benchmarks + short public bursts; [pruning cost](evidence/pruning/README.md) | Bounded 20k page/churn and 10k cleanup-isolation tests, policy-head hint and false-high-count fixtures added; sustained finality-window load, memory/disk/backpressure and chain/provider quotas remain qualification work |
+| Throughput and resource use meet production targets | Local benchmarks + short public bursts; [pruning cost](https://github.com/alfongj-com/engine-core/blob/load-tests/formal/evidence/pruning/README.md) | Bounded 20k page/churn and 10k cleanup-isolation tests, policy-head hint and false-high-count fixtures added; sustained finality-window load, memory/disk/backpressure and chain/provider quotas remain qualification work |
 | Dependencies, compiler, Redis and operating system behave correctly | Pinned versions, tests and dependency audit | These components remain in the trusted computing base |
 
-The [2026-09-27 oracle review](evidence/capacity-oracle-review/README.md) corrects
+The [2026-09-27 oracle review](https://github.com/alfongj-com/engine-core/blob/load-tests/formal/evidence/capacity-oracle-review/README.md) corrects
 test evidence association: one retained signed attempt can have multiple actual
 broadcasts. The seven offline test methods include positive witnesses and
 adversarial controls; synthetic signatures do not establish cryptographic

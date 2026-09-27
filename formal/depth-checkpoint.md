@@ -37,7 +37,7 @@ unchanged.
 
 The five cases are registered in [models.json](models.json). The existing
 manifest-driven checker requires no code change. The formatted candidate fingerprints are recorded after source review;
-the [full candidate record](evidence/capacity-review/README.md) passes all 61
+the [full candidate record](https://github.com/alfongj-com/engine-core/blob/load-tests/formal/evidence/capacity-review/README.md) passes all 61
 expected outcomes and the targeted implementation suites. This family passed
 all five cases (898 distinct positive states). Earlier 56-case evidence does
 not validate this candidate. Parser failures, timeouts and wrong invariant names

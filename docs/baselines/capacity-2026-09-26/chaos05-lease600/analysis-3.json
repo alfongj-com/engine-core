@@ -1,9 +1,0 @@
-{
-  "reviewed_utc": "2026-09-27T05:19:18.370827+00:00",
-  "report_sha256": "eb133868371b74279f1ac39947b533726d82ec37a5862663b99127489c9bcd05",
-  "independent_audit_sha256": "3be850fa56f959a5fb3ce7b4156f8b8defb7698e3b38c6891564aead3510de16",
-  "accepted_ids": 14100,
-  "conclusion": "All original offers settled exactly; all 80 accepted-response losses verified; duplicate probes caused zero new sends. No unresolved custody.",
-  "capacity_selected": false,
-  "next_action_authorized_by_root_review": "Run isolated mixed control; retain this state and evidence unchanged."
-}

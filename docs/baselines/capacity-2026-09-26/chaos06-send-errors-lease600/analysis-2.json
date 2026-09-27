@@ -1,9 +1,0 @@
-{
-  "reviewed_utc": "2026-09-27T05:35:02.875121+00:00",
-  "report_sha256": "166325e9ddfec740f73e45f94e0a8530fb1e544a2f22347d82b503c2ac26ab3d",
-  "independent_audit_sha256": "8e29576bdd82398768332fc251ef8300df648a036294c0ecafc0cf1acc2fad37",
-  "accepted_ids": 11100,
-  "conclusion": "All original mixed offers settled exactly after 20 pre-forward send errors per chain. Duplicate probes added no sends; no unresolved custody. Injected audit events omit IDs, so individual failed-call attribution is not claimed.",
-  "capacity_selected": false,
-  "next_action_authorized_by_root_review": "Apply validated unresolved-node preservation, then run OP reorg and pool loss; retain original evidence."
-}

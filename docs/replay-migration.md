@@ -82,6 +82,6 @@ Core RPC regressions cover boundary selection, reorgs and missing/malformed
 responses. The executor regression uses an actual SQLite journal and Redis to
 check shallow-tip continuity, qualified-boundary conflicts, finalized-tag behavior
 and conservative legacy handling. Frozen-source test results belong in
-[verification](verification.md). The targeted core and Redis-backed executor
+[verification](https://github.com/alfongj-com/engine-core/blob/load-tests/docs/verification.md). The targeted core and Redis-backed executor
 regressions passed locally; the process-level reorg scenario and CI remain
 separate gates.

@@ -141,7 +141,7 @@ checks. Admission overload likewise makes no durable state change.
 executed attempt; the fault configuration deliberately permits attribution of
 another ID's real execution. The positive model's existing effect/attempt state
 is independent of that observation. The prior recorded state counts above are
-for the earlier model version. The [latest full run](evidence/throughput-review/report.json)
+for the earlier model version. The [latest full run](https://github.com/alfongj-com/engine-core/blob/load-tests/formal/evidence/throughput-review/report.json)
 passes all ten recovery configurations; terminal misattribution reaches its named
 counterexample after 11,865 distinct states.
 

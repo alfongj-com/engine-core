@@ -90,7 +90,7 @@ The existing [Redis/RPC recovery tests](../executors/src/solana_executor/recover
 - `reconciliation_budget_parks_without_rpc_and_explicit_resume_preserves_identity`, `lost_storage_lock_cannot_replace_or_resume_attempt`, and `terminal_cleanup_waits_for_commit_and_cancellation_retains_unknown_attempt`.
 - `confirmed_revert_then_reorg_cannot_terminate_or_resign_a_legacy_confirmed_job`, `finalized_error_requires_matching_receipt_and_nonstale_context`, and `terminal_journal_resumes_cleanup_and_missing_projection_never_signs` connect the stronger completion floor and authoritative journal to recovery. The [DisasterRecovery model](disaster-recovery.md) separately models that authority; composition with this Redis protocol is not mechanically proved.
 
-[Admission tests](../server/src/solana_admission_tests.rs) cover cancellation/pruning, fingerprint fences and aborted terminal commits. [The local validator harness](../scripts/local_solana_recovery.py) and [public Devnet crash report](../docs/baselines/testnet-solana-crash.json) exercise actual signed-byte recovery. Those tests supplement the abstraction; they do not establish a machine-checked refinement from Rust to TLA+.
+[Admission tests](../server/src/solana_admission_tests.rs) cover cancellation/pruning, fingerprint fences and aborted terminal commits. [The local validator harness](../scripts/local_solana_recovery.py) and [public Devnet crash report](https://github.com/alfongj-com/engine-core/blob/load-tests/docs/baselines/testnet-solana-crash.json) exercise actual signed-byte recovery. Those tests supplement the abstraction; they do not establish a machine-checked refinement from Rust to TLA+.
 
 ## Primary references
 

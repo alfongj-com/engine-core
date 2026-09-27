@@ -345,7 +345,7 @@ class SupervisorIntegration(unittest.TestCase):
     setUp = Infrastructure.setUp
 
     def test_supervisor_preserves_outage_and_pause_failure_and_blocks_resume(self):
-        spec = importlib.util.spec_from_file_location('guard_supervisor', str(Path(__file__).resolve().parents[1] / 'docs/baselines/capacity-2026-09-26/supervisor-v4/runner.py'))
+        spec = importlib.util.spec_from_file_location('guard_supervisor', str(Path(__file__).resolve().parent / 'fixtures/capacity_supervisor.py'))
         supervisor = importlib.util.module_from_spec(spec); spec.loader.exec_module(supervisor)
         root = supervisor.ROOT
         names = ('capacity_campaign.py', 'capacity_faults.py', 'capacity_resource_guard.py')

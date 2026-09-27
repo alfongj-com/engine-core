@@ -41,7 +41,7 @@ consensus or batch publication delays. Ethereum gas examples use the standard
 | Every page fetched all retained records; every cleanup hydrated the whole eligible range. | Redis returns bounded rank pages; cleanup reads only finalized nonce groups and at most 4096 group records. Pathological replacement fanout exceeding that budget fails closed with evidence retained. |
 | Old retained receipts could rewind optimistic nonce below consumed chain count. | Cleanup always includes the consumed-count floor; real Redis regression reproduces 313 consumed / 250 retained. [Finite model](../../formal/nonce-allocator.md) |
 | A larger inflight window could keep the send cycle busy with one huge batch. | Each new allocation cycle consumes at most 256 nonce reservations; ordered preparation/send concurrency is 32. Ten preparation refill passes may process up to 2,560 rejected pending jobs. Borrowed recovery still visits all retained borrowed attempts (up to the configured 4,096 window), and recycled recovery reads its retained set. No universal 256-work or elapsed-time bound follows. The earlier 50 TPS evidence used 128; the later capacity campaign tests 256, with no isolated improvement demonstrated by that change. |
-| Even a useful bounded send cycle with unsigned backlog waited behind a 200ms delay rounded to one second by TWMQ. | Successful nondelegated cycles with acknowledged send or recovery progress and remaining unsigned work now rejoin the queue tail immediately. Delegated accounts retain 2s; unknown delegation, no-progress, unknown-only and finality-only cycles retain the rounded 1s delay. Errors retain their existing handling. The [matched six-minute run](../baselines/review-2026-09-26/README.md) raises last-minute attempted TPS from 45.085 to 50.075; public-chain capacity is still unqualified. |
+| Even a useful bounded send cycle with unsigned backlog waited behind a 200ms delay rounded to one second by TWMQ. | Successful nondelegated cycles with acknowledged send or recovery progress and remaining unsigned work now rejoin the queue tail immediately. Delegated accounts retain 2s; unknown delegation, no-progress, unknown-only and finality-only cycles retain the rounded 1s delay. Errors retain their existing handling. The [matched six-minute run](https://github.com/alfongj-com/engine-core/blob/load-tests/docs/baselines/review-2026-09-26/README.md) raises last-minute attempted TPS from 45.085 to 50.075; public-chain capacity is still unqualified. |
 | Repeated identical journal attempts/checkpoints incurred avoidable durable work. | Exact attempt and same policy/checkpoint-head no-ops remain behind health/owner/CAS checks. Terminal receipt anchors still belong to each intent. Disk durability and serialization remain required. |
 
 Block evidence is shared only within one worker cycle and exact block number/hash;
@@ -78,7 +78,7 @@ Solana's present unbatched status rate is approximately `T × F / I`: transactio
 rate `T`, time awaiting finality `F`, effective poll interval `I`. For example,
 50/s × hypothetical 20s / 1s = 1000 status calls/s, plus blockhash, send and final
 transaction reads. The example's 20s is not a promised finality time. Existing
-[public measurements](solana-polling-cost.md) show actual intervals can be longer.
+[public measurements](https://github.com/alfongj-com/engine-core/blob/load-tests/docs/design/solana-polling-cost.md) show actual intervals can be longer.
 
 Sizing rule: retain at least `T × (finality delay + scan delay + outage margin)`
 attempts, multiplied by measured replacement fanout. A 100k cap may still bind
@@ -111,7 +111,7 @@ Shared provider throttling and lifetime EOA retry budgets are not implemented.
 
 ## Durable writer capacity qualification
 
-The [separate unoptimized journal probe](../baselines/review-2026-09-26/JOURNAL.md)
+The [separate unoptimized journal probe](https://github.com/alfongj-com/engine-core/blob/load-tests/docs/baselines/review-2026-09-26/JOURNAL.md)
 on this host measured an equivalent 53–57 three-stage intents/second, derived
 from separately timed admission, attempt and terminal phases. This was not mixed
 Engine traffic. That isolated measurement cannot support a claim of

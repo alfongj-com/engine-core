@@ -1,8 +1,0 @@
-test_liveness_requires_temporal_counterexample (test_check.ResultClassification) ... ok
-test_negative_requires_named_counterexample (test_check.ResultClassification) ... ok
-test_positive_requires_exhaustion_and_clean_exit (test_check.ResultClassification) ... ok
-
-----------------------------------------------------------------------
-Ran 3 tests in 0.000s
-
-OK

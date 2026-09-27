@@ -3,7 +3,7 @@
 Status: **implemented, with local process tests and Linux gates recorded**.
 This describes the shared EVM gate, executor integration and independent recovery
 journal authored on 2026-09-26 and subsequent hardening. Each round's source,
-checks and limitations are recorded in [verification](../verification.md).
+checks and limitations are recorded in [verification](https://github.com/alfongj-com/engine-core/blob/load-tests/docs/verification.md).
 Official sources accessed **2026-09-26**. No production endpoint is certified here.
 
 ## Context and decision
@@ -248,7 +248,7 @@ observations; the [disaster-recovery model](../../formal/disaster-recovery.md)
 separates the authority, Redis projection and network effects. Their negative
 cases expose dishonest-provider, post-finality rollback and lost-authority limits.
 Process/Linux gates and frozen-source evidence are recorded per round in
-[verification](../verification.md). Production
+[verification](https://github.com/alfongj-com/engine-core/blob/load-tests/docs/verification.md). Production
 endpoint qualification, immutable admission policy, global backpressure and
 independent 7702 bundler attribution remain open.
 
