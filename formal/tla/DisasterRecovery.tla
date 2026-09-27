@@ -16,6 +16,9 @@ vars == <<s>>
 Current == Token(s.epoch, s.checkpoint)
 Continuity == s.marker = Current /\ s.run = s.expectedRun
 Healthy(w) == w \in s.owners /\ s.halt = None /\ Continuity
+              /\ s.pending = None /\ s.returning = None
+PendingContinuity == IF s.pending = None THEN Continuity ELSE
+    s.marker \in {s.pending.old, Current} /\ s.run = s.expectedRun
 Attempted(id) == \E a \in s.attempts : a.id = id
 Unbound(key, id) == \A other \in IDs : other = id \/ s.binding[other] # key
 
@@ -25,7 +28,7 @@ Init == s = [
     requiredEvidence |-> {}, terminalEver |-> {}, recoveryQuarantine |-> {},
     epoch |-> 0, checkpoint |-> 0, marker |-> Token(0, 0),
     run |-> 0, expectedRun |-> 0, halt |-> None, writes |-> 0,
-    owners |-> {}, ownerEpoch |-> [w \in Workers |-> 0], pending |-> None,
+    owners |-> {}, ownerEpoch |-> [w \in Workers |-> 0], pending |-> None, callerAlive |-> FALSE, returning |-> None,
     offline |-> "none", offlineAlive |-> FALSE,
     projection |-> {}, permits |-> {}, messages |-> {}, effects |-> {},
     everySendJournaled |-> TRUE, noOldAuthorization |-> TRUE,
@@ -34,7 +37,7 @@ Init == s = [
 Start(w) ==
     /\ w \notin s.owners
     /\ (s.owners = {} /\ ~s.offlineAlive) \/ FaultSharedLock
-    /\ IF s.halt = None /\ Continuity
+    /\ IF s.halt = None /\ PendingContinuity
        THEN s' = [s EXCEPT !.owners = @ \cup {w}, !.ownerEpoch[w] = s.epoch]
        ELSE s' = [s EXCEPT !.halt = IF s.halt # None THEN s.halt
                      ELSE IF s.marker # Current THEN "continuity" ELSE "restart"]
@@ -42,7 +45,8 @@ Start(w) ==
 Crash(w) ==
     /\ w \in s.owners
     /\ s' = [s EXCEPT !.owners = @ \ {w},
-         !.pending = IF s.pending # None /\ s.pending.worker = w THEN None ELSE @,
+         !.callerAlive = IF s.pending # None /\ s.pending.worker = w THEN FALSE ELSE @,
+         !.returning = IF s.returning # None /\ s.returning.worker = w THEN None ELSE @,
          !.permits = {a \in @ : a.worker # w}]
 
 \* SQLite transactions commit independently of the Redis CAS mirror. The
@@ -53,6 +57,7 @@ Admit(w, id, payload) ==
     /\ s' = [s EXCEPT !.ledger[id] = payload, !.state[id] = "admitted",
          !.acceptedEver = @ \cup {[id |-> id, payload |-> payload]},
          !.checkpoint = @ + 1, !.writes = @ + 1,
+         !.callerAlive = TRUE,
          !.pending = [kind |-> "admit", worker |-> w, id |-> id,
                       key |-> None, payload |-> payload, old |-> Current]]
 
@@ -65,7 +70,8 @@ AttemptCommit(w, id, key) ==
        IN s' = [s EXCEPT !.binding[id] = key, !.attempts = @ \cup {attempt},
            !.requiredEvidence = @ \cup {attempt},
            !.checkpoint = @ + 1, !.writes = @ + 1,
-           !.pending = [kind |-> "attempt", worker |-> w, id |-> id,
+           !.callerAlive = TRUE,
+         !.pending = [kind |-> "attempt", worker |-> w, id |-> id,
                         key |-> key, payload |-> s.ledger[id], old |-> Current]]
 
 TerminalCommit(w, id) ==
@@ -76,20 +82,34 @@ TerminalCommit(w, id) ==
     /\ \E a \in s.effects : (a.id = id \/ FaultTerminalAttribution) /\ a \in s.attempts
     /\ s' = [s EXCEPT !.state[id] = "terminal", !.terminalEver = @ \cup {id},
          !.checkpoint = @ + 1, !.writes = @ + 1,
+         !.callerAlive = TRUE,
          !.pending = [kind |-> "terminal", worker |-> w, id |-> id,
                       key |-> None, payload |-> s.ledger[id], old |-> Current]]
 
+\* The pending transition is durable. Redis CAS and the FULL SQLite
+\* acknowledgement are separate crash cuts. A resumed transition does not
+\* recreate the dead caller's authorization. The detailed protocol model also
+\* covers schema migration, transport ambiguity and exact pending validation.
 Mirror ==
-    /\ s.pending # None /\ s.pending.worker \in s.owners
-    /\ LET p == s.pending
+    /\ s.pending # None /\ s.owners # {} /\ s.halt = None
+    /\ IF PendingContinuity
+        THEN s' = [s EXCEPT !.marker = Current]
+        ELSE s' = [s EXCEPT !.halt = "continuity"]
+
+Acknowledge ==
+    /\ s.pending # None /\ s.owners # {} /\ s.halt = None /\ Continuity
+    /\ s' = [s EXCEPT !.returning = IF s.callerAlive THEN s.pending ELSE None,
+                           !.pending = None, !.callerAlive = FALSE]
+
+ReturnPermission ==
+    /\ s.returning # None /\ s.returning.worker \in s.owners
+    /\ LET p == s.returning
            authorization == [attempt |-> Attempt(p.id, p.key, p.payload),
                              worker |-> p.worker, epoch |-> s.ownerEpoch[p.worker]]
-       IN IF s.marker = p.old /\ s.run = s.expectedRun /\ s.halt = None
-          THEN s' = [s EXCEPT !.marker = Current, !.pending = None,
-              !.permits = IF p.kind = "attempt" THEN @ \cup {authorization} ELSE @,
-              !.noOldAuthorization = @ /\
-                  (p.kind # "attempt" \/ s.ownerEpoch[p.worker] = s.epoch)]
-          ELSE s' = [s EXCEPT !.halt = "continuity", !.pending = None]
+       IN s' = [s EXCEPT !.returning = None,
+           !.permits = IF p.kind = "attempt" THEN @ \cup {authorization} ELSE @,
+           !.noOldAuthorization = @ /\
+               (p.kind # "attempt" \/ s.ownerEpoch[p.worker] = s.epoch)]
 
 \* Retrying a matching unsent admission returns its original payload/UID,
 \* regardless of a freshly generated candidate carried by the caller.
@@ -130,7 +150,7 @@ RepairMarker == s.halt \in {"continuity", "restart"} /\
     s' = [s EXCEPT !.marker = Current]
 
 DetectMismatch ==
-    /\ s.owners # {} /\ s.pending = None /\ s.halt = None /\ ~Continuity
+    /\ s.owners # {} /\ s.halt = None /\ ~PendingContinuity
     /\ s' = [s EXCEPT !.halt = IF s.marker # Current THEN "continuity" ELSE "restart"]
 
 Reattach ==
@@ -140,7 +160,7 @@ Reattach ==
 
 RecoverBegin ==
     /\ (s.owners = {} /\ ~s.offlineAlive) \/ FaultSharedLock
-    /\ s.pending = None /\ s.epoch = 0
+    /\ s.epoch = 0
     /\ s' = [s EXCEPT
          !.state = [id \in IDs |-> IF s.state[id] # "terminal" /\ Attempted(id)
                                   THEN IF FaultFreshRecovery THEN "admitted" ELSE "quarantined"
@@ -148,6 +168,7 @@ RecoverBegin ==
          !.binding = IF FaultFreshRecovery THEN [id \in IDs |-> None] ELSE @,
          !.recoveryQuarantine = {id \in IDs : Attempted(id) /\ s.state[id] # "terminal"},
          !.epoch = 1, !.checkpoint = 0, !.marker = None, !.projection = {},
+         !.pending = None, !.callerAlive = FALSE, !.returning = None,
          !.expectedRun = s.run, !.halt = "recovery", !.offline = "sql", !.offlineAlive = TRUE]
 
 RecoverPublish ==
@@ -167,14 +188,15 @@ AuthorityRollback ==
     /\ s' = [s EXCEPT !.ledger = [id \in IDs |-> None],
          !.state = [id \in IDs |-> "absent"], !.binding = [id \in IDs |-> None],
          !.attempts = {}, !.checkpoint = 0, !.marker = Token(s.epoch, 0),
-         !.halt = None, !.pending = None, !.projection = {}]
+         !.halt = None, !.pending = None, !.callerAlive = FALSE,
+         !.returning = None, !.projection = {}]
 
 Next == (\E w \in Workers : Start(w) \/ Crash(w))
         \/ (\E w \in Workers, id \in IDs, p \in Payloads : Admit(w,id,p) \/ Enqueue(w,id,p))
         \/ (\E w \in Workers, id \in IDs, key \in Keys : AttemptCommit(w,id,key) \/ UnjournaledSend(w,id,key))
         \/ (\E w \in Workers, id \in IDs : TerminalCommit(w,id))
         \/ (\E a \in s.permits : Send(a)) \/ (\E a \in s.messages : Execute(a))
-        \/ Mirror \/ RedisLoss \/ RedisRollback \/ RedisRestart \/ RepairMarker
+        \/ Mirror \/ Acknowledge \/ ReturnPermission \/ RedisLoss \/ RedisRollback \/ RedisRestart \/ RepairMarker
         \/ DetectMismatch \/ Reattach \/ RecoverBegin \/ RecoverPublish
         \/ RecoverFinish \/ RecoveryCrash \/ AuthorityRollback
 Spec == Init /\ [][Next]_vars
@@ -195,7 +217,7 @@ TypeOK ==
     /\ s.permits \subseteq Auths /\ s.messages \subseteq Attempts /\ s.effects \subseteq Attempts
     /\ s.everySendJournaled \in BOOLEAN /\ s.noOldAuthorization \in BOOLEAN
     /\ s.noTerminalEnqueue \in BOOLEAN /\ s.retriesUseOriginal \in BOOLEAN
-    /\ s.lateExecution \in BOOLEAN
+    /\ s.lateExecution \in BOOLEAN /\ s.callerAlive \in BOOLEAN
 
 ImmutableAdmission == \A a,b \in s.acceptedEver : a.id = b.id => a.payload = b.payload
 ReplayKeyUnique == \A a,b \in IDs : a # b /\ s.binding[a] # None => s.binding[a] # s.binding[b]

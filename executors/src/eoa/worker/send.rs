@@ -14,7 +14,7 @@ use crate::{
             },
         },
     },
-    metrics::{calculate_duration_seconds, current_timestamp_ms},
+    metrics::{ExecutorOperation, calculate_duration_seconds, current_timestamp_ms, measure_eoa},
 };
 
 // Bound a worker cycle independently from the larger mempool window. A slow
@@ -114,18 +114,24 @@ impl<C: Chain> EoaExecutorWorker<C> {
             self.broadcast_concurrency,
             |index| {
                 let borrowed = &transactions[index];
-                self.authorize_while_owned(crate::recovery::before_eoa(
-                    &borrowed.user_request,
-                    &borrowed.signed_transaction,
-                ))
+                measure_eoa(
+                    self.chain_id,
+                    ExecutorOperation::DurableAuthorization,
+                    self.authorize_while_owned(crate::recovery::before_eoa(
+                        &borrowed.user_request,
+                        &borrowed.signed_transaction,
+                    )),
+                )
             },
             |index| async move {
                 let borrowed = &transactions[index];
-                let sent = self
-                    .chain
-                    .provider()
-                    .send_tx_envelope(borrowed.signed_transaction.clone().into())
-                    .await;
+                let sent = measure_eoa(self.chain_id, ExecutorOperation::RpcBroadcast, async {
+                    self.chain
+                        .provider()
+                        .send_tx_envelope(borrowed.signed_transaction.clone().into())
+                        .await
+                })
+                .await;
                 SubmissionResult::from_send_result(
                     borrowed,
                     sent,

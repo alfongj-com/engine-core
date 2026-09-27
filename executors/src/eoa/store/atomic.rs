@@ -1,3 +1,6 @@
+use crate::metrics::{
+    ExecutorFamily, ExecutorOperation, MetricChain, OperationOutcome, OperationTimer, measure_eoa,
+};
 use std::sync::Arc;
 
 use alloy::{
@@ -91,7 +94,12 @@ impl AtomicEoaExecutorStore {
     /// This is a boundary check, not a lease: an already-started network call
     /// can finish after another worker takes ownership.
     pub(crate) async fn ensure_eoa_lock_owned(&self) -> Result<(), TransactionStoreError> {
-        let owner: Option<String> = self.redis.clone().get(self.eoa_lock_key_name()).await?;
+        let owner: Option<String> = measure_eoa(
+            self.chain_id,
+            ExecutorOperation::RedisOwnerRead,
+            self.redis.clone().get(self.eoa_lock_key_name()),
+        )
+        .await?;
         if owner.as_deref() != Some(self.worker_id()) {
             return Err(self.eoa_lock_lost_error());
         }
@@ -192,7 +200,13 @@ impl AtomicEoaExecutorStore {
         T: From<R>,
     {
         let lock_key = self.eoa_lock_key_name();
+        let wait = OperationTimer::start(
+            ExecutorFamily::Eoa,
+            MetricChain::Evm(self.chain_id),
+            ExecutorOperation::RedisConnectionWait,
+        );
         let mut connection_guard = self.transaction_connection.lock().await;
+        wait.finish(OperationOutcome::Success);
         let conn = &mut *connection_guard;
         let mut retry_count = 0;
 
@@ -211,7 +225,13 @@ impl AtomicEoaExecutorStore {
             // Exponential backoff after first retry
             if retry_count > 0 {
                 let delay_ms = RETRY_BASE_DELAY_MS * (1 << (retry_count - 1).min(6));
+                let backoff = OperationTimer::start(
+                    ExecutorFamily::Eoa,
+                    MetricChain::Evm(self.chain_id),
+                    ExecutorOperation::RedisBackoff,
+                );
                 tokio::time::sleep(tokio::time::Duration::from_millis(delay_ms)).await;
+                backoff.finish(OperationOutcome::Success);
                 tracing::debug!(
                     retry_count = retry_count,
                     delay_ms = delay_ms,
@@ -222,13 +242,20 @@ impl AtomicEoaExecutorStore {
             }
 
             // WATCH the EOA lock
-            let _: () = twmq::redis::cmd("WATCH")
-                .arg(&lock_key)
-                .query_async(conn)
-                .await?;
+            let _: () = measure_eoa(
+                self.chain_id,
+                ExecutorOperation::RedisWatch,
+                twmq::redis::cmd("WATCH").arg(&lock_key).query_async(conn),
+            )
+            .await?;
 
             // Check if we still own the lock
-            let current_owner: Option<String> = conn.get(&lock_key).await?;
+            let current_owner: Option<String> = measure_eoa(
+                self.chain_id,
+                ExecutorOperation::RedisOwnerRead,
+                conn.get(&lock_key),
+            )
+            .await?;
             match current_owner {
                 Some(owner) if owner == self.worker_id() => {
                     // We still own it, proceed
@@ -246,14 +273,29 @@ impl AtomicEoaExecutorStore {
             let result = operation(&mut pipeline);
 
             // Execute with WATCH protection
-            match pipeline
+            let timer = OperationTimer::start(
+                ExecutorFamily::Eoa,
+                MetricChain::Evm(self.chain_id),
+                ExecutorOperation::RedisCommit,
+            );
+            let execution = pipeline
                 .query_async::<Option<Vec<twmq::redis::Value>>>(conn)
-                .await
-            {
+                .await;
+            timer.finish(match &execution {
+                Ok(Some(_)) => OperationOutcome::Success,
+                Ok(None) => OperationOutcome::Conflict,
+                Err(_) => OperationOutcome::Error,
+            });
+            match execution {
                 Ok(Some(_)) => return Ok(T::from(result)),
                 Ok(None) => {
                     // WATCH failed, check if it was our lock or someone else's
-                    let still_own_lock: Option<String> = conn.get(&lock_key).await?;
+                    let still_own_lock: Option<String> = measure_eoa(
+                        self.chain_id,
+                        ExecutorOperation::RedisOwnerRead,
+                        conn.get(&lock_key),
+                    )
+                    .await?;
                     if still_own_lock.as_deref() != Some(self.worker_id()) {
                         return Err(self.eoa_lock_lost_error());
                     }
@@ -274,7 +316,13 @@ impl AtomicEoaExecutorStore {
         safe_tx: &T,
     ) -> Result<T::OperationResult, TransactionStoreError> {
         let lock_key = self.eoa_lock_key_name();
+        let wait = OperationTimer::start(
+            ExecutorFamily::Eoa,
+            MetricChain::Evm(self.chain_id),
+            ExecutorOperation::RedisConnectionWait,
+        );
         let mut connection_guard = self.transaction_connection.lock().await;
+        wait.finish(OperationOutcome::Success);
         let conn = &mut *connection_guard;
         let mut retry_count = 0;
 
@@ -294,7 +342,13 @@ impl AtomicEoaExecutorStore {
             // Exponential backoff after first retry
             if retry_count > 0 {
                 let delay_ms = RETRY_BASE_DELAY_MS * (1 << (retry_count - 1).min(6));
+                let backoff = OperationTimer::start(
+                    ExecutorFamily::Eoa,
+                    MetricChain::Evm(self.chain_id),
+                    ExecutorOperation::RedisBackoff,
+                );
                 tokio::time::sleep(tokio::time::Duration::from_millis(delay_ms)).await;
+                backoff.finish(OperationOutcome::Success);
                 tracing::debug!(
                     retry_count = retry_count,
                     delay_ms = delay_ms,
@@ -311,10 +365,20 @@ impl AtomicEoaExecutorStore {
             for key in safe_tx.watch_keys() {
                 watch_cmd.arg(key);
             }
-            let _: () = watch_cmd.query_async(conn).await?;
+            let _: () = measure_eoa(
+                self.chain_id,
+                ExecutorOperation::RedisWatch,
+                watch_cmd.query_async(conn),
+            )
+            .await?;
 
             // Check lock ownership
-            let current_owner: Option<String> = conn.get(&lock_key).await?;
+            let current_owner: Option<String> = measure_eoa(
+                self.chain_id,
+                ExecutorOperation::RedisOwnerRead,
+                conn.get(&lock_key),
+            )
+            .await?;
             if current_owner.as_deref() != Some(self.worker_id()) {
                 let _: () = twmq::redis::cmd("UNWATCH").query_async(conn).await?;
                 return Err(TransactionStoreError::LockLost {
@@ -325,21 +389,42 @@ impl AtomicEoaExecutorStore {
             }
 
             // Execute validation
-            match safe_tx.validation(conn, &self.store).await {
+            match measure_eoa(
+                self.chain_id,
+                ExecutorOperation::RedisValidation,
+                safe_tx.validation(conn, &self.store),
+            )
+            .await
+            {
                 Ok(validation_data) => {
                     // Build and execute pipeline
                     let mut pipeline = twmq::redis::pipe();
                     pipeline.atomic();
                     let result = safe_tx.operation(&mut pipeline, validation_data);
 
-                    match pipeline
+                    let timer = OperationTimer::start(
+                        ExecutorFamily::Eoa,
+                        MetricChain::Evm(self.chain_id),
+                        ExecutorOperation::RedisCommit,
+                    );
+                    let execution = pipeline
                         .query_async::<Option<Vec<twmq::redis::Value>>>(conn)
-                        .await
-                    {
+                        .await;
+                    timer.finish(match &execution {
+                        Ok(Some(_)) => OperationOutcome::Success,
+                        Ok(None) => OperationOutcome::Conflict,
+                        Err(_) => OperationOutcome::Error,
+                    });
+                    match execution {
                         Ok(Some(_)) => return Ok(result),
                         Ok(None) => {
                             // WATCH failed, check if it was our lock
-                            let still_own_lock: Option<String> = conn.get(&lock_key).await?;
+                            let still_own_lock: Option<String> = measure_eoa(
+                                self.chain_id,
+                                ExecutorOperation::RedisOwnerRead,
+                                conn.get(&lock_key),
+                            )
+                            .await?;
                             if still_own_lock.as_deref() != Some(self.worker_id()) {
                                 return Err(TransactionStoreError::LockLost {
                                     eoa: self.eoa,

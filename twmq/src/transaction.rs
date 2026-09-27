@@ -1,5 +1,6 @@
 //! Isolated connections for connection-scoped Redis transactions.
 use crate::error::TwmqError;
+use crate::metrics::{self as timings, Outcome, Phase, QueueType, Timer};
 use redis::{AsyncCommands, Client, Pipeline, aio::MultiplexedConnection};
 use std::sync::Mutex;
 
@@ -38,28 +39,48 @@ impl TransactionConnections {
     /// an optimistic conflict, not a successful empty transaction.
     pub(crate) async fn commit_if_leased(
         &self,
+        queue: QueueType,
         lease_key: &str,
         pipeline: &Pipeline,
     ) -> Result<bool, TwmqError> {
-        let mut connection = self.checkout().await?;
+        let mut connection = timings::measure(queue, Phase::Connection, self.checkout()).await?;
         let mut transaction = pipeline.clone();
         transaction.atomic();
         for _ in 0..10 {
-            redis::cmd("WATCH")
-                .arg(lease_key)
-                .query_async::<()>(&mut connection)
+            timings::measure(
+                queue,
+                Phase::Watch,
+                redis::cmd("WATCH")
+                    .arg(lease_key)
+                    .query_async::<()>(&mut connection),
+            )
+            .await?;
+            if !timings::measure(
+                queue,
+                Phase::OwnerRead,
+                connection.exists::<_, bool>(lease_key),
+            )
+            .await?
+            {
+                timings::measure(
+                    queue,
+                    Phase::Unwatch,
+                    redis::cmd("UNWATCH").query_async::<()>(&mut connection),
+                )
                 .await?;
-            if !connection.exists::<_, bool>(lease_key).await? {
-                redis::cmd("UNWATCH")
-                    .query_async::<()>(&mut connection)
-                    .await?;
                 self.checkin(connection);
                 return Ok(false);
             }
-            match transaction
+            let timer = Timer::start(queue, Phase::Exec);
+            let result = transaction
                 .query_async::<Option<Vec<redis::Value>>>(&mut connection)
-                .await?
-            {
+                .await;
+            timer.finish(match &result {
+                Ok(Some(_)) => Outcome::Success,
+                Ok(None) => Outcome::Conflict,
+                Err(_) => Outcome::Error,
+            });
+            match result? {
                 Some(_) => {
                     self.checkin(connection);
                     return Ok(true);

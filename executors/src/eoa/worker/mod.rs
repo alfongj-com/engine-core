@@ -22,7 +22,9 @@ use twmq::{
 use crate::eoa::authorization_cache::EoaAuthorizationCache;
 use crate::eoa::store::{AtomicEoaExecutorStore, EoaExecutorStore, EoaHealth, SubmissionResult};
 use crate::metrics::{
-    EoaMetrics, calculate_duration_seconds, current_timestamp_ms, record_eoa_job_processing_time,
+    EoaMetrics, ExecutorFamily, ExecutorOperation, MetricChain, OperationOutcome, OperationTimer,
+    calculate_duration_seconds, current_timestamp_ms, measure_eoa, record_eoa_cycle,
+    record_eoa_job_processing_time,
 };
 use crate::webhook::WebhookJobHandler;
 
@@ -170,101 +172,125 @@ where
         &self,
         job: &BorrowedJob<Self::JobData>,
     ) -> JobResult<Self::Output, Self::ErrorData> {
-        let data = &job.job.data;
-
-        // 1. GET CHAIN
-        let chain = self
-            .chain_service
-            .get_chain(data.chain_id)
-            .map_err(|e| EoaExecutorWorkerError::ChainServiceError {
-                chain_id: data.chain_id,
-                message: format!("Failed to get chain: {e}"),
-            })
-            .map_err_nack(Some(Duration::from_secs(10)), RequeuePosition::Last)?;
-
-        let worker_id = format!("{}:{}", uuid::Uuid::new_v4(), job.lease_token);
-
-        // 2. CREATE SCOPED STORE (acquires lock)
-        let scoped = EoaExecutorStore::new(
-            self.redis.clone(),
-            self.namespace.clone(),
-            data.eoa_address,
-            data.chain_id,
-            self.completed_transaction_ttl_seconds,
-        )
-        .acquire_eoa_lock_aggressively(&worker_id, self.eoa_metrics.clone(), &self.redis_client)
-        .await
-        .map_err(|e| Into::<EoaExecutorWorkerError>::into(e).handle())?;
-
-        let delegated_account = DelegatedAccount::new(data.eoa_address, chain.clone());
-
-        // if there's an error checking 7702 delegation here, we'll just assume it's not a minimal account for the purposes of max in flight
-        let delegation = self
-            .authorization_cache
-            .is_minimal_account(&delegated_account, None)
-            .await
-            .inspect_err(|e| {
-                tracing::error!(error = ?e, "Error checking 7702 delegation");
-            })
-            .ok();
-        let is_minimal_account = delegation.unwrap_or(false);
-
-        let chain_id = chain.chain_id();
-
-        // Inject KMS cache into the noop signing credential (after deserialization from Redis)
-        let noop_signing_credential = data
-            .noop_signing_credential
-            .clone()
-            .with_aws_kms_cache(&self.kms_client_cache);
-
-        let worker = EoaExecutorWorker {
-            store: scoped,
-            chain,
-            eoa: data.eoa_address,
-            chain_id: data.chain_id,
-            noop_signing_credential,
-
-            max_inflight: if is_minimal_account {
-                1
-            } else if chain_id == 1628 {
-                20
-            } else {
-                self.max_inflight
-            },
-            broadcast_concurrency: self.broadcast_concurrency,
-            max_recycled_nonces: self.max_recycled_nonces,
-            webhook_queue: self.webhook_queue.clone(),
-            signer: self.eoa_signer.clone(),
-            kms_client_cache: self.kms_client_cache.clone(),
-        };
-
-        let job_start_time = current_timestamp_ms();
-        let workflow_result = worker.execute_main_workflow().await;
-
-        // Always release lock, regardless of workflow success/failure
-        if let Err(e) = worker.release_eoa_lock().await {
-            tracing::error!(error = ?e, worker_id = worker_id, "Error releasing EOA lock");
-        }
-
-        // Propagate workflow error after releasing lock
-        let result = workflow_result?;
-
-        // Record EOA job processing metrics
-        let job_end_time = current_timestamp_ms();
-        let job_duration = calculate_duration_seconds(job_start_time, job_end_time);
-        record_eoa_job_processing_time(data.chain_id, job_duration);
-
-        tracing::info!(
-            eoa = ?data.eoa_address,
-            chain_id = data.chain_id,
-            worker_id = worker_id,
-            job_duration_seconds = job_duration,
-            work_remaining = result.is_work_remaining(),
-            result = ?result,
-            "JOB_LIFECYCLE - EOA executor job completed"
+        let timer = OperationTimer::start(
+            ExecutorFamily::Eoa,
+            MetricChain::Evm(job.job.data.chain_id),
+            ExecutorOperation::Handler,
         );
+        let result = async {
+            let data = &job.job.data;
 
-        result.into_job_result(delegation)
+            // 1. GET CHAIN
+            let chain = self
+                .chain_service
+                .get_chain(data.chain_id)
+                .map_err(|e| EoaExecutorWorkerError::ChainServiceError {
+                    chain_id: data.chain_id,
+                    message: format!("Failed to get chain: {e}"),
+                })
+                .map_err_nack(Some(Duration::from_secs(10)), RequeuePosition::Last)?;
+
+            let worker_id = format!("{}:{}", uuid::Uuid::new_v4(), job.lease_token);
+
+            // 2. CREATE SCOPED STORE (acquires lock)
+            let scoped = measure_eoa(
+                data.chain_id,
+                ExecutorOperation::WalletLockAcquire,
+                EoaExecutorStore::new(
+                    self.redis.clone(),
+                    self.namespace.clone(),
+                    data.eoa_address,
+                    data.chain_id,
+                    self.completed_transaction_ttl_seconds,
+                )
+                .acquire_eoa_lock_aggressively(
+                    &worker_id,
+                    self.eoa_metrics.clone(),
+                    &self.redis_client,
+                ),
+            )
+            .await
+            .map_err(|e| Into::<EoaExecutorWorkerError>::into(e).handle())?;
+
+            let delegated_account = DelegatedAccount::new(data.eoa_address, chain.clone());
+
+            // if there's an error checking 7702 delegation here, we'll just assume it's not a minimal account for the purposes of max in flight
+            let delegation = self
+                .authorization_cache
+                .is_minimal_account(&delegated_account, None)
+                .await
+                .inspect_err(|e| {
+                    tracing::error!(error = ?e, "Error checking 7702 delegation");
+                })
+                .ok();
+            let is_minimal_account = delegation.unwrap_or(false);
+
+            let chain_id = chain.chain_id();
+
+            // Inject KMS cache into the noop signing credential (after deserialization from Redis)
+            let noop_signing_credential = data
+                .noop_signing_credential
+                .clone()
+                .with_aws_kms_cache(&self.kms_client_cache);
+
+            let worker = EoaExecutorWorker {
+                store: scoped,
+                chain,
+                eoa: data.eoa_address,
+                chain_id: data.chain_id,
+                noop_signing_credential,
+
+                max_inflight: if is_minimal_account {
+                    1
+                } else if chain_id == 1628 {
+                    20
+                } else {
+                    self.max_inflight
+                },
+                broadcast_concurrency: self.broadcast_concurrency,
+                max_recycled_nonces: self.max_recycled_nonces,
+                webhook_queue: self.webhook_queue.clone(),
+                signer: self.eoa_signer.clone(),
+                kms_client_cache: self.kms_client_cache.clone(),
+            };
+
+            let job_start_time = current_timestamp_ms();
+            let workflow_result = worker.execute_main_workflow().await;
+
+            // Always release lock, regardless of workflow success/failure
+            if let Err(e) = worker.release_eoa_lock().await {
+                tracing::error!(error = ?e, worker_id = worker_id, "Error releasing EOA lock");
+            }
+
+            // Propagate workflow error after releasing lock
+            let result = workflow_result?;
+
+            record_eoa_cycle(data.chain_id, &result);
+
+            // Record EOA job processing metrics
+            let job_end_time = current_timestamp_ms();
+            let job_duration = calculate_duration_seconds(job_start_time, job_end_time);
+            record_eoa_job_processing_time(data.chain_id, job_duration);
+
+            tracing::info!(
+                eoa = ?data.eoa_address,
+                chain_id = data.chain_id,
+                worker_id = worker_id,
+                job_duration_seconds = job_duration,
+                work_remaining = result.is_work_remaining(),
+                result = ?result,
+                "JOB_LIFECYCLE - EOA executor job completed"
+            );
+
+            result.into_job_result(delegation)
+        }
+        .await;
+        timer.finish(match &result {
+            Ok(_) => OperationOutcome::Success,
+            Err(twmq::job::JobError::Nack { .. }) => OperationOutcome::Requeue,
+            Err(twmq::job::JobError::Fail(_)) => OperationOutcome::Error,
+        });
+        result
     }
 
     async fn on_success(
@@ -317,27 +343,34 @@ impl<C: Chain> EoaExecutorWorker<C> {
     async fn execute_main_workflow(
         &self,
     ) -> JobResult<EoaExecutorWorkerResult, EoaExecutorWorkerError> {
-        self.cull_stale_pending_transactions()
-            .await
-            .inspect_err(|e| {
-                tracing::error!(
-                    error = ?e,
-                    eoa = ?self.eoa,
-                    chain_id = self.chain_id,
-                    "Error culling stale pending transactions"
-                );
-            })
-            .map_err(|e| e.handle())?;
+        measure_eoa(
+            self.chain_id,
+            ExecutorOperation::CullPending,
+            self.cull_stale_pending_transactions(),
+        )
+        .await
+        .inspect_err(|e| {
+            tracing::error!(
+                error = ?e,
+                eoa = ?self.eoa,
+                chain_id = self.chain_id,
+                "Error culling stale pending transactions"
+            );
+        })
+        .map_err(|e| e.handle())?;
 
         // 1. CRASH RECOVERY
         let start_time = current_timestamp_ms();
-        let recovered = self
-            .recover_borrowed_state()
-            .await
-            .inspect_err(|e| {
-                tracing::error!(error = ?e, "Error in recover_borrowed_state");
-            })
-            .map_err(|e| e.handle())?;
+        let recovered = measure_eoa(
+            self.chain_id,
+            ExecutorOperation::RecoverBorrowed,
+            self.recover_borrowed_state(),
+        )
+        .await
+        .inspect_err(|e| {
+            tracing::error!(error = ?e, "Error in recover_borrowed_state");
+        })
+        .map_err(|e| e.handle())?;
         let duration = calculate_duration_seconds(start_time, current_timestamp_ms());
         tracing::info!(
             eoa = ?self.eoa,
@@ -350,13 +383,16 @@ impl<C: Chain> EoaExecutorWorker<C> {
 
         // 2. CONFIRM FLOW
         let start_time = current_timestamp_ms();
-        let confirmations_report = self
-            .confirm_flow()
-            .await
-            .inspect_err(|e| {
-                tracing::error!(error = ?e, "Error in confirm flow");
-            })
-            .map_err(|e| e.handle())?;
+        let confirmations_report = measure_eoa(
+            self.chain_id,
+            ExecutorOperation::Confirm,
+            self.confirm_flow(),
+        )
+        .await
+        .inspect_err(|e| {
+            tracing::error!(error = ?e, "Error in confirm flow");
+        })
+        .map_err(|e| e.handle())?;
         let duration = calculate_duration_seconds(start_time, current_timestamp_ms());
         tracing::info!(
             eoa = ?self.eoa,
@@ -371,8 +407,7 @@ impl<C: Chain> EoaExecutorWorker<C> {
 
         // 3. SEND FLOW
         let start_time = current_timestamp_ms();
-        let sent = self
-            .send_flow()
+        let sent = measure_eoa(self.chain_id, ExecutorOperation::Send, self.send_flow())
             .await
             .inspect_err(|e| {
                 tracing::error!(error = ?e, "Error in send_flow");
@@ -516,8 +551,15 @@ impl<C: Chain> EoaExecutorWorker<C> {
                     result: crate::eoa::store::SubmissionResultType::Reconcile,
                 });
             } else {
-                crate::recovery::before_eoa(&borrowed.user_request, &borrowed.signed_transaction)
-                    .await?;
+                measure_eoa(
+                    self.chain_id,
+                    ExecutorOperation::DurableAuthorization,
+                    crate::recovery::before_eoa(
+                        &borrowed.user_request,
+                        &borrowed.signed_transaction,
+                    ),
+                )
+                .await?;
                 to_broadcast.push(borrowed.clone());
             }
         }
@@ -535,7 +577,10 @@ impl<C: Chain> EoaExecutorWorker<C> {
                         .acquire()
                         .await
                         .expect("local receipt semaphore is never closed");
-                    self.chain.provider().get_transaction_receipt(hash).await
+                    measure_eoa(self.chain_id, ExecutorOperation::RpcReceipt, async {
+                        self.chain.provider().get_transaction_receipt(hash).await
+                    })
+                    .await
                 };
                 if let Ok(Some(receipt)) = receipt {
                     if receipt.transaction_hash == hash
@@ -548,10 +593,13 @@ impl<C: Chain> EoaExecutorWorker<C> {
                         };
                     }
                 }
-                let send_result = self
-                    .chain
-                    .provider()
-                    .send_tx_envelope(borrowed.signed_transaction.clone().into())
+                let send_result =
+                    measure_eoa(self.chain_id, ExecutorOperation::RpcBroadcast, async {
+                        self.chain
+                            .provider()
+                            .send_tx_envelope(borrowed.signed_transaction.clone().into())
+                            .await
+                    })
                     .await;
                 SubmissionResult::from_send_result(
                     &borrowed,

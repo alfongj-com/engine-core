@@ -12,10 +12,17 @@ use std::{
         Arc, Mutex, OnceLock,
         atomic::{AtomicBool, Ordering},
     },
-    time::Duration,
+    time::{Duration, Instant},
 };
 use tokio::sync::{Mutex as AsyncMutex, Semaphore};
 use twmq::redis::{self, aio::ConnectionManager};
+
+pub mod metrics;
+
+struct SerialGuard<'a> {
+    _guard: tokio::sync::MutexGuard<'a, ()>,
+    _timer: prometheus::HistogramTimer,
+}
 
 static GLOBAL: OnceLock<Arc<RecoveryJournal>> = OnceLock::new();
 const SCHEMA: i64 = 1;
@@ -337,6 +344,12 @@ fn connection(path: &Path, readonly: bool) -> Result<Connection> {
 fn ensure_history_indexes(conn: &mut Connection) -> Result<()> {
     let tx = conn.transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)?;
     tx.execute_batch(HISTORY_INDEX_SQL)?;
+    commit_transaction(tx)?;
+    Ok(())
+}
+
+fn commit_transaction(tx: rusqlite::Transaction<'_>) -> Result<()> {
+    let _timer = metrics::timer("database", "sql_commit");
     tx.commit()?;
     Ok(())
 }
@@ -417,6 +430,7 @@ async fn observation(
     redis: &ConnectionManager,
     key: &str,
 ) -> Result<(String, String, Option<String>)> {
+    let _timer = metrics::timer("continuity", "redis_observation");
     let (server, replication, marker): (String, String, Option<String>) = redis::pipe()
         .atomic()
         .cmd("INFO")
@@ -564,7 +578,7 @@ impl RecoveryJournal {
     ) -> tokio::task::JoinHandle<Result<Control>> {
         // Retain ownership even if the caller cancels while SQLite is working.
         tokio::spawn(async move {
-            let _guard = preparing.serial.lock().await;
+            let _guard = preparing.serial_guard("startup").await;
             preparing.healthy_locked().await?;
             // Blocking work may outlive its async task during runtime shutdown.
             let ddl_owner = preparing.clone();
@@ -578,13 +592,28 @@ impl RecoveryJournal {
             preparing.healthy_locked().await
         })
     }
+    async fn serial_guard(&self, operation: &'static str) -> SerialGuard<'_> {
+        let wait = metrics::timer(operation, "serial_wait");
+        let guard = self.serial.lock().await;
+        drop(wait);
+        SerialGuard {
+            _guard: guard,
+            _timer: metrics::timer(operation, "serial_hold"),
+        }
+    }
     async fn db<T: Send + 'static>(
         &self,
         f: impl FnOnce(&mut Connection) -> Result<T> + Send + 'static,
     ) -> Result<T> {
         let db = self.db.clone();
+        let submitted = Instant::now();
         tokio::task::spawn_blocking(move || {
-            f(&mut *db.lock().map_err(|_| RecoveryError::Storage)?)
+            metrics::observe("database", "blocking_queue", submitted.elapsed());
+            let wait = metrics::timer("database", "db_mutex_wait");
+            let mut db = db.lock().map_err(|_| RecoveryError::Storage)?;
+            drop(wait);
+            let _execution = metrics::timer("database", "db_execution");
+            f(&mut db)
         })
         .await
         .map_err(|_| RecoveryError::Storage)?
@@ -636,7 +665,7 @@ impl RecoveryJournal {
         Ok(c)
     }
     pub async fn ensure_healthy(&self) -> Result<()> {
-        let _guard = self.serial.lock().await;
+        let _guard = self.serial_guard("health").await;
         self.healthy_locked().await.map(|_| ())
     }
     async fn mirror(&self, old: Control) -> Result<()> {
@@ -647,12 +676,14 @@ impl RecoveryJournal {
             redis.call('SET', KEYS[1], ARGV[2])
             return 1
         "#;
+        let mirror_timer = metrics::timer("checkpoint", "redis_mirror");
         let result: redis::RedisResult<i32> = redis::Script::new(MIRROR_CHECKPOINT)
             .key(old.key())
             .arg(old.token())
             .arg(new.token())
             .invoke_async(&mut self.redis.clone())
             .await;
+        drop(mirror_timer);
         if !matches!(result, Ok(1)) {
             return Err(self.halt("Redis checkpoint mirror failed").await);
         }
@@ -676,7 +707,7 @@ impl RecoveryJournal {
         }
         let encoded = canonical(&payload)?;
         let (kind, id, fingerprint) = (kind.to_owned(), id.to_owned(), fingerprint.to_owned());
-        let _guard = self.serial.lock().await;
+        let _guard = self.serial_guard("admission").await;
         self.healthy_locked().await?;
         let result = self.db(move |conn| {
             let tx = conn.transaction()?;
@@ -697,7 +728,7 @@ impl RecoveryJournal {
                 params![id, kind, fingerprint, encoded],
             )?;
             let old = advance(&tx)?;
-            tx.commit()?;
+            commit_transaction(tx)?;
             Ok((AdmissionReservation { payload, terminal: false }, Some(old)))
         }).await;
         let (reservation, old) = self.storage_result(result).await?;
@@ -790,7 +821,7 @@ impl RecoveryJournal {
         identity(kind, id)?;
         validate_replay_key(kind, replay_key)?;
         let (kind, id, key) = (kind.to_owned(), id.to_owned(), replay_key.to_owned());
-        let _guard = self.serial.lock().await;
+        let _guard = self.serial_guard("replay_validation").await;
         self.healthy_locked().await?;
         self.db(move |c| {
             let record = lookup(c, &id)?
@@ -847,7 +878,7 @@ impl RecoveryJournal {
         let encoded = canonical(&attempt)?;
         let digest = format!("{:x}", Sha256::digest(encoded.as_bytes()));
         let (kind, id, replay_key) = (kind.to_owned(), id.to_owned(), replay_key.to_owned());
-        let _guard = self.serial.lock().await;
+        let _guard = self.serial_guard("broadcast").await;
         self.healthy_locked().await?;
         let result = self
             .db(move |conn| {
@@ -923,7 +954,7 @@ impl RecoveryJournal {
                     params![id, replay_key, digest, encoded],
                 )?;
                 let old = advance(&tx)?;
-                tx.commit()?;
+                commit_transaction(tx)?;
                 Ok(Some(old))
             })
             .await;
@@ -1003,7 +1034,7 @@ impl RecoveryJournal {
         let normalized = terminal_identity(&evidence)?;
         let encoded = canonical(&evidence)?;
         let (kind, id) = (kind.to_owned(), id.to_owned());
-        let _guard = self.serial.lock().await;
+        let _guard = self.serial_guard("terminal").await;
         self.healthy_locked().await?;
         let result = self.db(move |conn| {
             let tx = conn.transaction()?;
@@ -1020,13 +1051,13 @@ impl RecoveryJournal {
                 if terminal_identity(&previous)? == normalized { return Ok((None, false)); }
                 tx.execute("INSERT INTO terminal_evidence(id,evidence) VALUES(?,?)", params![id, encoded])?;
                 tx.execute("UPDATE control SET halted=1,reason='terminal evidence conflict' WHERE singleton=1", [])?;
-                tx.commit()?;
+                commit_transaction(tx)?;
                 return Ok((None, true));
             }
             tx.execute("INSERT INTO terminal_evidence(id,evidence) VALUES(?,?)", params![id, encoded])?;
             tx.execute("UPDATE admissions SET state='terminal' WHERE id=?", [id])?;
             let old = advance(&tx)?;
-            tx.commit()?;
+            commit_transaction(tx)?;
             Ok((Some(old), false))
         }).await;
         let (old, conflict) = self.storage_result(result).await?;
@@ -1075,7 +1106,7 @@ impl RecoveryJournal {
         expected: Option<crate::finality::FinalityEvidence>,
         evidence: crate::finality::FinalityEvidence,
     ) -> Result<bool> {
-        let _guard = self.serial.lock().await;
+        let _guard = self.serial_guard("checkpoint").await;
         self.healthy_locked().await?;
         let result = self.db(move |conn| {
             let tx = conn.transaction()?;
@@ -1093,7 +1124,7 @@ impl RecoveryJournal {
                         [chain_id.to_string()],
                     )?;
                     let old = advance(&tx)?;
-                    tx.commit()?;
+                    commit_transaction(tx)?;
                     return Ok((false, Some(old), true));
                 }
                 if evidence.checkpoint_number < previous.checkpoint_number {
@@ -1111,7 +1142,7 @@ impl RecoveryJournal {
                 params![chain_id.to_string(), encoded],
             )?;
             let old = advance(&tx)?;
-            tx.commit()?;
+            commit_transaction(tx)?;
             Ok((true, Some(old), false))
         }).await;
         let (accepted, old, conflict) = self.storage_result(result).await?;
@@ -1126,7 +1157,7 @@ impl RecoveryJournal {
         Ok(accepted)
     }
     pub async fn halt_chain(&self, chain_id: u64, _reason: &str) -> Result<()> {
-        let _guard = self.serial.lock().await;
+        let _guard = self.serial_guard("chain_halt").await;
         self.healthy_locked().await?;
         let result = self
             .db(move |conn| {
@@ -1136,7 +1167,7 @@ impl RecoveryJournal {
                     [chain_id.to_string()],
                 )?;
                 let old = advance(&tx)?;
-                tx.commit()?;
+                commit_transaction(tx)?;
                 Ok(old)
             })
             .await;

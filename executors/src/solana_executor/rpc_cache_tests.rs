@@ -69,6 +69,146 @@ fn assert_redacted(error: &ClientError) {
 }
 
 #[tokio::test]
+async fn rpc_metrics_count_real_http_outcomes_and_cancellation_without_secret_labels() {
+    // The exporter is process-global. A dedicated child verifies exact counts
+    // without resetting production globals or racing other transport fixtures.
+    const CHILD: &str = "ENGINE_SOLANA_RPC_METRICS_CHILD";
+    if std::env::var_os(CHILD).is_none() {
+        let output = std::process::Command::new(std::env::current_exe().unwrap())
+            .args([
+                "--exact",
+                "solana_executor::rpc_cache::tests::rpc_metrics_count_real_http_outcomes_and_cancellation_without_secret_labels",
+                "--nocapture",
+                "--test-threads=1",
+            ])
+            .env(CHILD, "1")
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "{}\n{}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+        return;
+    }
+    let params = || {
+        json!([["SIGNATURE_SECRET_A", "SIGNATURE_SECRET_B", "SIGNATURE_SECRET_C"],
+            {"searchTransactionHistory": true}])
+    };
+    let (url, seen, success_server) = server(|request| {
+        response(
+            "200 OK",
+            &json!({"jsonrpc":"2.0","id":request["id"],
+                "result":{"context":{"slot":1},"value":[null,null,null]}})
+            .to_string(),
+            "",
+        )
+    })
+    .await;
+    let sender = BoundedRpcSender::new(url).with_chain_id(SolanaChainId::SolanaMainnet);
+    sender
+        .send(RpcRequest::GetSignatureStatuses, params())
+        .await
+        .unwrap();
+    sender
+        .send(RpcRequest::Custom { method: SECRET }, json!([]))
+        .await
+        .unwrap();
+    assert_eq!(seen.load(Ordering::SeqCst), 2);
+    success_server.abort();
+
+    let (url, seen, error_server) = server(|_| response("429 Too Many Requests", SECRET, "")).await;
+    let sender = BoundedRpcSender::new(url).with_chain_id(SolanaChainId::SolanaMainnet);
+    assert!(
+        sender
+            .send(RpcRequest::GetSignatureStatuses, params())
+            .await
+            .is_err()
+    );
+    assert_eq!(
+        seen.load(Ordering::SeqCst),
+        1,
+        "instrumentation cannot retry"
+    );
+    error_server.abort();
+
+    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let url = format!("http://{}/{SECRET}", listener.local_addr().unwrap());
+    let (arrived, received) = tokio::sync::oneshot::channel();
+    let delayed_server = tokio::spawn(async move {
+        let (mut stream, _) = listener.accept().await.unwrap();
+        let mut bytes = [0; 4096];
+        assert!(stream.read(&mut bytes).await.unwrap() > 0);
+        arrived.send(()).unwrap();
+        std::future::pending::<()>().await;
+        drop(stream);
+    });
+    let pending_params = params();
+    let pending = tokio::spawn(async move {
+        BoundedRpcSender::new(url)
+            .with_chain_id(SolanaChainId::SolanaMainnet)
+            .send(RpcRequest::GetSignatureStatuses, pending_params)
+            .await
+    });
+    tokio::time::timeout(Duration::from_secs(2), received)
+        .await
+        .unwrap()
+        .unwrap();
+    pending.abort();
+    assert!(pending.await.unwrap_err().is_cancelled());
+    delayed_server.abort();
+
+    let exported = crate::metrics::export_default_metrics().unwrap();
+    for secret in [SECRET, "SIGNATURE_SECRET", "127.0.0.1", "apiKey"] {
+        assert!(
+            !exported.contains(secret),
+            "sensitive data in metric labels"
+        );
+    }
+    let sample = |name: &str, labels: &[&str]| -> f64 {
+        let values: Vec<f64> = exported
+            .lines()
+            .filter(|line| line.starts_with(&format!("{name}{{")))
+            .filter(|line| labels.iter().all(|label| line.contains(label)))
+            .map(|line| line.rsplit_once(' ').unwrap().1.parse().unwrap())
+            .collect();
+        assert_eq!(values.len(), 1, "missing or duplicated series: {name}");
+        values[0]
+    };
+    for outcome in ["success", "error", "cancelled"] {
+        assert_eq!(
+            sample(
+                "tw_engine_executor_operation_duration_seconds_count",
+                &[
+                    "executor_type=\"solana\"",
+                    "chain_id=\"solana:mainnet\"",
+                    "phase=\"rpc_get_signature_statuses\"",
+                    &format!("outcome=\"{outcome}\""),
+                ],
+            ),
+            1.0
+        );
+    }
+    assert_eq!(
+        sample(
+            "tw_engine_executor_operation_duration_seconds_count",
+            &["phase=\"rpc_other\"", "outcome=\"success\""],
+        ),
+        1.0
+    );
+    for (suffix, expected) in [("count", 3.0), ("sum", 9.0)] {
+        assert_eq!(
+            sample(
+                &format!("tw_engine_executor_solana_status_request_signatures_{suffix}"),
+                &["chain_id=\"solana:mainnet\""],
+            ),
+            expected
+        );
+    }
+}
+
+#[tokio::test]
 async fn http_429_is_one_attempt_and_error_debug_withholds_url_headers_and_body() {
     let (url, count, task) = server(|_| {
         response(

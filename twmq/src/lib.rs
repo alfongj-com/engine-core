@@ -1,7 +1,9 @@
+use crate::metrics::{self as timings, Phase, QueueType, Timer};
 mod diagnostics;
 pub mod error;
 pub mod hooks;
 pub mod job;
+pub mod metrics;
 pub mod multilane;
 pub mod queue;
 pub mod shutdown;
@@ -523,7 +525,7 @@ impl<H: DurableExecution> Queue<H> {
 
                         tracing::trace!("Available permits: {}", available_permits);
                         // Try to get multiple jobs - as many as we have permits
-                        match queue_clone.pop_batch_jobs(available_permits).await {
+                        match timings::measure(QueueType::Single, Phase::PopBatch, queue_clone.pop_batch_jobs(available_permits)).await {
                             Ok(jobs) => {
                                 tracing::trace!("Got {} jobs", jobs.len());
                                 for job in jobs {
@@ -532,14 +534,18 @@ impl<H: DurableExecution> Queue<H> {
                                     let job_id = job.id().to_string();
                                     let handler_clone = handler_clone.clone();
                                     let completed = completed.clone();
+                                    let dispatch_timer = Timer::start(QueueType::Single, Phase::DispatchWait);
 
                                     tokio::spawn(
                                         async move {
+                                        dispatch_timer.finish(timings::Outcome::Success);
                                         // Process job - note we don't pass a context here
+                                        let timer = Timer::start(QueueType::Single, Phase::Handler);
                                         let result = handler_clone.process(&job).await;
+                                        timer.finish_job(&result);
 
                                         // Complete job using unified method with hooks and retry logic
-                                        if let Err(e) = queue_clone.complete_job(&job, result).await {
+                                        if let Err(e) = timings::measure(QueueType::Single, Phase::Complete, queue_clone.complete_job(&job, result)).await {
                                             tracing::error!(
                                                 "Failed to complete job {} handling: {:?}",
                                                 job.id(),
@@ -781,21 +787,25 @@ impl<H: DurableExecution> Queue<H> {
             Vec<(String, String, String, String, String, String)>,
             Vec<String>,
             Vec<String>,
-        ) = script
-            .key(self.name())
-            .key(self.delayed_zset_name())
-            .key(self.pending_list_name())
-            .key(self.active_hash_name())
-            .key(self.job_data_hash_name())
-            .key(self.pending_cancellation_set_name())
-            .key(self.failed_list_name())
-            .key(self.success_list_name())
-            .arg(now)
-            .arg(pop_id)
-            .arg(batch_size)
-            .arg(self.options.lease_duration.as_secs())
-            .invoke_async(&mut self.redis.clone())
-            .await?;
+        ) = timings::measure(
+            QueueType::Single,
+            Phase::RedisPop,
+            script
+                .key(self.name())
+                .key(self.delayed_zset_name())
+                .key(self.pending_list_name())
+                .key(self.active_hash_name())
+                .key(self.job_data_hash_name())
+                .key(self.pending_cancellation_set_name())
+                .key(self.failed_list_name())
+                .key(self.success_list_name())
+                .arg(now)
+                .arg(pop_id)
+                .arg(batch_size)
+                .arg(self.options.lease_duration.as_secs())
+                .invoke_async(&mut self.redis.clone()),
+        )
+        .await?;
 
         let (job_results, cancelled_jobs, timed_out_jobs) = results_from_lua;
 
@@ -1045,20 +1055,24 @@ impl<H: DurableExecution> Queue<H> {
             "#,
         );
 
-        let trimmed_count: usize = trim_script
-            .key(self.name())
-            .key(self.success_list_name())
-            .key(self.job_data_hash_name())
-            .key(self.job_result_hash_name()) // results_hash
-            .key(self.dedupe_set_name())
-            .key(self.active_hash_name()) // Check if job is active
-            .key(self.pending_list_name()) // Check if job is pending
-            .key(self.delayed_zset_name()) // Check if job is delayed
-            .key(self.failed_list_name())
-            .key(self.pending_cancellation_set_name())
-            .arg(self.options.max_success) // max_len (LTRIM is 0 to max_success-1)
-            .invoke_async(&mut self.redis.clone())
-            .await?;
+        let trimmed_count: usize = timings::measure(
+            QueueType::Single,
+            Phase::RedisPrune,
+            trim_script
+                .key(self.name())
+                .key(self.success_list_name())
+                .key(self.job_data_hash_name())
+                .key(self.job_result_hash_name()) // results_hash
+                .key(self.dedupe_set_name())
+                .key(self.active_hash_name()) // Check if job is active
+                .key(self.pending_list_name()) // Check if job is pending
+                .key(self.delayed_zset_name()) // Check if job is delayed
+                .key(self.failed_list_name())
+                .key(self.pending_cancellation_set_name())
+                .arg(self.options.max_success) // max_len (LTRIM is 0 to max_success-1)
+                .invoke_async(&mut self.redis.clone()),
+        )
+        .await?;
 
         if trimmed_count > 0 {
             tracing::info!("Pruned {} successful jobs", trimmed_count);
@@ -1251,20 +1265,24 @@ impl<H: DurableExecution> Queue<H> {
             "#,
         );
 
-        let trimmed_count: usize = trim_script
-            .key(self.name())
-            .key(self.failed_list_name())
-            .key(self.job_data_hash_name())
-            .key(self.dedupe_set_name())
-            .key(self.active_hash_name()) // Check if job is active
-            .key(self.pending_list_name()) // Check if job is pending
-            .key(self.delayed_zset_name()) // Check if job is delayed
-            .key(self.success_list_name())
-            .key(self.job_result_hash_name())
-            .key(self.pending_cancellation_set_name())
-            .arg(self.options.max_failed)
-            .invoke_async(&mut self.redis.clone())
-            .await?;
+        let trimmed_count: usize = timings::measure(
+            QueueType::Single,
+            Phase::RedisPrune,
+            trim_script
+                .key(self.name())
+                .key(self.failed_list_name())
+                .key(self.job_data_hash_name())
+                .key(self.dedupe_set_name())
+                .key(self.active_hash_name()) // Check if job is active
+                .key(self.pending_list_name()) // Check if job is pending
+                .key(self.delayed_zset_name()) // Check if job is delayed
+                .key(self.success_list_name())
+                .key(self.job_result_hash_name())
+                .key(self.pending_cancellation_set_name())
+                .arg(self.options.max_failed)
+                .invoke_async(&mut self.redis.clone()),
+        )
+        .await?;
 
         if trimmed_count > 0 {
             tracing::info!("Pruned {} failed jobs", trimmed_count);
@@ -1323,7 +1341,7 @@ impl<H: DurableExecution> Queue<H> {
         let lease_key = self.lease_key_name(&job.job.id, &job.lease_token);
         if self
             .transaction_connections
-            .commit_if_leased(&lease_key, &hook_pipeline)
+            .commit_if_leased(QueueType::Single, &lease_key, &hook_pipeline)
             .await?
         {
             match &result {
@@ -1394,7 +1412,7 @@ impl<H: DurableExecution> Queue<H> {
 
         if self
             .transaction_connections
-            .commit_if_leased(&lease_key, &hook_pipeline)
+            .commit_if_leased(QueueType::Single, &lease_key, &hook_pipeline)
             .await?
         {
             self.post_fail_completion().await?;
