@@ -1,0 +1,23 @@
+[
+  {
+    "name": "capacity-dispatch-control300-native50",
+    "chains": [
+      "nitro=50"
+    ],
+    "seconds": 360,
+    "extra": [
+      "--warmup-seconds",
+      "120",
+      "--late-window-seconds",
+      "180",
+      "--max-schedule-lag-ms",
+      "100",
+      "--eoa-broadcast-concurrency",
+      "32",
+      "--http-concurrency",
+      "128",
+      "--solana-confirmation-poll-seconds",
+      "5"
+    ]
+  }
+]

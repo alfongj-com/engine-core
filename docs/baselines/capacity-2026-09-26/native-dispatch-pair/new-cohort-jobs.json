@@ -1,0 +1,86 @@
+[
+  {
+    "name": "capacity-dispatch-final35e-native50",
+    "chains": [
+      "nitro=50"
+    ],
+    "seconds": 360,
+    "extra": [
+      "--warmup-seconds",
+      "120",
+      "--late-window-seconds",
+      "180",
+      "--max-schedule-lag-ms",
+      "100",
+      "--eoa-broadcast-concurrency",
+      "32",
+      "--http-concurrency",
+      "128",
+      "--solana-confirmation-poll-seconds",
+      "5"
+    ]
+  },
+  {
+    "name": "capacity-lower-bracket-evm55",
+    "chains": [
+      "evm12=55"
+    ],
+    "seconds": 360,
+    "extra": [
+      "--warmup-seconds",
+      "120",
+      "--late-window-seconds",
+      "180",
+      "--max-schedule-lag-ms",
+      "100",
+      "--eoa-broadcast-concurrency",
+      "32",
+      "--http-concurrency",
+      "128",
+      "--solana-confirmation-poll-seconds",
+      "5"
+    ]
+  },
+  {
+    "name": "capacity-lower-bracket-op55",
+    "chains": [
+      "evm2=55"
+    ],
+    "seconds": 360,
+    "extra": [
+      "--warmup-seconds",
+      "120",
+      "--late-window-seconds",
+      "180",
+      "--max-schedule-lag-ms",
+      "100",
+      "--eoa-broadcast-concurrency",
+      "32",
+      "--http-concurrency",
+      "128",
+      "--solana-confirmation-poll-seconds",
+      "5"
+    ]
+  },
+  {
+    "name": "capacity-final35e-solana60",
+    "chains": [
+      "solana=60"
+    ],
+    "seconds": 360,
+    "extra": [
+      "--warmup-seconds",
+      "120",
+      "--late-window-seconds",
+      "180",
+      "--max-schedule-lag-ms",
+      "100",
+      "--eoa-broadcast-concurrency",
+      "32",
+      "--http-concurrency",
+      "128",
+      "--solana-confirmation-poll-seconds",
+      "5"
+    ]
+  }
+]

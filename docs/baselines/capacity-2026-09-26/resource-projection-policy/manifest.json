@@ -1,0 +1,30 @@
+{
+  "projection-tests.py": {
+    "bytes": 7496,
+    "sha256": "3ad3f4be2441ba4412698cbf839d7b37e2ae3e5f1d5c81e91ba0699710432312"
+  },
+  "README.md": {
+    "bytes": 3309,
+    "sha256": "d901e2b5a3592ad8e16624da759b95a4150d04bbbce2ede13337a81aa6cd0bb6"
+  },
+  "integrated-tests.log": {
+    "bytes": 134,
+    "sha256": "bd8a6ca3897f0cc505a4ea7489994fd9ef7e8413a04bf36a673d758c9883b269"
+  },
+  "tested-resource-guard.py": {
+    "bytes": 21472,
+    "sha256": "bbfda4901f49600cdff9fa907b73e2a64e8df534496083994fd4717c55979bb6"
+  },
+  "old-policy-negative.log": {
+    "bytes": 1228,
+    "sha256": "999008f2312a68a7ee05a22549cd6d7e8fa9353a839c529ae92cd952fdce4cf4"
+  },
+  "change.patch": {
+    "bytes": 14259,
+    "sha256": "335985410f64f05af68993fef344e15ac042fe5e9ea1200fd7c692410ad7eefa"
+  },
+  "draft-tests.log": {
+    "bytes": 134,
+    "sha256": "13c051a88cb0df0720e4ffd4e5057a6ac6dedfc1995c88a4fc4b7b8f43dccadd"
+  }
+}

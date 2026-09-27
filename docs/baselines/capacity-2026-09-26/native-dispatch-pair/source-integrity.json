@@ -1,0 +1,28 @@
+{
+  "old300": {
+    "source_sha256": "4576f596a468ee3e2ece0e6d7f4ab0dbf56e96f08e4490fd766c4b848d58c992",
+    "source_bytes": 4374015,
+    "rpc": {
+      "source_sha256": "2684f28b55be1c4c067c41da1d7e45d0ecd66ede5e5fe81ad7b8804eaa7fb440",
+      "source_bytes": 10558477,
+      "events": {
+        "send_forwarded": 18000,
+        "send_accepted": 18000,
+        "rpc_faults_released": 1
+      }
+    }
+  },
+  "new35e": {
+    "source_sha256": "a248d54c75a68b790443956109e5c9e7ef53555ba3af49e68fa8b0f7992d5368",
+    "source_bytes": 4319843,
+    "rpc": {
+      "source_sha256": "42ecf9c0a67473f33e019eea234743705877556640f017aeda471ba4b89c7104",
+      "source_bytes": 10558355,
+      "events": {
+        "send_forwarded": 18000,
+        "send_accepted": 18000,
+        "rpc_faults_released": 1
+      }
+    }
+  }
+}

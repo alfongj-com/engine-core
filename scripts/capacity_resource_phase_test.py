@@ -30,13 +30,13 @@ def before_verification(policy):
 
 
 class PhasePolicy(unittest.TestCase):
-    def test_exact_incident_depletion_keeps_peak_but_only_reserves_verification(self):
+    def test_exact_incident_depletion_keeps_evidence_and_reduces_verification_horizon(self):
         sample = host_sample(420.059106959, 32865955840)
         old = instance(); before_verification(old)
         failed = old.assess(sample)
-        self.assertFalse(failed['allowed'])  # Reproduces obsolete whole-horizon policy.
+        self.assertTrue(failed['allowed'])  # A single short burst is no longer extrapolated over the entire job.
         self.assertAlmostEqual(failed['remaining_horizon_seconds'], 2459.940893041)
-        self.assertEqual(failed['resources']['host_bytes']['required_available'], 68276373546)
+        self.assertFalse(failed['resources']['host_bytes']['sustained_observation_ready'])
         new = instance(); before_verification(new)
         new.begin_reconciliation(419.372808)
         result = new.assess(sample)
@@ -45,11 +45,11 @@ class PhasePolicy(unittest.TestCase):
         self.assertAlmostEqual(result['remaining_horizon_seconds'], 599.313701041)
         for field in ('floor', 'peak_observed_consumption_per_second', 'projected_growth_per_second'):
             self.assertEqual(result['resources']['host_bytes'][field], failed['resources']['host_bytes'][field])
-        self.assertLess(result['resources']['host_bytes']['required_available'], 27 * guard.GIB)
+        self.assertLess(result['resources']['host_bytes']['required_available'], failed['resources']['host_bytes']['required_available'])
 
     def test_existing_load_stop_never_clears_at_phase_transition(self):
         p = instance(); before_verification(p)
-        first = p.assess(host_sample(420.059106959, 32865955840))
+        first = p.assess(host_sample(420.059106959, 7 * guard.GIB))
         p.begin_reconciliation(421)
         second = p.assess(host_sample(422, 34000000000))
         self.assertFalse(second['allowed'])

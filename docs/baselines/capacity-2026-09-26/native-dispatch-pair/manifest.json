@@ -1,0 +1,113 @@
+{
+  "schema": "capacity-evidence-archive-v1",
+  "files": {
+    "README.md": {
+      "bytes": 1594,
+      "sha256": "da786af0a873206a8ef05dad779bc0419cc47a306456b8a660c61db961fd77e2"
+    },
+    "control-jobs.json": {
+      "bytes": 417,
+      "sha256": "cf94f6548ab06db1fb2a24a0b29699d24183b6ec6321e75b55cbd61bacd77437"
+    },
+    "control-state.json": {
+      "bytes": 3041,
+      "sha256": "0b9d043461d324505e4185fcb798d4a4f2dd2e4e12a397f163e7840c477e260d"
+    },
+    "new-cohort-jobs.json": {
+      "bytes": 1627,
+      "sha256": "af8d65b98b25812ee8171503ac4933bfbbc5d87470d2cac389715c65fe6b2040"
+    },
+    "new-cohort-state.json": {
+      "bytes": 7932,
+      "sha256": "16c69aa6d757acbd1b23afb579f98b99b7a7c6fa9ac067ea0f34fea2dd0cb175"
+    },
+    "new35e/backlog-description.json": {
+      "bytes": 6974,
+      "sha256": "7601627c728f8ed1ed659307b3f2649fabc128cfff83be57792bd208e529dca6"
+    },
+    "new35e/campaign.log": {
+      "bytes": 214,
+      "sha256": "0a8c3766cde385d40e04927406e679e6cc87e7da96ae4ed191b52b910be518b7"
+    },
+    "new35e/compact.json": {
+      "bytes": 18764,
+      "sha256": "667a9394ea8921ebcaf6b7212fae4c3a7033bd022c89f7e6f8fcc34d70b478de"
+    },
+    "new35e/full-report.json.gz": {
+      "bytes": 1539209,
+      "sha256": "657a2cf3be46c5ec4203be4f25ad0c14b4bcb87cea6469141fbf61d47cf2ec5f"
+    },
+    "new35e/independent-audit.json": {
+      "bytes": 3544,
+      "sha256": "da82462f6e33a6f19f8aaefedade20a2feb52df2e19f4416a924fa237379bb87"
+    },
+    "new35e/observations.jsonl.gz": {
+      "bytes": 2068079,
+      "sha256": "ec26d3d155344551e155e26fb0436d6d9b09168fe8733206ab3de0b0b48a712b"
+    },
+    "new35e/resource-preflight.jsonl": {
+      "bytes": 1731,
+      "sha256": "1fa6f219e1f20800c9b90e8f034f13f00fa847f2890415711b98f13f580e24d6"
+    },
+    "new35e/resources.jsonl": {
+      "bytes": 11368,
+      "sha256": "c887b995760d36a257d3744cd6eeb65a26aac66e63cc902d0529f424e37fef0a"
+    },
+    "new35e/rpc-audit.jsonl.gz": {
+      "bytes": 2248348,
+      "sha256": "f53572b556f163c7a2627eaa7a803dff4e0f5af63ef990adc10779d30660d548"
+    },
+    "new35e/strict-assessment.json": {
+      "bytes": 3229,
+      "sha256": "eee957794fb2039d610c80456c241d7ad6d9baa030a4ba0efc9af4d5cfaf4298"
+    },
+    "old-engine-launcher.py": {
+      "bytes": 1410,
+      "sha256": "fdaab99b3c694e5dd556dd65eedb444eb651a882cc427f3b9262ae31d12e7306"
+    },
+    "old300/backlog-description.json": {
+      "bytes": 6987,
+      "sha256": "598701f9365db1fee0bcb0f218a1009e1b84ab79dffdcc029082dd954bc04d41"
+    },
+    "old300/campaign.log": {
+      "bytes": 216,
+      "sha256": "ace0faac1fd71fd9e90fe4161dbd38c16402c3b76c0742dae822797ce1bc571a"
+    },
+    "old300/compact.json": {
+      "bytes": 18821,
+      "sha256": "7654b28c930f53ec9d546490d43aa1ed98e8ce0657910484a3fa486421616bcc"
+    },
+    "old300/full-report.json.gz": {
+      "bytes": 1542664,
+      "sha256": "2d314d1f7ac0ead8f668feb7a188c5399bc98fd55db217cb4b4eedb1821efd4a"
+    },
+    "old300/independent-audit.json": {
+      "bytes": 3584,
+      "sha256": "7eac2a1d32d7740b2159763c067fdb78faf70ddd08318b22cbf188eba4fbef38"
+    },
+    "old300/observations.jsonl.gz": {
+      "bytes": 2057039,
+      "sha256": "d5250eeb32009cd2fb18c777ce11f68dbe3f8d76df468189d92651c687702713"
+    },
+    "old300/resource-preflight.jsonl": {
+      "bytes": 1731,
+      "sha256": "1d85a07329cb74eabe971ce8ea7d4af3101bbcbe6c219705b407e9e20dc914ff"
+    },
+    "old300/resources.jsonl": {
+      "bytes": 11384,
+      "sha256": "d7eead903364bf5bd66bf7b6d3740bf4b822fb95716d29f99359ec296b4f415b"
+    },
+    "old300/rpc-audit.jsonl.gz": {
+      "bytes": 2218562,
+      "sha256": "5e00929350238989ac7d9b9c6bea8c4b0b989190496e92a4673beca0c26147b6"
+    },
+    "old300/strict-assessment.json": {
+      "bytes": 3261,
+      "sha256": "081bc8061129fb0e50985abaefb4f6d9998d1627243c8ad98dd33ca3a3d9d16d"
+    },
+    "source-integrity.json": {
+      "bytes": 809,
+      "sha256": "506d629fcec0588a5429b2a29ececea55711b4831bb682b432ea33ccb2790b36"
+    }
+  }
+}

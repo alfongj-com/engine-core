@@ -1,0 +1,13 @@
+F
+======================================================================
+FAIL: test_one_minute_burst_does_not_become_permanent_full_horizon_rate (capacity_resource_projection_test.SustainedProjection)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/engine-resource-projection-draft/scripts/capacity_resource_projection_test.py", line 23, in test_one_minute_burst_does_not_become_permanent_full_horizon_rate
+    self.assertTrue(result['allowed'], (t, result))
+AssertionError: False is not true : (60, {'allowed': False, 'resource_phase': 'steady', 'remaining_horizon_seconds': 2940, 'resources': {'host_bytes': {'identity': 'host', 'total': 244813135872, 'available': 91905589248, 'floor': 8589934592, 'required_available': 165624676352, 'declared_growth_per_second': 2097152, 'fixed_setup_allowance': 0, 'remaining_setup_reserve': 0, 'peak_observed_consumption_per_second': 25165824.0, 'projected_growth_per_second': 50331648.0}}, 'stop': {'reason': 'resource_reserve_insufficient', 'details': ['host_bytes:insufficient_projected_reserve']}})
+
+----------------------------------------------------------------------
+Ran 1 test in 0.000s
+
+FAILED (failures=1)

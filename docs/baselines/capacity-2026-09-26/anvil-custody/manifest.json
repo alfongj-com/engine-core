@@ -1,0 +1,22 @@
+{
+  "custody-tests.py": {
+    "bytes": 10240,
+    "sha256": "a6e8b1730b8cd17afebd5fa83e92758e5d8037152b2b21d21a7a73fa88397ccd"
+  },
+  "restore-tests.log": {
+    "bytes": 1205,
+    "sha256": "f0d1849c22b992aa3aa2f2d938665bcc0a7d4111695b3bfe1e5760bc086815fd"
+  },
+  "README.md": {
+    "bytes": 3163,
+    "sha256": "d1af884b4c9f2777a872b1b6cef6734e4a8824d753c811b6329ef467e2c3c6c4"
+  },
+  "integrated-tests.log": {
+    "bytes": 17798,
+    "sha256": "e7a82c208e3787c0c49d9069626969591105b63a3d1281442ba80bf09c75ca25"
+  },
+  "tested-campaign.py": {
+    "bytes": 132985,
+    "sha256": "4243ddc37caf7247f09e6fd6e8490625d323aaf81f450c2665b07cc2eddcbe40"
+  }
+}

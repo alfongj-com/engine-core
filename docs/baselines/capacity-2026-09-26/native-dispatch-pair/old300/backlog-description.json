@@ -1,0 +1,266 @@
+{
+  "chains": {
+    "nitro": {
+      "aggregation_seconds": 30,
+      "method": "sample quantiles; nominal phase only; descriptive, not a pass/fail test",
+      "sample_window_seconds": [
+        120.016,
+        360.007
+      ],
+      "terminal": {
+        "groups": [
+          {
+            "max": 364,
+            "mean": 293,
+            "median": 307.5,
+            "min": 187,
+            "p10": 209.5,
+            "p90": 362.0,
+            "sample_count": 6,
+            "start_seconds": 120.0
+          },
+          {
+            "max": 465,
+            "mean": 381.3333333333333,
+            "median": 367.0,
+            "min": 358,
+            "p10": 359.5,
+            "p90": 417.5,
+            "sample_count": 6,
+            "start_seconds": 150.0
+          },
+          {
+            "max": 549,
+            "mean": 373.8333333333333,
+            "median": 339.0,
+            "min": 314,
+            "p10": 325.0,
+            "p90": 457.5,
+            "sample_count": 6,
+            "start_seconds": 180.0
+          },
+          {
+            "max": 590,
+            "mean": 562.6666666666666,
+            "median": 579.5,
+            "min": 468,
+            "p10": 519.5,
+            "p90": 589.0,
+            "sample_count": 6,
+            "start_seconds": 210.0
+          },
+          {
+            "max": 809,
+            "mean": 762.3333333333334,
+            "median": 794.5,
+            "min": 622,
+            "p10": 688.0,
+            "p90": 804.5,
+            "sample_count": 6,
+            "start_seconds": 240.0
+          },
+          {
+            "max": 1028,
+            "mean": 962,
+            "median": 1014.0,
+            "min": 782,
+            "p10": 846.5,
+            "p90": 1025.5,
+            "sample_count": 6,
+            "start_seconds": 270.0
+          },
+          {
+            "max": 1244,
+            "mean": 1196.6666666666667,
+            "median": 1233.5,
+            "min": 1046,
+            "p10": 1113.0,
+            "p90": 1243.5,
+            "sample_count": 6,
+            "start_seconds": 300.0
+          },
+          {
+            "max": 1470,
+            "mean": 1404.5,
+            "median": 1453.5,
+            "min": 1243,
+            "p10": 1294.0,
+            "p90": 1466.0,
+            "sample_count": 6,
+            "start_seconds": 330.0
+          }
+        ],
+        "last_180_seconds_range": [
+          314,
+          1470
+        ],
+        "paired_phase_growth": [
+          {
+            "end_seconds": 330.016,
+            "growth": 1056.0,
+            "start_seconds": 120.016
+          },
+          {
+            "end_seconds": 335.016,
+            "growth": 1113.0,
+            "start_seconds": 125.016
+          },
+          {
+            "end_seconds": 340.01599999999996,
+            "growth": 1201.825244657478,
+            "start_seconds": 130.016
+          },
+          {
+            "end_seconds": 345.007,
+            "growth": 1115.0160192230676,
+            "start_seconds": 135.007
+          },
+          {
+            "end_seconds": 350.015,
+            "growth": 1094.000800160032,
+            "start_seconds": 140.015
+          },
+          {
+            "end_seconds": 355.01599999999996,
+            "growth": 1089.0,
+            "start_seconds": 145.016
+          }
+        ],
+        "paired_phase_growth_min_median_max": [
+          1056.0,
+          1103.5004000800159,
+          1201.825244657478
+        ]
+      },
+      "unsigned": {
+        "groups": [
+          {
+            "max": 121,
+            "mean": 94.66666666666667,
+            "median": 106.0,
+            "min": 29,
+            "p10": 60.0,
+            "p90": 118.0,
+            "sample_count": 6,
+            "start_seconds": 120.0
+          },
+          {
+            "max": 87,
+            "mean": 72.5,
+            "median": 77.0,
+            "min": 40,
+            "p10": 54.5,
+            "p90": 86.0,
+            "sample_count": 6,
+            "start_seconds": 150.0
+          },
+          {
+            "max": 288,
+            "mean": 120.16666666666667,
+            "median": 75.0,
+            "min": 51,
+            "p10": 54.0,
+            "p90": 231.5,
+            "sample_count": 6,
+            "start_seconds": 180.0
+          },
+          {
+            "max": 450,
+            "mean": 312.6666666666667,
+            "median": 280.0,
+            "min": 265,
+            "p10": 267.5,
+            "p90": 390.5,
+            "sample_count": 6,
+            "start_seconds": 210.0
+          },
+          {
+            "max": 615,
+            "mean": 513.8333333333334,
+            "median": 494.5,
+            "min": 485,
+            "p10": 488.0,
+            "p90": 559.0,
+            "sample_count": 6,
+            "start_seconds": 240.0
+          },
+          {
+            "max": 870,
+            "mean": 743.1666666666666,
+            "median": 720.0,
+            "min": 705,
+            "p10": 708.0,
+            "p90": 801.5,
+            "sample_count": 6,
+            "start_seconds": 270.0
+          },
+          {
+            "max": 1085,
+            "mean": 961.1666666666666,
+            "median": 940.0,
+            "min": 925,
+            "p10": 927.5,
+            "p90": 1016.0,
+            "sample_count": 6,
+            "start_seconds": 300.0
+          },
+          {
+            "max": 1287,
+            "mean": 1173.6666666666667,
+            "median": 1154.0,
+            "min": 1139,
+            "p10": 1142.0,
+            "p90": 1225.0,
+            "sample_count": 6,
+            "start_seconds": 330.0
+          }
+        ],
+        "last_180_seconds_range": [
+          51,
+          1382
+        ],
+        "paired_phase_growth": [
+          {
+            "end_seconds": 330.016,
+            "growth": 1042.0,
+            "start_seconds": 120.016
+          },
+          {
+            "end_seconds": 335.016,
+            "growth": 1042.0,
+            "start_seconds": 125.016
+          },
+          {
+            "end_seconds": 340.01599999999996,
+            "growth": 1042.008388256441,
+            "start_seconds": 130.016
+          },
+          {
+            "end_seconds": 345.007,
+            "growth": 1042.0120144173009,
+            "start_seconds": 135.007
+          },
+          {
+            "end_seconds": 350.015,
+            "growth": 1110.001200240048,
+            "start_seconds": 140.015
+          },
+          {
+            "end_seconds": 355.01599999999996,
+            "growth": 1195.9999999999984,
+            "start_seconds": 145.016
+          }
+        ],
+        "paired_phase_growth_min_median_max": [
+          1042.0,
+          1042.010201336871,
+          1195.9999999999984
+        ]
+      }
+    }
+  },
+  "descriptor_sha256": "50ef35bd4a3226521e58f2a3115e30fd546d678e18a4648781f38bdc0bb37f83",
+  "interpretation_policy_sha256": "9ce1b79f2428ad6a20bc2d097496b741d8bc147a790ef1f64359d6c719a61e3f",
+  "report": "/tmp/capacity-dispatch-control300-native50-cca487715834.json",
+  "report_sha256": "4576f596a468ee3e2ece0e6d7f4ab0dbf56e96f08e4490fd766c4b848d58c992"
+}
