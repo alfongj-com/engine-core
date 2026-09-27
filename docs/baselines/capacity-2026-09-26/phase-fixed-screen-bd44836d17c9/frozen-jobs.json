@@ -1,0 +1,65 @@
+[
+  {
+    "name": "capacity-phase-fixed-evm60",
+    "chains": [
+      "evm12=60"
+    ],
+    "seconds": 360,
+    "extra": [
+      "--warmup-seconds",
+      "120",
+      "--late-window-seconds",
+      "180",
+      "--max-schedule-lag-ms",
+      "100",
+      "--eoa-broadcast-concurrency",
+      "32",
+      "--http-concurrency",
+      "128",
+      "--solana-confirmation-poll-seconds",
+      "5"
+    ]
+  },
+  {
+    "name": "capacity-phase-fixed-op60",
+    "chains": [
+      "evm2=60"
+    ],
+    "seconds": 360,
+    "extra": [
+      "--warmup-seconds",
+      "120",
+      "--late-window-seconds",
+      "180",
+      "--max-schedule-lag-ms",
+      "100",
+      "--eoa-broadcast-concurrency",
+      "32",
+      "--http-concurrency",
+      "128",
+      "--solana-confirmation-poll-seconds",
+      "5"
+    ]
+  },
+  {
+    "name": "capacity-phase-fixed-solana65",
+    "chains": [
+      "solana=65"
+    ],
+    "seconds": 360,
+    "extra": [
+      "--warmup-seconds",
+      "120",
+      "--late-window-seconds",
+      "180",
+      "--max-schedule-lag-ms",
+      "100",
+      "--eoa-broadcast-concurrency",
+      "32",
+      "--http-concurrency",
+      "128",
+      "--solana-confirmation-poll-seconds",
+      "5"
+    ]
+  }
+]

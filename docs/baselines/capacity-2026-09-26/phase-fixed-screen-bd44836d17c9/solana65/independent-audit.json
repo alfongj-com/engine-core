@@ -1,0 +1,100 @@
+{
+  "schema": "independent-closed-report-review-v1",
+  "reviewed_at_utc": "2026-09-27T03:49:28.453928+00:00",
+  "scope": "Offline captured-evidence audit; no new RPC, service or workload actions. Every observation compared against original private journal; does not independently repeat original RPC capture.",
+  "report": "capacity-phase-fixed-solana65-bd44836d17c9.json",
+  "report_sha256": "58425fffe6ee4a3ac7c309fab35f77fdc6025bebcac5aae85f1df85b16128912",
+  "observations_sha256": "2e39d9347625dff6646e103a7255ff510afa6126d215b5e7e667f3c83b96f9be",
+  "resource_evidence_sha256": "49ccc07ebca6dd3906ba90cd2e2023aafb88e1f054bc14c5652317a6f63473be",
+  "chain": "solana",
+  "ids_audited": 23400,
+  "unique_identities": 23400,
+  "admission_attempt_terminal_rows": {
+    "admission": 23400,
+    "attempt": 23400,
+    "terminal": 23400
+  },
+  "all_rows_validated": [
+    "exact original admission kind/state/replay key and transaction ID",
+    "one signed attempt and execution per ID, globally unique identities",
+    "saved raw wire SHA256 equals captured verified wire digest",
+    "captured intent digest matches original single System transfer with exact payer/recipient/1000lamports",
+    "saved signature equals durable replay binding and original terminal proof",
+    "canonical finalized successful receipt slot equals original finalized proof",
+    "one1000lamport recipient effect and5000lamport fee per successful execution",
+    "fee/effect totals equal independent captured balances"
+  ],
+  "slot_range": [
+    65,
+    768
+  ],
+  "recipient_delta_lamports": 23400000,
+  "receipt_fees_lamports": 117000000,
+  "payer_debit_lamports": 140400000,
+  "drain": {
+    "client_pending": 0,
+    "http_inflight": 0,
+    "journal_unresolved": 0,
+    "node_pending": 0,
+    "redis_active": 0,
+    "redis_borrowed": 0,
+    "redis_delayed": 0,
+    "redis_pending": 0,
+    "redis_submitted": 0
+  },
+  "owned_children_reported_stopped": true,
+  "owned_children_checked": [
+    {
+      "name": "redis",
+      "pid": 54661,
+      "alive": false
+    },
+    {
+      "name": "solana",
+      "pid": 54666,
+      "alive": false
+    },
+    {
+      "name": "engine",
+      "pid": 54682,
+      "alive": false
+    }
+  ],
+  "healthy_provider_probes": 78,
+  "resource_checks": 10,
+  "all_resource_checks_allowed": true,
+  "reconciliation_budget_seconds": 600,
+  "ledger_shred_limit": 1000000,
+  "rpc_method_errors": 0,
+  "proxy_errors": 0,
+  "transport_errors": 0,
+  "durable_halts": false,
+  "safety_and_complete_settlement": "pass",
+  "capacity_qualification": "single-screen candidate; repeated confirmation required",
+  "late_window": {
+    "admission_p99_limit_ms": 1000,
+    "capacity_candidate": true,
+    "disqualifiers": [],
+    "from_seconds": 180.013,
+    "rates_tps": {
+      "admitted": 65.004,
+      "attempted": 65.004,
+      "included": 64.954,
+      "terminal": 64.526
+    },
+    "relative_tolerance": 0.05,
+    "requires_repeated_confirmation": true,
+    "terminal_backlog_end": 1348,
+    "terminal_backlog_growth_per_second": 0.478,
+    "terminal_backlog_start": 1262,
+    "to_seconds": 360.003,
+    "unsigned_backlog_end": 1,
+    "unsigned_backlog_linear_trend_per_second": 0.031,
+    "unsigned_backlog_start": 1,
+    "unsigned_growth_detected": false,
+    "unsigned_monotonic_growth": false,
+    "unsigned_trend_threshold_per_second": 0.1,
+    "window_seconds": 179.98999999999998
+  },
+  "capacity_candidate": true
+}

@@ -1,0 +1,125 @@
+{
+  "active": null,
+  "config": {
+    "drain_seconds": 1800,
+    "output_dir": "/private/tmp",
+    "setup_seconds": 120,
+    "verification_seconds": 600
+  },
+  "frozen_sha256": {
+    "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/bin/python3.9": "bdea59019a38eb6600cc9e71e984a97fedadc406448431281e7657030f54987e",
+    "/Users/alfongj/Code/engine-core/docs/baselines/capacity-2026-09-26/supervisor-v4/runner.py": "0f2d64f85a240d932ba1f558a2c105445a76370d04287967dea877e55eebb040",
+    "/Users/alfongj/Code/engine-core/scripts/capacity_assess.py": "8ebafce9dd136ce0a0179ab04292836d8c0d685fe9b31f9b455e45665e4b6865",
+    "/Users/alfongj/Code/engine-core/scripts/capacity_campaign.py": "4935822f6d964624f49da6c4ff6fbadf45df5b5bec9a475d4d753b05b15b92e3",
+    "/Users/alfongj/Code/engine-core/scripts/capacity_faults.py": "59e2bc4d90bceca2682c27e35c5871ee538d4878a795f990fa90e6d5f90afa13",
+    "/Users/alfongj/Code/engine-core/scripts/capacity_resource_guard.py": "3982ac9a2917545dc5307ebbef9d6dfd050264268508118850664219f2969c99",
+    "/Users/alfongj/Code/engine-core/target/release/thirdweb-engine": "35e307e16cafa7cbb17caafcf5ed90a840d58dddd2454542566619266e7a4c07",
+    "/private/tmp/engine-capacity-dispatch-plan/phase-fixed-jobs.json": "26c79084e27d8179acf70631648cd8ea6c520ddf63a0504dea1f3cd0c72ac7a6",
+    "/tmp/engine-capacity-tools/cast": "da3334cc53dc92415c2a65a102a385ca30e3cdcf3e15a711ce206180a60c51fc",
+    "/tmp/engine-finality/anvil": "cad9ae8b74a37fd417e2b8d29b2caca869ba10fd015a1e92059ed15973188e66",
+    "/tmp/engine-finality/solana-release/bin/solana": "5cfbfb188edd6c0466d7a65dd9e8c1cbbb682a691e28281dde35b029555e35e9",
+    "/tmp/engine-finality/solana-release/bin/solana-keygen": "bde132e0af570fac97e15a6c24368183c4311c9f746b7b90738142ce6e9303ee",
+    "/tmp/engine-finality/solana-release/bin/solana-test-validator": "46e8e70b04a3bb020c3d90cf0aeef732a9c0e1663426f49a768d2f2a5ca779e6",
+    "/tmp/redis-7.4.2/src/redis-server": "7f82251c903404546f80b808de5b6641b8a7e757333c5ed2caf4d5753fe6a5b3"
+  },
+  "id": "bd44836d17c9",
+  "jobs": [
+    {
+      "chains": [
+        "evm12=60"
+      ],
+      "extra": [
+        "--warmup-seconds",
+        "120",
+        "--late-window-seconds",
+        "180",
+        "--max-schedule-lag-ms",
+        "100",
+        "--eoa-broadcast-concurrency",
+        "32",
+        "--http-concurrency",
+        "128",
+        "--solana-confirmation-poll-seconds",
+        "5"
+      ],
+      "name": "capacity-phase-fixed-evm60",
+      "seconds": 360
+    },
+    {
+      "chains": [
+        "evm2=60"
+      ],
+      "extra": [
+        "--warmup-seconds",
+        "120",
+        "--late-window-seconds",
+        "180",
+        "--max-schedule-lag-ms",
+        "100",
+        "--eoa-broadcast-concurrency",
+        "32",
+        "--http-concurrency",
+        "128",
+        "--solana-confirmation-poll-seconds",
+        "5"
+      ],
+      "name": "capacity-phase-fixed-op60",
+      "seconds": 360
+    },
+    {
+      "chains": [
+        "solana=65"
+      ],
+      "extra": [
+        "--warmup-seconds",
+        "120",
+        "--late-window-seconds",
+        "180",
+        "--max-schedule-lag-ms",
+        "100",
+        "--eoa-broadcast-concurrency",
+        "32",
+        "--http-concurrency",
+        "128",
+        "--solana-confirmation-poll-seconds",
+        "5"
+      ],
+      "name": "capacity-phase-fixed-solana65",
+      "seconds": 360
+    }
+  ],
+  "review_required": null,
+  "runs": [
+    {
+      "assessment": "/private/tmp/capacity-phase-fixed-evm60-bd44836d17c9-assessment.json",
+      "assessment_sha256": "6ecc5e140dd9fd138f2994ff8c53f8e4e397f343e2c379bfc1c065f082de636e",
+      "capacity_selected": false,
+      "exit": 2,
+      "name": "capacity-phase-fixed-evm60",
+      "report": "/private/tmp/capacity-phase-fixed-evm60-bd44836d17c9.json",
+      "report_sha256": "b56e8e36dd1966cf8bfe98b0e273af17035665139fea8a46f9f996fe12aa1e17",
+      "safely_settled": true
+    },
+    {
+      "assessment": "/private/tmp/capacity-phase-fixed-op60-bd44836d17c9-assessment.json",
+      "assessment_sha256": "6f10c62e3c0a1b414a5d3b96777c6827e6b68c4e1498fb7a1331b223e3d4234b",
+      "capacity_selected": false,
+      "exit": 2,
+      "name": "capacity-phase-fixed-op60",
+      "report": "/private/tmp/capacity-phase-fixed-op60-bd44836d17c9.json",
+      "report_sha256": "08b2f1f35b87032024fcbd6f73598b0700f5a0f789b66d33dd84eaf919c397fc",
+      "safely_settled": true
+    },
+    {
+      "assessment": "/private/tmp/capacity-phase-fixed-solana65-bd44836d17c9-assessment.json",
+      "assessment_sha256": "32a1966ce0c8412ed322a3d1f03c2b9f7c34deafbb03ee5182d6ad46e63359e4",
+      "capacity_selected": false,
+      "exit": 0,
+      "name": "capacity-phase-fixed-solana65",
+      "report": "/private/tmp/capacity-phase-fixed-solana65-bd44836d17c9.json",
+      "report_sha256": "58425fffe6ee4a3ac7c309fab35f77fdc6025bebcac5aae85f1df85b16128912",
+      "safely_settled": true
+    }
+  ],
+  "schema": "local-capacity-sequential-v4"
+}

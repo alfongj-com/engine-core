@@ -1,0 +1,186 @@
+{
+  "schema": "capacity-evidence-archive-v1",
+  "cohort": "bd44836d17c9",
+  "files": {
+    "README.md": {
+      "bytes": 4443,
+      "sha256": "65f5119fb80ff3b5926e388cd662f5eac9936188bcda7b6172f52791420eb807"
+    },
+    "analyst-cohort-summary.json": {
+      "bytes": 5331,
+      "sha256": "22bc3ebef42959861bbbff26c0fa9cf85e36a44180f9c159ecac32342d91fea2"
+    },
+    "backlog-descriptor-source.py": {
+      "bytes": 3667,
+      "sha256": "50ef35bd4a3226521e58f2a3115e30fd546d678e18a4648781f38bdc0bb37f83"
+    },
+    "compact-extractor-source.py": {
+      "bytes": 12034,
+      "sha256": "c4c65f157513c50f7171aef0646b60630f58f7f81b8bc828d53ed44760b5033f"
+    },
+    "evm60/backlog-description.json": {
+      "bytes": 6412,
+      "sha256": "f065b13c7a3e94d0f0634d77ac4ea5e8a41f4d3d3d0148d69a4dbd60c6f388ac"
+    },
+    "evm60/campaign.log": {
+      "bytes": 205,
+      "sha256": "964608220e6f09d6623d8b916788dd768c2b8e2c8874916b177f747837306c6e"
+    },
+    "evm60/compact.json": {
+      "bytes": 18863,
+      "sha256": "b1016c572eb0afa1c3fa8181b5957b3f00bbb6021f12321b85130396ef4922f3"
+    },
+    "evm60/full-report.json.gz": {
+      "bytes": 1833178,
+      "sha256": "d3865e87003b176b1d52031251908394c3fe5d2728da9a7123fd523f0f4ea7d7"
+    },
+    "evm60/independent-audit.json": {
+      "bytes": 3419,
+      "sha256": "7ef8abc7adf86957d5610215f16b23e2ff9171fac8ae8d3bb8037562dec33922"
+    },
+    "evm60/observations.jsonl.gz": {
+      "bytes": 2417750,
+      "sha256": "afc7eed3662973e190f5843e37f52044f9b7c1505b8b85ff24fc3aec06339571"
+    },
+    "evm60/resource-preflight.jsonl": {
+      "bytes": 873,
+      "sha256": "442341dbd654834e7a7795916c939cc0802c54ef3803495947efb2baa0472bb3"
+    },
+    "evm60/resources.jsonl": {
+      "bytes": 5225,
+      "sha256": "8b596248afbb2d6e9b01c16fe3c674ce2d1464d7799bea60ec16703247c9934c"
+    },
+    "evm60/rpc-audit.jsonl.gz": {
+      "bytes": 2692533,
+      "sha256": "ba39b2e54e0d5b9310939899a8208c73effd224528ef975c51636daf3967aff6"
+    },
+    "evm60/strict-assessment.json": {
+      "bytes": 3049,
+      "sha256": "6ecc5e140dd9fd138f2994ff8c53f8e4e397f343e2c379bfc1c065f082de636e"
+    },
+    "frozen-jobs.json": {
+      "bytes": 1214,
+      "sha256": "26c79084e27d8179acf70631648cd8ea6c520ddf63a0504dea1f3cd0c72ac7a6"
+    },
+    "op60/backlog-description.json": {
+      "bytes": 6980,
+      "sha256": "fb15b83ba8b7ea64b64915da27dcf4cd7ff1068f6d547a4de60f4f1ee2dbb6bc"
+    },
+    "op60/campaign.log": {
+      "bytes": 204,
+      "sha256": "6c0460d77526bf0c107041d4946ca18e24ee837a3bf32a265d937b6446d52569"
+    },
+    "op60/compact.json": {
+      "bytes": 18000,
+      "sha256": "e4ba9c2f8536ec34fdc7354f0b62b73706e5c8da9af811e6267f8ecb3ab1b004"
+    },
+    "op60/full-report.json.gz": {
+      "bytes": 1832943,
+      "sha256": "8afdd58665687c4f24adcf87a9ccfed5e94270c6072dd26999e6cdf4005427fc"
+    },
+    "op60/independent-audit.json": {
+      "bytes": 3451,
+      "sha256": "ebb2b498a8a40917922b003f19edebd2d5eb4e924e98c55b6d91772a8463b69d"
+    },
+    "op60/observations.jsonl.gz": {
+      "bytes": 2423913,
+      "sha256": "f37e9cdb1d705a21ec9eaf96bd96933f33f81bd95c48fcdbb0d75784b8cd41c4"
+    },
+    "op60/resource-preflight.jsonl": {
+      "bytes": 873,
+      "sha256": "a2feda214aab01fdd2bcfbf20c26d741de03d81e1d14bcda343e8dac11a9757c"
+    },
+    "op60/resources.jsonl": {
+      "bytes": 5222,
+      "sha256": "5c634f4c6117a9f96ecb7acbef4f850e5c68f9de166e437f943dc0bf142148fc"
+    },
+    "op60/rpc-audit.jsonl.gz": {
+      "bytes": 2694608,
+      "sha256": "93641d7439c957a35e54d0e2e9c2240ea172be9c3a26e26dd0ab81477d207ff7"
+    },
+    "op60/strict-assessment.json": {
+      "bytes": 3291,
+      "sha256": "6f10c62e3c0a1b414a5d3b96777c6827e6b68c4e1498fb7a1331b223e3d4234b"
+    },
+    "prepare.log": {
+      "bytes": 2903,
+      "sha256": "cf66d3c3720a46b159f2b3184631765add693d55a87a8aa558ec390b2d945d93"
+    },
+    "solana65/backlog-description.json": {
+      "bytes": 6877,
+      "sha256": "0f51a2ab2fb3e0c23c649470fb1eca519bf512a48ddc5db9edbbc44b9a81955b"
+    },
+    "solana65/campaign.log": {
+      "bytes": 207,
+      "sha256": "90da824d2998c7c92b0d95bdb9a20eec7795a432f380254927a1bee14baf1558"
+    },
+    "solana65/compact.json": {
+      "bytes": 15358,
+      "sha256": "7048894331276410780576bc9420f9508e2b0f54a3fad74917f4a12ed2277e65"
+    },
+    "solana65/full-report.json.gz": {
+      "bytes": 2814438,
+      "sha256": "fa4147f2a36dc50d9889d223914dc87a2f26eda2a227234aed5c844dffd9d0f9"
+    },
+    "solana65/independent-audit.json": {
+      "bytes": 3420,
+      "sha256": "3f525ce62c9d751cadcaed4206e6393ab809ddf47bddca1a836b198bc0e90446"
+    },
+    "solana65/observations.jsonl.gz": {
+      "bytes": 3420144,
+      "sha256": "2e39d9347625dff6646e103a7255ff510afa6126d215b5e7e667f3c83b96f9be"
+    },
+    "solana65/resource-preflight.jsonl": {
+      "bytes": 876,
+      "sha256": "0d445aab1aaade9996e5c427c5c87fd5626b979f119cf5158852ef4fecbfa7ef"
+    },
+    "solana65/resources.jsonl": {
+      "bytes": 5841,
+      "sha256": "49ccc07ebca6dd3906ba90cd2e2023aafb88e1f054bc14c5652317a6f63473be"
+    },
+    "solana65/rpc-audit.jsonl.gz": {
+      "bytes": 3750298,
+      "sha256": "83fef78c260cfc67e694aaa024d6a1943d54583013b58ab26f0058c7e83aa4fb"
+    },
+    "solana65/strict-assessment.json": {
+      "bytes": 3180,
+      "sha256": "32a1966ce0c8412ed322a3d1f03c2b9f7c34deafbb03ee5182d6ad46e63359e4"
+    },
+    "source-integrity.json": {
+      "bytes": 2186,
+      "sha256": "4dd2c72bb21f6ce4ae24d0746d0b17387d129c04ed230bb111ff8018dcdc924b"
+    },
+    "strict-assessor-source.py": {
+      "bytes": 8301,
+      "sha256": "8ebafce9dd136ce0a0179ab04292836d8c0d685fe9b31f9b455e45665e4b6865"
+    },
+    "summary-pending.json": {
+      "bytes": 2368,
+      "sha256": "39c49e5fefb00a958fd8df074d92085f2d719b60cb30f4350ca1af47d3ed2508"
+    },
+    "summary.json": {
+      "bytes": 9731,
+      "sha256": "9eb3c9b664f69799fc7b5ee58ab1b5d3b44aeb5a0e1e4868bd8f97a6be81bab2"
+    },
+    "supervisor-final-state.json": {
+      "bytes": 5001,
+      "sha256": "3169f65b806135b6439cf9d7c54b86f3259c23bcb1a3057764e51eea95c86fc2"
+    },
+    "supervisor-source.py": {
+      "bytes": 17758,
+      "sha256": "0f2d64f85a240d932ba1f558a2c105445a76370d04287967dea877e55eebb040"
+    },
+    "supervisor-state-before-solana-completion.json": {
+      "bytes": 5877,
+      "sha256": "ce3e1bbd080298ae57b6c8e73bd0b46c0c8984e01e830077ca206f9bc9bc766c"
+    },
+    "supervisor.log": {
+      "bytes": 4991,
+      "sha256": "9244c7ac451b1138fc80a10d3c8a59c47746a6857612ae8f997f2eccd0ae9c78"
+    }
+  },
+  "total_bytes": 24077436,
+  "private_files_excluded": true,
+  "raw_full_reports_and_rpc_audits_losslessly_compressed": true,
+  "capacity_qualification": false
+}

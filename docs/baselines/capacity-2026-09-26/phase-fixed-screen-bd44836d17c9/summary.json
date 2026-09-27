@@ -1,0 +1,273 @@
+{
+  "cohort": "bd44836d17c9",
+  "complete": true,
+  "engine_binary_sha256": "35e307e16cafa7cbb17caafcf5ed90a840d58dddd2454542566619266e7a4c07",
+  "harness_sha256": {
+    "capacity_campaign.py": "4935822f6d964624f49da6c4ff6fbadf45df5b5bec9a475d4d753b05b15b92e3",
+    "capacity_faults.py": "59e2bc4d90bceca2682c27e35c5871ee538d4878a795f990fa90e6d5f90afa13",
+    "capacity_resource_guard.py": "3982ac9a2917545dc5307ebbef9d6dfd050264268508118850664219f2969c99"
+  },
+  "total_intents": 66600,
+  "total_independently_audited_captured_ids": 66600,
+  "capacity_selected": false,
+  "reports": {
+    "evm60": {
+      "profile": {
+        "block_seconds": 12.0,
+        "chain_id": 31337,
+        "depth": 2,
+        "family": "evm",
+        "label": "Anvil EVM execution with simulated block cadence; not Nitro or public-chain capacity",
+        "network": "ethereum",
+        "rate": 60.0
+      },
+      "offered": 21600,
+      "responses": {
+        "202": 21600
+      },
+      "custody_oracle": {
+        "eligible_for_rate_assessment": true,
+        "expected_parked_intents": 0,
+        "liveness_failures": [],
+        "liveness_pass": true,
+        "observed_intents": 21600,
+        "offered_intents": 21600,
+        "outcome": "pass",
+        "safety_failures": [],
+        "safety_pass": true
+      },
+      "independent_captured_ids_audited": 21600,
+      "drain": {
+        "client_pending": 0,
+        "http_inflight": 0,
+        "journal_unresolved": 0,
+        "node_pending": 0,
+        "redis_active": 0,
+        "redis_borrowed": 0,
+        "redis_delayed": 0,
+        "redis_pending": 0,
+        "redis_submitted": 0
+      },
+      "owned_children_stopped": true,
+      "raw_capacity_candidate": false,
+      "capacity_selected": false,
+      "late_window": {
+        "admission_p99_limit_ms": 1000,
+        "capacity_candidate": false,
+        "disqualifiers": [
+          "rate_or_admission_threshold_not_met"
+        ],
+        "from_seconds": 180.015,
+        "rates_tps": {
+          "admitted": 59.998,
+          "attempted": 56.675,
+          "included": 56.825,
+          "terminal": 59.176
+        },
+        "relative_tolerance": 0.05,
+        "requires_repeated_confirmation": true,
+        "terminal_backlog_end": 2350,
+        "terminal_backlog_growth_per_second": 0.822,
+        "terminal_backlog_start": 2202,
+        "to_seconds": 360.005,
+        "unsigned_backlog_end": 606,
+        "unsigned_backlog_linear_trend_per_second": 1.375,
+        "unsigned_backlog_start": 8,
+        "unsigned_growth_detected": true,
+        "unsigned_monotonic_growth": false,
+        "unsigned_trend_threshold_per_second": 0.1,
+        "window_seconds": 179.99
+      },
+      "terminal_paired_phase_growth_min_median_max": [
+        10.0,
+        500.0,
+        1058.7462537462538
+      ],
+      "report_sha256": "b56e8e36dd1966cf8bfe98b0e273af17035665139fea8a46f9f996fe12aa1e17",
+      "source_commit_reported": "36877e25294084b957bbd9903b6801ed30c41358",
+      "source_status_porcelain_reported": [
+        " M docs/baselines/capacity-2026-09-26/ci.patch",
+        " M scripts/capacity_campaign.py",
+        " M scripts/capacity_resource_guard.py",
+        "?? docs/baselines/capacity-2026-09-26/resource-phase-budget/",
+        "?? docs/baselines/capacity-2026-09-26/solana70-guard-incident/",
+        "?? scripts/capacity_resource_phase_test.py"
+      ],
+      "classification": "Growing unsigned and terminal backlog; no sustained60TPS qualification",
+      "strict_classification": "observed_persistent_backlog_growth",
+      "strict_notes": "No qualification threshold changed; see exact original strict and descriptive artifacts."
+    },
+    "op60": {
+      "profile": {
+        "block_seconds": 2.0,
+        "chain_id": 31338,
+        "depth": 2,
+        "family": "evm",
+        "label": "OP execution on Anvil; simulated cadence; no sequencer/derivation/L1 settlement; L1 fee predeploy state may be artificial",
+        "network": "optimism",
+        "rate": 60.0
+      },
+      "offered": 21600,
+      "responses": {
+        "202": 21600
+      },
+      "custody_oracle": {
+        "eligible_for_rate_assessment": true,
+        "expected_parked_intents": 0,
+        "liveness_failures": [],
+        "liveness_pass": true,
+        "observed_intents": 21600,
+        "offered_intents": 21600,
+        "outcome": "pass",
+        "safety_failures": [],
+        "safety_pass": true
+      },
+      "independent_captured_ids_audited": 21600,
+      "drain": {
+        "client_pending": 0,
+        "http_inflight": 0,
+        "journal_unresolved": 0,
+        "node_pending": 0,
+        "redis_active": 0,
+        "redis_borrowed": 0,
+        "redis_delayed": 0,
+        "redis_pending": 0,
+        "redis_submitted": 0
+      },
+      "owned_children_stopped": true,
+      "raw_capacity_candidate": false,
+      "capacity_selected": false,
+      "late_window": {
+        "admission_p99_limit_ms": 1000,
+        "capacity_candidate": false,
+        "disqualifiers": [
+          "rate_or_admission_threshold_not_met"
+        ],
+        "from_seconds": 180.016,
+        "rates_tps": {
+          "admitted": 60.0,
+          "attempted": 58.733,
+          "included": 58.961,
+          "terminal": 59.478
+        },
+        "relative_tolerance": 0.05,
+        "requires_repeated_confirmation": true,
+        "terminal_backlog_end": 771,
+        "terminal_backlog_growth_per_second": 0.522,
+        "terminal_backlog_start": 677,
+        "to_seconds": 360.0,
+        "unsigned_backlog_end": 408,
+        "unsigned_backlog_linear_trend_per_second": 0.951,
+        "unsigned_backlog_start": 180,
+        "unsigned_growth_detected": true,
+        "unsigned_monotonic_growth": false,
+        "unsigned_trend_threshold_per_second": 0.1,
+        "window_seconds": 179.984
+      },
+      "terminal_paired_phase_growth_min_median_max": [
+        230.1344000000006,
+        400.0764000000004,
+        632.8289999999981
+      ],
+      "report_sha256": "08b2f1f35b87032024fcbd6f73598b0700f5a0f789b66d33dd84eaf919c397fc",
+      "source_commit_reported": "6414d0eb863771f537da6d7797f8556b206922d8",
+      "source_status_porcelain_reported": [],
+      "classification": "Growing unsigned and terminal backlog; no sustained60TPS qualification",
+      "strict_classification": "observed_persistent_backlog_growth",
+      "strict_notes": "No qualification threshold changed; see exact original strict and descriptive artifacts."
+    },
+    "solana65": {
+      "profile": {
+        "chain_id": "solana:local",
+        "family": "solana",
+        "label": "local Agave validator; not public-cluster capacity",
+        "rate": 65.0
+      },
+      "offered": 23400,
+      "responses": {
+        "202": 23400
+      },
+      "custody_oracle": {
+        "eligible_for_rate_assessment": true,
+        "expected_parked_intents": 0,
+        "liveness_failures": [],
+        "liveness_pass": true,
+        "observed_intents": 23400,
+        "offered_intents": 23400,
+        "outcome": "pass",
+        "safety_failures": [],
+        "safety_pass": true
+      },
+      "independent_captured_ids_audited": 23400,
+      "drain": {
+        "client_pending": 0,
+        "http_inflight": 0,
+        "journal_unresolved": 0,
+        "node_pending": 0,
+        "redis_active": 0,
+        "redis_borrowed": 0,
+        "redis_delayed": 0,
+        "redis_pending": 0,
+        "redis_submitted": 0
+      },
+      "owned_children_stopped": true,
+      "raw_capacity_candidate": true,
+      "capacity_selected": false,
+      "late_window": {
+        "admission_p99_limit_ms": 1000,
+        "capacity_candidate": true,
+        "disqualifiers": [],
+        "from_seconds": 180.013,
+        "rates_tps": {
+          "admitted": 65.004,
+          "attempted": 65.004,
+          "included": 64.954,
+          "terminal": 64.526
+        },
+        "relative_tolerance": 0.05,
+        "requires_repeated_confirmation": true,
+        "terminal_backlog_end": 1348,
+        "terminal_backlog_growth_per_second": 0.478,
+        "terminal_backlog_start": 1262,
+        "to_seconds": 360.003,
+        "unsigned_backlog_end": 1,
+        "unsigned_backlog_linear_trend_per_second": 0.031,
+        "unsigned_backlog_start": 1,
+        "unsigned_growth_detected": false,
+        "unsigned_monotonic_growth": false,
+        "unsigned_trend_threshold_per_second": 0.1,
+        "window_seconds": 179.98999999999998
+      },
+      "terminal_paired_phase_growth_min_median_max": [
+        3.0,
+        7.51237831866672,
+        27.0
+      ],
+      "report_sha256": "58425fffe6ee4a3ac7c309fab35f77fdc6025bebcac5aae85f1df85b16128912",
+      "source_commit_reported": "6414d0eb863771f537da6d7797f8556b206922d8",
+      "source_status_porcelain_reported": [
+        " M scripts/rpc/load-probe.test.mjs"
+      ],
+      "classification": "Completed exactly; stability unconfirmed, no capacity promotion",
+      "strict_classification": "unconfirmed_growth_or_cadence_ambiguity",
+      "strict_notes": "No qualification threshold changed; see exact original strict and descriptive artifacts."
+    }
+  },
+  "audit_scope": "Every captured per-ID row compared to original private journal; no new independent RPC sweep. Exact accepted custody is separate from rate qualification.",
+  "cohort_config": {
+    "offered_seconds_per_run": 360,
+    "warmup_seconds": 120,
+    "late_window_seconds": 180,
+    "max_drain_seconds": 1800,
+    "http_concurrency": 128,
+    "eoa_broadcast_concurrency": 32,
+    "solana_confirmation_poll_seconds": 5,
+    "max_schedule_lag_ms": 100,
+    "max_admission_p99_ms": 1000,
+    "redis_appendfsync": "everysec",
+    "sqlite_synchronous": "FULL",
+    "runs_sequential": true,
+    "shared_multichain_run": false
+  },
+  "whole_run_exact_custody_does_not_imply_capacity": true
+}

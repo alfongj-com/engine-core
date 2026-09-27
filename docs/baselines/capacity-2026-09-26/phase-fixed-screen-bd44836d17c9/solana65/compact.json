@@ -1,0 +1,387 @@
+{
+  "limitations": [
+    "Exact oracle/drain are reported results, not reverified per-ID here.",
+    "Inclusion is live observer knowledge, not direct sequencer throughput; observer errors and lag remain visible.",
+    "RPC mean uses counter differences; max is cumulative through endpoint, not a window maximum.",
+    "Completed-call time equivalent is a latency-sum signal, not measured send-only concurrent occupancy; proxy peak includes all RPC methods.",
+    "Flat observed attempt intervals may include observer delay; they do not prove disk or confirmation causation.",
+    "Local gas/chain/finality fixtures and finite windows do not establish public-chain maxima."
+  ],
+  "method": "Nearest existing load samples to configured post-warmup and last180 boundaries; actual sample duration denominators. Descriptive queue slopes/quantiles, no significance or stability verdict. Preserve original raw and strict assessments.",
+  "new_qualification_thresholds": false,
+  "reports": [
+    {
+      "binary_sha256": "35e307e16cafa7cbb17caafcf5ed90a840d58dddd2454542566619266e7a4c07",
+      "chains": {
+        "solana": {
+          "admission_latency_ms": {
+            "http_service_latency_ms": {
+              "count": 23400,
+              "max": 901.605,
+              "p50": 16.608,
+              "p95": 227.475,
+              "p99": 319.706
+            },
+            "scheduled_to_http_start_lateness_ms": {
+              "count": 23400,
+              "max": 42.912,
+              "p50": 3.25,
+              "p95": 7.24,
+              "p99": 12.73
+            },
+            "scheduled_to_response_latency_ms": {
+              "count": 23400,
+              "max": 907.202,
+              "p50": 20.063,
+              "p95": 231.432,
+              "p99": 322.453
+            }
+          },
+          "admitted_http202": 23400,
+          "client_counts": {
+            "dispatched": 23400
+          },
+          "client_drop_counts": {},
+          "http_responses": {
+            "202": 23400
+          },
+          "offered": 23400,
+          "original_late_window_assessment": {
+            "admission_p99_limit_ms": 1000,
+            "capacity_candidate": true,
+            "disqualifiers": [],
+            "from_seconds": 180.013,
+            "rates_tps": {
+              "admitted": 65.004,
+              "attempted": 65.004,
+              "included": 64.954,
+              "terminal": 64.526
+            },
+            "relative_tolerance": 0.05,
+            "requires_repeated_confirmation": true,
+            "terminal_backlog_end": 1348,
+            "terminal_backlog_growth_per_second": 0.478,
+            "terminal_backlog_start": 1262,
+            "to_seconds": 360.003,
+            "unsigned_backlog_end": 1,
+            "unsigned_backlog_linear_trend_per_second": 0.031,
+            "unsigned_backlog_start": 1,
+            "unsigned_growth_detected": false,
+            "unsigned_monotonic_growth": false,
+            "unsigned_trend_threshold_per_second": 0.1,
+            "window_seconds": 179.98999999999998
+          },
+          "profile": {
+            "chain_id": "solana:local",
+            "family": "solana",
+            "label": "local Agave validator; not public-cluster capacity",
+            "rate": 65.0
+          },
+          "transport_errors": [],
+          "whole_run_engine_rpc": {
+            "accepted_unique_wires": 23400,
+            "calls": {
+              "getLatestBlockhash": 23400,
+              "getSignatureStatuses": 93600,
+              "getTransaction": 23400,
+              "sendTransaction": 23400
+            },
+            "calls_per_admitted": 7.0,
+            "forwarded_sends": 23400,
+            "http_transport": {
+              "active": 0,
+              "connection_attempts": 109,
+              "connection_reuses": 163691,
+              "connections_opened": 109,
+              "failures": [],
+              "owned_connections": 0,
+              "peak_active": 72,
+              "requests": 163800,
+              "responses": 163800,
+              "status_200": 163800
+            },
+            "proxy_failure_details": [],
+            "proxy_failures": [],
+            "proxy_overloads": 0,
+            "total_method_calls": 163800
+          },
+          "windows": {
+            "last180": {
+              "available": true,
+              "backlogs": {
+                "terminal": {
+                  "end": 1348,
+                  "growth": 86,
+                  "growth_per_second": 0.4778043224623591,
+                  "max": 1348,
+                  "min": 1262,
+                  "sample_ols_slope_per_second": 0.13589017506671844,
+                  "sample_p10": 1263.6,
+                  "sample_p50": 1272.0,
+                  "sample_p90": 1278.0,
+                  "start": 1262,
+                  "time_weighted_mean": 1272.8598477693204
+                },
+                "unsigned": {
+                  "end": 1,
+                  "growth": 0,
+                  "growth_per_second": 0.0,
+                  "max": 29,
+                  "min": 0,
+                  "sample_ols_slope_per_second": 0.03143882083270299,
+                  "sample_p10": 1.0,
+                  "sample_p50": 2.0,
+                  "sample_p90": 2.0,
+                  "start": 1,
+                  "time_weighted_mean": 2.8056169787210408
+                }
+              },
+              "counter_errors": [],
+              "cpu_one_core_percent": {
+                "campaign": 20.367798211011728,
+                "engine": 20.795599755541982,
+                "redis": 9.828323795766432,
+                "solana": 122.40124451358415
+              },
+              "engine_rpc_methods": {
+                "getLatestBlockhash": {
+                  "completed_call_time_equivalent": 0.035788932340673374,
+                  "count": 11700,
+                  "errors": 0,
+                  "max_ms_through_window_end": 31.772790999980316,
+                  "mean_ms": 0.5505683702562222,
+                  "requests_per_second": 65.00361131173955
+                },
+                "getSignatureStatuses": {
+                  "completed_call_time_equivalent": 1.5809036986721303,
+                  "count": 46586,
+                  "errors": 0,
+                  "max_ms_through_window_end": 59.22487499998397,
+                  "mean_ms": 6.107990742368881,
+                  "requests_per_second": 258.82549030501696
+                },
+                "getTransaction": {
+                  "completed_call_time_equivalent": 0.6156098743763446,
+                  "count": 11667,
+                  "errors": 0,
+                  "max_ms_through_window_end": 51.2334589999881,
+                  "mean_ms": 9.49718190528827,
+                  "requests_per_second": 64.82026779265516
+                },
+                "sendTransaction": {
+                  "completed_call_time_equivalent": 0.1460557602088796,
+                  "count": 11699,
+                  "errors": 0,
+                  "max_ms_through_window_end": 83.40883400001076,
+                  "mean_ms": 2.247078919565453,
+                  "requests_per_second": 64.99805544752486
+                }
+              },
+              "engine_rpc_requests_per_second": 453.64742485693654,
+              "from_seconds": 180.013,
+              "observed_attempt_plateaus_with_unsigned_work": {
+                "first_eight_intervals": [],
+                "intervals": 0,
+                "intervals_with_terminal_progress": 0,
+                "longest_single_sample_interval_seconds": 0,
+                "terminal_delta_total": 0,
+                "total_seconds": 0
+              },
+              "observer_duration_ms_max": 20.434,
+              "proxy_peak_all_method_inflight_through_end": 96,
+              "requested_from_seconds": 180.003428666,
+              "requested_to_seconds": 360.003428666,
+              "sample_gap_seconds": {
+                "max": 5.0090000000000146,
+                "median": 5.0
+              },
+              "samples": 37,
+              "seconds": 179.98999999999998,
+              "stage_rates_per_second": {
+                "admitted": 65.00361131173955,
+                "attempted": 65.00361131173955,
+                "finalized": 64.64248013778544,
+                "included": 64.95360853380744,
+                "terminal": 64.52580698927719
+              },
+              "to_seconds": 360.003
+            },
+            "post_warmup": {
+              "available": true,
+              "backlogs": {
+                "terminal": {
+                  "end": 1348,
+                  "growth": 82,
+                  "growth_per_second": 0.3416837508542094,
+                  "max": 1348,
+                  "min": 1262,
+                  "sample_ols_slope_per_second": 0.07467138237746589,
+                  "sample_p10": 1264.0,
+                  "sample_p50": 1271.0,
+                  "sample_p90": 1279.6,
+                  "start": 1266,
+                  "time_weighted_mean": 1272.3740041168728
+                },
+                "unsigned": {
+                  "end": 1,
+                  "growth": -2,
+                  "growth_per_second": -0.008333750020834375,
+                  "max": 29,
+                  "min": 0,
+                  "sample_ols_slope_per_second": 0.016939579424930754,
+                  "sample_p10": 1.0,
+                  "sample_p50": 2.0,
+                  "sample_p90": 3.0,
+                  "start": 3,
+                  "time_weighted_mean": 2.6041927096354818
+                }
+              },
+              "counter_errors": [],
+              "cpu_one_core_percent": {
+                "campaign": 20.334350050835877,
+                "engine": 20.726036301815096,
+                "redis": 9.80882377452206,
+                "solana": 122.43112155607781
+              },
+              "engine_rpc_methods": {
+                "getLatestBlockhash": {
+                  "completed_call_time_equivalent": 0.035260043481333825,
+                  "count": 15600,
+                  "errors": 0,
+                  "max_ms_through_window_end": 31.772790999980316,
+                  "mean_ms": 0.5424350842947655,
+                  "requests_per_second": 65.00325016250812
+                },
+                "getSignatureStatuses": {
+                  "completed_call_time_equivalent": 1.6560719009033527,
+                  "count": 62183,
+                  "errors": 0,
+                  "max_ms_through_window_end": 59.22487499998397,
+                  "mean_ms": 6.391415392534838,
+                  "requests_per_second": 259.10878877277196
+                },
+                "getTransaction": {
+                  "completed_call_time_equivalent": 0.6215501507033598,
+                  "count": 15567,
+                  "errors": 0,
+                  "max_ms_through_window_end": 51.2334589999881,
+                  "mean_ms": 9.582101725894388,
+                  "requests_per_second": 64.86574328716436
+                },
+                "sendTransaction": {
+                  "completed_call_time_equivalent": 0.1383344719110788,
+                  "count": 15599,
+                  "errors": 0,
+                  "max_ms_through_window_end": 83.40883400001076,
+                  "mean_ms": 2.1282526601061598,
+                  "requests_per_second": 64.99908328749771
+                }
+              },
+              "engine_rpc_requests_per_second": 453.9768655099422,
+              "from_seconds": 120.015,
+              "observed_attempt_plateaus_with_unsigned_work": {
+                "first_eight_intervals": [],
+                "intervals": 0,
+                "intervals_with_terminal_progress": 0,
+                "longest_single_sample_interval_seconds": 0,
+                "terminal_delta_total": 0,
+                "total_seconds": 0
+              },
+              "observer_duration_ms_max": 20.434,
+              "proxy_peak_all_method_inflight_through_end": 96,
+              "requested_from_seconds": 120.0,
+              "requested_to_seconds": 360.003428666,
+              "sample_gap_seconds": {
+                "max": 5.0090000000000146,
+                "median": 5.0
+              },
+              "samples": 49,
+              "seconds": 239.988,
+              "stage_rates_per_second": {
+                "admitted": 64.99491641248729,
+                "attempted": 65.00325016250812,
+                "finalized": 64.80740703701852,
+                "included": 65.06575328766438,
+                "terminal": 64.65323266163308
+              },
+              "to_seconds": 360.003
+            }
+          }
+        }
+      },
+      "complete_zero_drain_reported": true,
+      "configuration": {
+        "durability": {
+          "redis_appendfsync": "everysec",
+          "sqlite": "WAL synchronous=FULL/fullfsync=ON"
+        },
+        "duration_seconds": 360.0,
+        "eoa_broadcast_concurrency": 32,
+        "eoa_max_inflight_per_wallet": 4096,
+        "http_concurrency": 128,
+        "max_schedule_lag_ms": 100.0,
+        "solana_confirmation_poll_seconds": 5,
+        "solana_workers": 100,
+        "warmup_seconds": 120.0
+      },
+      "drain": {
+        "client_pending": 0,
+        "http_inflight": 0,
+        "journal_unresolved": 0,
+        "node_pending": 0,
+        "redis_active": 0,
+        "redis_borrowed": 0,
+        "redis_delayed": 0,
+        "redis_pending": 0,
+        "redis_submitted": 0
+      },
+      "drain_reached_load_seconds": 380.510165,
+      "exact_oracle_liveness_reported": true,
+      "exact_oracle_safety_reported": true,
+      "execution_errors": [],
+      "harness_sha256": {
+        "capacity_campaign.py": "4935822f6d964624f49da6c4ff6fbadf45df5b5bec9a475d4d753b05b15b92e3",
+        "capacity_faults.py": "59e2bc4d90bceca2682c27e35c5871ee538d4878a795f990fa90e6d5f90afa13",
+        "capacity_resource_guard.py": "3982ac9a2917545dc5307ebbef9d6dfd050264268508118850664219f2969c99"
+      },
+      "infrastructure_stop": null,
+      "observer_errors": 0,
+      "operator_review_required": null,
+      "oracle": {
+        "eligible_for_rate_assessment": true,
+        "expected_parked_intents": 0,
+        "liveness_failures": [],
+        "liveness_pass": true,
+        "observed_intents": 23400,
+        "offered_intents": 23400,
+        "outcome": "pass",
+        "safety_failures": [],
+        "safety_pass": true
+      },
+      "outcome": "pass",
+      "owned_children_stopped": true,
+      "preserved_strict_assessments": {
+        "solana": {
+          "aligned_mean_slopes_tps": {
+            "terminal": 0.05627449116554974,
+            "unsigned": 0.0191878281634878
+          },
+          "classification": "unconfirmed_growth_or_cadence_ambiguity",
+          "persistent_growth_stages": [],
+          "reasons": [
+            "stage_rate_below_offered_beyond_one_transaction",
+            "unsigned_backlog_positive_aligned_mean_trend",
+            "terminal_backlog_endpoint_growth",
+            "terminal_backlog_positive_aligned_mean_trend"
+          ]
+        }
+      },
+      "report": "/tmp/capacity-phase-fixed-solana65-bd44836d17c9.json",
+      "report_sha256_uncompressed": "58425fffe6ee4a3ac7c309fab35f77fdc6025bebcac5aae85f1df85b16128912",
+      "source_commit": "6414d0eb863771f537da6d7797f8556b206922d8",
+      "source_is_dirty": true,
+      "strict_assessment_sha256": "32a1966ce0c8412ed322a3d1f03c2b9f7c34deafbb03ee5182d6ad46e63359e4"
+    }
+  ],
+  "schema": "capacity-compact-readonly-v1"
+}

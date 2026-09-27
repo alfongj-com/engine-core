@@ -1,0 +1,246 @@
+{
+  "chains": {
+    "evm12": {
+      "aggregation_seconds": 60,
+      "method": "sample quantiles; nominal phase only; descriptive, not a pass/fail test",
+      "sample_window_seconds": [
+        120.015,
+        360.005
+      ],
+      "terminal": {
+        "groups": [
+          {
+            "max": 2289,
+            "mean": 2073.0833333333335,
+            "median": 2056.5,
+            "min": 1854,
+            "p10": 1904.0,
+            "p90": 2269.6,
+            "sample_count": 12,
+            "start_seconds": 120.0
+          },
+          {
+            "max": 2435,
+            "mean": 2143.3333333333335,
+            "median": 2155.0,
+            "min": 1898,
+            "p10": 1979.7,
+            "p90": 2272.1,
+            "sample_count": 12,
+            "start_seconds": 180.0
+          },
+          {
+            "max": 2701,
+            "mean": 2408.6666666666665,
+            "median": 2399.5,
+            "min": 2128,
+            "p10": 2262.9,
+            "p90": 2560.9,
+            "sample_count": 12,
+            "start_seconds": 240.0
+          },
+          {
+            "max": 2913,
+            "mean": 2546.0833333333335,
+            "median": 2544.5,
+            "min": 2222,
+            "p10": 2274.9,
+            "p90": 2683.7,
+            "sample_count": 12,
+            "start_seconds": 300.0
+          }
+        ],
+        "last_180_seconds_range": [
+          1898,
+          2913
+        ],
+        "paired_phase_growth": [
+          {
+            "end_seconds": 300.015,
+            "growth": 10.0,
+            "start_seconds": 120.015
+          },
+          {
+            "end_seconds": 305.015,
+            "growth": 600.0,
+            "start_seconds": 125.015
+          },
+          {
+            "end_seconds": 310.015,
+            "growth": 278.0,
+            "start_seconds": 130.015
+          },
+          {
+            "end_seconds": 315.015,
+            "growth": 512.0,
+            "start_seconds": 135.015
+          },
+          {
+            "end_seconds": 320.012,
+            "growth": 538.0839999999998,
+            "start_seconds": 140.012
+          },
+          {
+            "end_seconds": 325.01,
+            "growth": 383.0,
+            "start_seconds": 145.01
+          },
+          {
+            "end_seconds": 330.01,
+            "growth": 1058.7462537462538,
+            "start_seconds": 150.01
+          },
+          {
+            "end_seconds": 335.015,
+            "growth": 518.0,
+            "start_seconds": 155.015
+          },
+          {
+            "end_seconds": 340.015,
+            "growth": 488.0,
+            "start_seconds": 160.015
+          },
+          {
+            "end_seconds": 345.015,
+            "growth": 231.05158968206524,
+            "start_seconds": 165.015
+          },
+          {
+            "end_seconds": 350.009,
+            "growth": 275.64112822564675,
+            "start_seconds": 170.009
+          },
+          {
+            "end_seconds": 355.015,
+            "growth": 783.0,
+            "start_seconds": 175.015
+          }
+        ],
+        "paired_phase_growth_min_median_max": [
+          10.0,
+          500.0,
+          1058.7462537462538
+        ]
+      },
+      "unsigned": {
+        "groups": [
+          {
+            "max": 261,
+            "mean": 114.25,
+            "median": 102.5,
+            "min": 2,
+            "p10": 8.2,
+            "p90": 251.1,
+            "sample_count": 12,
+            "start_seconds": 120.0
+          },
+          {
+            "max": 522,
+            "mean": 204.25,
+            "median": 246.0,
+            "min": 8,
+            "p10": 13.3,
+            "p90": 355.8,
+            "sample_count": 12,
+            "start_seconds": 180.0
+          },
+          {
+            "max": 603,
+            "mean": 233.83333333333334,
+            "median": 242.5,
+            "min": 20,
+            "p10": 42.9,
+            "p90": 324.6,
+            "sample_count": 12,
+            "start_seconds": 240.0
+          },
+          {
+            "max": 652,
+            "mean": 303.1666666666667,
+            "median": 295.0,
+            "min": 71,
+            "p10": 87.4,
+            "p90": 519.2,
+            "sample_count": 12,
+            "start_seconds": 300.0
+          }
+        ],
+        "last_180_seconds_range": [
+          8,
+          652
+        ],
+        "paired_phase_growth": [
+          {
+            "end_seconds": 300.015,
+            "growth": 519.0,
+            "start_seconds": 120.015
+          },
+          {
+            "end_seconds": 305.015,
+            "growth": -3.0,
+            "start_seconds": 125.015
+          },
+          {
+            "end_seconds": 310.015,
+            "growth": 347.0,
+            "start_seconds": 130.015
+          },
+          {
+            "end_seconds": 315.015,
+            "growth": -54.0,
+            "start_seconds": 135.015
+          },
+          {
+            "end_seconds": 320.012,
+            "growth": 88.9136000000004,
+            "start_seconds": 140.012
+          },
+          {
+            "end_seconds": 325.01,
+            "growth": 83.0,
+            "start_seconds": 145.01
+          },
+          {
+            "end_seconds": 330.01,
+            "growth": -173.996003996004,
+            "start_seconds": 150.01
+          },
+          {
+            "end_seconds": 335.015,
+            "growth": 282.0,
+            "start_seconds": 155.015
+          },
+          {
+            "end_seconds": 340.015,
+            "growth": 249.0,
+            "start_seconds": 160.015
+          },
+          {
+            "end_seconds": 345.015,
+            "growth": 571.955808838231,
+            "start_seconds": 165.015
+          },
+          {
+            "end_seconds": 350.009,
+            "growth": 303.33846769353715,
+            "start_seconds": 170.009
+          },
+          {
+            "end_seconds": 355.015,
+            "growth": 54.0,
+            "start_seconds": 175.015
+          }
+        ],
+        "paired_phase_growth_min_median_max": [
+          -173.996003996004,
+          168.95680000000021,
+          571.955808838231
+        ]
+      }
+    }
+  },
+  "descriptor_sha256": "50ef35bd4a3226521e58f2a3115e30fd546d678e18a4648781f38bdc0bb37f83",
+  "interpretation_policy_sha256": "9ce1b79f2428ad6a20bc2d097496b741d8bc147a790ef1f64359d6c719a61e3f",
+  "report": "/tmp/capacity-phase-fixed-evm60-bd44836d17c9.json",
+  "report_sha256": "b56e8e36dd1966cf8bfe98b0e273af17035665139fea8a46f9f996fe12aa1e17"
+}
