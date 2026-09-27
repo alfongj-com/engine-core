@@ -1,0 +1,911 @@
+TLC2 Version 2.19 of 08 August 2024 (rev: 5a47802)
+Running breadth-first search Model-Checking with fp 0 and seed 1 with 1 worker on 10 cores with 1820MB heap and 64MB offheap memory [pid: 68049] (Mac OS X 26.6.2 aarch64, Eclipse Adoptium 21.0.12.1 x86_64, MSBDiskFPSet, DiskStateQueue).
+Parsing file /Users/alfongj/Code/engine-core/formal/tla/DisasterRecovery.tla
+Parsing file /private/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/Naturals.tla
+Parsing file /private/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/FiniteSets.tla
+Parsing file /private/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/Sequences.tla
+Semantic processing of module Naturals
+Semantic processing of module Sequences
+Semantic processing of module FiniteSets
+Semantic processing of module DisasterRecovery
+Starting... (2026-09-27 08:13:28)
+Computing initial states...
+Finished computing initial states: 1 distinct state generated at 2026-09-27 08:13:28.
+Error: Invariant LateExecutionWitnessNotReached is violated.
+Error: The behavior up to this point is:
+State 1: <Initial predicate>
+s = [ epoch |-> 0,
+  checkpoint |-> 0,
+  marker |-> [epoch |-> 0, checkpoint |-> 0],
+  run |-> 0,
+  expectedRun |-> 0,
+  owners |-> {},
+  halt |-> none,
+  pending |-> none,
+  returning |-> none,
+  attempts |-> {},
+  binding |-> (i1 :> none @@ i2 :> none),
+  ledger |-> (i1 :> none @@ i2 :> none),
+  state |-> (i1 :> "absent" @@ i2 :> "absent"),
+  acceptedEver |-> {},
+  requiredEvidence |-> {},
+  terminalEver |-> {},
+  recoveryQuarantine |-> {},
+  writes |-> 0,
+  ownerEpoch |-> (w1 :> 0 @@ w2 :> 0),
+  callerAlive |-> FALSE,
+  offline |-> "none",
+  offlineAlive |-> FALSE,
+  projection |-> {},
+  permits |-> {},
+  messages |-> {},
+  effects |-> {},
+  everySendJournaled |-> TRUE,
+  noOldAuthorization |-> TRUE,
+  noTerminalEnqueue |-> TRUE,
+  retriesUseOriginal |-> TRUE,
+  lateExecution |-> FALSE ]
+
+State 2: <Start line 38, col 5 to line 43, col 81 of module DisasterRecovery>
+s = [ epoch |-> 0,
+  checkpoint |-> 0,
+  marker |-> [epoch |-> 0, checkpoint |-> 0],
+  run |-> 0,
+  expectedRun |-> 0,
+  owners |-> {w1},
+  halt |-> none,
+  pending |-> none,
+  returning |-> none,
+  attempts |-> {},
+  binding |-> (i1 :> none @@ i2 :> none),
+  ledger |-> (i1 :> none @@ i2 :> none),
+  state |-> (i1 :> "absent" @@ i2 :> "absent"),
+  acceptedEver |-> {},
+  requiredEvidence |-> {},
+  terminalEver |-> {},
+  recoveryQuarantine |-> {},
+  writes |-> 0,
+  ownerEpoch |-> (w1 :> 0 @@ w2 :> 0),
+  callerAlive |-> FALSE,
+  offline |-> "none",
+  offlineAlive |-> FALSE,
+  projection |-> {},
+  permits |-> {},
+  messages |-> {},
+  effects |-> {},
+  everySendJournaled |-> TRUE,
+  noOldAuthorization |-> TRUE,
+  noTerminalEnqueue |-> TRUE,
+  retriesUseOriginal |-> TRUE,
+  lateExecution |-> FALSE ]
+
+State 3: <Admit line 55, col 5 to line 62, col 74 of module DisasterRecovery>
+s = [ epoch |-> 0,
+  checkpoint |-> 1,
+  marker |-> [epoch |-> 0, checkpoint |-> 0],
+  run |-> 0,
+  expectedRun |-> 0,
+  owners |-> {w1},
+  halt |-> none,
+  pending |->
+      [ id |-> i1,
+        key |-> none,
+        payload |-> p1,
+        worker |-> w1,
+        old |-> [epoch |-> 0, checkpoint |-> 0],
+        kind |-> "admit" ],
+  returning |-> none,
+  attempts |-> {},
+  binding |-> (i1 :> none @@ i2 :> none),
+  ledger |-> (i1 :> p1 @@ i2 :> none),
+  state |-> (i1 :> "admitted" @@ i2 :> "absent"),
+  acceptedEver |-> {[id |-> i1, payload |-> p1]},
+  requiredEvidence |-> {},
+  terminalEver |-> {},
+  recoveryQuarantine |-> {},
+  writes |-> 1,
+  ownerEpoch |-> (w1 :> 0 @@ w2 :> 0),
+  callerAlive |-> TRUE,
+  offline |-> "none",
+  offlineAlive |-> FALSE,
+  projection |-> {},
+  permits |-> {},
+  messages |-> {},
+  effects |-> {},
+  everySendJournaled |-> TRUE,
+  noOldAuthorization |-> TRUE,
+  noTerminalEnqueue |-> TRUE,
+  retriesUseOriginal |-> TRUE,
+  lateExecution |-> FALSE ]
+
+State 4: <Mirror line 94, col 5 to line 97, col 50 of module DisasterRecovery>
+s = [ epoch |-> 0,
+  checkpoint |-> 1,
+  marker |-> [epoch |-> 0, checkpoint |-> 1],
+  run |-> 0,
+  expectedRun |-> 0,
+  owners |-> {w1},
+  halt |-> none,
+  pending |->
+      [ id |-> i1,
+        key |-> none,
+        payload |-> p1,
+        worker |-> w1,
+        old |-> [epoch |-> 0, checkpoint |-> 0],
+        kind |-> "admit" ],
+  returning |-> none,
+  attempts |-> {},
+  binding |-> (i1 :> none @@ i2 :> none),
+  ledger |-> (i1 :> p1 @@ i2 :> none),
+  state |-> (i1 :> "admitted" @@ i2 :> "absent"),
+  acceptedEver |-> {[id |-> i1, payload |-> p1]},
+  requiredEvidence |-> {},
+  terminalEver |-> {},
+  recoveryQuarantine |-> {},
+  writes |-> 1,
+  ownerEpoch |-> (w1 :> 0 @@ w2 :> 0),
+  callerAlive |-> TRUE,
+  offline |-> "none",
+  offlineAlive |-> FALSE,
+  projection |-> {},
+  permits |-> {},
+  messages |-> {},
+  effects |-> {},
+  everySendJournaled |-> TRUE,
+  noOldAuthorization |-> TRUE,
+  noTerminalEnqueue |-> TRUE,
+  retriesUseOriginal |-> TRUE,
+  lateExecution |-> FALSE ]
+
+State 5: <Acknowledge line 100, col 5 to line 102, col 67 of module DisasterRecovery>
+s = [ epoch |-> 0,
+  checkpoint |-> 1,
+  marker |-> [epoch |-> 0, checkpoint |-> 1],
+  run |-> 0,
+  expectedRun |-> 0,
+  owners |-> {w1},
+  halt |-> none,
+  pending |-> none,
+  returning |->
+      [ id |-> i1,
+        key |-> none,
+        payload |-> p1,
+        worker |-> w1,
+        old |-> [epoch |-> 0, checkpoint |-> 0],
+        kind |-> "admit" ],
+  attempts |-> {},
+  binding |-> (i1 :> none @@ i2 :> none),
+  ledger |-> (i1 :> p1 @@ i2 :> none),
+  state |-> (i1 :> "admitted" @@ i2 :> "absent"),
+  acceptedEver |-> {[id |-> i1, payload |-> p1]},
+  requiredEvidence |-> {},
+  terminalEver |-> {},
+  recoveryQuarantine |-> {},
+  writes |-> 1,
+  ownerEpoch |-> (w1 :> 0 @@ w2 :> 0),
+  callerAlive |-> FALSE,
+  offline |-> "none",
+  offlineAlive |-> FALSE,
+  projection |-> {},
+  permits |-> {},
+  messages |-> {},
+  effects |-> {},
+  everySendJournaled |-> TRUE,
+  noOldAuthorization |-> TRUE,
+  noTerminalEnqueue |-> TRUE,
+  retriesUseOriginal |-> TRUE,
+  lateExecution |-> FALSE ]
+
+State 6: <ReturnPermission line 105, col 5 to line 112, col 72 of module DisasterRecovery>
+s = [ epoch |-> 0,
+  checkpoint |-> 1,
+  marker |-> [epoch |-> 0, checkpoint |-> 1],
+  run |-> 0,
+  expectedRun |-> 0,
+  owners |-> {w1},
+  halt |-> none,
+  pending |-> none,
+  returning |-> none,
+  attempts |-> {},
+  binding |-> (i1 :> none @@ i2 :> none),
+  ledger |-> (i1 :> p1 @@ i2 :> none),
+  state |-> (i1 :> "admitted" @@ i2 :> "absent"),
+  acceptedEver |-> {[id |-> i1, payload |-> p1]},
+  requiredEvidence |-> {},
+  terminalEver |-> {},
+  recoveryQuarantine |-> {},
+  writes |-> 1,
+  ownerEpoch |-> (w1 :> 0 @@ w2 :> 0),
+  callerAlive |-> FALSE,
+  offline |-> "none",
+  offlineAlive |-> FALSE,
+  projection |-> {},
+  permits |-> {},
+  messages |-> {},
+  effects |-> {},
+  everySendJournaled |-> TRUE,
+  noOldAuthorization |-> TRUE,
+  noTerminalEnqueue |-> TRUE,
+  retriesUseOriginal |-> TRUE,
+  lateExecution |-> FALSE ]
+
+State 7: <AttemptCommit line 65, col 5 to line 75, col 80 of module DisasterRecovery>
+s = [ epoch |-> 0,
+  checkpoint |-> 2,
+  marker |-> [epoch |-> 0, checkpoint |-> 1],
+  run |-> 0,
+  expectedRun |-> 0,
+  owners |-> {w1},
+  halt |-> none,
+  pending |->
+      [ id |-> i1,
+        key |-> k1,
+        payload |-> p1,
+        worker |-> w1,
+        old |-> [epoch |-> 0, checkpoint |-> 1],
+        kind |-> "attempt" ],
+  returning |-> none,
+  attempts |-> {[id |-> i1, key |-> k1, payload |-> p1]},
+  binding |-> (i1 :> k1 @@ i2 :> none),
+  ledger |-> (i1 :> p1 @@ i2 :> none),
+  state |-> (i1 :> "admitted" @@ i2 :> "absent"),
+  acceptedEver |-> {[id |-> i1, payload |-> p1]},
+  requiredEvidence |-> {[id |-> i1, key |-> k1, payload |-> p1]},
+  terminalEver |-> {},
+  recoveryQuarantine |-> {},
+  writes |-> 2,
+  ownerEpoch |-> (w1 :> 0 @@ w2 :> 0),
+  callerAlive |-> TRUE,
+  offline |-> "none",
+  offlineAlive |-> FALSE,
+  projection |-> {},
+  permits |-> {},
+  messages |-> {},
+  effects |-> {},
+  everySendJournaled |-> TRUE,
+  noOldAuthorization |-> TRUE,
+  noTerminalEnqueue |-> TRUE,
+  retriesUseOriginal |-> TRUE,
+  lateExecution |-> FALSE ]
+
+State 8: <Mirror line 94, col 5 to line 97, col 50 of module DisasterRecovery>
+s = [ epoch |-> 0,
+  checkpoint |-> 2,
+  marker |-> [epoch |-> 0, checkpoint |-> 2],
+  run |-> 0,
+  expectedRun |-> 0,
+  owners |-> {w1},
+  halt |-> none,
+  pending |->
+      [ id |-> i1,
+        key |-> k1,
+        payload |-> p1,
+        worker |-> w1,
+        old |-> [epoch |-> 0, checkpoint |-> 1],
+        kind |-> "attempt" ],
+  returning |-> none,
+  attempts |-> {[id |-> i1, key |-> k1, payload |-> p1]},
+  binding |-> (i1 :> k1 @@ i2 :> none),
+  ledger |-> (i1 :> p1 @@ i2 :> none),
+  state |-> (i1 :> "admitted" @@ i2 :> "absent"),
+  acceptedEver |-> {[id |-> i1, payload |-> p1]},
+  requiredEvidence |-> {[id |-> i1, key |-> k1, payload |-> p1]},
+  terminalEver |-> {},
+  recoveryQuarantine |-> {},
+  writes |-> 2,
+  ownerEpoch |-> (w1 :> 0 @@ w2 :> 0),
+  callerAlive |-> TRUE,
+  offline |-> "none",
+  offlineAlive |-> FALSE,
+  projection |-> {},
+  permits |-> {},
+  messages |-> {},
+  effects |-> {},
+  everySendJournaled |-> TRUE,
+  noOldAuthorization |-> TRUE,
+  noTerminalEnqueue |-> TRUE,
+  retriesUseOriginal |-> TRUE,
+  lateExecution |-> FALSE ]
+
+State 9: <Acknowledge line 100, col 5 to line 102, col 67 of module DisasterRecovery>
+s = [ epoch |-> 0,
+  checkpoint |-> 2,
+  marker |-> [epoch |-> 0, checkpoint |-> 2],
+  run |-> 0,
+  expectedRun |-> 0,
+  owners |-> {w1},
+  halt |-> none,
+  pending |-> none,
+  returning |->
+      [ id |-> i1,
+        key |-> k1,
+        payload |-> p1,
+        worker |-> w1,
+        old |-> [epoch |-> 0, checkpoint |-> 1],
+        kind |-> "attempt" ],
+  attempts |-> {[id |-> i1, key |-> k1, payload |-> p1]},
+  binding |-> (i1 :> k1 @@ i2 :> none),
+  ledger |-> (i1 :> p1 @@ i2 :> none),
+  state |-> (i1 :> "admitted" @@ i2 :> "absent"),
+  acceptedEver |-> {[id |-> i1, payload |-> p1]},
+  requiredEvidence |-> {[id |-> i1, key |-> k1, payload |-> p1]},
+  terminalEver |-> {},
+  recoveryQuarantine |-> {},
+  writes |-> 2,
+  ownerEpoch |-> (w1 :> 0 @@ w2 :> 0),
+  callerAlive |-> FALSE,
+  offline |-> "none",
+  offlineAlive |-> FALSE,
+  projection |-> {},
+  permits |-> {},
+  messages |-> {},
+  effects |-> {},
+  everySendJournaled |-> TRUE,
+  noOldAuthorization |-> TRUE,
+  noTerminalEnqueue |-> TRUE,
+  retriesUseOriginal |-> TRUE,
+  lateExecution |-> FALSE ]
+
+State 10: <ReturnPermission line 105, col 5 to line 112, col 72 of module DisasterRecovery>
+s = [ epoch |-> 0,
+  checkpoint |-> 2,
+  marker |-> [epoch |-> 0, checkpoint |-> 2],
+  run |-> 0,
+  expectedRun |-> 0,
+  owners |-> {w1},
+  halt |-> none,
+  pending |-> none,
+  returning |-> none,
+  attempts |-> {[id |-> i1, key |-> k1, payload |-> p1]},
+  binding |-> (i1 :> k1 @@ i2 :> none),
+  ledger |-> (i1 :> p1 @@ i2 :> none),
+  state |-> (i1 :> "admitted" @@ i2 :> "absent"),
+  acceptedEver |-> {[id |-> i1, payload |-> p1]},
+  requiredEvidence |-> {[id |-> i1, key |-> k1, payload |-> p1]},
+  terminalEver |-> {},
+  recoveryQuarantine |-> {},
+  writes |-> 2,
+  ownerEpoch |-> (w1 :> 0 @@ w2 :> 0),
+  callerAlive |-> FALSE,
+  offline |-> "none",
+  offlineAlive |-> FALSE,
+  projection |-> {},
+  permits |->
+      { [ epoch |-> 0,
+          attempt |-> [id |-> i1, key |-> k1, payload |-> p1],
+          worker |-> w1 ] },
+  messages |-> {},
+  effects |-> {},
+  everySendJournaled |-> TRUE,
+  noOldAuthorization |-> TRUE,
+  noTerminalEnqueue |-> TRUE,
+  retriesUseOriginal |-> TRUE,
+  lateExecution |-> FALSE ]
+
+State 11: <Next line 198, col 13 to line 198, col 40 of module DisasterRecovery>
+s = [ epoch |-> 0,
+  checkpoint |-> 2,
+  marker |-> [epoch |-> 0, checkpoint |-> 2],
+  run |-> 0,
+  expectedRun |-> 0,
+  owners |-> {w1},
+  halt |-> none,
+  pending |-> none,
+  returning |-> none,
+  attempts |-> {[id |-> i1, key |-> k1, payload |-> p1]},
+  binding |-> (i1 :> k1 @@ i2 :> none),
+  ledger |-> (i1 :> p1 @@ i2 :> none),
+  state |-> (i1 :> "admitted" @@ i2 :> "absent"),
+  acceptedEver |-> {[id |-> i1, payload |-> p1]},
+  requiredEvidence |-> {[id |-> i1, key |-> k1, payload |-> p1]},
+  terminalEver |-> {},
+  recoveryQuarantine |-> {},
+  writes |-> 2,
+  ownerEpoch |-> (w1 :> 0 @@ w2 :> 0),
+  callerAlive |-> FALSE,
+  offline |-> "none",
+  offlineAlive |-> FALSE,
+  projection |-> {},
+  permits |-> {},
+  messages |-> {[id |-> i1, key |-> k1, payload |-> p1]},
+  effects |-> {},
+  everySendJournaled |-> TRUE,
+  noOldAuthorization |-> TRUE,
+  noTerminalEnqueue |-> TRUE,
+  retriesUseOriginal |-> TRUE,
+  lateExecution |-> FALSE ]
+
+State 12: <Crash line 46, col 5 to line 50, col 46 of module DisasterRecovery>
+s = [ epoch |-> 0,
+  checkpoint |-> 2,
+  marker |-> [epoch |-> 0, checkpoint |-> 2],
+  run |-> 0,
+  expectedRun |-> 0,
+  owners |-> {},
+  halt |-> none,
+  pending |-> none,
+  returning |-> none,
+  attempts |-> {[id |-> i1, key |-> k1, payload |-> p1]},
+  binding |-> (i1 :> k1 @@ i2 :> none),
+  ledger |-> (i1 :> p1 @@ i2 :> none),
+  state |-> (i1 :> "admitted" @@ i2 :> "absent"),
+  acceptedEver |-> {[id |-> i1, payload |-> p1]},
+  requiredEvidence |-> {[id |-> i1, key |-> k1, payload |-> p1]},
+  terminalEver |-> {},
+  recoveryQuarantine |-> {},
+  writes |-> 2,
+  ownerEpoch |-> (w1 :> 0 @@ w2 :> 0),
+  callerAlive |-> FALSE,
+  offline |-> "none",
+  offlineAlive |-> FALSE,
+  projection |-> {},
+  permits |-> {},
+  messages |-> {[id |-> i1, key |-> k1, payload |-> p1]},
+  effects |-> {},
+  everySendJournaled |-> TRUE,
+  noOldAuthorization |-> TRUE,
+  noTerminalEnqueue |-> TRUE,
+  retriesUseOriginal |-> TRUE,
+  lateExecution |-> FALSE ]
+
+State 13: <RecoverBegin line 162, col 5 to line 172, col 94 of module DisasterRecovery>
+s = [ epoch |-> 1,
+  checkpoint |-> 0,
+  marker |-> none,
+  run |-> 0,
+  expectedRun |-> 0,
+  owners |-> {},
+  halt |-> "recovery",
+  pending |-> none,
+  returning |-> none,
+  attempts |-> {[id |-> i1, key |-> k1, payload |-> p1]},
+  binding |-> (i1 :> k1 @@ i2 :> none),
+  ledger |-> (i1 :> p1 @@ i2 :> none),
+  state |-> (i1 :> "quarantined" @@ i2 :> "absent"),
+  acceptedEver |-> {[id |-> i1, payload |-> p1]},
+  requiredEvidence |-> {[id |-> i1, key |-> k1, payload |-> p1]},
+  terminalEver |-> {},
+  recoveryQuarantine |-> {i1},
+  writes |-> 2,
+  ownerEpoch |-> (w1 :> 0 @@ w2 :> 0),
+  callerAlive |-> FALSE,
+  offline |-> "sql",
+  offlineAlive |-> TRUE,
+  projection |-> {},
+  permits |-> {},
+  messages |-> {[id |-> i1, key |-> k1, payload |-> p1]},
+  effects |-> {},
+  everySendJournaled |-> TRUE,
+  noOldAuthorization |-> TRUE,
+  noTerminalEnqueue |-> TRUE,
+  retriesUseOriginal |-> TRUE,
+  lateExecution |-> FALSE ]
+
+State 14: <Next line 198, col 47 to line 198, col 78 of module DisasterRecovery>
+s = [ epoch |-> 1,
+  checkpoint |-> 0,
+  marker |-> none,
+  run |-> 0,
+  expectedRun |-> 0,
+  owners |-> {},
+  halt |-> "recovery",
+  pending |-> none,
+  returning |-> none,
+  attempts |-> {[id |-> i1, key |-> k1, payload |-> p1]},
+  binding |-> (i1 :> k1 @@ i2 :> none),
+  ledger |-> (i1 :> p1 @@ i2 :> none),
+  state |-> (i1 :> "quarantined" @@ i2 :> "absent"),
+  acceptedEver |-> {[id |-> i1, payload |-> p1]},
+  requiredEvidence |-> {[id |-> i1, key |-> k1, payload |-> p1]},
+  terminalEver |-> {},
+  recoveryQuarantine |-> {i1},
+  writes |-> 2,
+  ownerEpoch |-> (w1 :> 0 @@ w2 :> 0),
+  callerAlive |-> FALSE,
+  offline |-> "sql",
+  offlineAlive |-> TRUE,
+  projection |-> {},
+  permits |-> {},
+  messages |-> {[id |-> i1, key |-> k1, payload |-> p1]},
+  effects |-> {[id |-> i1, key |-> k1, payload |-> p1]},
+  everySendJournaled |-> TRUE,
+  noOldAuthorization |-> TRUE,
+  noTerminalEnqueue |-> TRUE,
+  retriesUseOriginal |-> TRUE,
+  lateExecution |-> TRUE ]
+
+The coverage statistics at 2026-09-27 08:13:29
+<Init line 25, col 1 to line 25, col 4 of module DisasterRecovery>: 2:2
+  line 25, col 9 to line 35, col 85 of module DisasterRecovery: 2
+<Start line 37, col 1 to line 37, col 8 of module DisasterRecovery>: 2122:7209
+  line 38, col 8 to line 38, col 24 of module DisasterRecovery: 35405
+  |line 38, col 8 to line 38, col 8 of module DisasterRecovery: 28196
+  |line 38, col 17 to line 38, col 24 of module DisasterRecovery: 28196
+  line 39, col 9 to line 39, col 21 of module DisasterRecovery: 25075
+  |line 39, col 9 to line 39, col 16 of module DisasterRecovery: 17866
+  |line 39, col 20 to line 39, col 21 of module DisasterRecovery: 17866
+  line 39, col 26 to line 39, col 40 of module DisasterRecovery: 14746
+  |line 39, col 27 to line 39, col 40 of module DisasterRecovery: 7537
+  line 40, col 11 to line 40, col 44 of module DisasterRecovery: 7209
+  |line 40, col 11 to line 40, col 23 of module DisasterRecovery: 7209
+  |line 40, col 28 to line 40, col 44 of module DisasterRecovery: 4573
+  ||line 20, col 22 to line 21, col 66 of module DisasterRecovery: 4573
+  |||line 20, col 25 to line 20, col 40 of module DisasterRecovery: 4573
+  |||line 20, col 47 to line 20, col 56 of module DisasterRecovery: 1171
+  ||||line 17, col 15 to line 17, col 57 of module DisasterRecovery: 1171
+  |||||line 17, col 15 to line 17, col 32 of module DisasterRecovery: 1171
+  |||||line 17, col 37 to line 17, col 57 of module DisasterRecovery: 717
+  |||line 21, col 5 to line 21, col 66 of module DisasterRecovery: 3402
+  ||||line 21, col 5 to line 21, col 41 of module DisasterRecovery: 3402
+  ||||line 21, col 46 to line 21, col 66 of module DisasterRecovery: 2494
+  line 41, col 13 to line 41, col 76 of module DisasterRecovery: 2335
+  line 42, col 13 to line 43, col 81 of module DisasterRecovery: 4874
+  |line 42, col 18 to line 43, col 81 of module DisasterRecovery: 4874
+  ||line 42, col 19 to line 42, col 19 of module DisasterRecovery: 4874
+  ||line 42, col 37 to line 43, col 80 of module DisasterRecovery: 4874
+  |||line 42, col 40 to line 42, col 52 of module DisasterRecovery: 4874
+  |||line 42, col 59 to line 42, col 64 of module DisasterRecovery: 2636
+  |||line 43, col 27 to line 43, col 80 of module DisasterRecovery: 2238
+<Crash line 45, col 1 to line 45, col 8 of module DisasterRecovery>: 1844:10330
+  line 46, col 8 to line 46, col 21 of module DisasterRecovery: 38525
+  |line 46, col 8 to line 46, col 8 of module DisasterRecovery: 28195
+  |line 46, col 14 to line 46, col 21 of module DisasterRecovery: 28195
+  line 47, col 8 to line 50, col 46 of module DisasterRecovery: 10330
+  |line 47, col 13 to line 50, col 46 of module DisasterRecovery: 10330
+  ||line 47, col 14 to line 47, col 14 of module DisasterRecovery: 10330
+  ||line 47, col 23 to line 47, col 40 of module DisasterRecovery: 10330
+  ||line 48, col 26 to line 48, col 86 of module DisasterRecovery: 10330
+  |||line 48, col 29 to line 48, col 68 of module DisasterRecovery: 10330
+  ||||line 48, col 29 to line 48, col 44 of module DisasterRecovery: 10330
+  ||||line 48, col 49 to line 48, col 68 of module DisasterRecovery: 7413
+  |||line 48, col 75 to line 48, col 79 of module DisasterRecovery: 5924
+  ||line 49, col 24 to line 49, col 87 of module DisasterRecovery: 10330
+  |||line 49, col 27 to line 49, col 70 of module DisasterRecovery: 10330
+  ||||line 49, col 27 to line 49, col 44 of module DisasterRecovery: 10330
+  ||||line 49, col 49 to line 49, col 70 of module DisasterRecovery: 1423
+  |||line 49, col 77 to line 49, col 80 of module DisasterRecovery: 1423
+  ||line 50, col 22 to line 50, col 45 of module DisasterRecovery: 10330:30735
+  |||line 50, col 33 to line 50, col 44 of module DisasterRecovery: 564
+<Admit line 54, col 1 to line 54, col 21 of module DisasterRecovery>: 632:745
+  line 18, col 15 to line 18, col 28 of module DisasterRecovery: 113514
+  |line 18, col 15 to line 18, col 15 of module DisasterRecovery: 112769
+  |line 18, col 21 to line 18, col 28 of module DisasterRecovery: 112769
+  line 18, col 33 to line 18, col 45 of module DisasterRecovery: 42058
+  |line 18, col 33 to line 18, col 38 of module DisasterRecovery: 41313
+  |line 18, col 42 to line 18, col 45 of module DisasterRecovery: 41313
+  line 17, col 15 to line 17, col 32 of module DisasterRecovery: 28846
+  |line 17, col 15 to line 17, col 22 of module DisasterRecovery: 28101
+  |line 17, col 26 to line 17, col 32 of module DisasterRecovery: 28101
+  line 17, col 37 to line 17, col 57 of module DisasterRecovery: 10542
+  |line 17, col 37 to line 17, col 41 of module DisasterRecovery: 9797
+  |line 17, col 45 to line 17, col 57 of module DisasterRecovery: 9797
+  line 19, col 18 to line 19, col 33 of module DisasterRecovery: 7698
+  |line 19, col 18 to line 19, col 26 of module DisasterRecovery: 6953
+  |line 19, col 30 to line 19, col 33 of module DisasterRecovery: 6953
+  line 19, col 38 to line 19, col 55 of module DisasterRecovery: 3854
+  |line 19, col 38 to line 19, col 48 of module DisasterRecovery: 3109
+  |line 19, col 52 to line 19, col 55 of module DisasterRecovery: 3109
+  line 55, col 16 to line 55, col 16 of module DisasterRecovery: 112769
+  line 55, col 22 to line 55, col 37 of module DisasterRecovery: 2522
+  |line 55, col 22 to line 55, col 30 of module DisasterRecovery: 1777
+  |line 55, col 34 to line 55, col 37 of module DisasterRecovery: 1777
+  line 55, col 42 to line 55, col 61 of module DisasterRecovery: 745
+  |line 55, col 42 to line 55, col 49 of module DisasterRecovery: 1777
+  |line 55, col 53 to line 55, col 61 of module DisasterRecovery: 1777
+  line 56, col 8 to line 56, col 26 of module DisasterRecovery: 2522
+  |line 56, col 8 to line 56, col 19 of module DisasterRecovery: 1777
+  |line 56, col 23 to line 56, col 26 of module DisasterRecovery: 1777
+  line 57, col 8 to line 62, col 74 of module DisasterRecovery: 745
+<AttemptCommit line 64, col 1 to line 64, col 25 of module DisasterRecovery>: 770:1483
+  line 18, col 15 to line 18, col 28 of module DisasterRecovery: 113587
+  |line 18, col 15 to line 18, col 15 of module DisasterRecovery: 112761
+  |line 18, col 21 to line 18, col 28 of module DisasterRecovery: 112761
+  line 18, col 33 to line 18, col 45 of module DisasterRecovery: 42135
+  |line 18, col 33 to line 18, col 38 of module DisasterRecovery: 41309
+  |line 18, col 42 to line 18, col 45 of module DisasterRecovery: 41309
+  line 17, col 15 to line 17, col 32 of module DisasterRecovery: 28923
+  |line 17, col 15 to line 17, col 22 of module DisasterRecovery: 28097
+  |line 17, col 26 to line 17, col 32 of module DisasterRecovery: 28097
+  line 17, col 37 to line 17, col 57 of module DisasterRecovery: 10619
+  |line 17, col 37 to line 17, col 41 of module DisasterRecovery: 9793
+  |line 17, col 45 to line 17, col 57 of module DisasterRecovery: 9793
+  line 19, col 18 to line 19, col 33 of module DisasterRecovery: 7775
+  |line 19, col 18 to line 19, col 26 of module DisasterRecovery: 6949
+  |line 19, col 30 to line 19, col 33 of module DisasterRecovery: 6949
+  line 19, col 38 to line 19, col 55 of module DisasterRecovery: 3931
+  |line 19, col 38 to line 19, col 48 of module DisasterRecovery: 3105
+  |line 19, col 52 to line 19, col 55 of module DisasterRecovery: 3105
+  line 65, col 16 to line 65, col 16 of module DisasterRecovery: 112761
+  line 65, col 22 to line 65, col 37 of module DisasterRecovery: 2599
+  |line 65, col 22 to line 65, col 30 of module DisasterRecovery: 1773
+  |line 65, col 34 to line 65, col 37 of module DisasterRecovery: 1773
+  line 65, col 42 to line 65, col 61 of module DisasterRecovery: 826
+  |line 65, col 42 to line 65, col 49 of module DisasterRecovery: 1773
+  |line 65, col 53 to line 65, col 61 of module DisasterRecovery: 1773
+  line 66, col 8 to line 66, col 31 of module DisasterRecovery: 2599
+  |line 66, col 8 to line 66, col 18 of module DisasterRecovery: 1773
+  line 66, col 36 to line 66, col 54 of module DisasterRecovery: 1821
+  |line 66, col 36 to line 66, col 47 of module DisasterRecovery: 995
+  |line 66, col 51 to line 66, col 54 of module DisasterRecovery: 995
+  line 67, col 8 to line 67, col 36 of module DisasterRecovery: 1821
+  |line 67, col 8 to line 67, col 20 of module DisasterRecovery: 995
+  |line 67, col 26 to line 67, col 36 of module DisasterRecovery: 995
+  line 23, col 40 to line 23, col 49 of module DisasterRecovery: 2807
+  |line 23, col 40 to line 23, col 44 of module DisasterRecovery: 1981
+  |line 23, col 48 to line 23, col 49 of module DisasterRecovery: 1981
+  line 23, col 54 to line 23, col 75 of module DisasterRecovery: 3793
+  |line 23, col 54 to line 23, col 69 of module DisasterRecovery: 1981
+  |line 23, col 73 to line 23, col 75 of module DisasterRecovery: 1981
+  line 23, col 34 to line 23, col 36 of module DisasterRecovery: 826
+  line 68, col 16 to line 68, col 18 of module DisasterRecovery: 826
+  line 68, col 21 to line 68, col 22 of module DisasterRecovery: 826
+  line 70, col 11 to line 75, col 80 of module DisasterRecovery: 1483
+<TerminalCommit line 77, col 1 to line 77, col 21 of module DisasterRecovery>: 18:18
+  line 18, col 15 to line 18, col 28 of module DisasterRecovery: 56398
+  |line 18, col 15 to line 18, col 15 of module DisasterRecovery: 56380
+  |line 18, col 21 to line 18, col 28 of module DisasterRecovery: 56380
+  line 18, col 33 to line 18, col 45 of module DisasterRecovery: 20672
+  |line 18, col 33 to line 18, col 38 of module DisasterRecovery: 20654
+  |line 18, col 42 to line 18, col 45 of module DisasterRecovery: 20654
+  line 17, col 15 to line 17, col 32 of module DisasterRecovery: 14066
+  |line 17, col 15 to line 17, col 22 of module DisasterRecovery: 14048
+  |line 17, col 26 to line 17, col 32 of module DisasterRecovery: 14048
+  line 17, col 37 to line 17, col 57 of module DisasterRecovery: 4914
+  |line 17, col 37 to line 17, col 41 of module DisasterRecovery: 4896
+  |line 17, col 45 to line 17, col 57 of module DisasterRecovery: 4896
+  line 19, col 18 to line 19, col 33 of module DisasterRecovery: 3492
+  |line 19, col 18 to line 19, col 26 of module DisasterRecovery: 3474
+  |line 19, col 30 to line 19, col 33 of module DisasterRecovery: 3474
+  line 19, col 38 to line 19, col 55 of module DisasterRecovery: 1570
+  |line 19, col 38 to line 19, col 48 of module DisasterRecovery: 1552
+  |line 19, col 52 to line 19, col 55 of module DisasterRecovery: 1552
+  line 78, col 16 to line 78, col 16 of module DisasterRecovery: 56380
+  line 78, col 22 to line 78, col 37 of module DisasterRecovery: 904
+  |line 78, col 22 to line 78, col 30 of module DisasterRecovery: 886
+  |line 78, col 34 to line 78, col 37 of module DisasterRecovery: 886
+  line 78, col 42 to line 78, col 61 of module DisasterRecovery: 18
+  |line 78, col 42 to line 78, col 49 of module DisasterRecovery: 886
+  |line 78, col 53 to line 78, col 61 of module DisasterRecovery: 886
+  line 79, col 8 to line 79, col 50 of module DisasterRecovery: 904
+  |line 79, col 8 to line 79, col 18 of module DisasterRecovery: 886
+  |line 79, col 24 to line 79, col 50 of module DisasterRecovery: 886
+  line 82, col 30 to line 82, col 38 of module DisasterRecovery: 36
+  |line 82, col 30 to line 82, col 33 of module DisasterRecovery: 18
+  |line 82, col 37 to line 82, col 38 of module DisasterRecovery: 18
+  line 82, col 72 to line 82, col 87 of module DisasterRecovery: 36
+  |line 82, col 72 to line 82, col 72 of module DisasterRecovery: 18
+  |line 82, col 78 to line 82, col 87 of module DisasterRecovery: 18
+  line 82, col 17 to line 82, col 25 of module DisasterRecovery: 515
+  line 83, col 8 to line 87, col 79 of module DisasterRecovery: 18
+<Mirror line 93, col 1 to line 93, col 6 of module DisasterRecovery>: 3735:5096
+  line 94, col 8 to line 94, col 23 of module DisasterRecovery: 19188
+  |line 94, col 8 to line 94, col 16 of module DisasterRecovery: 14092
+  |line 94, col 20 to line 94, col 23 of module DisasterRecovery: 14092
+  line 94, col 28 to line 94, col 40 of module DisasterRecovery: 15066
+  |line 94, col 28 to line 94, col 35 of module DisasterRecovery: 9970
+  |line 94, col 39 to line 94, col 40 of module DisasterRecovery: 9970
+  line 94, col 45 to line 94, col 57 of module DisasterRecovery: 12509
+  |line 94, col 45 to line 94, col 50 of module DisasterRecovery: 7413
+  |line 94, col 54 to line 94, col 57 of module DisasterRecovery: 7413
+  line 95, col 11 to line 95, col 27 of module DisasterRecovery: 5096
+  |line 20, col 22 to line 21, col 66 of module DisasterRecovery: 5096
+  ||line 20, col 25 to line 20, col 40 of module DisasterRecovery: 5096
+  ||line 21, col 5 to line 21, col 66 of module DisasterRecovery: 5096
+  |||line 21, col 5 to line 21, col 41 of module DisasterRecovery: 5096
+  |||line 21, col 46 to line 21, col 66 of module DisasterRecovery: 3632
+  line 96, col 14 to line 96, col 47 of module DisasterRecovery: 2598
+  line 97, col 14 to line 97, col 50 of module DisasterRecovery: 2498
+<Acknowledge line 99, col 1 to line 99, col 11 of module DisasterRecovery>: 703:961
+  line 100, col 8 to line 100, col 23 of module DisasterRecovery: 15051
+  |line 100, col 8 to line 100, col 16 of module DisasterRecovery: 14090
+  |line 100, col 20 to line 100, col 23 of module DisasterRecovery: 14090
+  line 100, col 28 to line 100, col 40 of module DisasterRecovery: 10929
+  |line 100, col 28 to line 100, col 35 of module DisasterRecovery: 9968
+  |line 100, col 39 to line 100, col 40 of module DisasterRecovery: 9968
+  line 100, col 45 to line 100, col 57 of module DisasterRecovery: 8372
+  |line 100, col 45 to line 100, col 50 of module DisasterRecovery: 7411
+  |line 100, col 54 to line 100, col 57 of module DisasterRecovery: 7411
+  line 17, col 15 to line 17, col 32 of module DisasterRecovery: 6055
+  |line 17, col 15 to line 17, col 22 of module DisasterRecovery: 5094
+  |line 17, col 26 to line 17, col 32 of module DisasterRecovery: 5094
+  line 17, col 37 to line 17, col 57 of module DisasterRecovery: 2309
+  |line 17, col 37 to line 17, col 41 of module DisasterRecovery: 1348
+  |line 17, col 45 to line 17, col 57 of module DisasterRecovery: 1348
+  line 101, col 8 to line 102, col 67 of module DisasterRecovery: 961
+  |line 101, col 13 to line 102, col 67 of module DisasterRecovery: 961
+  ||line 101, col 14 to line 101, col 14 of module DisasterRecovery: 961
+  ||line 101, col 37 to line 101, col 77 of module DisasterRecovery: 961
+  |||line 101, col 40 to line 101, col 52 of module DisasterRecovery: 961
+  |||line 101, col 59 to line 101, col 67 of module DisasterRecovery: 593
+  |||line 101, col 74 to line 101, col 77 of module DisasterRecovery: 368
+  ||line 102, col 28 to line 102, col 43 of module DisasterRecovery: 961
+  ||line 102, col 46 to line 102, col 66 of module DisasterRecovery: 961
+<ReturnPermission line 104, col 1 to line 104, col 16 of module DisasterRecovery>: 245:1423
+  line 105, col 8 to line 105, col 25 of module DisasterRecovery: 15511
+  |line 105, col 8 to line 105, col 18 of module DisasterRecovery: 14088
+  |line 105, col 22 to line 105, col 25 of module DisasterRecovery: 14088
+  line 105, col 30 to line 105, col 60 of module DisasterRecovery: 2846
+  |line 105, col 30 to line 105, col 47 of module DisasterRecovery: 1423
+  |line 105, col 53 to line 105, col 60 of module DisasterRecovery: 1423
+  line 109, col 11 to line 112, col 72 of module DisasterRecovery: 1423
+  |line 109, col 16 to line 112, col 72 of module DisasterRecovery: 1423
+  ||line 109, col 17 to line 109, col 17 of module DisasterRecovery: 1423
+  ||line 109, col 26 to line 109, col 43 of module DisasterRecovery: 1423
+  ||line 110, col 24 to line 110, col 79 of module DisasterRecovery: 1423
+  |||line 110, col 27 to line 110, col 44 of module DisasterRecovery: 1423
+  |||line 110, col 51 to line 110, col 72 of module DisasterRecovery: 498
+  ||line 111, col 35 to line 112, col 71 of module DisasterRecovery: 1423
+  |||line 112, col 17 to line 112, col 70 of module DisasterRecovery: 1423
+  ||||line 112, col 17 to line 112, col 34 of module DisasterRecovery: 1423
+  ||||line 112, col 39 to line 112, col 70 of module DisasterRecovery: 498
+<Enqueue line 116, col 1 to line 116, col 25 of module DisasterRecovery>: 152:996
+  line 18, col 15 to line 18, col 28 of module DisasterRecovery: 113764
+  |line 18, col 15 to line 18, col 15 of module DisasterRecovery: 112768
+  |line 18, col 21 to line 18, col 28 of module DisasterRecovery: 112768
+  line 18, col 33 to line 18, col 45 of module DisasterRecovery: 42308
+  |line 18, col 33 to line 18, col 38 of module DisasterRecovery: 41312
+  |line 18, col 42 to line 18, col 45 of module DisasterRecovery: 41312
+  line 17, col 15 to line 17, col 32 of module DisasterRecovery: 29096
+  |line 17, col 15 to line 17, col 22 of module DisasterRecovery: 28100
+  |line 17, col 26 to line 17, col 32 of module DisasterRecovery: 28100
+  line 17, col 37 to line 17, col 57 of module DisasterRecovery: 10792
+  |line 17, col 37 to line 17, col 41 of module DisasterRecovery: 9796
+  |line 17, col 45 to line 17, col 57 of module DisasterRecovery: 9796
+  line 19, col 18 to line 19, col 33 of module DisasterRecovery: 7948
+  |line 19, col 18 to line 19, col 26 of module DisasterRecovery: 6952
+  |line 19, col 30 to line 19, col 33 of module DisasterRecovery: 6952
+  line 19, col 38 to line 19, col 55 of module DisasterRecovery: 4104
+  |line 19, col 38 to line 19, col 48 of module DisasterRecovery: 3108
+  |line 19, col 52 to line 19, col 55 of module DisasterRecovery: 3108
+  line 117, col 16 to line 117, col 16 of module DisasterRecovery: 112768
+  line 117, col 22 to line 117, col 37 of module DisasterRecovery: 2772
+  |line 117, col 22 to line 117, col 30 of module DisasterRecovery: 1776
+  |line 117, col 34 to line 117, col 37 of module DisasterRecovery: 1776
+  line 117, col 42 to line 117, col 65 of module DisasterRecovery: 2772
+  |line 117, col 42 to line 117, col 52 of module DisasterRecovery: 1776
+  line 118, col 8 to line 118, col 26 of module DisasterRecovery: 1992
+  |line 118, col 8 to line 118, col 19 of module DisasterRecovery: 996
+  |line 118, col 23 to line 118, col 26 of module DisasterRecovery: 996
+  line 118, col 31 to line 118, col 52 of module DisasterRecovery: 1992
+  |line 118, col 31 to line 118, col 39 of module DisasterRecovery: 996
+  |line 118, col 45 to line 118, col 52 of module DisasterRecovery: 996
+  line 120, col 11 to line 122, col 63 of module DisasterRecovery: 996
+<UnjournaledSend line 131, col 1 to line 131, col 27 of module DisasterRecovery>: 0:0
+  line 134, col 11 to line 135, col 56 of module DisasterRecovery: 0
+<RedisLoss line 145, col 1 to line 145, col 9 of module DisasterRecovery>: 2564:14086
+  line 145, col 14 to line 145, col 63 of module DisasterRecovery: 14086
+<RedisRollback line 146, col 1 to line 146, col 13 of module DisasterRecovery>: 2056:13063
+  line 146, col 18 to line 146, col 33 of module DisasterRecovery: 13063
+  |line 146, col 18 to line 146, col 29 of module DisasterRecovery: 14086
+  line 147, col 5 to line 147, col 67 of module DisasterRecovery: 13063
+<RedisRestart line 148, col 1 to line 148, col 12 of module DisasterRecovery>: 5021:5839
+  line 148, col 17 to line 148, col 25 of module DisasterRecovery: 19925
+  |line 148, col 17 to line 148, col 21 of module DisasterRecovery: 14086
+  line 148, col 30 to line 148, col 54 of module DisasterRecovery: 5839
+<RepairMarker line 149, col 1 to line 149, col 12 of module DisasterRecovery>: 1031:4486
+  line 149, col 17 to line 149, col 52 of module DisasterRecovery: 18572
+  |line 149, col 17 to line 149, col 22 of module DisasterRecovery: 14086
+  |line 149, col 28 to line 149, col 52 of module DisasterRecovery: 14086
+  line 150, col 5 to line 150, col 38 of module DisasterRecovery: 4486
+<DetectMismatch line 152, col 1 to line 152, col 14 of module DisasterRecovery>: 1539:3650
+  line 153, col 8 to line 153, col 20 of module DisasterRecovery: 17736
+  |line 153, col 8 to line 153, col 15 of module DisasterRecovery: 14086
+  |line 153, col 19 to line 153, col 20 of module DisasterRecovery: 14086
+  line 153, col 25 to line 153, col 37 of module DisasterRecovery: 13970
+  |line 153, col 25 to line 153, col 30 of module DisasterRecovery: 10320
+  |line 153, col 34 to line 153, col 37 of module DisasterRecovery: 10320
+  line 153, col 42 to line 153, col 59 of module DisasterRecovery: 10667
+  |line 153, col 43 to line 153, col 59 of module DisasterRecovery: 7017
+  ||line 20, col 22 to line 21, col 66 of module DisasterRecovery: 7017
+  |||line 20, col 25 to line 20, col 40 of module DisasterRecovery: 7017
+  |||line 20, col 47 to line 20, col 56 of module DisasterRecovery: 1925
+  ||||line 17, col 15 to line 17, col 57 of module DisasterRecovery: 1925
+  |||||line 17, col 15 to line 17, col 32 of module DisasterRecovery: 1925
+  |||||line 17, col 37 to line 17, col 57 of module DisasterRecovery: 1097
+  |||line 21, col 5 to line 21, col 66 of module DisasterRecovery: 5092
+  ||||line 21, col 5 to line 21, col 41 of module DisasterRecovery: 5092
+  ||||line 21, col 46 to line 21, col 66 of module DisasterRecovery: 3628
+  line 154, col 8 to line 154, col 86 of module DisasterRecovery: 3650
+<Reattach line 156, col 1 to line 156, col 8 of module DisasterRecovery>: 38:419
+  line 157, col 8 to line 157, col 20 of module DisasterRecovery: 14505
+  |line 157, col 8 to line 157, col 15 of module DisasterRecovery: 14086
+  |line 157, col 19 to line 157, col 20 of module DisasterRecovery: 14086
+  line 157, col 25 to line 157, col 39 of module DisasterRecovery: 4185
+  |line 157, col 26 to line 157, col 39 of module DisasterRecovery: 3766
+  line 157, col 44 to line 157, col 59 of module DisasterRecovery: 4023
+  |line 157, col 44 to line 157, col 52 of module DisasterRecovery: 3604
+  |line 157, col 56 to line 157, col 59 of module DisasterRecovery: 3604
+  line 158, col 8 to line 158, col 35 of module DisasterRecovery: 1466
+  |line 158, col 8 to line 158, col 13 of module DisasterRecovery: 1047
+  |line 158, col 19 to line 158, col 35 of module DisasterRecovery: 1047
+  line 158, col 40 to line 158, col 57 of module DisasterRecovery: 1112
+  |line 158, col 40 to line 158, col 47 of module DisasterRecovery: 693
+  |line 158, col 51 to line 158, col 57 of module DisasterRecovery: 693
+  line 159, col 8 to line 159, col 59 of module DisasterRecovery: 419
+<RecoverBegin line 161, col 1 to line 161, col 12 of module DisasterRecovery>: 80:1685
+  line 162, col 9 to line 162, col 21 of module DisasterRecovery: 15771
+  |line 162, col 9 to line 162, col 16 of module DisasterRecovery: 14086
+  |line 162, col 20 to line 162, col 21 of module DisasterRecovery: 14086
+  line 162, col 26 to line 162, col 40 of module DisasterRecovery: 5451
+  |line 162, col 27 to line 162, col 40 of module DisasterRecovery: 3766
+  line 163, col 8 to line 163, col 18 of module DisasterRecovery: 5289
+  |line 163, col 8 to line 163, col 14 of module DisasterRecovery: 3604
+  line 164, col 8 to line 172, col 94 of module DisasterRecovery: 1685
+  |line 164, col 13 to line 172, col 94 of module DisasterRecovery: 1685
+  ||line 164, col 14 to line 164, col 14 of module DisasterRecovery: 1685
+  ||line 165, col 10 to line 167, col 51 of module DisasterRecovery: 1685
+  ||line 168, col 10 to line 168, col 76 of module DisasterRecovery: 1685
+  ||line 169, col 33 to line 169, col 88 of module DisasterRecovery: 1685:12539
+  |||line 169, col 47 to line 169, col 87 of module DisasterRecovery: 3370
+  ||||line 169, col 47 to line 169, col 59 of module DisasterRecovery: 3370
+  |||||line 22, col 18 to line 22, col 48 of module DisasterRecovery: 3370
+  ||||||line 22, col 40 to line 22, col 48 of module DisasterRecovery: 1598
+  ||||||line 22, col 27 to line 22, col 36 of module DisasterRecovery: 3370
+  |||||line 169, col 57 to line 169, col 58 of module DisasterRecovery: 1598
+  ||||line 169, col 64 to line 169, col 87 of module DisasterRecovery: 799
+  |||line 169, col 41 to line 169, col 43 of module DisasterRecovery: 1685
+  ||line 170, col 41 to line 170, col 55 of module DisasterRecovery: 1685
+  ||line 170, col 58 to line 170, col 74 of module DisasterRecovery: 1685
+  ||line 171, col 10 to line 171, col 25 of module DisasterRecovery: 1685
+  ||line 171, col 28 to line 171, col 48 of module DisasterRecovery: 1685
+  ||line 171, col 51 to line 171, col 68 of module DisasterRecovery: 1685
+  ||line 172, col 10 to line 172, col 30 of module DisasterRecovery: 1685
+  ||line 172, col 73 to line 172, col 93 of module DisasterRecovery: 1685
+<RecoverPublish line 174, col 1 to line 174, col 14 of module DisasterRecovery>: 60:60
+  line 175, col 8 to line 175, col 24 of module DisasterRecovery: 14145
+  |line 175, col 8 to line 175, col 16 of module DisasterRecovery: 14085
+  line 175, col 29 to line 175, col 42 of module DisasterRecovery: 171
+  |line 175, col 29 to line 175, col 29 of module DisasterRecovery: 111
+  line 175, col 47 to line 175, col 61 of module DisasterRecovery: 120
+  |line 175, col 47 to line 175, col 54 of module DisasterRecovery: 60
+  |line 175, col 58 to line 175, col 61 of module DisasterRecovery: 60
+  line 176, col 8 to line 176, col 62 of module DisasterRecovery: 60
+<RecoverFinish line 177, col 1 to line 177, col 13 of module DisasterRecovery>: 34:34
+  line 178, col 8 to line 178, col 26 of module DisasterRecovery: 14119
+  |line 178, col 8 to line 178, col 16 of module DisasterRecovery: 14085
+  line 178, col 31 to line 178, col 44 of module DisasterRecovery: 220
+  |line 178, col 31 to line 178, col 31 of module DisasterRecovery: 186
+  line 17, col 15 to line 17, col 32 of module DisasterRecovery: 136
+  |line 17, col 15 to line 17, col 22 of module DisasterRecovery: 102
+  |line 17, col 26 to line 17, col 32 of module DisasterRecovery: 102
+  line 17, col 37 to line 17, col 57 of module DisasterRecovery: 85
+  |line 17, col 37 to line 17, col 41 of module DisasterRecovery: 51
+  |line 17, col 45 to line 17, col 57 of module DisasterRecovery: 51
+  line 179, col 8 to line 179, col 80 of module DisasterRecovery: 34
+<RecoveryCrash line 180, col 1 to line 180, col 13 of module DisasterRecovery>: 162:162
+  line 181, col 8 to line 181, col 21 of module DisasterRecovery: 14247
+  |line 181, col 8 to line 181, col 8 of module DisasterRecovery: 14085
+  line 182, col 8 to line 182, col 45 of module DisasterRecovery: 162
+<AuthorityRollback line 186, col 1 to line 186, col 17 of module DisasterRecovery>: 0:0
+  line 188, col 8 to line 192, col 47 of module DisasterRecovery: 0
+<Next line 194, col 1 to line 194, col 4 of module DisasterRecovery (198 13 198 40)>: 180:564
+  line 125, col 8 to line 125, col 22 of module DisasterRecovery: 1128
+  |line 125, col 8 to line 125, col 8 of module DisasterRecovery: 564
+  |line 125, col 14 to line 125, col 22 of module DisasterRecovery: 564
+  line 125, col 27 to line 125, col 47 of module DisasterRecovery: 1128
+  |line 125, col 27 to line 125, col 34 of module DisasterRecovery: 564
+  |line 125, col 40 to line 125, col 47 of module DisasterRecovery: 564
+  line 128, col 8 to line 129, col 62 of module DisasterRecovery: 564
+  line 198, col 39 to line 198, col 39 of module DisasterRecovery: 564
+  line 198, col 22 to line 198, col 30 of module DisasterRecovery: 14095
+<Next line 194, col 1 to line 194, col 4 of module DisasterRecovery (198 47 198 78)>: 104:171
+  line 141, col 8 to line 141, col 23 of module DisasterRecovery: 363
+  |line 141, col 8 to line 141, col 8 of module DisasterRecovery: 193
+  |line 141, col 14 to line 141, col 23 of module DisasterRecovery: 193
+  line 142, col 8 to line 142, col 46 of module DisasterRecovery: 363
+  |line 142, col 9 to line 142, col 46 of module DisasterRecovery: 193
+  ||line 142, col 32 to line 142, col 46 of module DisasterRecovery: 22
+  ||line 142, col 20 to line 142, col 28 of module DisasterRecovery: 193
+  line 143, col 8 to line 143, col 83 of module DisasterRecovery: 170
+  |line 143, col 13 to line 143, col 83 of module DisasterRecovery: 171
+  line 198, col 77 to line 198, col 77 of module DisasterRecovery: 193
+  line 198, col 56 to line 198, col 65 of module DisasterRecovery: 14094
+<TypeOK line 204, col 1 to line 204, col 6 of module DisasterRecovery>
+  line 205, col 5 to line 220, col 63 of module DisasterRecovery: 23091
+<LateExecutionWitnessNotReached line 234, col 1 to line 234, col 30 of module DisasterRecovery>
+  line 234, col 35 to line 234, col 50 of module DisasterRecovery: 23091
+End of statistics.
+72440 states generated, 23091 distinct states found, 9004 states left on queue.
+The depth of the complete state graph search is 14.
+The average outdegree of the complete state graph is 2 (minimum is 0, the maximum 9 and the 95th percentile is 5).
+Finished in 00s at (2026-09-27 08:13:29)

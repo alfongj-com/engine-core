@@ -1,0 +1,699 @@
+TLC2 Version 2.19 of 08 August 2024 (rev: 5a47802)
+Running breadth-first search Model-Checking with fp 0 and seed 1 with 1 worker on 10 cores with 1820MB heap and 64MB offheap memory [pid: 68085] (Mac OS X 26.6.2 aarch64, Eclipse Adoptium 21.0.12.1 x86_64, MSBDiskFPSet, DiskStateQueue).
+Parsing file /Users/alfongj/Code/engine-core/formal/tla/DisasterRecoveryProjection.tla
+Parsing file /private/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/Naturals.tla
+Parsing file /private/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/FiniteSets.tla
+Parsing file /private/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/Sequences.tla
+Semantic processing of module Naturals
+Semantic processing of module Sequences
+Semantic processing of module FiniteSets
+Semantic processing of module DisasterRecoveryProjection
+Starting... (2026-09-27 08:13:57)
+Computing initial states...
+Finished computing initial states: 1 distinct state generated at 2026-09-27 08:13:57.
+Error: Invariant NoResurrectedCaller is violated.
+Error: The behavior up to this point is:
+State 1: <Initial predicate>
+s = [ epoch |-> 0,
+  checkpoint |-> 0,
+  schema |-> 2,
+  run |-> 0,
+  expectedRun |-> 0,
+  pending |-> none,
+  primary |-> TRUE,
+  marker |-> [version |-> 2, epoch |-> 0, checkpoint |-> 0],
+  observed |-> none,
+  owner |-> FALSE,
+  ready |-> FALSE,
+  halt |-> none,
+  caller |-> none,
+  returning |-> none,
+  writes |-> 0,
+  acknowledged |-> {[version |-> 2, epoch |-> 0, checkpoint |-> 0]},
+  requiredPending |-> {},
+  recoveryDiscarded |-> {},
+  returned |-> {},
+  resumeOrigin |-> "none",
+  resumedOld |-> FALSE,
+  resumedNew |-> FALSE,
+  resumedMigration |-> FALSE,
+  uncertain |-> FALSE,
+  resumedUncertain |-> FALSE,
+  oldPendingLost |-> FALSE,
+  badRepair |-> FALSE,
+  adoptedRun |-> FALSE,
+  resurrectedCaller |-> FALSE,
+  clearedHalt |-> FALSE,
+  offline |-> "none",
+  offlineAlive |-> FALSE ]
+
+State 2: <Start line 44, col 5 to line 49, col 71 of module DisasterRecoveryProjection>
+s = [ epoch |-> 0,
+  checkpoint |-> 0,
+  schema |-> 2,
+  run |-> 0,
+  expectedRun |-> 0,
+  pending |-> none,
+  primary |-> TRUE,
+  marker |-> [version |-> 2, epoch |-> 0, checkpoint |-> 0],
+  observed |-> none,
+  owner |-> TRUE,
+  ready |-> FALSE,
+  halt |-> none,
+  caller |-> none,
+  returning |-> none,
+  writes |-> 0,
+  acknowledged |-> {[version |-> 2, epoch |-> 0, checkpoint |-> 0]},
+  requiredPending |-> {},
+  recoveryDiscarded |-> {},
+  returned |-> {},
+  resumeOrigin |-> "none",
+  resumedOld |-> FALSE,
+  resumedNew |-> FALSE,
+  resumedMigration |-> FALSE,
+  uncertain |-> FALSE,
+  resumedUncertain |-> FALSE,
+  oldPendingLost |-> FALSE,
+  badRepair |-> FALSE,
+  adoptedRun |-> FALSE,
+  resurrectedCaller |-> FALSE,
+  clearedHalt |-> FALSE,
+  offline |-> "none",
+  offlineAlive |-> FALSE ]
+
+State 3: <Observe line 71, col 5 to line 88, col 82 of module DisasterRecoveryProjection>
+s = [ epoch |-> 0,
+  checkpoint |-> 0,
+  schema |-> 2,
+  run |-> 0,
+  expectedRun |-> 0,
+  pending |-> none,
+  primary |-> TRUE,
+  marker |-> [version |-> 2, epoch |-> 0, checkpoint |-> 0],
+  observed |->
+      [ run |-> 0,
+        primary |-> TRUE,
+        marker |-> [version |-> 2, epoch |-> 0, checkpoint |-> 0] ],
+  owner |-> TRUE,
+  ready |-> TRUE,
+  halt |-> none,
+  caller |-> none,
+  returning |-> none,
+  writes |-> 0,
+  acknowledged |-> {[version |-> 2, epoch |-> 0, checkpoint |-> 0]},
+  requiredPending |-> {},
+  recoveryDiscarded |-> {},
+  returned |-> {},
+  resumeOrigin |-> "none",
+  resumedOld |-> FALSE,
+  resumedNew |-> FALSE,
+  resumedMigration |-> FALSE,
+  uncertain |-> FALSE,
+  resumedUncertain |-> FALSE,
+  oldPendingLost |-> FALSE,
+  badRepair |-> FALSE,
+  adoptedRun |-> FALSE,
+  resurrectedCaller |-> FALSE,
+  clearedHalt |-> FALSE,
+  offline |-> "none",
+  offlineAlive |-> FALSE ]
+
+State 4: <Commit line 93, col 5 to line 100, col 73 of module DisasterRecoveryProjection>
+s = [ epoch |-> 0,
+  checkpoint |-> 1,
+  schema |-> 2,
+  run |-> 0,
+  expectedRun |-> 0,
+  pending |->
+      [ old |-> [version |-> 2, epoch |-> 0, checkpoint |-> 0],
+        target |-> [version |-> 2, epoch |-> 0, checkpoint |-> 1],
+        key |-> "original",
+        run |-> 0 ],
+  primary |-> TRUE,
+  marker |-> [version |-> 2, epoch |-> 0, checkpoint |-> 0],
+  observed |-> none,
+  owner |-> TRUE,
+  ready |-> FALSE,
+  halt |-> none,
+  caller |-> [version |-> 2, epoch |-> 0, checkpoint |-> 1],
+  returning |-> none,
+  writes |-> 1,
+  acknowledged |-> {[version |-> 2, epoch |-> 0, checkpoint |-> 0]},
+  requiredPending |-> {[version |-> 2, epoch |-> 0, checkpoint |-> 1]},
+  recoveryDiscarded |-> {},
+  returned |-> {},
+  resumeOrigin |-> "none",
+  resumedOld |-> FALSE,
+  resumedNew |-> FALSE,
+  resumedMigration |-> FALSE,
+  uncertain |-> FALSE,
+  resumedUncertain |-> FALSE,
+  oldPendingLost |-> FALSE,
+  badRepair |-> FALSE,
+  adoptedRun |-> FALSE,
+  resurrectedCaller |-> FALSE,
+  clearedHalt |-> FALSE,
+  offline |-> "none",
+  offlineAlive |-> FALSE ]
+
+State 5: <Cancel line 60, col 5 to line 62, col 63 of module DisasterRecoveryProjection>
+s = [ epoch |-> 0,
+  checkpoint |-> 1,
+  schema |-> 2,
+  run |-> 0,
+  expectedRun |-> 0,
+  pending |->
+      [ old |-> [version |-> 2, epoch |-> 0, checkpoint |-> 0],
+        target |-> [version |-> 2, epoch |-> 0, checkpoint |-> 1],
+        key |-> "original",
+        run |-> 0 ],
+  primary |-> TRUE,
+  marker |-> [version |-> 2, epoch |-> 0, checkpoint |-> 0],
+  observed |-> none,
+  owner |-> TRUE,
+  ready |-> FALSE,
+  halt |-> none,
+  caller |-> none,
+  returning |-> none,
+  writes |-> 1,
+  acknowledged |-> {[version |-> 2, epoch |-> 0, checkpoint |-> 0]},
+  requiredPending |-> {[version |-> 2, epoch |-> 0, checkpoint |-> 1]},
+  recoveryDiscarded |-> {},
+  returned |-> {},
+  resumeOrigin |-> "none",
+  resumedOld |-> FALSE,
+  resumedNew |-> FALSE,
+  resumedMigration |-> FALSE,
+  uncertain |-> FALSE,
+  resumedUncertain |-> FALSE,
+  oldPendingLost |-> FALSE,
+  badRepair |-> FALSE,
+  adoptedRun |-> FALSE,
+  resurrectedCaller |-> FALSE,
+  clearedHalt |-> FALSE,
+  offline |-> "none",
+  offlineAlive |-> FALSE ]
+
+State 6: <Observe line 71, col 5 to line 88, col 82 of module DisasterRecoveryProjection>
+s = [ epoch |-> 0,
+  checkpoint |-> 1,
+  schema |-> 2,
+  run |-> 0,
+  expectedRun |-> 0,
+  pending |->
+      [ old |-> [version |-> 2, epoch |-> 0, checkpoint |-> 0],
+        target |-> [version |-> 2, epoch |-> 0, checkpoint |-> 1],
+        key |-> "original",
+        run |-> 0 ],
+  primary |-> TRUE,
+  marker |-> [version |-> 2, epoch |-> 0, checkpoint |-> 0],
+  observed |->
+      [ run |-> 0,
+        primary |-> TRUE,
+        marker |-> [version |-> 2, epoch |-> 0, checkpoint |-> 0] ],
+  owner |-> TRUE,
+  ready |-> FALSE,
+  halt |-> none,
+  caller |-> none,
+  returning |-> none,
+  writes |-> 1,
+  acknowledged |-> {[version |-> 2, epoch |-> 0, checkpoint |-> 0]},
+  requiredPending |-> {[version |-> 2, epoch |-> 0, checkpoint |-> 1]},
+  recoveryDiscarded |-> {},
+  returned |-> {},
+  resumeOrigin |-> "none",
+  resumedOld |-> FALSE,
+  resumedNew |-> FALSE,
+  resumedMigration |-> FALSE,
+  uncertain |-> FALSE,
+  resumedUncertain |-> FALSE,
+  oldPendingLost |-> FALSE,
+  badRepair |-> FALSE,
+  adoptedRun |-> FALSE,
+  resurrectedCaller |-> FALSE,
+  clearedHalt |-> FALSE,
+  offline |-> "none",
+  offlineAlive |-> FALSE ]
+
+State 7: <Publish line 115, col 5 to line 122, col 74 of module DisasterRecoveryProjection>
+s = [ epoch |-> 0,
+  checkpoint |-> 1,
+  schema |-> 2,
+  run |-> 0,
+  expectedRun |-> 0,
+  pending |->
+      [ old |-> [version |-> 2, epoch |-> 0, checkpoint |-> 0],
+        target |-> [version |-> 2, epoch |-> 0, checkpoint |-> 1],
+        key |-> "original",
+        run |-> 0 ],
+  primary |-> TRUE,
+  marker |-> [version |-> 2, epoch |-> 0, checkpoint |-> 1],
+  observed |-> none,
+  owner |-> TRUE,
+  ready |-> FALSE,
+  halt |-> none,
+  caller |-> none,
+  returning |-> none,
+  writes |-> 1,
+  acknowledged |-> {[version |-> 2, epoch |-> 0, checkpoint |-> 0]},
+  requiredPending |-> {[version |-> 2, epoch |-> 0, checkpoint |-> 1]},
+  recoveryDiscarded |-> {},
+  returned |-> {},
+  resumeOrigin |-> "none",
+  resumedOld |-> FALSE,
+  resumedNew |-> FALSE,
+  resumedMigration |-> FALSE,
+  uncertain |-> FALSE,
+  resumedUncertain |-> FALSE,
+  oldPendingLost |-> FALSE,
+  badRepair |-> FALSE,
+  adoptedRun |-> FALSE,
+  resurrectedCaller |-> FALSE,
+  clearedHalt |-> FALSE,
+  offline |-> "none",
+  offlineAlive |-> FALSE ]
+
+State 8: <Observe line 71, col 5 to line 88, col 82 of module DisasterRecoveryProjection>
+s = [ epoch |-> 0,
+  checkpoint |-> 1,
+  schema |-> 2,
+  run |-> 0,
+  expectedRun |-> 0,
+  pending |->
+      [ old |-> [version |-> 2, epoch |-> 0, checkpoint |-> 0],
+        target |-> [version |-> 2, epoch |-> 0, checkpoint |-> 1],
+        key |-> "original",
+        run |-> 0 ],
+  primary |-> TRUE,
+  marker |-> [version |-> 2, epoch |-> 0, checkpoint |-> 1],
+  observed |->
+      [ run |-> 0,
+        primary |-> TRUE,
+        marker |-> [version |-> 2, epoch |-> 0, checkpoint |-> 1] ],
+  owner |-> TRUE,
+  ready |-> FALSE,
+  halt |-> none,
+  caller |-> none,
+  returning |-> none,
+  writes |-> 1,
+  acknowledged |-> {[version |-> 2, epoch |-> 0, checkpoint |-> 0]},
+  requiredPending |-> {[version |-> 2, epoch |-> 0, checkpoint |-> 1]},
+  recoveryDiscarded |-> {},
+  returned |-> {},
+  resumeOrigin |-> "none",
+  resumedOld |-> FALSE,
+  resumedNew |-> FALSE,
+  resumedMigration |-> FALSE,
+  uncertain |-> FALSE,
+  resumedUncertain |-> FALSE,
+  oldPendingLost |-> FALSE,
+  badRepair |-> FALSE,
+  adoptedRun |-> FALSE,
+  resurrectedCaller |-> FALSE,
+  clearedHalt |-> FALSE,
+  offline |-> "none",
+  offlineAlive |-> FALSE ]
+
+State 9: <Acknowledge line 127, col 5 to line 136, col 61 of module DisasterRecoveryProjection>
+s = [ epoch |-> 0,
+  checkpoint |-> 1,
+  schema |-> 2,
+  run |-> 0,
+  expectedRun |-> 0,
+  pending |-> none,
+  primary |-> TRUE,
+  marker |-> [version |-> 2, epoch |-> 0, checkpoint |-> 1],
+  observed |-> none,
+  owner |-> TRUE,
+  ready |-> FALSE,
+  halt |-> none,
+  caller |-> none,
+  returning |-> [version |-> 2, epoch |-> 0, checkpoint |-> 1],
+  writes |-> 1,
+  acknowledged |->
+      { [version |-> 2, epoch |-> 0, checkpoint |-> 0],
+        [version |-> 2, epoch |-> 0, checkpoint |-> 1] },
+  requiredPending |-> {[version |-> 2, epoch |-> 0, checkpoint |-> 1]},
+  recoveryDiscarded |-> {},
+  returned |-> {},
+  resumeOrigin |-> "none",
+  resumedOld |-> FALSE,
+  resumedNew |-> FALSE,
+  resumedMigration |-> FALSE,
+  uncertain |-> FALSE,
+  resumedUncertain |-> FALSE,
+  oldPendingLost |-> FALSE,
+  badRepair |-> FALSE,
+  adoptedRun |-> FALSE,
+  resurrectedCaller |-> FALSE,
+  clearedHalt |-> FALSE,
+  offline |-> "none",
+  offlineAlive |-> FALSE ]
+
+State 10: <ReturnPermission line 139, col 5 to line 142, col 44 of module DisasterRecoveryProjection>
+s = [ epoch |-> 0,
+  checkpoint |-> 1,
+  schema |-> 2,
+  run |-> 0,
+  expectedRun |-> 0,
+  pending |-> none,
+  primary |-> TRUE,
+  marker |-> [version |-> 2, epoch |-> 0, checkpoint |-> 1],
+  observed |-> none,
+  owner |-> TRUE,
+  ready |-> FALSE,
+  halt |-> none,
+  caller |-> none,
+  returning |-> none,
+  writes |-> 1,
+  acknowledged |->
+      { [version |-> 2, epoch |-> 0, checkpoint |-> 0],
+        [version |-> 2, epoch |-> 0, checkpoint |-> 1] },
+  requiredPending |-> {[version |-> 2, epoch |-> 0, checkpoint |-> 1]},
+  recoveryDiscarded |-> {},
+  returned |-> {[version |-> 2, epoch |-> 0, checkpoint |-> 1]},
+  resumeOrigin |-> "none",
+  resumedOld |-> FALSE,
+  resumedNew |-> FALSE,
+  resumedMigration |-> FALSE,
+  uncertain |-> FALSE,
+  resumedUncertain |-> FALSE,
+  oldPendingLost |-> FALSE,
+  badRepair |-> FALSE,
+  adoptedRun |-> FALSE,
+  resurrectedCaller |-> TRUE,
+  clearedHalt |-> FALSE,
+  offline |-> "none",
+  offlineAlive |-> FALSE ]
+
+The coverage statistics at 2026-09-27 08:13:57
+<Init line 31, col 1 to line 31, col 4 of module DisasterRecoveryProjection>: 2:2
+  line 31, col 9 to line 41, col 47 of module DisasterRecoveryProjection: 2
+<Start line 43, col 1 to line 43, col 5 of module DisasterRecoveryProjection>: 58:363
+  line 44, col 8 to line 44, col 15 of module DisasterRecoveryProjection: 1712
+  |line 44, col 9 to line 44, col 15 of module DisasterRecoveryProjection: 1349
+  line 44, col 20 to line 44, col 34 of module DisasterRecoveryProjection: 795
+  |line 44, col 21 to line 44, col 34 of module DisasterRecoveryProjection: 432
+  line 45, col 8 to line 49, col 71 of module DisasterRecoveryProjection: 363
+  |line 45, col 13 to line 49, col 71 of module DisasterRecoveryProjection: 363
+  ||line 45, col 14 to line 45, col 14 of module DisasterRecoveryProjection: 363
+  ||line 45, col 23 to line 45, col 36 of module DisasterRecoveryProjection: 363
+  ||line 45, col 39 to line 45, col 53 of module DisasterRecoveryProjection: 363
+  ||line 45, col 56 to line 45, col 72 of module DisasterRecoveryProjection: 363
+  ||line 46, col 26 to line 49, col 70 of module DisasterRecoveryProjection: 363
+  |||line 46, col 29 to line 46, col 44 of module DisasterRecoveryProjection: 363
+  |||line 47, col 18 to line 49, col 70 of module DisasterRecoveryProjection: 141
+  ||||line 47, col 21 to line 47, col 45 of module DisasterRecoveryProjection: 141
+  ||||line 48, col 18 to line 49, col 70 of module DisasterRecoveryProjection: 141
+  |||||line 48, col 21 to line 48, col 44 of module DisasterRecoveryProjection: 141
+  |||||line 49, col 18 to line 49, col 70 of module DisasterRecoveryProjection: 78
+<Crash line 51, col 1 to line 51, col 5 of module DisasterRecoveryProjection>: 52:917
+  line 52, col 8 to line 52, col 14 of module DisasterRecoveryProjection: 2265
+  |line 52, col 8 to line 52, col 8 of module DisasterRecoveryProjection: 1348
+  line 53, col 8 to line 56, col 59 of module DisasterRecoveryProjection: 917
+<Cancel line 59, col 1 to line 59, col 6 of module DisasterRecoveryProjection>: 5:277
+  line 60, col 8 to line 60, col 14 of module DisasterRecoveryProjection: 1624
+  |line 60, col 8 to line 60, col 8 of module DisasterRecoveryProjection: 1348
+  line 60, col 20 to line 60, col 34 of module DisasterRecoveryProjection: 1191
+  |line 60, col 20 to line 60, col 27 of module DisasterRecoveryProjection: 917
+  |line 60, col 31 to line 60, col 34 of module DisasterRecoveryProjection: 917
+  line 60, col 39 to line 60, col 56 of module DisasterRecoveryProjection: 920
+  |line 60, col 39 to line 60, col 49 of module DisasterRecoveryProjection: 917
+  |line 60, col 53 to line 60, col 56 of module DisasterRecoveryProjection: 917
+  line 61, col 8 to line 62, col 63 of module DisasterRecoveryProjection: 277
+<TransportUncertain line 66, col 1 to line 66, col 18 of module DisasterRecoveryProjection>: 9:191
+  line 67, col 8 to line 67, col 14 of module DisasterRecoveryProjection: 1538
+  |line 67, col 8 to line 67, col 8 of module DisasterRecoveryProjection: 1347
+  line 67, col 19 to line 67, col 31 of module DisasterRecoveryProjection: 1107
+  |line 67, col 19 to line 67, col 24 of module DisasterRecoveryProjection: 916
+  |line 67, col 28 to line 67, col 31 of module DisasterRecoveryProjection: 916
+  line 67, col 36 to line 67, col 51 of module DisasterRecoveryProjection: 456
+  |line 67, col 36 to line 67, col 44 of module DisasterRecoveryProjection: 265
+  |line 67, col 48 to line 67, col 51 of module DisasterRecoveryProjection: 265
+  line 68, col 8 to line 68, col 77 of module DisasterRecoveryProjection: 191
+<Observe line 70, col 1 to line 70, col 7 of module DisasterRecoveryProjection>: 136:265
+  line 71, col 8 to line 71, col 14 of module DisasterRecoveryProjection: 1612
+  |line 71, col 8 to line 71, col 8 of module DisasterRecoveryProjection: 1347
+  line 71, col 19 to line 71, col 31 of module DisasterRecoveryProjection: 1181
+  |line 71, col 19 to line 71, col 24 of module DisasterRecoveryProjection: 916
+  |line 71, col 28 to line 71, col 31 of module DisasterRecoveryProjection: 916
+  line 73, col 14 to line 73, col 29 of module DisasterRecoveryProjection: 265
+  line 74, col 19 to line 74, col 24 of module DisasterRecoveryProjection: 74
+  |line 26, col 11 to line 26, col 40 of module DisasterRecoveryProjection: 74
+  ||line 26, col 11 to line 26, col 28 of module DisasterRecoveryProjection: 74
+  ||line 26, col 33 to line 26, col 40 of module DisasterRecoveryProjection: 30
+  |||line 25, col 13 to line 25, col 46 of module DisasterRecoveryProjection: 30
+  ||||line 25, col 13 to line 25, col 33 of module DisasterRecoveryProjection: 30
+  ||||line 25, col 38 to line 25, col 46 of module DisasterRecoveryProjection: 22
+  line 75, col 21 to line 75, col 73 of module DisasterRecoveryProjection: 14
+  line 76, col 24 to line 78, col 60 of module DisasterRecoveryProjection: 60
+  line 79, col 26 to line 80, col 66 of module DisasterRecoveryProjection: 0
+  line 81, col 26 to line 81, col 82 of module DisasterRecoveryProjection: 60
+  line 82, col 19 to line 82, col 83 of module DisasterRecoveryProjection: 191
+  |line 82, col 19 to line 82, col 42 of module DisasterRecoveryProjection: 191
+  ||line 82, col 19 to line 82, col 30 of module DisasterRecoveryProjection: 191
+  ||line 82, col 35 to line 82, col 42 of module DisasterRecoveryProjection: 191
+  |||line 25, col 13 to line 25, col 46 of module DisasterRecoveryProjection: 191
+  ||||line 25, col 13 to line 25, col 33 of module DisasterRecoveryProjection: 191
+  ||||line 25, col 38 to line 25, col 46 of module DisasterRecoveryProjection: 126
+  |line 82, col 47 to line 82, col 83 of module DisasterRecoveryProjection: 79
+  line 83, col 21 to line 83, col 74 of module DisasterRecoveryProjection: 43
+  line 84, col 24 to line 85, col 88 of module DisasterRecoveryProjection: 148
+  line 86, col 26 to line 87, col 80 of module DisasterRecoveryProjection: 0
+  line 88, col 26 to line 88, col 82 of module DisasterRecoveryProjection: 148
+<Commit line 92, col 1 to line 92, col 6 of module DisasterRecoveryProjection>: 4:33
+  line 93, col 8 to line 93, col 14 of module DisasterRecoveryProjection: 1377
+  |line 93, col 8 to line 93, col 8 of module DisasterRecoveryProjection: 1344
+  line 93, col 19 to line 93, col 25 of module DisasterRecoveryProjection: 946
+  |line 93, col 19 to line 93, col 19 of module DisasterRecoveryProjection: 913
+  line 93, col 30 to line 93, col 42 of module DisasterRecoveryProjection: 66
+  |line 93, col 30 to line 93, col 35 of module DisasterRecoveryProjection: 33
+  |line 93, col 39 to line 93, col 42 of module DisasterRecoveryProjection: 33
+  line 93, col 47 to line 93, col 58 of module DisasterRecoveryProjection: 66
+  |line 93, col 47 to line 93, col 54 of module DisasterRecoveryProjection: 33
+  line 94, col 8 to line 94, col 23 of module DisasterRecoveryProjection: 66
+  |line 94, col 8 to line 94, col 16 of module DisasterRecoveryProjection: 33
+  |line 94, col 20 to line 94, col 23 of module DisasterRecoveryProjection: 33
+  line 94, col 28 to line 94, col 42 of module DisasterRecoveryProjection: 66
+  |line 94, col 28 to line 94, col 35 of module DisasterRecoveryProjection: 33
+  |line 94, col 39 to line 94, col 42 of module DisasterRecoveryProjection: 33
+  line 94, col 47 to line 94, col 64 of module DisasterRecoveryProjection: 66
+  |line 94, col 47 to line 94, col 57 of module DisasterRecoveryProjection: 33
+  |line 94, col 61 to line 94, col 64 of module DisasterRecoveryProjection: 33
+  line 95, col 8 to line 95, col 27 of module DisasterRecoveryProjection: 33
+  line 97, col 11 to line 100, col 73 of module DisasterRecoveryProjection: 33
+<Migrate line 104, col 1 to line 104, col 7 of module DisasterRecoveryProjection>: 0:0
+  line 105, col 8 to line 105, col 14 of module DisasterRecoveryProjection: 1343
+  line 105, col 19 to line 105, col 25 of module DisasterRecoveryProjection: 912
+  line 105, col 30 to line 105, col 42 of module DisasterRecoveryProjection: 32
+  line 105, col 47 to line 105, col 58 of module DisasterRecoveryProjection: 32
+  line 108, col 11 to line 110, col 67 of module DisasterRecoveryProjection: 0
+<Publish line 114, col 1 to line 114, col 7 of module DisasterRecoveryProjection>: 10:76
+  line 115, col 8 to line 115, col 14 of module DisasterRecoveryProjection: 1419
+  |line 115, col 8 to line 115, col 8 of module DisasterRecoveryProjection: 1343
+  line 115, col 19 to line 115, col 31 of module DisasterRecoveryProjection: 988
+  |line 115, col 19 to line 115, col 24 of module DisasterRecoveryProjection: 912
+  |line 115, col 28 to line 115, col 31 of module DisasterRecoveryProjection: 912
+  line 17, col 20 to line 17, col 35 of module DisasterRecoveryProjection: 261
+  line 18, col 8 to line 18, col 19 of module DisasterRecoveryProjection: 265
+  |line 18, col 8 to line 18, col 15 of module DisasterRecoveryProjection: 189
+  line 18, col 24 to line 18, col 49 of module DisasterRecoveryProjection: 265
+  |line 18, col 24 to line 18, col 39 of module DisasterRecoveryProjection: 189
+  |line 18, col 43 to line 18, col 49 of module DisasterRecoveryProjection: 189
+  line 19, col 8 to line 19, col 32 of module DisasterRecoveryProjection: 265
+  |line 19, col 8 to line 19, col 20 of module DisasterRecoveryProjection: 189
+  |line 19, col 24 to line 19, col 32 of module DisasterRecoveryProjection: 189
+  line 19, col 37 to line 19, col 65 of module DisasterRecoveryProjection: 265
+  |line 19, col 37 to line 19, col 49 of module DisasterRecoveryProjection: 189
+  |line 19, col 53 to line 19, col 65 of module DisasterRecoveryProjection: 189
+  line 20, col 8 to line 20, col 36 of module DisasterRecoveryProjection: 265
+  |line 20, col 8 to line 20, col 26 of module DisasterRecoveryProjection: 189
+  |line 20, col 30 to line 20, col 36 of module DisasterRecoveryProjection: 189
+  line 21, col 9 to line 21, col 33 of module DisasterRecoveryProjection: 265
+  |line 21, col 9 to line 21, col 29 of module DisasterRecoveryProjection: 189
+  line 22, col 9 to line 22, col 51 of module DisasterRecoveryProjection: 265
+  |line 22, col 9 to line 22, col 36 of module DisasterRecoveryProjection: 189
+  |line 22, col 40 to line 22, col 51 of module DisasterRecoveryProjection: 189
+  line 23, col 12 to line 24, col 50 of module DisasterRecoveryProjection: 189
+  line 116, col 8 to line 116, col 24 of module DisasterRecoveryProjection: 265
+  |line 116, col 8 to line 116, col 17 of module DisasterRecoveryProjection: 189
+  |line 116, col 21 to line 116, col 24 of module DisasterRecoveryProjection: 189
+  line 116, col 29 to line 116, col 58 of module DisasterRecoveryProjection: 152
+  |line 116, col 29 to line 116, col 42 of module DisasterRecoveryProjection: 76
+  |line 116, col 46 to line 116, col 58 of module DisasterRecoveryProjection: 76
+  line 116, col 63 to line 116, col 80 of module DisasterRecoveryProjection: 152
+  |line 116, col 63 to line 116, col 72 of module DisasterRecoveryProjection: 76
+  line 117, col 8 to line 117, col 53 of module DisasterRecoveryProjection: 152
+  |line 117, col 8 to line 117, col 24 of module DisasterRecoveryProjection: 76
+  |line 117, col 30 to line 117, col 53 of module DisasterRecoveryProjection: 76
+  line 118, col 11 to line 118, col 34 of module DisasterRecoveryProjection: 76
+  line 119, col 13 to line 119, col 65 of module DisasterRecoveryProjection: 30
+  line 120, col 16 to line 120, col 33 of module DisasterRecoveryProjection: 46
+  line 121, col 18 to line 121, col 50 of module DisasterRecoveryProjection: 8
+  line 122, col 18 to line 122, col 74 of module DisasterRecoveryProjection: 38
+<Acknowledge line 126, col 1 to line 126, col 11 of module DisasterRecoveryProjection>: 5:11
+  line 127, col 8 to line 127, col 14 of module DisasterRecoveryProjection: 1353
+  |line 127, col 8 to line 127, col 8 of module DisasterRecoveryProjection: 1342
+  line 127, col 19 to line 127, col 31 of module DisasterRecoveryProjection: 922
+  |line 127, col 19 to line 127, col 24 of module DisasterRecoveryProjection: 911
+  |line 127, col 28 to line 127, col 31 of module DisasterRecoveryProjection: 911
+  line 17, col 20 to line 17, col 35 of module DisasterRecoveryProjection: 260
+  line 18, col 8 to line 18, col 19 of module DisasterRecoveryProjection: 199
+  |line 18, col 8 to line 18, col 15 of module DisasterRecoveryProjection: 188
+  line 18, col 24 to line 18, col 49 of module DisasterRecoveryProjection: 199
+  |line 18, col 24 to line 18, col 39 of module DisasterRecoveryProjection: 188
+  |line 18, col 43 to line 18, col 49 of module DisasterRecoveryProjection: 188
+  line 19, col 8 to line 19, col 32 of module DisasterRecoveryProjection: 199
+  |line 19, col 8 to line 19, col 20 of module DisasterRecoveryProjection: 188
+  |line 19, col 24 to line 19, col 32 of module DisasterRecoveryProjection: 188
+  line 19, col 37 to line 19, col 65 of module DisasterRecoveryProjection: 199
+  |line 19, col 37 to line 19, col 49 of module DisasterRecoveryProjection: 188
+  |line 19, col 53 to line 19, col 65 of module DisasterRecoveryProjection: 188
+  line 20, col 8 to line 20, col 36 of module DisasterRecoveryProjection: 199
+  |line 20, col 8 to line 20, col 26 of module DisasterRecoveryProjection: 188
+  |line 20, col 30 to line 20, col 36 of module DisasterRecoveryProjection: 188
+  line 21, col 9 to line 21, col 33 of module DisasterRecoveryProjection: 199
+  |line 21, col 9 to line 21, col 29 of module DisasterRecoveryProjection: 188
+  line 22, col 9 to line 22, col 51 of module DisasterRecoveryProjection: 199
+  |line 22, col 9 to line 22, col 36 of module DisasterRecoveryProjection: 188
+  |line 22, col 40 to line 22, col 51 of module DisasterRecoveryProjection: 188
+  line 23, col 12 to line 24, col 50 of module DisasterRecoveryProjection: 188
+  line 27, col 22 to line 27, col 58 of module DisasterRecoveryProjection: 188
+  |line 27, col 22 to line 27, col 38 of module DisasterRecoveryProjection: 188
+  |line 27, col 43 to line 27, col 58 of module DisasterRecoveryProjection: 75
+  line 28, col 5 to line 28, col 31 of module DisasterRecoveryProjection: 86
+  |line 28, col 5 to line 28, col 21 of module DisasterRecoveryProjection: 75
+  |line 28, col 25 to line 28, col 31 of module DisasterRecoveryProjection: 75
+  line 28, col 36 to line 28, col 65 of module DisasterRecoveryProjection: 22
+  |line 28, col 36 to line 28, col 49 of module DisasterRecoveryProjection: 11
+  |line 28, col 53 to line 28, col 65 of module DisasterRecoveryProjection: 11
+  line 29, col 12 to line 29, col 29 of module DisasterRecoveryProjection: 22
+  |line 29, col 12 to line 29, col 21 of module DisasterRecoveryProjection: 11
+  line 128, col 8 to line 136, col 61 of module DisasterRecoveryProjection: 11
+  |line 128, col 13 to line 136, col 61 of module DisasterRecoveryProjection: 11
+  ||line 128, col 14 to line 128, col 14 of module DisasterRecoveryProjection: 11
+  ||line 128, col 23 to line 128, col 55 of module DisasterRecoveryProjection: 11
+  ||line 129, col 23 to line 131, col 44 of module DisasterRecoveryProjection: 11
+  |||line 129, col 26 to line 130, col 75 of module DisasterRecoveryProjection: 11
+  ||||line 129, col 26 to line 129, col 43 of module DisasterRecoveryProjection: 11
+  ||||line 130, col 26 to line 130, col 74 of module DisasterRecoveryProjection: 4
+  |||line 131, col 28 to line 131, col 34 of module DisasterRecoveryProjection: 11
+  ||line 132, col 9 to line 132, col 50 of module DisasterRecoveryProjection: 11
+  ||line 133, col 9 to line 133, col 50 of module DisasterRecoveryProjection: 11
+  ||line 134, col 9 to line 134, col 62 of module DisasterRecoveryProjection: 11
+  ||line 135, col 9 to line 135, col 45 of module DisasterRecoveryProjection: 11
+  ||line 136, col 9 to line 136, col 24 of module DisasterRecoveryProjection: 11
+  ||line 136, col 27 to line 136, col 43 of module DisasterRecoveryProjection: 11
+  ||line 136, col 46 to line 136, col 60 of module DisasterRecoveryProjection: 11
+<ReturnPermission line 138, col 1 to line 138, col 16 of module DisasterRecoveryProjection>: 2:3
+  line 139, col 8 to line 139, col 14 of module DisasterRecoveryProjection: 1343
+  |line 139, col 8 to line 139, col 8 of module DisasterRecoveryProjection: 1341
+  line 139, col 19 to line 139, col 36 of module DisasterRecoveryProjection: 912
+  |line 139, col 19 to line 139, col 29 of module DisasterRecoveryProjection: 910
+  |line 139, col 33 to line 139, col 36 of module DisasterRecoveryProjection: 910
+  line 140, col 8 to line 142, col 44 of module DisasterRecoveryProjection: 2
+  |line 140, col 13 to line 142, col 44 of module DisasterRecoveryProjection: 3
+<PrematurePermission line 144, col 1 to line 144, col 19 of module DisasterRecoveryProjection>: 0:0
+  line 146, col 8 to line 146, col 53 of module DisasterRecoveryProjection: 0
+<RedisLoss line 148, col 1 to line 148, col 9 of module DisasterRecoveryProjection>: 62:1339
+  line 148, col 14 to line 148, col 44 of module DisasterRecoveryProjection: 1339
+<RedisRollback line 149, col 1 to line 149, col 13 of module DisasterRecoveryProjection>: 22:728
+  line 150, col 8 to line 150, col 23 of module DisasterRecoveryProjection: 728
+  |line 150, col 8 to line 150, col 19 of module DisasterRecoveryProjection: 1339
+  line 151, col 8 to line 152, col 71 of module DisasterRecoveryProjection: 728
+<RedisRestart line 153, col 1 to line 153, col 12 of module DisasterRecoveryProjection>: 100:668
+  line 153, col 17 to line 153, col 25 of module DisasterRecoveryProjection: 2007
+  |line 153, col 17 to line 153, col 21 of module DisasterRecoveryProjection: 1339
+  line 153, col 30 to line 153, col 54 of module DisasterRecoveryProjection: 668
+<RedisRoleChange line 154, col 1 to line 154, col 15 of module DisasterRecoveryProjection>: 223:814
+  line 154, col 20 to line 154, col 28 of module DisasterRecoveryProjection: 2153
+  |line 154, col 20 to line 154, col 20 of module DisasterRecoveryProjection: 1339
+  line 154, col 33 to line 154, col 65 of module DisasterRecoveryProjection: 814
+<RedisForeignToken line 156, col 1 to line 156, col 17 of module DisasterRecoveryProjection>: 226:1339
+  line 156, col 22 to line 156, col 62 of module DisasterRecoveryProjection: 1339
+<PermanentHalt line 158, col 1 to line 158, col 13 of module DisasterRecoveryProjection>: 1041:1041
+  line 159, col 8 to line 159, col 20 of module DisasterRecoveryProjection: 1686
+  |line 159, col 8 to line 159, col 13 of module DisasterRecoveryProjection: 1339
+  |line 159, col 17 to line 159, col 20 of module DisasterRecoveryProjection: 1339
+  line 161, col 11 to line 161, col 57 of module DisasterRecoveryProjection: 1041
+  line 160, col 21 to line 160, col 55 of module DisasterRecoveryProjection: 347:1388
+<IllicitHaltClear line 162, col 1 to line 162, col 16 of module DisasterRecoveryProjection>: 0:0
+  line 164, col 8 to line 164, col 58 of module DisasterRecoveryProjection: 0
+<Reattach line 169, col 1 to line 169, col 8 of module DisasterRecoveryProjection>: 1:9
+  line 170, col 8 to line 170, col 15 of module DisasterRecoveryProjection: 1348
+  |line 170, col 9 to line 170, col 15 of module DisasterRecoveryProjection: 1339
+  line 170, col 20 to line 170, col 34 of module DisasterRecoveryProjection: 440
+  |line 170, col 21 to line 170, col 34 of module DisasterRecoveryProjection: 431
+  line 170, col 39 to line 170, col 54 of module DisasterRecoveryProjection: 371
+  |line 170, col 39 to line 170, col 47 of module DisasterRecoveryProjection: 362
+  |line 170, col 51 to line 170, col 54 of module DisasterRecoveryProjection: 362
+  line 171, col 8 to line 171, col 20 of module DisasterRecoveryProjection: 230
+  |line 171, col 8 to line 171, col 13 of module DisasterRecoveryProjection: 221
+  |line 171, col 17 to line 171, col 20 of module DisasterRecoveryProjection: 221
+  line 171, col 25 to line 171, col 42 of module DisasterRecoveryProjection: 51
+  |line 171, col 25 to line 171, col 32 of module DisasterRecoveryProjection: 42
+  |line 171, col 36 to line 171, col 42 of module DisasterRecoveryProjection: 42
+  line 171, col 47 to line 171, col 55 of module DisasterRecoveryProjection: 25
+  |line 171, col 47 to line 171, col 47 of module DisasterRecoveryProjection: 16
+  line 172, col 8 to line 172, col 63 of module DisasterRecoveryProjection: 9
+<RecoverBegin line 176, col 1 to line 176, col 12 of module DisasterRecoveryProjection>: 19:228
+  line 177, col 8 to line 177, col 15 of module DisasterRecoveryProjection: 1567
+  |line 177, col 9 to line 177, col 15 of module DisasterRecoveryProjection: 1339
+  line 177, col 20 to line 177, col 34 of module DisasterRecoveryProjection: 659
+  |line 177, col 21 to line 177, col 34 of module DisasterRecoveryProjection: 431
+  line 177, col 39 to line 177, col 49 of module DisasterRecoveryProjection: 590
+  |line 177, col 39 to line 177, col 45 of module DisasterRecoveryProjection: 362
+  line 178, col 8 to line 184, col 30 of module DisasterRecoveryProjection: 228
+  |line 178, col 13 to line 184, col 30 of module DisasterRecoveryProjection: 228
+  ||line 178, col 14 to line 178, col 14 of module DisasterRecoveryProjection: 228
+  ||line 179, col 31 to line 180, col 67 of module DisasterRecoveryProjection: 228
+  |||line 180, col 16 to line 180, col 66 of module DisasterRecoveryProjection: 228
+  ||||line 180, col 19 to line 180, col 34 of module DisasterRecoveryProjection: 228
+  ||||line 180, col 41 to line 180, col 42 of module DisasterRecoveryProjection: 88:412
+  ||||line 180, col 49 to line 180, col 66 of module DisasterRecoveryProjection: 140:336
+  ||line 181, col 9 to line 181, col 24 of module DisasterRecoveryProjection: 228
+  ||line 181, col 27 to line 181, col 41 of module DisasterRecoveryProjection: 228
+  ||line 181, col 44 to line 181, col 61 of module DisasterRecoveryProjection: 228
+  ||line 182, col 9 to line 182, col 25 of module DisasterRecoveryProjection: 228
+  ||line 182, col 28 to line 182, col 42 of module DisasterRecoveryProjection: 228
+  ||line 182, col 45 to line 182, col 59 of module DisasterRecoveryProjection: 228
+  ||line 183, col 9 to line 183, col 29 of module DisasterRecoveryProjection: 228
+  ||line 184, col 9 to line 184, col 29 of module DisasterRecoveryProjection: 228
+<RecoverPublish line 185, col 1 to line 185, col 14 of module DisasterRecoveryProjection>: 13:13
+  line 186, col 8 to line 186, col 24 of module DisasterRecoveryProjection: 1352
+  |line 186, col 8 to line 186, col 16 of module DisasterRecoveryProjection: 1339
+  line 186, col 29 to line 186, col 42 of module DisasterRecoveryProjection: 89
+  |line 186, col 29 to line 186, col 29 of module DisasterRecoveryProjection: 76
+  line 186, col 47 to line 186, col 55 of module DisasterRecoveryProjection: 48
+  |line 186, col 47 to line 186, col 47 of module DisasterRecoveryProjection: 35
+  line 186, col 60 to line 186, col 74 of module DisasterRecoveryProjection: 34
+  |line 186, col 60 to line 186, col 67 of module DisasterRecoveryProjection: 21
+  |line 186, col 71 to line 186, col 74 of module DisasterRecoveryProjection: 21
+  line 187, col 8 to line 187, col 62 of module DisasterRecoveryProjection: 13
+<RecoverFinish line 188, col 1 to line 188, col 13 of module DisasterRecoveryProjection>: 6:6
+  line 189, col 8 to line 189, col 26 of module DisasterRecoveryProjection: 1345
+  |line 189, col 8 to line 189, col 16 of module DisasterRecoveryProjection: 1339
+  line 189, col 31 to line 189, col 44 of module DisasterRecoveryProjection: 83
+  |line 189, col 31 to line 189, col 31 of module DisasterRecoveryProjection: 77
+  line 26, col 11 to line 26, col 28 of module DisasterRecoveryProjection: 40
+  |line 26, col 11 to line 26, col 18 of module DisasterRecoveryProjection: 34
+  |line 26, col 22 to line 26, col 28 of module DisasterRecoveryProjection: 34
+  line 25, col 13 to line 25, col 33 of module DisasterRecoveryProjection: 20
+  |line 25, col 13 to line 25, col 17 of module DisasterRecoveryProjection: 14
+  |line 25, col 21 to line 25, col 33 of module DisasterRecoveryProjection: 14
+  line 25, col 38 to line 25, col 46 of module DisasterRecoveryProjection: 16
+  |line 25, col 38 to line 25, col 38 of module DisasterRecoveryProjection: 10
+  line 190, col 8 to line 191, col 51 of module DisasterRecoveryProjection: 6
+<RecoveryCrash line 192, col 1 to line 192, col 13 of module DisasterRecoveryProjection>: 69:69
+  line 192, col 18 to line 192, col 31 of module DisasterRecoveryProjection: 1408
+  |line 192, col 18 to line 192, col 18 of module DisasterRecoveryProjection: 1339
+  line 192, col 36 to line 192, col 73 of module DisasterRecoveryProjection: 69
+<TypeOK line 201, col 1 to line 201, col 6 of module DisasterRecoveryProjection>
+  line 202, col 5 to line 211, col 75 of module DisasterRecoveryProjection: 2064
+<NoResurrectedCaller line 218, col 1 to line 218, col 19 of module DisasterRecoveryProjection>
+  line 218, col 24 to line 218, col 43 of module DisasterRecoveryProjection: 2064
+End of statistics.
+8364 states generated, 2064 distinct states found, 723 states left on queue.
+The depth of the complete state graph search is 10.
+The average outdegree of the complete state graph is 2 (minimum is 0, the maximum 12 and the 95th percentile is 6).
+Finished in 00s at (2026-09-27 08:13:57)

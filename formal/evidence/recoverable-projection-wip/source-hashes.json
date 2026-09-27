@@ -1,0 +1,115 @@
+{
+  "scope": "WIP model-only validation; no refreshed runtime correspondence or full repository suite",
+  "stopped_at": "2026-09-27T12:15:08.718700+00:00",
+  "completed_expected_outcomes": 22,
+  "positive_cases": 3,
+  "named_counterexample_cases": 19,
+  "source_map_refreshed": false,
+  "runtime_built_or_tested_by_this_agent": false,
+  "models": [
+    {
+      "path": "formal/models.json",
+      "sha256": "d2f9a60aae7b6b2c45441d4c838efd22ea9ac1f95b18fd2d737a29a8e4fea258"
+    },
+    {
+      "path": "formal/disaster-recovery.md",
+      "sha256": "cd55ca3a9fd9a5d7d2effec18034ac5a530bcf715a85f6820311c66b798d0eab"
+    },
+    {
+      "path": "formal/tla/DisasterRecovery.cfg",
+      "sha256": "008d8491f86650c7b75cd7f66ddb4f624272b8f67f97b22e87d50dfc599cc5aa"
+    },
+    {
+      "path": "formal/tla/DisasterRecovery.tla",
+      "sha256": "f298c3b86fe266684467cd20da5b49efa55067c54ea910c62bcceea1b96c51c9"
+    },
+    {
+      "path": "formal/tla/DisasterRecoveryProjection.cfg",
+      "sha256": "0f0b8fa5e70a9a4031e6bb35f59402c84063306ae586e6b22820131768ef9a3d"
+    },
+    {
+      "path": "formal/tla/DisasterRecoveryProjection.tla",
+      "sha256": "c514fc9605373bd59104f0ab9beeb0e0d4ae104e2eab005f436a05c9aeca1c7f"
+    },
+    {
+      "path": "formal/tla/DisasterRecoveryProjection_clear_halt.cfg",
+      "sha256": "3843b299038c5f41207fa7a598ab2e7b35e2173281c823fcfa4880cb3612b1d1"
+    },
+    {
+      "path": "formal/tla/DisasterRecoveryProjection_early_permission.cfg",
+      "sha256": "a2bccb5415e0f13cd8c44ca78da7d4a27ab8fcb36ad5db904b5e35dcaf903578"
+    },
+    {
+      "path": "formal/tla/DisasterRecoveryProjection_forgiven_rollback.cfg",
+      "sha256": "56fd50bca00699c9efd4c3ed98ed86141e0f67ac180c51e7648ec39cfdfdbf9a"
+    },
+    {
+      "path": "formal/tla/DisasterRecoveryProjection_legacy.cfg",
+      "sha256": "9de40664a82b7837c79e541e8ded0cc22b096e1a44776ad4931d5331b227ca92"
+    },
+    {
+      "path": "formal/tla/DisasterRecoveryProjection_lost_pending.cfg",
+      "sha256": "697ea62af709e6333494a641641b29231338d9b32c6ff415466140968705235c"
+    },
+    {
+      "path": "formal/tla/DisasterRecoveryProjection_migration_witness.cfg",
+      "sha256": "1d15b9bc62263051716c9b98e67e34e93948ede578e52844f37cd812aff9b12a"
+    },
+    {
+      "path": "formal/tla/DisasterRecoveryProjection_new_marker_witness.cfg",
+      "sha256": "81042d78407f2a95b4603dfc6d9d7c0064022b45b2cd22ea8d3bf2b16ba5a385"
+    },
+    {
+      "path": "formal/tla/DisasterRecoveryProjection_old_marker_witness.cfg",
+      "sha256": "a95e4e9ba9401b3ace2e9c96ebb91b264fff26364c086783ae18797538a12cd9"
+    },
+    {
+      "path": "formal/tla/DisasterRecoveryProjection_revived_caller.cfg",
+      "sha256": "6fb1fff67b4e3a178d0a23b9dc9b346310412ecf69090eb83dc7b5d3d1059b0b"
+    },
+    {
+      "path": "formal/tla/DisasterRecoveryProjection_run_adoption.cfg",
+      "sha256": "084497c41751cf5c27a2b15cfa80692474bd6a42c21ba6ea84baf8d85abc1827"
+    },
+    {
+      "path": "formal/tla/DisasterRecoveryProjection_uncertain_witness.cfg",
+      "sha256": "617ef178394d2af10fd76cba5773eb7526474403803a52006e98bacf07dba329"
+    },
+    {
+      "path": "formal/tla/DisasterRecovery_authority_rollback.cfg",
+      "sha256": "7ec83f502815b359d1519551777700a76b7e995de2526bb6104cfca4afe866f6"
+    },
+    {
+      "path": "formal/tla/DisasterRecovery_fresh_recovery.cfg",
+      "sha256": "2abe2a4eb3fa44ffeedcafec24bcd91956a6546259a46eec3b4b96831865c6d8"
+    },
+    {
+      "path": "formal/tla/DisasterRecovery_id_binding.cfg",
+      "sha256": "00571946d4af1327e29b48822784cc6c165919aabe90f29bc598f08906ed592e"
+    },
+    {
+      "path": "formal/tla/DisasterRecovery_key_binding.cfg",
+      "sha256": "d070a7af21f6d17b2962b5e3b54efceaaee61b5b1acaa3c37737a5671116c5dc"
+    },
+    {
+      "path": "formal/tla/DisasterRecovery_late_execution_witness.cfg",
+      "sha256": "305044ef623c520d6ee3c8a016541723ea31ba982c06b1fde04831498aaaaa8f"
+    },
+    {
+      "path": "formal/tla/DisasterRecovery_retry_uid.cfg",
+      "sha256": "41bb61a57f110230451fc2fc5205f1853891e111f6123ea62f404ac783f3bd6f"
+    },
+    {
+      "path": "formal/tla/DisasterRecovery_send_before_journal.cfg",
+      "sha256": "db20c320ee301b413166dcef0e361542fadc1602648a1fd0595c303e19b649b6"
+    },
+    {
+      "path": "formal/tla/DisasterRecovery_shared_owner.cfg",
+      "sha256": "d5fff022d0d97d67c7868d9a48ecd8a38aa5e12e76f4eddf0dc610d990d4fa5e"
+    },
+    {
+      "path": "formal/tla/DisasterRecovery_terminal_attribution.cfg",
+      "sha256": "3bd52e9f92bf5720371ccf30d1083ebca4a58fcee8cd9024ed7e2668874df257"
+    }
+  ]
+}
