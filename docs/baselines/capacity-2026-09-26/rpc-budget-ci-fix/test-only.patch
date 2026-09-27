@@ -1,0 +1,63 @@
+diff --git a/scripts/rpc/load-probe.test.mjs b/scripts/rpc/load-probe.test.mjs
+index 80e0409..6e3bbed 100644
+--- a/scripts/rpc/load-probe.test.mjs
++++ b/scripts/rpc/load-probe.test.mjs
+@@ -17,7 +17,7 @@ async function fixture(upstream,{ceiling=200,maxInflight=256}={}){
+   await new Promise(resolve=>gateway.server.listen(0,'127.0.0.1',resolve));
+   // HTTP classification fixtures must tolerate concurrent test-process fsyncs.
+   // The production lag cutoff is tested separately with a controlled clock.
+-  return {budget,config:{chain:'11155111',gateway:`http://127.0.0.1:${gateway.server.address().port}`,reserve:0,pauseMs:0,maxLagMs:10_000,stages:[{rate:100,count:8}]},
++  return {budget,stats:gateway.stats,config:{chain:'11155111',gateway:`http://127.0.0.1:${gateway.server.address().port}`,reserve:0,pauseMs:0,maxLagMs:10_000,stages:[{rate:100,count:8}]},
+     close:async()=>{await gateway.close();fs.rmSync(dir,{recursive:true,force:true});}};
+ }
+ test('only literal loopback routes, finite stages, explicit execution, and preserved evidence filenames',()=>{
+@@ -100,16 +100,44 @@ test('budget precheck and write-method rejection make no paid dispatches',async(
+     assert.equal(received,0);
+   }finally{await f.close();}
+ });
+-test('an exhausted shared campaign stops later slots and later stages without retry',async()=>{
++test('shared budget exhaustion rejects the next call and stops every subsequent stage without retry',async()=>{
+   let received=0;let f;
+   f=await fixture(async(_network,payload)=>{received++;if(received===1)assert.equal(f.budget.take(19),true);return rpc(payload,'0x1');},{ceiling:20});
+   try{
+-    const report=await runProbe({...f.config,concurrency:1,stages:[{rate:100,count:5},{rate:100,count:5}]},{mix:basicMix});
+-    assert.equal(received,1);assert.equal(report.stages.length,1);
+-    assert.equal(report.stages[0].stoppedReason,'budget_exhausted');
+-    assert.equal(report.stages[0].outcomes.budget_exhausted,1);
++    // The single first slot is drained before stage2. Another budget user
++    // consumes the remainder while it is in flight; its success is no refusal.
++    // The next request must receive HTTP 402, regardless of fsync/response
++    // latency or local slot drops.
++    const report=await runProbe({...f.config,concurrency:1,stages:[{rate:100,count:1},{rate:100,count:5},{rate:100,count:5}]},{mix:basicMix});
++    assert.equal(received,1);
++    assert.equal(f.stats.forwarded,1);assert.equal(f.stats.rejected,1);
++    assert.equal(f.budget.report().observed,20);assert.equal(f.budget.report().reserved,20);
++    assert.equal(f.budget.report().remainingCalls,0);
++    assert.equal(report.stages.length,2,'the third stage must never start');
++    assert.equal(report.stages[0].dispatched,1);
++    assert.deepEqual(report.stages[0].outcomes,{success:1});
++    assert.equal(report.stages[0].stoppedReason,null);
++    assert.equal(report.stages[1].dispatched,1,'the locally rejected request must not be retried');
++    assert.equal(report.stages[1].stoppedReason,'budget_exhausted');
++    assert.deepEqual(report.stages[1].outcomes,{budget_exhausted:1});
++    assert.equal(report.stages[1].httpStatuses['402'],1);
+   }finally{await f.close();}
+ });
++test('a budget refusal received while draining the last slot remains a stop reason',async(t)=>{
++  let now=0,reply,received=0;
++  t.mock.method(performance,'now',()=>now);
++  const config=configuration({chain:'11155111',stages:[{rate:100,count:1}]}),
++    response=new Promise(resolve=>{reply=resolve;});
++  const running=runStage(config,config.stages[0],basicMix,()=>{received++;return response;});
++  assert.equal(received,1,'the final slot is dispatched before releasing its result');
++  now=250;reply({kind:'budget_exhausted',status:402,ms:250});
++  const stage=await running;
++  assert.equal(received,1);assert.equal(stage.dispatched,1);
++  assert.equal(stage.admissionDurationMs,0);assert.equal(stage.drainDurationMs,250);
++  assert.equal(stage.stoppedReason,'budget_exhausted');
++  assert.deepEqual(stage.outcomes,{budget_exhausted:1});
++  assert.equal(stage.notScheduled,0);
++});
+ test('EVM recipe discovers real recent hashes and funded senders with bounded reads',async()=>{
+   const sender='0x'+'1'.repeat(40),hash='0x'+'2'.repeat(64),seen=[];
+   const f=await fixture(async(_network,payload)=>{

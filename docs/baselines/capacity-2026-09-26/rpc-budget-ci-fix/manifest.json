@@ -1,0 +1,46 @@
+{
+  "ci_run": "https://github.com/alfongj-com/engine-core/actions/runs/36291670164",
+  "source_commit": "6414d0e",
+  "changed_files": [
+    "scripts/rpc/load-probe.test.mjs"
+  ],
+  "runtime_changes": false,
+  "validation": {
+    "passed": 19,
+    "failed": 0,
+    "skipped": 0,
+    "node": "v22.22.0",
+    "review": "independent read-only review: no blocker"
+  },
+  "test_source_sha256": "4f4819273451a47f069583465a66568c2cbaec77f2d1c0f22bedbc094b8fdfbd",
+  "runtime_source_sha256": {
+    "scripts/rpc/load-probe.mjs": "0f4dd904860efcab5e59506c1849bbc348b3290e7ed3ea7f1f4d9361b0df87e6",
+    "scripts/rpc/budget-gateway.mjs": "b262d42bb39532295247d3dcc6573a02ae33e1a05986860e7c3c034fefa005f0"
+  },
+  "files": {
+    "README.md": {
+      "bytes": 2056,
+      "sha256": "f8598629b9afb5a98d2819e3830f5a9f8687cedb6aaa880ade4363d5c9fd4f7b"
+    },
+    "after-full-suite.log": {
+      "bytes": 4354,
+      "sha256": "b568e6795bfde83ee42aca212adb560593377c2f01de5f58ad3644faa1779d55"
+    },
+    "controlled-before-failure.log": {
+      "bytes": 990,
+      "sha256": "fca33f6b78157d3505cd7268de2033c6d4955ea66c451a42668d889c59e41671"
+    },
+    "forced-late-original.test.mjs": {
+      "bytes": 10247,
+      "sha256": "8fc24de7f33f3596e3882543bfce55bbd29a681f7d2f143d3b9484142b9f9e1c"
+    },
+    "original-linux-ci-failure.log": {
+      "bytes": 16482,
+      "sha256": "e173d6c8a7070b674ef337bf0807a16f39ca65d986f5efd186c7b510b3f5b859"
+    },
+    "test-only.patch": {
+      "bytes": 4319,
+      "sha256": "49584cb0da7299df1b17b64607e9bcf1868ed4e4479559bcee5f4039207e86e8"
+    }
+  }
+}
