@@ -1,0 +1,8 @@
+PASS pair1 bare: terminal 4.078ms/intent, 245.19/s; three-stage 80.85/s
+PASS pair1 eoa-caller: terminal 4.292ms/intent, 233.01/s; three-stage 79.01/s
+PASS pair2 eoa-caller: terminal 4.428ms/intent, 225.82/s; three-stage 77.82/s
+PASS pair2 bare: terminal 4.213ms/intent, 237.34/s; three-stage 76.79/s
+PASS pair3 bare: terminal 4.216ms/intent, 237.19/s; three-stage 80.59/s
+PASS pair3 eoa-caller: terminal 4.429ms/intent, 225.77/s; three-stage 79.76/s
+PASS pair4 eoa-caller: terminal 4.146ms/intent, 241.21/s; three-stage 80.44/s
+PASS pair4 bare: terminal 4.243ms/intent, 235.67/s; three-stage 79.49/s

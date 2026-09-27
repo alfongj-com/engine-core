@@ -1,0 +1,74 @@
+{
+  "arch": "aarch64",
+  "concurrency": 1,
+  "count": 768,
+  "durability": {
+    "fullfsync": true,
+    "journalMode": "WAL",
+    "synchronous": "FULL"
+  },
+  "logicalRecordBytesPerIntent": 1180,
+  "os": "macos",
+  "phases": [
+    {
+      "count": 768,
+      "elapsedSeconds": 3.13056075,
+      "latencyIncludesQueueWait": true,
+      "operationCompletionLatencyMs": {
+        "max": 13.34525,
+        "min": 1.446083,
+        "p50": 4.001290999999999,
+        "p95": 5.053291,
+        "p99": 7.907875
+      },
+      "operationsPerSecond": 245.32346161945588,
+      "phase": "admission"
+    },
+    {
+      "count": 768,
+      "elapsedSeconds": 3.232877667,
+      "latencyIncludesQueueWait": true,
+      "operationCompletionLatencyMs": {
+        "max": 11.925540999999999,
+        "min": 1.2286249999999999,
+        "p50": 4.027709,
+        "p95": 5.052917,
+        "p99": 9.019542
+      },
+      "operationsPerSecond": 237.5592518824499,
+      "phase": "attempt"
+    },
+    {
+      "count": 768,
+      "elapsedSeconds": 3.18395375,
+      "latencyIncludesQueueWait": true,
+      "operationCompletionLatencyMs": {
+        "max": 11.063125,
+        "min": 1.764584,
+        "p50": 4.009875,
+        "p95": 5.048541999999999,
+        "p99": 8.141917
+      },
+      "operationsPerSecond": 241.2095339010499,
+      "phase": "terminal"
+    }
+  ],
+  "reconciliation": {
+    "admissions": 768,
+    "attempts": 768,
+    "checkpoint": 2304,
+    "healthy": true,
+    "terminal": 768
+  },
+  "schema": "engine-recovery-journal-probe-v2",
+  "scope": "closed-loop real journal operations with the recorded terminal call sequence; excludes transaction construction, blockchain execution, provider RPC, finality assessment/checkpoint commits and Redis queue work; latency covers the complete selected phase operation; not isolated fsync cost or Engine transaction TPS",
+  "terminalCallSequence": [
+    "admission",
+    "compare_expected_replay_key",
+    "validate_attempt_identity",
+    "check_chain_healthy",
+    "record_terminal"
+  ],
+  "terminalMode": "eoa-caller",
+  "threeStageIntentsPerSecond": 80.44081426282528
+}

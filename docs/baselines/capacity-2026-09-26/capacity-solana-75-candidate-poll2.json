@@ -1,0 +1,5951 @@
+{
+  "all_chain_capacity_candidate": false,
+  "arrival_phase_seconds": {
+    "solana": 0.0
+  },
+  "balances": {
+    "solana": {
+      "payer_spent": 80868000,
+      "receipt_fees": 67390000,
+      "recipient_delta": 13478000
+    }
+  },
+  "campaign_http": {
+    "active": 0,
+    "connection_attempts": 87,
+    "connection_reuses": 40804,
+    "connections_opened": 83,
+    "failures": [
+      {
+        "cause_type": "ConnectionRefusedError",
+        "count": 4,
+        "errno": 61,
+        "type": "ConnectionRefusedError"
+      }
+    ],
+    "owned_connections": 0,
+    "peak_active": 64,
+    "requests": 40891,
+    "responses": 40887,
+    "status_200": 27409,
+    "status_202": 13478
+  },
+  "campaign_started_utc": "2026-09-26T23:52:54.344448+00:00",
+  "chaos": "none",
+  "client_worker_failures": [],
+  "drain": {
+    "client_pending": 0,
+    "http_inflight": 0,
+    "journal_unresolved": 0,
+    "node_pending": 0,
+    "redis_active": 0,
+    "redis_borrowed": 0,
+    "redis_delayed": 0,
+    "redis_pending": 0,
+    "redis_submitted": 0
+  },
+  "durability": {
+    "redis_appendfsync": "everysec",
+    "sqlite": "WAL synchronous=FULL/fullfsync=ON"
+  },
+  "durable_chain_halts": [],
+  "duration_seconds": 180.0,
+  "engine_binary_sha256": "a3d360eba3dc470bd830ec9d3a32e0be8e11b6764f9bbf6efeb319f080eb8515",
+  "eoa_max_inflight_per_wallet": 4096,
+  "errors": [],
+  "events": [
+    {
+      "argv": [
+        "/tmp/redis-7.4.2/src/redis-server",
+        "--bind",
+        "127.0.0.1",
+        "--port",
+        "54894",
+        "--dir",
+        "/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/engine-capacity-n8pyzodg/redis",
+        "--save",
+        "",
+        "--appendonly",
+        "yes",
+        "--appendfsync",
+        "everysec"
+      ],
+      "campaign_elapsed_seconds": 0.060821,
+      "event": "spawn",
+      "load_elapsed_seconds": null,
+      "name": "redis",
+      "phase": "setup",
+      "pid": 42184
+    },
+    {
+      "argv": [
+        "/tmp/engine-finality/solana-release/bin/solana-test-validator",
+        "--quiet",
+        "--reset",
+        "--ledger",
+        "/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/engine-capacity-n8pyzodg/solana-ledger",
+        "--rpc-port",
+        "54898",
+        "--faucet-port",
+        "54900",
+        "--gossip-port",
+        "54901",
+        "--dynamic-port-range",
+        "25000-25200",
+        "--bind-address",
+        "127.0.0.1"
+      ],
+      "campaign_elapsed_seconds": 0.204214,
+      "event": "spawn",
+      "load_elapsed_seconds": null,
+      "name": "solana",
+      "phase": "setup",
+      "pid": 42189
+    },
+    {
+      "argv": [
+        "/Users/alfongj/Code/engine-core/target/release/thirdweb-engine"
+      ],
+      "campaign_elapsed_seconds": 33.576443,
+      "event": "spawn",
+      "load_elapsed_seconds": null,
+      "name": "engine",
+      "phase": "setup",
+      "pid": 42211
+    },
+    {
+      "campaign_elapsed_seconds": 214.30188,
+      "event": "client_drained",
+      "load_elapsed_seconds": 180.536947,
+      "peak_inflight": 64,
+      "phase": "client_drain"
+    },
+    {
+      "campaign_elapsed_seconds": 239.419531,
+      "event": "drain_target_reached",
+      "load_elapsed_seconds": 205.654596,
+      "parked": 0,
+      "phase": "drain"
+    },
+    {
+      "campaign_elapsed_seconds": 239.451286,
+      "event": "engine_stopped_for_consistent_reconciliation",
+      "load_elapsed_seconds": 205.686354,
+      "phase": "reconciliation"
+    }
+  ],
+  "evidence_manifest": {
+    "full_report": "capacity-solana-75-candidate-poll2.full.json.gz",
+    "full_report_sha256": "51e4f93c6640a89263046f507b100dd7afe9b2c6d35cb39fe63e62b89ea20988",
+    "observations": "capacity-solana-75-candidate-poll2.observations.jsonl.gz",
+    "observations_sha256": "e81d5944b654f6b47a883be35292df1341a9c6fa1d6b94251c8b9b2b5e5cd240",
+    "uncompressed_report_sha256": "92baf0cef1851d661c833e9462dd99dc8fcafdafc5570159f402fa5976e47110"
+  },
+  "finality_checkpoint_conflict": false,
+  "harness_sha256": {
+    "capacity_campaign.py": "f7b15da39ef2f958cb113c74045dda0db51be315247b81a0a6b7233e9bfa2804",
+    "capacity_faults.py": "59e2bc4d90bceca2682c27e35c5871ee538d4878a795f990fa90e6d5f90afa13"
+  },
+  "http_concurrency": 64,
+  "initial": {
+    "solana": {
+      "payer": "5u9owNjfjaNLQyRE2mWFy6jhxniRA8ymaEEAkGF11sj2",
+      "payer_balance": 100000000000,
+      "recipient": "9Zf45ef3o7kcQ8bsToQf9M3wvCYvnZ7oa6n8VhhCMwKm",
+      "recipient_balance": 1000000000,
+      "version": {
+        "feature-set": 565236538,
+        "solana-core": "4.2.2"
+      },
+      "ws_url": "ws://127.0.0.1:54899"
+    }
+  },
+  "journal_halted": false,
+  "latency_note": "HTTP service/deadline latency is measured directly; durable attempt/terminal timestamps are observer upper bounds, sampled independently.",
+  "log_directory": "/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/engine-capacity-n8pyzodg",
+  "minimum_late_window_seconds": 60,
+  "mixed": false,
+  "observation_evidence": "/tmp/capacity-solana-75-candidate-poll2.observations.jsonl.gz",
+  "observer_rpc": {
+    "solana": {
+      "calls": {
+        "getBalance": 4,
+        "getHealth": 4,
+        "getSignatureStatuses": 13922,
+        "getTransaction": 13478,
+        "getVersion": 1,
+        "requestAirdrop": 2
+      },
+      "errors": {}
+    }
+  },
+  "offered_phase_end_seconds": 180.00582229100002,
+  "offered_started_utc": "2026-09-26T23:53:28.107980+00:00",
+  "offline_projection_recovered": false,
+  "operator_recovery_required": false,
+  "oracle": {
+    "eligible_for_rate_assessment": false,
+    "expected_parked_intents": 0,
+    "liveness_failures": [
+      "c2f0804f7bfa40558fd1fce2348d4b34-solana-12646: offered intent not admitted",
+      "c2f0804f7bfa40558fd1fce2348d4b34-solana-12647: offered intent not admitted",
+      "c2f0804f7bfa40558fd1fce2348d4b34-solana-12648: offered intent not admitted"
+    ],
+    "liveness_failures_count": 22,
+    "liveness_pass": false,
+    "observed_intents": 13478,
+    "offered_intents": 13500,
+    "outcome": "incomplete",
+    "safety_failures": [],
+    "safety_failures_count": 0,
+    "safety_pass": true
+  },
+  "outcome": "incomplete",
+  "owned_children_stopped": true,
+  "per_chain": {
+    "solana": {
+      "client": {
+        "dispatched": 13478,
+        "dropped_client_capacity": 22
+      },
+      "durable_latency_upper_bounds_ms": {
+        "attempt_observed_upper_ms": {
+          "count": 13478,
+          "max": 10500.196,
+          "p50": 3168.134,
+          "p95": 6788.581,
+          "p99": 9440.337
+        },
+        "terminal_observed_upper_ms": {
+          "count": 13478,
+          "max": 28264.572,
+          "p50": 21061.214,
+          "p95": 25461.232,
+          "p99": 27341.073
+        }
+      },
+      "http_service_latency_ms": {
+        "count": 13478,
+        "max": 978.86,
+        "p50": 106.784,
+        "p95": 456.547,
+        "p99": 745.609
+      },
+      "late_window": {
+        "admission_p99_limit_ms": 1000,
+        "capacity_candidate": false,
+        "disqualifiers": [
+          "rate_or_admission_threshold_not_met",
+          "exact_reconciliation_failed"
+        ],
+        "from_seconds": 120.007,
+        "rates_tps": {
+          "admitted": 74.168,
+          "attempted": 68.234,
+          "included": 61.651,
+          "terminal": 69.818
+        },
+        "relative_tolerance": 0.05,
+        "requires_repeated_confirmation": true,
+        "terminal_backlog_end": 1662,
+        "terminal_backlog_growth_per_second": 4.35,
+        "terminal_backlog_start": 1401,
+        "to_seconds": 180.006,
+        "unsigned_backlog_end": 363,
+        "unsigned_backlog_linear_trend_per_second": 5.209,
+        "unsigned_backlog_start": 7,
+        "unsigned_growth_detected": true,
+        "unsigned_monotonic_growth": false,
+        "unsigned_trend_threshold_per_second": 0.1,
+        "window_seconds": 59.998999999999995
+      },
+      "offered": 13500,
+      "offered_tps": 75.0,
+      "responses": {
+        "202": 13478
+      },
+      "scheduled_to_response_latency_ms": {
+        "count": 13478,
+        "max": 984.135,
+        "p50": 109.937,
+        "p95": 460.547,
+        "p99": 747.742
+      },
+      "transport_errors": []
+    }
+  },
+  "profiles": {
+    "solana": {
+      "chain_id": "solana:local",
+      "family": "solana",
+      "label": "local Agave validator; not public-cluster capacity",
+      "rate": 75.0
+    }
+  },
+  "public_chain_qualification": false,
+  "queue_settings": {
+    "APP__QUEUE__EOA_EXECUTOR_WORKERS": "1",
+    "APP__QUEUE__EOA_MAX_INFLIGHT": "4096",
+    "APP__QUEUE__EXECUTION_NAMESPACE": "c2f0804f7bfa40558fd1fce2348d4b34",
+    "APP__QUEUE__EXTERNAL_BUNDLER_SEND_WORKERS": "1",
+    "APP__QUEUE__LEASE_DURATION_SECONDS": "10",
+    "APP__QUEUE__LOCAL_CONCURRENCY": "4",
+    "APP__QUEUE__POLLING_INTERVAL_MS": "20",
+    "APP__QUEUE__SOLANA_CONFIRMATION_POLL_INTERVAL_SECONDS": "2",
+    "APP__QUEUE__SOLANA_EXECUTOR_WORKERS": "100",
+    "APP__QUEUE__USEROP_CONFIRM_WORKERS": "1",
+    "APP__QUEUE__WEBHOOK_WORKERS": "1"
+  },
+  "requested_fault_validated": true,
+  "resources_scope": "Owned Engine/Redis/local nodes plus combined campaign+RPC proxy process; external node/VM CPU and memory require separate observation. ps CPU is its reported lifetime average.",
+  "rpc": {
+    "solana": {
+      "accepted_responses_lost": 0,
+      "accepted_unique_wires": 13478,
+      "active": 0,
+      "active_connections": 0,
+      "audit": {
+        "event_count": 26957,
+        "path": "/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/engine-capacity-n8pyzodg/solana-rpc.jsonl",
+        "tail_truncated": true
+      },
+      "calls": {
+        "getLatestBlockhash": 13478,
+        "getSignatureStatuses": 106942,
+        "getTransaction": 13478,
+        "sendTransaction": 13478
+      },
+      "connection_limit": 256,
+      "dropped_responses": 0,
+      "forwarded_sends": 13478,
+      "http_requests": 147376,
+      "http_transport": {
+        "active": 0,
+        "connection_attempts": 143,
+        "connection_reuses": 147233,
+        "connections_opened": 143,
+        "failures": [],
+        "owned_connections": 0,
+        "peak_active": 70,
+        "requests": 147376,
+        "responses": 147376,
+        "status_200": 147376
+      },
+      "incoming_batches": 0,
+      "injected_preflight_bypass": 0,
+      "lost_http_responses": 0,
+      "methods": {
+        "getLatestBlockhash": {
+          "count": 13478,
+          "errors": 0,
+          "max_ms": 74.28066699998226,
+          "total_ms": 36110.78575100267
+        },
+        "getSignatureStatuses": {
+          "count": 106942,
+          "errors": 0,
+          "max_ms": 73.77366599999391,
+          "total_ms": 464548.33575000305
+        },
+        "getTransaction": {
+          "count": 13478,
+          "errors": 0,
+          "max_ms": 49.908625000000484,
+          "total_ms": 100961.4467670001
+        },
+        "sendTransaction": {
+          "count": 13478,
+          "errors": 0,
+          "max_ms": 73.68224999999029,
+          "total_ms": 54344.741773999216
+        }
+      },
+      "peak_connections": 100,
+      "peak_inflight": 92,
+      "proxy_failure_count": 0,
+      "proxy_failure_details": [],
+      "proxy_failures": [],
+      "proxy_overloads": 0,
+      "upstream_http_requests": 147376
+    }
+  },
+  "rpc_proxy_concurrency": 256,
+  "samples": [
+    {
+      "chains": {
+        "solana": {
+          "admitted": 0,
+          "attempted": 0,
+          "client": {},
+          "finalized": 0,
+          "included": 0,
+          "observer_pending_signatures": 0,
+          "responses": {},
+          "rpc": {
+            "accepted_unique_wires": 0,
+            "active": 0,
+            "calls": {},
+            "dropped_responses": 0,
+            "forwarded_sends": 0,
+            "http_requests": 0,
+            "http_transport": {
+              "failures": [],
+              "owned_connections": 0
+            },
+            "methods": {},
+            "peak_inflight": 0,
+            "proxy_overloads": 0
+          },
+          "terminal": 0
+        }
+      },
+      "observer_duration_ms": 2.314,
+      "phase": "load",
+      "resources": {
+        "free_disk_bytes": 15935635456,
+        "host_load_average": [
+          2.01806640625,
+          2.26123046875,
+          2.1787109375
+        ],
+        "journal_bytes": 90112,
+        "processes": [
+          {
+            "cpu_percent_ps": 1.0,
+            "cpu_time": "0:00.28",
+            "name": "campaign",
+            "pid": 42181,
+            "rss_bytes": 78905344
+          },
+          {
+            "cpu_percent_ps": 0.3,
+            "cpu_time": "0:00.01",
+            "name": "redis",
+            "pid": 42184,
+            "rss_bytes": 5586944
+          },
+          {
+            "cpu_percent_ps": 109.6,
+            "cpu_time": "0:37.03",
+            "name": "solana",
+            "pid": 42189,
+            "rss_bytes": 545554432
+          },
+          {
+            "cpu_percent_ps": 3.3,
+            "cpu_time": "0:00.02",
+            "name": "engine",
+            "pid": 42211,
+            "rss_bytes": 25034752
+          }
+        ]
+      },
+      "seconds": 0.0
+    },
+    {
+      "chains": {
+        "solana": {
+          "admitted": 0,
+          "attempted": 0,
+          "client": {
+            "dispatched": 1
+          },
+          "finalized": 0,
+          "included": 0,
+          "observer_pending_signatures": 0,
+          "responses": {},
+          "rpc": {
+            "accepted_unique_wires": 0,
+            "active": 0,
+            "calls": {},
+            "dropped_responses": 0,
+            "forwarded_sends": 0,
+            "http_requests": 0,
+            "http_transport": {
+              "failures": [],
+              "owned_connections": 0
+            },
+            "methods": {},
+            "peak_inflight": 0,
+            "proxy_overloads": 0
+          },
+          "terminal": 0
+        }
+      },
+      "observer_duration_ms": 0.399,
+      "phase": "load",
+      "resources": {
+        "free_disk_bytes": 15935635456,
+        "host_load_average": [
+          2.01806640625,
+          2.26123046875,
+          2.1787109375
+        ],
+        "journal_bytes": 90112,
+        "processes": [
+          {
+            "cpu_percent_ps": 1.0,
+            "cpu_time": "0:00.29",
+            "name": "campaign",
+            "pid": 42181,
+            "rss_bytes": 79085568
+          },
+          {
+            "cpu_percent_ps": 0.3,
+            "cpu_time": "0:00.01",
+            "name": "redis",
+            "pid": 42184,
+            "rss_bytes": 5603328
+          },
+          {
+            "cpu_percent_ps": 109.6,
+            "cpu_time": "0:37.03",
+            "name": "solana",
+            "pid": 42189,
+            "rss_bytes": 545554432
+          },
+          {
+            "cpu_percent_ps": 3.3,
+            "cpu_time": "0:00.02",
+            "name": "engine",
+            "pid": 42211,
+            "rss_bytes": 26296320
+          }
+        ]
+      },
+      "seconds": 0.006
+    },
+    {
+      "chains": {
+        "solana": {
+          "admitted": 376,
+          "attempted": 376,
+          "client": {
+            "dispatched": 377
+          },
+          "finalized": 0,
+          "included": 357,
+          "observer_pending_signatures": 376,
+          "responses": {
+            "202": 376
+          },
+          "rpc": {
+            "accepted_unique_wires": 376,
+            "active": 0,
+            "calls": {
+              "getLatestBlockhash": 376,
+              "getSignatureStatuses": 431,
+              "sendTransaction": 376
+            },
+            "dropped_responses": 0,
+            "forwarded_sends": 376,
+            "http_requests": 1183,
+            "http_transport": {
+              "active": 0,
+              "connection_attempts": 83,
+              "connection_reuses": 1100,
+              "connections_opened": 83,
+              "failures": [],
+              "owned_connections": 83,
+              "peak_active": 41,
+              "requests": 1183,
+              "responses": 1183,
+              "status_200": 1183
+            },
+            "methods": {
+              "getLatestBlockhash": {
+                "count": 376,
+                "errors": 0,
+                "max_ms": 7.411208000000613,
+                "total_ms": 141.879842999991
+              },
+              "getSignatureStatuses": {
+                "count": 431,
+                "errors": 0,
+                "max_ms": 25.798167000004923,
+                "total_ms": 2653.238282000024
+              },
+              "sendTransaction": {
+                "count": 376,
+                "errors": 0,
+                "max_ms": 7.181041999999138,
+                "total_ms": 383.2629580000315
+              }
+            },
+            "peak_inflight": 59,
+            "proxy_overloads": 0
+          },
+          "terminal": 0
+        }
+      },
+      "observer_duration_ms": 3.984,
+      "phase": "load",
+      "resources": {
+        "free_disk_bytes": 15913480192,
+        "host_load_average": [
+          2.0166015625,
+          2.2568359375,
+          2.17724609375
+        ],
+        "journal_bytes": 5324352,
+        "processes": [
+          {
+            "cpu_percent_ps": 6.7,
+            "cpu_time": "0:00.85",
+            "name": "campaign",
+            "pid": 42181,
+            "rss_bytes": 88326144
+          },
+          {
+            "cpu_percent_ps": 3.3,
+            "cpu_time": "0:00.25",
+            "name": "redis",
+            "pid": 42184,
+            "rss_bytes": 10403840
+          },
+          {
+            "cpu_percent_ps": 127.8,
+            "cpu_time": "0:43.18",
+            "name": "solana",
+            "pid": 42189,
+            "rss_bytes": 563478528
+          },
+          {
+            "cpu_percent_ps": 9.3,
+            "cpu_time": "0:00.67",
+            "name": "engine",
+            "pid": 42211,
+            "rss_bytes": 40140800
+          }
+        ]
+      },
+      "seconds": 5.012
+    },
+    {
+      "chains": {
+        "solana": {
+          "admitted": 751,
+          "attempted": 742,
+          "client": {
+            "dispatched": 752
+          },
+          "finalized": 0,
+          "included": 720,
+          "observer_pending_signatures": 742,
+          "responses": {
+            "202": 752
+          },
+          "rpc": {
+            "accepted_unique_wires": 742,
+            "active": 0,
+            "calls": {
+              "getLatestBlockhash": 752,
+              "getSignatureStatuses": 1829,
+              "sendTransaction": 742
+            },
+            "dropped_responses": 0,
+            "forwarded_sends": 742,
+            "http_requests": 3323,
+            "http_transport": {
+              "active": 0,
+              "connection_attempts": 97,
+              "connection_reuses": 3226,
+              "connections_opened": 97,
+              "failures": [],
+              "owned_connections": 97,
+              "peak_active": 53,
+              "requests": 3323,
+              "responses": 3323,
+              "status_200": 3323
+            },
+            "methods": {
+              "getLatestBlockhash": {
+                "count": 752,
+                "errors": 0,
+                "max_ms": 8.366416000001209,
+                "total_ms": 386.77862400004415
+              },
+              "getSignatureStatuses": {
+                "count": 1829,
+                "errors": 0,
+                "max_ms": 48.59662499999473,
+                "total_ms": 15184.745520999908
+              },
+              "sendTransaction": {
+                "count": 742,
+                "errors": 0,
+                "max_ms": 22.987667000002432,
+                "total_ms": 868.9788390000854
+              }
+            },
+            "peak_inflight": 92,
+            "proxy_overloads": 0
+          },
+          "terminal": 0
+        }
+      },
+      "observer_duration_ms": 17.853,
+      "phase": "load",
+      "resources": {
+        "free_disk_bytes": 15886028800,
+        "host_load_average": [
+          2.25537109375,
+          2.30224609375,
+          2.193359375
+        ],
+        "journal_bytes": 6389432,
+        "processes": [
+          {
+            "cpu_percent_ps": 47.2,
+            "cpu_time": "0:01.84",
+            "name": "campaign",
+            "pid": 42181,
+            "rss_bytes": 90587136
+          },
+          {
+            "cpu_percent_ps": 23.6,
+            "cpu_time": "0:00.69",
+            "name": "redis",
+            "pid": 42184,
+            "rss_bytes": 13254656
+          },
+          {
+            "cpu_percent_ps": 126.3,
+            "cpu_time": "0:49.39",
+            "name": "solana",
+            "pid": 42189,
+            "rss_bytes": 576946176
+          },
+          {
+            "cpu_percent_ps": 46.0,
+            "cpu_time": "0:01.68",
+            "name": "engine",
+            "pid": 42211,
+            "rss_bytes": 43368448
+          }
+        ]
+      },
+      "seconds": 10.012
+    },
+    {
+      "chains": {
+        "solana": {
+          "admitted": 1125,
+          "attempted": 1117,
+          "client": {
+            "dispatched": 1133
+          },
+          "finalized": 0,
+          "included": 1094,
+          "observer_pending_signatures": 1117,
+          "responses": {
+            "202": 1131
+          },
+          "rpc": {
+            "accepted_unique_wires": 1117,
+            "active": 0,
+            "calls": {
+              "getLatestBlockhash": 1130,
+              "getSignatureStatuses": 4138,
+              "sendTransaction": 1117
+            },
+            "dropped_responses": 0,
+            "forwarded_sends": 1117,
+            "http_requests": 6385,
+            "http_transport": {
+              "active": 0,
+              "connection_attempts": 99,
+              "connection_reuses": 6286,
+              "connections_opened": 99,
+              "failures": [],
+              "owned_connections": 99,
+              "peak_active": 58,
+              "requests": 6385,
+              "responses": 6385,
+              "status_200": 6385
+            },
+            "methods": {
+              "getLatestBlockhash": {
+                "count": 1130,
+                "errors": 0,
+                "max_ms": 12.026540999997337,
+                "total_ms": 794.7850890001089
+              },
+              "getSignatureStatuses": {
+                "count": 4138,
+                "errors": 0,
+                "max_ms": 49.512999999997476,
+                "total_ms": 38310.48919199986
+              },
+              "sendTransaction": {
+                "count": 1117,
+                "errors": 0,
+                "max_ms": 26.196708000000513,
+                "total_ms": 1505.2944600000237
+              }
+            },
+            "peak_inflight": 92,
+            "proxy_overloads": 0
+          },
+          "terminal": 0
+        }
+      },
+      "observer_duration_ms": 77.548,
+      "phase": "load",
+      "resources": {
+        "free_disk_bytes": 15872196608,
+        "host_load_average": [
+          2.23486328125,
+          2.296875,
+          2.19189453125
+        ],
+        "journal_bytes": 7683768,
+        "processes": [
+          {
+            "cpu_percent_ps": 49.3,
+            "cpu_time": "0:03.19",
+            "name": "campaign",
+            "pid": 42181,
+            "rss_bytes": 91422720
+          },
+          {
+            "cpu_percent_ps": 28.9,
+            "cpu_time": "0:01.32",
+            "name": "redis",
+            "pid": 42184,
+            "rss_bytes": 16138240
+          },
+          {
+            "cpu_percent_ps": 122.0,
+            "cpu_time": "0:55.56",
+            "name": "solana",
+            "pid": 42189,
+            "rss_bytes": 589496320
+          },
+          {
+            "cpu_percent_ps": 51.6,
+            "cpu_time": "0:03.01",
+            "name": "engine",
+            "pid": 42211,
+            "rss_bytes": 45809664
+          }
+        ]
+      },
+      "seconds": 15.017
+    },
+    {
+      "chains": {
+        "solana": {
+          "admitted": 1499,
+          "attempted": 1492,
+          "client": {
+            "dispatched": 1503
+          },
+          "finalized": 0,
+          "included": 1428,
+          "observer_pending_signatures": 1492,
+          "responses": {
+            "202": 1500
+          },
+          "rpc": {
+            "accepted_unique_wires": 1492,
+            "active": 0,
+            "calls": {
+              "getLatestBlockhash": 1492,
+              "getSignatureStatuses": 6965,
+              "getTransaction": 241,
+              "sendTransaction": 1492
+            },
+            "dropped_responses": 0,
+            "forwarded_sends": 1492,
+            "http_requests": 10190,
+            "http_transport": {
+              "active": 0,
+              "connection_attempts": 100,
+              "connection_reuses": 10090,
+              "connections_opened": 100,
+              "failures": [],
+              "owned_connections": 100,
+              "peak_active": 58,
+              "requests": 10190,
+              "responses": 10190,
+              "status_200": 10190
+            },
+            "methods": {
+              "getLatestBlockhash": {
+                "count": 1492,
+                "errors": 0,
+                "max_ms": 12.026540999997337,
+                "total_ms": 1091.4850140000865
+              },
+              "getSignatureStatuses": {
+                "count": 6965,
+                "errors": 0,
+                "max_ms": 56.31858300000658,
+                "total_ms": 57511.105983999776
+              },
+              "getTransaction": {
+                "count": 241,
+                "errors": 0,
+                "max_ms": 31.57966699999548,
+                "total_ms": 1449.4243249999893
+              },
+              "sendTransaction": {
+                "count": 1492,
+                "errors": 0,
+                "max_ms": 26.196708000000513,
+                "total_ms": 2329.5702509999655
+              }
+            },
+            "peak_inflight": 92,
+            "proxy_overloads": 0
+          },
+          "terminal": 177
+        }
+      },
+      "observer_duration_ms": 26.325,
+      "phase": "load",
+      "resources": {
+        "free_disk_bytes": 15838826496,
+        "host_load_average": [
+          2.2958984375,
+          2.30810546875,
+          2.1962890625
+        ],
+        "journal_bytes": 8797880,
+        "processes": [
+          {
+            "cpu_percent_ps": 51.0,
+            "cpu_time": "0:04.79",
+            "name": "campaign",
+            "pid": 42181,
+            "rss_bytes": 93405184
+          },
+          {
+            "cpu_percent_ps": 24.6,
+            "cpu_time": "0:02.09",
+            "name": "redis",
+            "pid": 42184,
+            "rss_bytes": 18726912
+          },
+          {
+            "cpu_percent_ps": 124.7,
+            "cpu_time": "1:01.69",
+            "name": "solana",
+            "pid": 42189,
+            "rss_bytes": 602947584
+          },
+          {
+            "cpu_percent_ps": 44.2,
+            "cpu_time": "0:04.56",
+            "name": "engine",
+            "pid": 42211,
+            "rss_bytes": 60751872
+          }
+        ]
+      },
+      "seconds": 20.013
+    },
+    {
+      "chains": {
+        "solana": {
+          "admitted": 1876,
+          "attempted": 1868,
+          "client": {
+            "dispatched": 1878
+          },
+          "finalized": 0,
+          "included": 1779,
+          "observer_pending_signatures": 1868,
+          "responses": {
+            "202": 1878
+          },
+          "rpc": {
+            "accepted_unique_wires": 1868,
+            "active": 79,
+            "calls": {
+              "getLatestBlockhash": 1868,
+              "getSignatureStatuses": 10397,
+              "getTransaction": 515,
+              "sendTransaction": 1868
+            },
+            "dropped_responses": 0,
+            "forwarded_sends": 1868,
+            "http_requests": 14667,
+            "http_transport": {
+              "active": 0,
+              "connection_attempts": 100,
+              "connection_reuses": 14532,
+              "connections_opened": 100,
+              "failures": [],
+              "owned_connections": 100,
+              "peak_active": 58,
+              "requests": 14632,
+              "responses": 14632,
+              "status_200": 14632
+            },
+            "methods": {
+              "getLatestBlockhash": {
+                "count": 1868,
+                "errors": 0,
+                "max_ms": 12.026540999997337,
+                "total_ms": 1577.310424000092
+              },
+              "getSignatureStatuses": {
+                "count": 10356,
+                "errors": 0,
+                "max_ms": 56.31858300000658,
+                "total_ms": 82320.23027099964
+              },
+              "getTransaction": {
+                "count": 515,
+                "errors": 0,
+                "max_ms": 34.087750000004746,
+                "total_ms": 4393.323077999937
+              },
+              "sendTransaction": {
+                "count": 1868,
+                "errors": 0,
+                "max_ms": 26.196708000000513,
+                "total_ms": 3532.4308730000057
+              }
+            },
+            "peak_inflight": 92,
+            "proxy_overloads": 0
+          },
+          "terminal": 515
+        }
+      },
+      "observer_duration_ms": 49.315,
+      "phase": "load",
+      "resources": {
+        "free_disk_bytes": 15818764288,
+        "host_load_average": [
+          2.35205078125,
+          2.3193359375,
+          2.20068359375
+        ],
+        "journal_bytes": 10034872,
+        "processes": [
+          {
+            "cpu_percent_ps": 50.8,
+            "cpu_time": "0:06.69",
+            "name": "campaign",
+            "pid": 42181,
+            "rss_bytes": 94420992
+          },
+          {
+            "cpu_percent_ps": 27.5,
+            "cpu_time": "0:03.04",
+            "name": "redis",
+            "pid": 42184,
+            "rss_bytes": 21495808
+          },
+          {
+            "cpu_percent_ps": 122.3,
+            "cpu_time": "1:07.94",
+            "name": "solana",
+            "pid": 42189,
+            "rss_bytes": 613089280
+          },
+          {
+            "cpu_percent_ps": 50.4,
+            "cpu_time": "0:06.40",
+            "name": "engine",
+            "pid": 42211,
+            "rss_bytes": 66437120
+          }
+        ]
+      },
+      "seconds": 25.007
+    },
+    {
+      "chains": {
+        "solana": {
+          "admitted": 2250,
+          "attempted": 2242,
+          "client": {
+            "dispatched": 2262
+          },
+          "finalized": 0,
+          "included": 2151,
+          "observer_pending_signatures": 2242,
+          "responses": {
+            "202": 2259
+          },
+          "rpc": {
+            "accepted_unique_wires": 2242,
+            "active": 0,
+            "calls": {
+              "getLatestBlockhash": 2258,
+              "getSignatureStatuses": 14031,
+              "getTransaction": 967,
+              "sendTransaction": 2242
+            },
+            "dropped_responses": 0,
+            "forwarded_sends": 2242,
+            "http_requests": 19498,
+            "http_transport": {
+              "active": 0,
+              "connection_attempts": 100,
+              "connection_reuses": 19398,
+              "connections_opened": 100,
+              "failures": [],
+              "owned_connections": 100,
+              "peak_active": 58,
+              "requests": 19498,
+              "responses": 19498,
+              "status_200": 19498
+            },
+            "methods": {
+              "getLatestBlockhash": {
+                "count": 2258,
+                "errors": 0,
+                "max_ms": 33.31024999999954,
+                "total_ms": 2060.269476000062
+              },
+              "getSignatureStatuses": {
+                "count": 14031,
+                "errors": 0,
+                "max_ms": 56.31858300000658,
+                "total_ms": 116270.28088399972
+              },
+              "getTransaction": {
+                "count": 967,
+                "errors": 0,
+                "max_ms": 34.087750000004746,
+                "total_ms": 9114.090329999974
+              },
+              "sendTransaction": {
+                "count": 2242,
+                "errors": 0,
+                "max_ms": 30.02108300000117,
+                "total_ms": 4595.105810999915
+              }
+            },
+            "peak_inflight": 92,
+            "proxy_overloads": 0
+          },
+          "terminal": 894
+        }
+      },
+      "observer_duration_ms": 145.148,
+      "phase": "load",
+      "resources": {
+        "free_disk_bytes": 15844577280,
+        "host_load_average": [
+          2.32373046875,
+          2.31396484375,
+          2.19921875
+        ],
+        "journal_bytes": 11255480,
+        "processes": [
+          {
+            "cpu_percent_ps": 55.5,
+            "cpu_time": "0:08.76",
+            "name": "campaign",
+            "pid": 42181,
+            "rss_bytes": 94896128
+          },
+          {
+            "cpu_percent_ps": 32.9,
+            "cpu_time": "0:04.06",
+            "name": "redis",
+            "pid": 42184,
+            "rss_bytes": 24608768
+          },
+          {
+            "cpu_percent_ps": 125.8,
+            "cpu_time": "1:14.32",
+            "name": "solana",
+            "pid": 42189,
+            "rss_bytes": 623542272
+          },
+          {
+            "cpu_percent_ps": 58.9,
+            "cpu_time": "0:08.37",
+            "name": "engine",
+            "pid": 42211,
+            "rss_bytes": 67682304
+          }
+        ]
+      },
+      "seconds": 30.011
+    },
+    {
+      "chains": {
+        "solana": {
+          "admitted": 2620,
+          "attempted": 2618,
+          "client": {
+            "dispatched": 2627
+          },
+          "finalized": 0,
+          "included": 2526,
+          "observer_pending_signatures": 2618,
+          "responses": {
+            "202": 2620
+          },
+          "rpc": {
+            "accepted_unique_wires": 2618,
+            "active": 0,
+            "calls": {
+              "getLatestBlockhash": 2618,
+              "getSignatureStatuses": 16848,
+              "getTransaction": 1340,
+              "sendTransaction": 2618
+            },
+            "dropped_responses": 0,
+            "forwarded_sends": 2618,
+            "http_requests": 23424,
+            "http_transport": {
+              "active": 0,
+              "connection_attempts": 100,
+              "connection_reuses": 23324,
+              "connections_opened": 100,
+              "failures": [],
+              "owned_connections": 100,
+              "peak_active": 64,
+              "requests": 23424,
+              "responses": 23424,
+              "status_200": 23424
+            },
+            "methods": {
+              "getLatestBlockhash": {
+                "count": 2618,
+                "errors": 0,
+                "max_ms": 33.31024999999954,
+                "total_ms": 2816.2001930001607
+              },
+              "getSignatureStatuses": {
+                "count": 16848,
+                "errors": 0,
+                "max_ms": 56.31858300000658,
+                "total_ms": 127659.26254199975
+              },
+              "getTransaction": {
+                "count": 1340,
+                "errors": 0,
+                "max_ms": 39.49108300000148,
+                "total_ms": 12875.547113999855
+              },
+              "sendTransaction": {
+                "count": 2618,
+                "errors": 0,
+                "max_ms": 30.02108300000117,
+                "total_ms": 5757.972965999832
+              }
+            },
+            "peak_inflight": 92,
+            "proxy_overloads": 0
+          },
+          "terminal": 1288
+        }
+      },
+      "observer_duration_ms": 5.618,
+      "phase": "load",
+      "resources": {
+        "free_disk_bytes": 15828279296,
+        "host_load_average": [
+          2.29736328125,
+          2.30859375,
+          2.19775390625
+        ],
+        "journal_bytes": 12488376,
+        "processes": [
+          {
+            "cpu_percent_ps": 21.1,
+            "cpu_time": "0:10.42",
+            "name": "campaign",
+            "pid": 42181,
+            "rss_bytes": 95420416
+          },
+          {
+            "cpu_percent_ps": 12.2,
+            "cpu_time": "0:04.89",
+            "name": "redis",
+            "pid": 42184,
+            "rss_bytes": 25444352
+          },
+          {
+            "cpu_percent_ps": 124.2,
+            "cpu_time": "1:20.46",
+            "name": "solana",
+            "pid": 42189,
+            "rss_bytes": 638566400
+          },
+          {
+            "cpu_percent_ps": 27.6,
+            "cpu_time": "0:10.00",
+            "name": "engine",
+            "pid": 42211,
+            "rss_bytes": 67715072
+          }
+        ]
+      },
+      "seconds": 35.013
+    },
+    {
+      "chains": {
+        "solana": {
+          "admitted": 2994,
+          "attempted": 2992,
+          "client": {
+            "dispatched": 3001
+          },
+          "finalized": 0,
+          "included": 2842,
+          "observer_pending_signatures": 2992,
+          "responses": {
+            "202": 2994
+          },
+          "rpc": {
+            "accepted_unique_wires": 2991,
+            "active": 0,
+            "calls": {
+              "getLatestBlockhash": 2992,
+              "getSignatureStatuses": 20231,
+              "getTransaction": 1716,
+              "sendTransaction": 2991
+            },
+            "dropped_responses": 0,
+            "forwarded_sends": 2991,
+            "http_requests": 27930,
+            "http_transport": {
+              "active": 0,
+              "connection_attempts": 100,
+              "connection_reuses": 27830,
+              "connections_opened": 100,
+              "failures": [],
+              "owned_connections": 100,
+              "peak_active": 64,
+              "requests": 27930,
+              "responses": 27930,
+              "status_200": 27930
+            },
+            "methods": {
+              "getLatestBlockhash": {
+                "count": 2992,
+                "errors": 0,
+                "max_ms": 33.31024999999954,
+                "total_ms": 3720.085191000295
+              },
+              "getSignatureStatuses": {
+                "count": 20231,
+                "errors": 0,
+                "max_ms": 56.31858300000658,
+                "total_ms": 140327.97119100022
+              },
+              "getTransaction": {
+                "count": 1716,
+                "errors": 0,
+                "max_ms": 39.49108300000148,
+                "total_ms": 16727.94524299981
+              },
+              "sendTransaction": {
+                "count": 2991,
+                "errors": 0,
+                "max_ms": 30.02108300000117,
+                "total_ms": 6917.209137999649
+              }
+            },
+            "peak_inflight": 92,
+            "proxy_overloads": 0
+          },
+          "terminal": 1661
+        }
+      },
+      "observer_duration_ms": 6.18,
+      "phase": "load",
+      "resources": {
+        "free_disk_bytes": 15791497216,
+        "host_load_average": [
+          2.353515625,
+          2.31982421875,
+          2.2021484375
+        ],
+        "journal_bytes": 13909712,
+        "processes": [
+          {
+            "cpu_percent_ps": 30.3,
+            "cpu_time": "0:12.38",
+            "name": "campaign",
+            "pid": 42181,
+            "rss_bytes": 96370688
+          },
+          {
+            "cpu_percent_ps": 14.7,
+            "cpu_time": "0:05.89",
+            "name": "redis",
+            "pid": 42184,
+            "rss_bytes": 25657344
+          },
+          {
+            "cpu_percent_ps": 127.2,
+            "cpu_time": "1:26.62",
+            "name": "solana",
+            "pid": 42189,
+            "rss_bytes": 648364032
+          },
+          {
+            "cpu_percent_ps": 34.5,
+            "cpu_time": "0:11.92",
+            "name": "engine",
+            "pid": 42211,
+            "rss_bytes": 70369280
+          }
+        ]
+      },
+      "seconds": 40.006
+    },
+    {
+      "chains": {
+        "solana": {
+          "admitted": 3368,
+          "attempted": 3367,
+          "client": {
+            "dispatched": 3377
+          },
+          "finalized": 0,
+          "included": 3197,
+          "observer_pending_signatures": 3367,
+          "responses": {
+            "202": 3368
+          },
+          "rpc": {
+            "accepted_unique_wires": 3367,
+            "active": 1,
+            "calls": {
+              "getLatestBlockhash": 3367,
+              "getSignatureStatuses": 23599,
+              "getTransaction": 2090,
+              "sendTransaction": 3367
+            },
+            "dropped_responses": 0,
+            "forwarded_sends": 3367,
+            "http_requests": 32423,
+            "http_transport": {
+              "active": 1,
+              "connection_attempts": 100,
+              "connection_reuses": 32323,
+              "connections_opened": 100,
+              "failures": [],
+              "owned_connections": 100,
+              "peak_active": 64,
+              "requests": 32423,
+              "responses": 32422,
+              "status_200": 32422
+            },
+            "methods": {
+              "getLatestBlockhash": {
+                "count": 3367,
+                "errors": 0,
+                "max_ms": 33.31024999999954,
+                "total_ms": 4615.554107000253
+              },
+              "getSignatureStatuses": {
+                "count": 23598,
+                "errors": 0,
+                "max_ms": 56.31858300000658,
+                "total_ms": 154029.1234580005
+              },
+              "getTransaction": {
+                "count": 2090,
+                "errors": 0,
+                "max_ms": 39.49108300000148,
+                "total_ms": 20740.728700999676
+              },
+              "sendTransaction": {
+                "count": 3367,
+                "errors": 0,
+                "max_ms": 30.02108300000117,
+                "total_ms": 8171.431127999636
+              }
+            },
+            "peak_inflight": 92,
+            "proxy_overloads": 0
+          },
+          "terminal": 2038
+        }
+      },
+      "observer_duration_ms": 5.651,
+      "phase": "load",
+      "resources": {
+        "free_disk_bytes": 15756816384,
+        "host_load_average": [
+          2.5654296875,
+          2.3642578125,
+          2.21826171875
+        ],
+        "journal_bytes": 15163136,
+        "processes": [
+          {
+            "cpu_percent_ps": 29.9,
+            "cpu_time": "0:14.33",
+            "name": "campaign",
+            "pid": 42181,
+            "rss_bytes": 96829440
+          },
+          {
+            "cpu_percent_ps": 14.4,
+            "cpu_time": "0:06.88",
+            "name": "redis",
+            "pid": 42184,
+            "rss_bytes": 25837568
+          },
+          {
+            "cpu_percent_ps": 133.4,
+            "cpu_time": "1:32.90",
+            "name": "solana",
+            "pid": 42189,
+            "rss_bytes": 658407424
+          },
+          {
+            "cpu_percent_ps": 31.6,
+            "cpu_time": "0:13.83",
+            "name": "engine",
+            "pid": 42211,
+            "rss_bytes": 70385664
+          }
+        ]
+      },
+      "seconds": 45.012
+    },
+    {
+      "chains": {
+        "solana": {
+          "admitted": 3744,
+          "attempted": 3742,
+          "client": {
+            "dispatched": 3752
+          },
+          "finalized": 0,
+          "included": 3571,
+          "observer_pending_signatures": 3742,
+          "responses": {
+            "202": 3744
+          },
+          "rpc": {
+            "accepted_unique_wires": 3742,
+            "active": 0,
+            "calls": {
+              "getLatestBlockhash": 3742,
+              "getSignatureStatuses": 26980,
+              "getTransaction": 2466,
+              "sendTransaction": 3742
+            },
+            "dropped_responses": 0,
+            "forwarded_sends": 3742,
+            "http_requests": 36930,
+            "http_transport": {
+              "active": 0,
+              "connection_attempts": 100,
+              "connection_reuses": 36830,
+              "connections_opened": 100,
+              "failures": [],
+              "owned_connections": 100,
+              "peak_active": 64,
+              "requests": 36930,
+              "responses": 36930,
+              "status_200": 36930
+            },
+            "methods": {
+              "getLatestBlockhash": {
+                "count": 3742,
+                "errors": 0,
+                "max_ms": 33.31024999999954,
+                "total_ms": 5570.88739200011
+              },
+              "getSignatureStatuses": {
+                "count": 26980,
+                "errors": 0,
+                "max_ms": 56.31858300000658,
+                "total_ms": 166598.70994500117
+              },
+              "getTransaction": {
+                "count": 2466,
+                "errors": 0,
+                "max_ms": 39.49108300000148,
+                "total_ms": 24453.14929299956
+              },
+              "sendTransaction": {
+                "count": 3742,
+                "errors": 0,
+                "max_ms": 30.02108300000117,
+                "total_ms": 9330.87653799954
+              }
+            },
+            "peak_inflight": 92,
+            "proxy_overloads": 0
+          },
+          "terminal": 2416
+        }
+      },
+      "observer_duration_ms": 5.871,
+      "phase": "load",
+      "resources": {
+        "free_disk_bytes": 15798018048,
+        "host_load_average": [
+          2.68017578125,
+          2.39111328125,
+          2.228515625
+        ],
+        "journal_bytes": 16400128,
+        "processes": [
+          {
+            "cpu_percent_ps": 31.3,
+            "cpu_time": "0:16.24",
+            "name": "campaign",
+            "pid": 42181,
+            "rss_bytes": 97402880
+          },
+          {
+            "cpu_percent_ps": 15.1,
+            "cpu_time": "0:07.85",
+            "name": "redis",
+            "pid": 42184,
+            "rss_bytes": 25952256
+          },
+          {
+            "cpu_percent_ps": 128.9,
+            "cpu_time": "1:39.05",
+            "name": "solana",
+            "pid": 42189,
+            "rss_bytes": 668106752
+          },
+          {
+            "cpu_percent_ps": 33.4,
+            "cpu_time": "0:15.69",
+            "name": "engine",
+            "pid": 42211,
+            "rss_bytes": 70434816
+          }
+        ]
+      },
+      "seconds": 50.012
+    },
+    {
+      "chains": {
+        "solana": {
+          "admitted": 4120,
+          "attempted": 4118,
+          "client": {
+            "dispatched": 4127
+          },
+          "finalized": 0,
+          "included": 3871,
+          "observer_pending_signatures": 4118,
+          "responses": {
+            "202": 4120
+          },
+          "rpc": {
+            "accepted_unique_wires": 4118,
+            "active": 0,
+            "calls": {
+              "getLatestBlockhash": 4118,
+              "getSignatureStatuses": 30346,
+              "getTransaction": 2842,
+              "sendTransaction": 4118
+            },
+            "dropped_responses": 0,
+            "forwarded_sends": 4118,
+            "http_requests": 41424,
+            "http_transport": {
+              "active": 0,
+              "connection_attempts": 100,
+              "connection_reuses": 41324,
+              "connections_opened": 100,
+              "failures": [],
+              "owned_connections": 100,
+              "peak_active": 64,
+              "requests": 41424,
+              "responses": 41424,
+              "status_200": 41424
+            },
+            "methods": {
+              "getLatestBlockhash": {
+                "count": 4118,
+                "errors": 0,
+                "max_ms": 33.31024999999954,
+                "total_ms": 6369.84093700006
+              },
+              "getSignatureStatuses": {
+                "count": 30346,
+                "errors": 0,
+                "max_ms": 56.31858300000658,
+                "total_ms": 178443.1454870003
+              },
+              "getTransaction": {
+                "count": 2842,
+                "errors": 0,
+                "max_ms": 39.49108300000148,
+                "total_ms": 28302.48528299955
+              },
+              "sendTransaction": {
+                "count": 4118,
+                "errors": 0,
+                "max_ms": 30.02108300000117,
+                "total_ms": 10410.606281999511
+              }
+            },
+            "peak_inflight": 92,
+            "proxy_overloads": 0
+          },
+          "terminal": 2787
+        }
+      },
+      "observer_duration_ms": 5.56,
+      "phase": "load",
+      "resources": {
+        "free_disk_bytes": 15762366464,
+        "host_load_average": [
+          2.78564453125,
+          2.41748046875,
+          2.23876953125
+        ],
+        "journal_bytes": 17608448,
+        "processes": [
+          {
+            "cpu_percent_ps": 25.4,
+            "cpu_time": "0:18.10",
+            "name": "campaign",
+            "pid": 42181,
+            "rss_bytes": 97828864
+          },
+          {
+            "cpu_percent_ps": 13.2,
+            "cpu_time": "0:08.80",
+            "name": "redis",
+            "pid": 42184,
+            "rss_bytes": 26099712
+          },
+          {
+            "cpu_percent_ps": 125.3,
+            "cpu_time": "1:45.24",
+            "name": "solana",
+            "pid": 42189,
+            "rss_bytes": 678166528
+          },
+          {
+            "cpu_percent_ps": 29.3,
+            "cpu_time": "0:17.49",
+            "name": "engine",
+            "pid": 42211,
+            "rss_bytes": 70451200
+          }
+        ]
+      },
+      "seconds": 55.016
+    },
+    {
+      "chains": {
+        "solana": {
+          "admitted": 4494,
+          "attempted": 4492,
+          "client": {
+            "dispatched": 4502
+          },
+          "finalized": 0,
+          "included": 4211,
+          "observer_pending_signatures": 4492,
+          "responses": {
+            "202": 4494
+          },
+          "rpc": {
+            "accepted_unique_wires": 4492,
+            "active": 0,
+            "calls": {
+              "getLatestBlockhash": 4492,
+              "getSignatureStatuses": 33725,
+              "getTransaction": 3217,
+              "sendTransaction": 4492
+            },
+            "dropped_responses": 0,
+            "forwarded_sends": 4492,
+            "http_requests": 45926,
+            "http_transport": {
+              "active": 0,
+              "connection_attempts": 100,
+              "connection_reuses": 45826,
+              "connections_opened": 100,
+              "failures": [],
+              "owned_connections": 100,
+              "peak_active": 66,
+              "requests": 45926,
+              "responses": 45926,
+              "status_200": 45926
+            },
+            "methods": {
+              "getLatestBlockhash": {
+                "count": 4492,
+                "errors": 0,
+                "max_ms": 33.31024999999954,
+                "total_ms": 7145.668442999999
+              },
+              "getSignatureStatuses": {
+                "count": 33725,
+                "errors": 0,
+                "max_ms": 56.31858300000658,
+                "total_ms": 190541.0561100009
+              },
+              "getTransaction": {
+                "count": 3217,
+                "errors": 0,
+                "max_ms": 39.49108300000148,
+                "total_ms": 31940.419283999494
+              },
+              "sendTransaction": {
+                "count": 4492,
+                "errors": 0,
+                "max_ms": 30.02108300000117,
+                "total_ms": 11577.608866999539
+              }
+            },
+            "peak_inflight": 92,
+            "proxy_overloads": 0
+          },
+          "terminal": 3167
+        }
+      },
+      "observer_duration_ms": 6.031,
+      "phase": "load",
+      "resources": {
+        "free_disk_bytes": 15744540672,
+        "host_load_average": [
+          2.642578125,
+          2.3935546875,
+          2.2314453125
+        ],
+        "journal_bytes": 18812672,
+        "processes": [
+          {
+            "cpu_percent_ps": 31.6,
+            "cpu_time": "0:19.97",
+            "name": "campaign",
+            "pid": 42181,
+            "rss_bytes": 98254848
+          },
+          {
+            "cpu_percent_ps": 14.7,
+            "cpu_time": "0:09.76",
+            "name": "redis",
+            "pid": 42184,
+            "rss_bytes": 26181632
+          },
+          {
+            "cpu_percent_ps": 126.8,
+            "cpu_time": "1:51.38",
+            "name": "solana",
+            "pid": 42189,
+            "rss_bytes": 687816704
+          },
+          {
+            "cpu_percent_ps": 31.7,
+            "cpu_time": "0:19.30",
+            "name": "engine",
+            "pid": 42211,
+            "rss_bytes": 70451200
+          }
+        ]
+      },
+      "seconds": 60.01
+    },
+    {
+      "chains": {
+        "solana": {
+          "admitted": 4870,
+          "attempted": 4866,
+          "client": {
+            "dispatched": 4877
+          },
+          "finalized": 0,
+          "included": 4571,
+          "observer_pending_signatures": 4866,
+          "responses": {
+            "202": 4870
+          },
+          "rpc": {
+            "accepted_unique_wires": 4865,
+            "active": 0,
+            "calls": {
+              "getLatestBlockhash": 4866,
+              "getSignatureStatuses": 37092,
+              "getTransaction": 3591,
+              "sendTransaction": 4865
+            },
+            "dropped_responses": 0,
+            "forwarded_sends": 4865,
+            "http_requests": 50414,
+            "http_transport": {
+              "active": 0,
+              "connection_attempts": 100,
+              "connection_reuses": 50314,
+              "connections_opened": 100,
+              "failures": [],
+              "owned_connections": 100,
+              "peak_active": 66,
+              "requests": 50414,
+              "responses": 50414,
+              "status_200": 50414
+            },
+            "methods": {
+              "getLatestBlockhash": {
+                "count": 4866,
+                "errors": 0,
+                "max_ms": 33.31024999999954,
+                "total_ms": 8026.13731300009
+              },
+              "getSignatureStatuses": {
+                "count": 37092,
+                "errors": 0,
+                "max_ms": 56.31858300000658,
+                "total_ms": 202105.88698700067
+              },
+              "getTransaction": {
+                "count": 3591,
+                "errors": 0,
+                "max_ms": 39.49108300000148,
+                "total_ms": 35485.89063399956
+              },
+              "sendTransaction": {
+                "count": 4865,
+                "errors": 0,
+                "max_ms": 30.02108300000117,
+                "total_ms": 12728.548992999617
+              }
+            },
+            "peak_inflight": 92,
+            "proxy_overloads": 0
+          },
+          "terminal": 3532
+        }
+      },
+      "observer_duration_ms": 6.698,
+      "phase": "load",
+      "resources": {
+        "free_disk_bytes": 15769604096,
+        "host_load_average": [
+          2.9912109375,
+          2.4697265625,
+          2.25927734375
+        ],
+        "journal_bytes": 20229888,
+        "processes": [
+          {
+            "cpu_percent_ps": 33.5,
+            "cpu_time": "0:21.85",
+            "name": "campaign",
+            "pid": 42181,
+            "rss_bytes": 115589120
+          },
+          {
+            "cpu_percent_ps": 16.2,
+            "cpu_time": "0:10.72",
+            "name": "redis",
+            "pid": 42184,
+            "rss_bytes": 26312704
+          },
+          {
+            "cpu_percent_ps": 129.2,
+            "cpu_time": "1:57.56",
+            "name": "solana",
+            "pid": 42189,
+            "rss_bytes": 699056128
+          },
+          {
+            "cpu_percent_ps": 35.1,
+            "cpu_time": "0:21.12",
+            "name": "engine",
+            "pid": 42211,
+            "rss_bytes": 70451200
+          }
+        ]
+      },
+      "seconds": 65.009
+    },
+    {
+      "chains": {
+        "solana": {
+          "admitted": 5245,
+          "attempted": 5242,
+          "client": {
+            "dispatched": 5252
+          },
+          "finalized": 0,
+          "included": 4872,
+          "observer_pending_signatures": 5242,
+          "responses": {
+            "202": 5245
+          },
+          "rpc": {
+            "accepted_unique_wires": 5242,
+            "active": 0,
+            "calls": {
+              "getLatestBlockhash": 5242,
+              "getSignatureStatuses": 40468,
+              "getTransaction": 3966,
+              "sendTransaction": 5242
+            },
+            "dropped_responses": 0,
+            "forwarded_sends": 5242,
+            "http_requests": 54918,
+            "http_transport": {
+              "active": 0,
+              "connection_attempts": 100,
+              "connection_reuses": 54818,
+              "connections_opened": 100,
+              "failures": [],
+              "owned_connections": 100,
+              "peak_active": 68,
+              "requests": 54918,
+              "responses": 54918,
+              "status_200": 54918
+            },
+            "methods": {
+              "getLatestBlockhash": {
+                "count": 5242,
+                "errors": 0,
+                "max_ms": 33.31024999999954,
+                "total_ms": 9010.134818000148
+              },
+              "getSignatureStatuses": {
+                "count": 40468,
+                "errors": 0,
+                "max_ms": 56.31858300000658,
+                "total_ms": 213728.70242400074
+              },
+              "getTransaction": {
+                "count": 3966,
+                "errors": 0,
+                "max_ms": 39.49108300000148,
+                "total_ms": 39233.5909719994
+              },
+              "sendTransaction": {
+                "count": 5242,
+                "errors": 0,
+                "max_ms": 30.02108300000117,
+                "total_ms": 14009.81129499961
+              }
+            },
+            "peak_inflight": 92,
+            "proxy_overloads": 0
+          },
+          "terminal": 3920
+        }
+      },
+      "observer_duration_ms": 6.323,
+      "phase": "load",
+      "resources": {
+        "free_disk_bytes": 15750602752,
+        "host_load_average": [
+          2.83154296875,
+          2.4453125,
+          2.25146484375
+        ],
+        "journal_bytes": 21450496,
+        "processes": [
+          {
+            "cpu_percent_ps": 32.8,
+            "cpu_time": "0:23.74",
+            "name": "campaign",
+            "pid": 42181,
+            "rss_bytes": 100302848
+          },
+          {
+            "cpu_percent_ps": 15.8,
+            "cpu_time": "0:11.69",
+            "name": "redis",
+            "pid": 42184,
+            "rss_bytes": 26411008
+          },
+          {
+            "cpu_percent_ps": 127.8,
+            "cpu_time": "2:03.76",
+            "name": "solana",
+            "pid": 42189,
+            "rss_bytes": 710115328
+          },
+          {
+            "cpu_percent_ps": 33.0,
+            "cpu_time": "0:22.96",
+            "name": "engine",
+            "pid": 42211,
+            "rss_bytes": 70467584
+          }
+        ]
+      },
+      "seconds": 70.016
+    },
+    {
+      "chains": {
+        "solana": {
+          "admitted": 5619,
+          "attempted": 5616,
+          "client": {
+            "dispatched": 5626
+          },
+          "finalized": 0,
+          "included": 5172,
+          "observer_pending_signatures": 5616,
+          "responses": {
+            "202": 5619
+          },
+          "rpc": {
+            "accepted_unique_wires": 5613,
+            "active": 0,
+            "calls": {
+              "getLatestBlockhash": 5616,
+              "getSignatureStatuses": 43812,
+              "getTransaction": 4341,
+              "sendTransaction": 5613
+            },
+            "dropped_responses": 0,
+            "forwarded_sends": 5613,
+            "http_requests": 59382,
+            "http_transport": {
+              "active": 0,
+              "connection_attempts": 100,
+              "connection_reuses": 59282,
+              "connections_opened": 100,
+              "failures": [],
+              "owned_connections": 100,
+              "peak_active": 68,
+              "requests": 59382,
+              "responses": 59382,
+              "status_200": 59382
+            },
+            "methods": {
+              "getLatestBlockhash": {
+                "count": 5616,
+                "errors": 0,
+                "max_ms": 33.31024999999954,
+                "total_ms": 9807.68035700033
+              },
+              "getSignatureStatuses": {
+                "count": 43812,
+                "errors": 0,
+                "max_ms": 56.31858300000658,
+                "total_ms": 225263.2894980012
+              },
+              "getTransaction": {
+                "count": 4341,
+                "errors": 0,
+                "max_ms": 39.49108300000148,
+                "total_ms": 42538.60639099948
+              },
+              "sendTransaction": {
+                "count": 5613,
+                "errors": 0,
+                "max_ms": 30.02108300000117,
+                "total_ms": 15272.96933199966
+              }
+            },
+            "peak_inflight": 92,
+            "proxy_overloads": 0
+          },
+          "terminal": 4281
+        }
+      },
+      "observer_duration_ms": 5.864,
+      "phase": "load",
+      "resources": {
+        "free_disk_bytes": 15714934784,
+        "host_load_average": [
+          3.0048828125,
+          2.4873046875,
+          2.26708984375
+        ],
+        "journal_bytes": 22679296,
+        "processes": [
+          {
+            "cpu_percent_ps": 33.9,
+            "cpu_time": "0:25.60",
+            "name": "campaign",
+            "pid": 42181,
+            "rss_bytes": 101990400
+          },
+          {
+            "cpu_percent_ps": 14.9,
+            "cpu_time": "0:12.63",
+            "name": "redis",
+            "pid": 42184,
+            "rss_bytes": 26542080
+          },
+          {
+            "cpu_percent_ps": 128.4,
+            "cpu_time": "2:09.87",
+            "name": "solana",
+            "pid": 42189,
+            "rss_bytes": 720994304
+          },
+          {
+            "cpu_percent_ps": 32.7,
+            "cpu_time": "0:24.76",
+            "name": "engine",
+            "pid": 42211,
+            "rss_bytes": 70467584
+          }
+        ]
+      },
+      "seconds": 75.008
+    },
+    {
+      "chains": {
+        "solana": {
+          "admitted": 5994,
+          "attempted": 5991,
+          "client": {
+            "dispatched": 6002
+          },
+          "finalized": 0,
+          "included": 5516,
+          "observer_pending_signatures": 5991,
+          "responses": {
+            "202": 5994
+          },
+          "rpc": {
+            "accepted_unique_wires": 5988,
+            "active": 0,
+            "calls": {
+              "getLatestBlockhash": 5991,
+              "getSignatureStatuses": 47165,
+              "getTransaction": 4716,
+              "sendTransaction": 5988
+            },
+            "dropped_responses": 0,
+            "forwarded_sends": 5988,
+            "http_requests": 63860,
+            "http_transport": {
+              "active": 0,
+              "connection_attempts": 100,
+              "connection_reuses": 63760,
+              "connections_opened": 100,
+              "failures": [],
+              "owned_connections": 100,
+              "peak_active": 68,
+              "requests": 63860,
+              "responses": 63860,
+              "status_200": 63860
+            },
+            "methods": {
+              "getLatestBlockhash": {
+                "count": 5991,
+                "errors": 0,
+                "max_ms": 33.31024999999954,
+                "total_ms": 10915.024866000422
+              },
+              "getSignatureStatuses": {
+                "count": 47165,
+                "errors": 0,
+                "max_ms": 56.31858300000658,
+                "total_ms": 235030.31389900084
+              },
+              "getTransaction": {
+                "count": 4716,
+                "errors": 0,
+                "max_ms": 39.49108300000148,
+                "total_ms": 45868.18077299954
+              },
+              "sendTransaction": {
+                "count": 5988,
+                "errors": 0,
+                "max_ms": 30.02108300000117,
+                "total_ms": 16681.262039999805
+              }
+            },
+            "peak_inflight": 92,
+            "proxy_overloads": 0
+          },
+          "terminal": 4661
+        }
+      },
+      "observer_duration_ms": 6.579,
+      "phase": "load",
+      "resources": {
+        "free_disk_bytes": 15696060416,
+        "host_load_average": [
+          3.08447265625,
+          2.51220703125,
+          2.27685546875
+        ],
+        "journal_bytes": 23883520,
+        "processes": [
+          {
+            "cpu_percent_ps": 32.7,
+            "cpu_time": "0:27.47",
+            "name": "campaign",
+            "pid": 42181,
+            "rss_bytes": 102760448
+          },
+          {
+            "cpu_percent_ps": 15.0,
+            "cpu_time": "0:13.61",
+            "name": "redis",
+            "pid": 42184,
+            "rss_bytes": 26640384
+          },
+          {
+            "cpu_percent_ps": 128.0,
+            "cpu_time": "2:15.99",
+            "name": "solana",
+            "pid": 42189,
+            "rss_bytes": 732217344
+          },
+          {
+            "cpu_percent_ps": 31.0,
+            "cpu_time": "0:26.56",
+            "name": "engine",
+            "pid": 42211,
+            "rss_bytes": 74285056
+          }
+        ]
+      },
+      "seconds": 80.016
+    },
+    {
+      "chains": {
+        "solana": {
+          "admitted": 6370,
+          "attempted": 6368,
+          "client": {
+            "dispatched": 6377
+          },
+          "finalized": 0,
+          "included": 5890,
+          "observer_pending_signatures": 6368,
+          "responses": {
+            "202": 6370
+          },
+          "rpc": {
+            "accepted_unique_wires": 6368,
+            "active": 0,
+            "calls": {
+              "getLatestBlockhash": 6368,
+              "getSignatureStatuses": 50557,
+              "getTransaction": 5091,
+              "sendTransaction": 6368
+            },
+            "dropped_responses": 0,
+            "forwarded_sends": 6368,
+            "http_requests": 68384,
+            "http_transport": {
+              "active": 0,
+              "connection_attempts": 101,
+              "connection_reuses": 68283,
+              "connections_opened": 101,
+              "failures": [],
+              "owned_connections": 99,
+              "peak_active": 68,
+              "requests": 68384,
+              "responses": 68384,
+              "status_200": 68384
+            },
+            "methods": {
+              "getLatestBlockhash": {
+                "count": 6368,
+                "errors": 0,
+                "max_ms": 33.31024999999954,
+                "total_ms": 11633.830073000316
+              },
+              "getSignatureStatuses": {
+                "count": 50557,
+                "errors": 0,
+                "max_ms": 56.31858300000658,
+                "total_ms": 246386.50345600056
+              },
+              "getTransaction": {
+                "count": 5091,
+                "errors": 0,
+                "max_ms": 39.49108300000148,
+                "total_ms": 49486.031238999574
+              },
+              "sendTransaction": {
+                "count": 6368,
+                "errors": 0,
+                "max_ms": 30.02108300000117,
+                "total_ms": 17949.16421099973
+              }
+            },
+            "peak_inflight": 92,
+            "proxy_overloads": 0
+          },
+          "terminal": 5032
+        }
+      },
+      "observer_duration_ms": 7.446,
+      "phase": "load",
+      "resources": {
+        "free_disk_bytes": 15719665664,
+        "host_load_average": [
+          3.07763671875,
+          2.52001953125,
+          2.28076171875
+        ],
+        "journal_bytes": 25329456,
+        "processes": [
+          {
+            "cpu_percent_ps": 32.7,
+            "cpu_time": "0:29.35",
+            "name": "campaign",
+            "pid": 42181,
+            "rss_bytes": 103677952
+          },
+          {
+            "cpu_percent_ps": 15.6,
+            "cpu_time": "0:14.58",
+            "name": "redis",
+            "pid": 42184,
+            "rss_bytes": 26771456
+          },
+          {
+            "cpu_percent_ps": 133.1,
+            "cpu_time": "2:22.15",
+            "name": "solana",
+            "pid": 42189,
+            "rss_bytes": 743833600
+          },
+          {
+            "cpu_percent_ps": 32.8,
+            "cpu_time": "0:28.38",
+            "name": "engine",
+            "pid": 42211,
+            "rss_bytes": 74350592
+          }
+        ]
+      },
+      "seconds": 85.012
+    },
+    {
+      "chains": {
+        "solana": {
+          "admitted": 6743,
+          "attempted": 6743,
+          "client": {
+            "dispatched": 6751
+          },
+          "finalized": 0,
+          "included": 6189,
+          "observer_pending_signatures": 6743,
+          "responses": {
+            "202": 6743
+          },
+          "rpc": {
+            "accepted_unique_wires": 6743,
+            "active": 1,
+            "calls": {
+              "getLatestBlockhash": 6743,
+              "getSignatureStatuses": 53926,
+              "getTransaction": 5463,
+              "sendTransaction": 6743
+            },
+            "dropped_responses": 0,
+            "forwarded_sends": 6743,
+            "http_requests": 72875,
+            "http_transport": {
+              "active": 1,
+              "connection_attempts": 102,
+              "connection_reuses": 72773,
+              "connections_opened": 102,
+              "failures": [],
+              "owned_connections": 100,
+              "peak_active": 68,
+              "requests": 72875,
+              "responses": 72874,
+              "status_200": 72874
+            },
+            "methods": {
+              "getLatestBlockhash": {
+                "count": 6743,
+                "errors": 0,
+                "max_ms": 33.31024999999954,
+                "total_ms": 12603.511949000576
+              },
+              "getSignatureStatuses": {
+                "count": 53925,
+                "errors": 0,
+                "max_ms": 56.31858300000658,
+                "total_ms": 259330.496319001
+              },
+              "getTransaction": {
+                "count": 5463,
+                "errors": 0,
+                "max_ms": 39.49108300000148,
+                "total_ms": 53003.27393799954
+              },
+              "sendTransaction": {
+                "count": 6743,
+                "errors": 0,
+                "max_ms": 30.02108300000117,
+                "total_ms": 19164.60511499976
+              }
+            },
+            "peak_inflight": 92,
+            "proxy_overloads": 0
+          },
+          "terminal": 5413
+        }
+      },
+      "observer_duration_ms": 6.106,
+      "phase": "load",
+      "resources": {
+        "free_disk_bytes": 15699963904,
+        "host_load_average": [
+          2.9111328125,
+          2.49462890625,
+          2.27294921875
+        ],
+        "journal_bytes": 26566448,
+        "processes": [
+          {
+            "cpu_percent_ps": 31.0,
+            "cpu_time": "0:31.22",
+            "name": "campaign",
+            "pid": 42181,
+            "rss_bytes": 104136704
+          },
+          {
+            "cpu_percent_ps": 15.4,
+            "cpu_time": "0:15.54",
+            "name": "redis",
+            "pid": 42184,
+            "rss_bytes": 26869760
+          },
+          {
+            "cpu_percent_ps": 128.7,
+            "cpu_time": "2:28.36",
+            "name": "solana",
+            "pid": 42189,
+            "rss_bytes": 754335744
+          },
+          {
+            "cpu_percent_ps": 31.8,
+            "cpu_time": "0:30.18",
+            "name": "engine",
+            "pid": 42211,
+            "rss_bytes": 74383360
+          }
+        ]
+      },
+      "seconds": 90.009
+    },
+    {
+      "chains": {
+        "solana": {
+          "admitted": 7119,
+          "attempted": 7116,
+          "client": {
+            "dispatched": 7126
+          },
+          "finalized": 0,
+          "included": 6489,
+          "observer_pending_signatures": 7116,
+          "responses": {
+            "202": 7119
+          },
+          "rpc": {
+            "accepted_unique_wires": 7116,
+            "active": 0,
+            "calls": {
+              "getLatestBlockhash": 7116,
+              "getSignatureStatuses": 57306,
+              "getTransaction": 5829,
+              "sendTransaction": 7116
+            },
+            "dropped_responses": 0,
+            "forwarded_sends": 7116,
+            "http_requests": 77367,
+            "http_transport": {
+              "active": 0,
+              "connection_attempts": 102,
+              "connection_reuses": 77265,
+              "connections_opened": 102,
+              "failures": [],
+              "owned_connections": 100,
+              "peak_active": 68,
+              "requests": 77367,
+              "responses": 77367,
+              "status_200": 77367
+            },
+            "methods": {
+              "getLatestBlockhash": {
+                "count": 7116,
+                "errors": 0,
+                "max_ms": 33.31024999999954,
+                "total_ms": 13486.454952000682
+              },
+              "getSignatureStatuses": {
+                "count": 57306,
+                "errors": 0,
+                "max_ms": 56.31858300000658,
+                "total_ms": 271006.2671420008
+              },
+              "getTransaction": {
+                "count": 5829,
+                "errors": 0,
+                "max_ms": 39.49108300000148,
+                "total_ms": 56427.77331499949
+              },
+              "sendTransaction": {
+                "count": 7116,
+                "errors": 0,
+                "max_ms": 30.02108300000117,
+                "total_ms": 20237.878947999936
+              }
+            },
+            "peak_inflight": 92,
+            "proxy_overloads": 0
+          },
+          "terminal": 5777
+        }
+      },
+      "observer_duration_ms": 5.904,
+      "phase": "load",
+      "resources": {
+        "free_disk_bytes": 15664312320,
+        "host_load_average": [
+          3.078125,
+          2.5361328125,
+          2.28857421875
+        ],
+        "journal_bytes": 27791152,
+        "processes": [
+          {
+            "cpu_percent_ps": 34.9,
+            "cpu_time": "0:33.10",
+            "name": "campaign",
+            "pid": 42181,
+            "rss_bytes": 104595456
+          },
+          {
+            "cpu_percent_ps": 17.7,
+            "cpu_time": "0:16.50",
+            "name": "redis",
+            "pid": 42184,
+            "rss_bytes": 27033600
+          },
+          {
+            "cpu_percent_ps": 130.7,
+            "cpu_time": "2:34.56",
+            "name": "solana",
+            "pid": 42189,
+            "rss_bytes": 763854848
+          },
+          {
+            "cpu_percent_ps": 35.4,
+            "cpu_time": "0:31.99",
+            "name": "engine",
+            "pid": 42211,
+            "rss_bytes": 74432512
+          }
+        ]
+      },
+      "seconds": 95.012
+    },
+    {
+      "chains": {
+        "solana": {
+          "admitted": 7488,
+          "attempted": 7474,
+          "client": {
+            "dispatched": 7502
+          },
+          "finalized": 0,
+          "included": 6781,
+          "observer_pending_signatures": 7474,
+          "responses": {
+            "202": 7488
+          },
+          "rpc": {
+            "accepted_unique_wires": 7437,
+            "active": 22,
+            "calls": {
+              "getLatestBlockhash": 7478,
+              "getSignatureStatuses": 60614,
+              "getTransaction": 6165,
+              "sendTransaction": 7441
+            },
+            "dropped_responses": 0,
+            "forwarded_sends": 7441,
+            "http_requests": 81704,
+            "http_transport": {
+              "active": 3,
+              "connection_attempts": 102,
+              "connection_reuses": 81592,
+              "connections_opened": 102,
+              "failures": [],
+              "owned_connections": 100,
+              "peak_active": 68,
+              "requests": 81694,
+              "responses": 81691,
+              "status_200": 81691
+            },
+            "methods": {
+              "getLatestBlockhash": {
+                "count": 7478,
+                "errors": 0,
+                "max_ms": 33.31024999999954,
+                "total_ms": 14753.916155000592
+              },
+              "getSignatureStatuses": {
+                "count": 60614,
+                "errors": 0,
+                "max_ms": 56.31858300000658,
+                "total_ms": 281238.804317003
+              },
+              "getTransaction": {
+                "count": 6157,
+                "errors": 0,
+                "max_ms": 39.49108300000148,
+                "total_ms": 59495.639596999536
+              },
+              "sendTransaction": {
+                "count": 7436,
+                "errors": 0,
+                "max_ms": 34.7495409999965,
+                "total_ms": 21432.854326999746
+              }
+            },
+            "peak_inflight": 92,
+            "proxy_overloads": 0
+          },
+          "terminal": 6141
+        }
+      },
+      "observer_duration_ms": 15.288,
+      "phase": "load",
+      "resources": {
+        "free_disk_bytes": 15705460736,
+        "host_load_average": [
+          3.15185546875,
+          2.56005859375,
+          2.29833984375
+        ],
+        "journal_bytes": 29040432,
+        "processes": [
+          {
+            "cpu_percent_ps": 24.3,
+            "cpu_time": "0:34.99",
+            "name": "campaign",
+            "pid": 42181,
+            "rss_bytes": 105447424
+          },
+          {
+            "cpu_percent_ps": 17.6,
+            "cpu_time": "0:17.51",
+            "name": "redis",
+            "pid": 42184,
+            "rss_bytes": 27082752
+          },
+          {
+            "cpu_percent_ps": 122.9,
+            "cpu_time": "2:40.68",
+            "name": "solana",
+            "pid": 42189,
+            "rss_bytes": 508985344
+          },
+          {
+            "cpu_percent_ps": 34.8,
+            "cpu_time": "0:33.88",
+            "name": "engine",
+            "pid": 42211,
+            "rss_bytes": 79544320
+          }
+        ]
+      },
+      "seconds": 100.017
+    },
+    {
+      "chains": {
+        "solana": {
+          "admitted": 7870,
+          "attempted": 7865,
+          "client": {
+            "dispatched": 7877
+          },
+          "finalized": 0,
+          "included": 7164,
+          "observer_pending_signatures": 7865,
+          "responses": {
+            "202": 7870
+          },
+          "rpc": {
+            "accepted_unique_wires": 7863,
+            "active": 0,
+            "calls": {
+              "getLatestBlockhash": 7865,
+              "getSignatureStatuses": 63909,
+              "getTransaction": 6592,
+              "sendTransaction": 7863
+            },
+            "dropped_responses": 0,
+            "forwarded_sends": 7863,
+            "http_requests": 86229,
+            "http_transport": {
+              "active": 0,
+              "connection_attempts": 102,
+              "connection_reuses": 86127,
+              "connections_opened": 102,
+              "failures": [],
+              "owned_connections": 98,
+              "peak_active": 68,
+              "requests": 86229,
+              "responses": 86229,
+              "status_200": 86229
+            },
+            "methods": {
+              "getLatestBlockhash": {
+                "count": 7865,
+                "errors": 0,
+                "max_ms": 33.31024999999954,
+                "total_ms": 16180.819178000887
+              },
+              "getSignatureStatuses": {
+                "count": 63909,
+                "errors": 0,
+                "max_ms": 56.31858300000658,
+                "total_ms": 290511.92250900366
+              },
+              "getTransaction": {
+                "count": 6592,
+                "errors": 0,
+                "max_ms": 39.49108300000148,
+                "total_ms": 63265.061848999285
+              },
+              "sendTransaction": {
+                "count": 7863,
+                "errors": 0,
+                "max_ms": 38.8525829999935,
+                "total_ms": 23756.428235999796
+              }
+            },
+            "peak_inflight": 92,
+            "proxy_overloads": 0
+          },
+          "terminal": 6529
+        }
+      },
+      "observer_duration_ms": 8.488,
+      "phase": "load",
+      "resources": {
+        "free_disk_bytes": 15670460416,
+        "host_load_average": [
+          4.3408203125,
+          2.81591796875,
+          2.39013671875
+        ],
+        "journal_bytes": 30261040,
+        "processes": [
+          {
+            "cpu_percent_ps": 43.5,
+            "cpu_time": "0:36.99",
+            "name": "campaign",
+            "pid": 42181,
+            "rss_bytes": 105807872
+          },
+          {
+            "cpu_percent_ps": 17.4,
+            "cpu_time": "0:18.52",
+            "name": "redis",
+            "pid": 42184,
+            "rss_bytes": 27230208
+          },
+          {
+            "cpu_percent_ps": 134.6,
+            "cpu_time": "2:46.94",
+            "name": "solana",
+            "pid": 42189,
+            "rss_bytes": 518438912
+          },
+          {
+            "cpu_percent_ps": 37.2,
+            "cpu_time": "0:35.80",
+            "name": "engine",
+            "pid": 42211,
+            "rss_bytes": 79626240
+          }
+        ]
+      },
+      "seconds": 105.016
+    },
+    {
+      "chains": {
+        "solana": {
+          "admitted": 8244,
+          "attempted": 8242,
+          "client": {
+            "dispatched": 8252
+          },
+          "finalized": 0,
+          "included": 7465,
+          "observer_pending_signatures": 8242,
+          "responses": {
+            "202": 8244
+          },
+          "rpc": {
+            "accepted_unique_wires": 8240,
+            "active": 0,
+            "calls": {
+              "getLatestBlockhash": 8242,
+              "getSignatureStatuses": 67242,
+              "getTransaction": 6966,
+              "sendTransaction": 8240
+            },
+            "dropped_responses": 0,
+            "forwarded_sends": 8240,
+            "http_requests": 90690,
+            "http_transport": {
+              "active": 0,
+              "connection_attempts": 102,
+              "connection_reuses": 90588,
+              "connections_opened": 102,
+              "failures": [],
+              "owned_connections": 95,
+              "peak_active": 68,
+              "requests": 90690,
+              "responses": 90690,
+              "status_200": 90690
+            },
+            "methods": {
+              "getLatestBlockhash": {
+                "count": 8242,
+                "errors": 0,
+                "max_ms": 33.31024999999954,
+                "total_ms": 17300.822092000966
+              },
+              "getSignatureStatuses": {
+                "count": 67242,
+                "errors": 0,
+                "max_ms": 56.31858300000658,
+                "total_ms": 301552.3851850021
+              },
+              "getTransaction": {
+                "count": 6966,
+                "errors": 0,
+                "max_ms": 39.49108300000148,
+                "total_ms": 66511.0830259994
+              },
+              "sendTransaction": {
+                "count": 8240,
+                "errors": 0,
+                "max_ms": 38.8525829999935,
+                "total_ms": 25179.919241999218
+              }
+            },
+            "peak_inflight": 92,
+            "proxy_overloads": 0
+          },
+          "terminal": 6910
+        }
+      },
+      "observer_duration_ms": 6.599,
+      "phase": "load",
+      "resources": {
+        "free_disk_bytes": 15650426880,
+        "host_load_average": [
+          4.0732421875,
+          2.78564453125,
+          2.3818359375
+        ],
+        "journal_bytes": 31477552,
+        "processes": [
+          {
+            "cpu_percent_ps": 33.7,
+            "cpu_time": "0:38.90",
+            "name": "campaign",
+            "pid": 42181,
+            "rss_bytes": 106020864
+          },
+          {
+            "cpu_percent_ps": 16.2,
+            "cpu_time": "0:19.50",
+            "name": "redis",
+            "pid": 42184,
+            "rss_bytes": 27377664
+          },
+          {
+            "cpu_percent_ps": 126.4,
+            "cpu_time": "2:53.11",
+            "name": "solana",
+            "pid": 42189,
+            "rss_bytes": 528072704
+          },
+          {
+            "cpu_percent_ps": 32.7,
+            "cpu_time": "0:37.66",
+            "name": "engine",
+            "pid": 42211,
+            "rss_bytes": 79642624
+          }
+        ]
+      },
+      "seconds": 110.01
+    },
+    {
+      "chains": {
+        "solana": {
+          "admitted": 8619,
+          "attempted": 8617,
+          "client": {
+            "dispatched": 8626
+          },
+          "finalized": 0,
+          "included": 7810,
+          "observer_pending_signatures": 8617,
+          "responses": {
+            "202": 8619
+          },
+          "rpc": {
+            "accepted_unique_wires": 8617,
+            "active": 0,
+            "calls": {
+              "getLatestBlockhash": 8617,
+              "getSignatureStatuses": 70640,
+              "getTransaction": 7328,
+              "sendTransaction": 8617
+            },
+            "dropped_responses": 0,
+            "forwarded_sends": 8617,
+            "http_requests": 95202,
+            "http_transport": {
+              "active": 0,
+              "connection_attempts": 103,
+              "connection_reuses": 95099,
+              "connections_opened": 103,
+              "failures": [],
+              "owned_connections": 96,
+              "peak_active": 68,
+              "requests": 95202,
+              "responses": 95202,
+              "status_200": 95202
+            },
+            "methods": {
+              "getLatestBlockhash": {
+                "count": 8617,
+                "errors": 0,
+                "max_ms": 33.31024999999954,
+                "total_ms": 18410.299277001148
+              },
+              "getSignatureStatuses": {
+                "count": 70640,
+                "errors": 0,
+                "max_ms": 56.31858300000658,
+                "total_ms": 313149.0986490037
+              },
+              "getTransaction": {
+                "count": 7328,
+                "errors": 0,
+                "max_ms": 39.49108300000148,
+                "total_ms": 69902.89626799957
+              },
+              "sendTransaction": {
+                "count": 8617,
+                "errors": 0,
+                "max_ms": 38.8525829999935,
+                "total_ms": 26651.32378499931
+              }
+            },
+            "peak_inflight": 92,
+            "proxy_overloads": 0
+          },
+          "terminal": 7287
+        }
+      },
+      "observer_duration_ms": 6.725,
+      "phase": "load",
+      "resources": {
+        "free_disk_bytes": 15613726720,
+        "host_load_average": [
+          3.98681640625,
+          2.7890625,
+          2.38525390625
+        ],
+        "journal_bytes": 32915248,
+        "processes": [
+          {
+            "cpu_percent_ps": 22.0,
+            "cpu_time": "0:40.80",
+            "name": "campaign",
+            "pid": 42181,
+            "rss_bytes": 106561536
+          },
+          {
+            "cpu_percent_ps": 13.9,
+            "cpu_time": "0:20.48",
+            "name": "redis",
+            "pid": 42184,
+            "rss_bytes": 27475968
+          },
+          {
+            "cpu_percent_ps": 127.6,
+            "cpu_time": "2:59.24",
+            "name": "solana",
+            "pid": 42189,
+            "rss_bytes": 537985024
+          },
+          {
+            "cpu_percent_ps": 29.2,
+            "cpu_time": "0:39.50",
+            "name": "engine",
+            "pid": 42211,
+            "rss_bytes": 79708160
+          }
+        ]
+      },
+      "seconds": 115.007
+    },
+    {
+      "chains": {
+        "solana": {
+          "admitted": 8995,
+          "attempted": 8988,
+          "client": {
+            "dispatched": 9001
+          },
+          "finalized": 0,
+          "included": 8164,
+          "observer_pending_signatures": 8988,
+          "responses": {
+            "202": 8996
+          },
+          "rpc": {
+            "accepted_unique_wires": 8985,
+            "active": 0,
+            "calls": {
+              "getLatestBlockhash": 8990,
+              "getSignatureStatuses": 74046,
+              "getTransaction": 7670,
+              "sendTransaction": 8985
+            },
+            "dropped_responses": 0,
+            "forwarded_sends": 8985,
+            "http_requests": 99691,
+            "http_transport": {
+              "active": 0,
+              "connection_attempts": 105,
+              "connection_reuses": 99586,
+              "connections_opened": 105,
+              "failures": [],
+              "owned_connections": 98,
+              "peak_active": 70,
+              "requests": 99691,
+              "responses": 99691,
+              "status_200": 99691
+            },
+            "methods": {
+              "getLatestBlockhash": {
+                "count": 8990,
+                "errors": 0,
+                "max_ms": 33.31024999999954,
+                "total_ms": 19242.117816001417
+              },
+              "getSignatureStatuses": {
+                "count": 74046,
+                "errors": 0,
+                "max_ms": 56.31858300000658,
+                "total_ms": 324660.17835700425
+              },
+              "getTransaction": {
+                "count": 7670,
+                "errors": 0,
+                "max_ms": 39.49108300000148,
+                "total_ms": 73068.87223099929
+              },
+              "sendTransaction": {
+                "count": 8985,
+                "errors": 0,
+                "max_ms": 38.8525829999935,
+                "total_ms": 27886.165373999003
+              }
+            },
+            "peak_inflight": 92,
+            "proxy_overloads": 0
+          },
+          "terminal": 7594
+        }
+      },
+      "observer_duration_ms": 6.221,
+      "phase": "load",
+      "resources": {
+        "free_disk_bytes": 15655284736,
+        "host_load_average": [
+          3.74755859375,
+          2.75927734375,
+          2.376953125
+        ],
+        "journal_bytes": 33984304,
+        "processes": [
+          {
+            "cpu_percent_ps": 28.7,
+            "cpu_time": "0:42.67",
+            "name": "campaign",
+            "pid": 42181,
+            "rss_bytes": 107118592
+          },
+          {
+            "cpu_percent_ps": 16.9,
+            "cpu_time": "0:21.44",
+            "name": "redis",
+            "pid": 42184,
+            "rss_bytes": 28000256
+          },
+          {
+            "cpu_percent_ps": 124.2,
+            "cpu_time": "3:05.37",
+            "name": "solana",
+            "pid": 42189,
+            "rss_bytes": 547487744
+          },
+          {
+            "cpu_percent_ps": 35.2,
+            "cpu_time": "0:41.31",
+            "name": "engine",
+            "pid": 42211,
+            "rss_bytes": 79790080
+          }
+        ]
+      },
+      "seconds": 120.007
+    },
+    {
+      "chains": {
+        "solana": {
+          "admitted": 9366,
+          "attempted": 9349,
+          "client": {
+            "dispatched": 9377
+          },
+          "finalized": 0,
+          "included": 8456,
+          "observer_pending_signatures": 9349,
+          "responses": {
+            "202": 9368
+          },
+          "rpc": {
+            "accepted_unique_wires": 9335,
+            "active": 17,
+            "calls": {
+              "getLatestBlockhash": 9352,
+              "getSignatureStatuses": 77297,
+              "getTransaction": 8062,
+              "sendTransaction": 9342
+            },
+            "dropped_responses": 0,
+            "forwarded_sends": 9342,
+            "http_requests": 104058,
+            "http_transport": {
+              "active": 3,
+              "connection_attempts": 105,
+              "connection_reuses": 103942,
+              "connections_opened": 105,
+              "failures": [],
+              "owned_connections": 98,
+              "peak_active": 70,
+              "requests": 104047,
+              "responses": 104044,
+              "status_200": 104044
+            },
+            "methods": {
+              "getLatestBlockhash": {
+                "count": 9352,
+                "errors": 0,
+                "max_ms": 33.31024999999954,
+                "total_ms": 20756.19682100148
+              },
+              "getSignatureStatuses": {
+                "count": 77297,
+                "errors": 0,
+                "max_ms": 56.31858300000658,
+                "total_ms": 329822.25112500356
+              },
+              "getTransaction": {
+                "count": 8059,
+                "errors": 0,
+                "max_ms": 39.49108300000148,
+                "total_ms": 74243.6916459992
+              },
+              "sendTransaction": {
+                "count": 9335,
+                "errors": 0,
+                "max_ms": 38.8525829999935,
+                "total_ms": 30418.65345199886
+              }
+            },
+            "peak_inflight": 92,
+            "proxy_overloads": 0
+          },
+          "terminal": 8017
+        }
+      },
+      "observer_duration_ms": 15.991,
+      "phase": "load",
+      "resources": {
+        "free_disk_bytes": 15619620864,
+        "host_load_average": [
+          4.16796875,
+          2.86279296875,
+          2.41552734375
+        ],
+        "journal_bytes": 35413808,
+        "processes": [
+          {
+            "cpu_percent_ps": 38.1,
+            "cpu_time": "0:44.51",
+            "name": "campaign",
+            "pid": 42181,
+            "rss_bytes": 124321792
+          },
+          {
+            "cpu_percent_ps": 18.3,
+            "cpu_time": "0:22.43",
+            "name": "redis",
+            "pid": 42184,
+            "rss_bytes": 28033024
+          },
+          {
+            "cpu_percent_ps": 132.7,
+            "cpu_time": "3:11.49",
+            "name": "solana",
+            "pid": 42189,
+            "rss_bytes": 523239424
+          },
+          {
+            "cpu_percent_ps": 35.8,
+            "cpu_time": "0:43.08",
+            "name": "engine",
+            "pid": 42211,
+            "rss_bytes": 79822848
+          }
+        ]
+      },
+      "seconds": 125.012
+    },
+    {
+      "chains": {
+        "solana": {
+          "admitted": 9744,
+          "attempted": 9724,
+          "client": {
+            "dispatched": 9755
+          },
+          "finalized": 0,
+          "included": 8766,
+          "observer_pending_signatures": 9724,
+          "responses": {
+            "202": 9749
+          },
+          "rpc": {
+            "accepted_unique_wires": 9722,
+            "active": 0,
+            "calls": {
+              "getLatestBlockhash": 9729,
+              "getSignatureStatuses": 80578,
+              "getTransaction": 8466,
+              "sendTransaction": 9722
+            },
+            "dropped_responses": 0,
+            "forwarded_sends": 9722,
+            "http_requests": 108495,
+            "http_transport": {
+              "active": 0,
+              "connection_attempts": 105,
+              "connection_reuses": 108390,
+              "connections_opened": 105,
+              "failures": [],
+              "owned_connections": 98,
+              "peak_active": 70,
+              "requests": 108495,
+              "responses": 108495,
+              "status_200": 108495
+            },
+            "methods": {
+              "getLatestBlockhash": {
+                "count": 9729,
+                "errors": 0,
+                "max_ms": 33.31024999999954,
+                "total_ms": 21903.56986800141
+              },
+              "getSignatureStatuses": {
+                "count": 80578,
+                "errors": 0,
+                "max_ms": 56.31858300000658,
+                "total_ms": 338560.6284380019
+              },
+              "getTransaction": {
+                "count": 8466,
+                "errors": 0,
+                "max_ms": 39.49108300000148,
+                "total_ms": 77744.46318799908
+              },
+              "sendTransaction": {
+                "count": 9722,
+                "errors": 0,
+                "max_ms": 38.8525829999935,
+                "total_ms": 32040.659496998796
+              }
+            },
+            "peak_inflight": 92,
+            "proxy_overloads": 0
+          },
+          "terminal": 8389
+        }
+      },
+      "observer_duration_ms": 46.211,
+      "phase": "load",
+      "resources": {
+        "free_disk_bytes": 15542820864,
+        "host_load_average": [
+          4.154296875,
+          2.88134765625,
+          2.4248046875
+        ],
+        "journal_bytes": 36675376,
+        "processes": [
+          {
+            "cpu_percent_ps": 33.9,
+            "cpu_time": "0:46.42",
+            "name": "campaign",
+            "pid": 42181,
+            "rss_bytes": 108085248
+          },
+          {
+            "cpu_percent_ps": 17.8,
+            "cpu_time": "0:23.44",
+            "name": "redis",
+            "pid": 42184,
+            "rss_bytes": 28180480
+          },
+          {
+            "cpu_percent_ps": 130.3,
+            "cpu_time": "3:17.85",
+            "name": "solana",
+            "pid": 42189,
+            "rss_bytes": 513146880
+          },
+          {
+            "cpu_percent_ps": 35.3,
+            "cpu_time": "0:44.93",
+            "name": "engine",
+            "pid": 42211,
+            "rss_bytes": 79872000
+          }
+        ]
+      },
+      "seconds": 130.017
+    },
+    {
+      "chains": {
+        "solana": {
+          "admitted": 10113,
+          "attempted": 10021,
+          "client": {
+            "dispatched": 10130
+          },
+          "finalized": 0,
+          "included": 9063,
+          "observer_pending_signatures": 10021,
+          "responses": {
+            "202": 10118
+          },
+          "rpc": {
+            "accepted_unique_wires": 10021,
+            "active": 0,
+            "calls": {
+              "getLatestBlockhash": 10021,
+              "getSignatureStatuses": 83354,
+              "getTransaction": 8769,
+              "sendTransaction": 10021
+            },
+            "dropped_responses": 0,
+            "forwarded_sends": 10021,
+            "http_requests": 112165,
+            "http_transport": {
+              "active": 0,
+              "connection_attempts": 105,
+              "connection_reuses": 112060,
+              "connections_opened": 105,
+              "failures": [],
+              "owned_connections": 85,
+              "peak_active": 70,
+              "requests": 112165,
+              "responses": 112165,
+              "status_200": 112165
+            },
+            "methods": {
+              "getLatestBlockhash": {
+                "count": 10021,
+                "errors": 0,
+                "max_ms": 33.31024999999954,
+                "total_ms": 23081.569369001372
+              },
+              "getSignatureStatuses": {
+                "count": 83354,
+                "errors": 0,
+                "max_ms": 56.31858300000658,
+                "total_ms": 344349.2283990015
+              },
+              "getTransaction": {
+                "count": 8769,
+                "errors": 0,
+                "max_ms": 44.6842079999783,
+                "total_ms": 79261.33244299912
+              },
+              "sendTransaction": {
+                "count": 10021,
+                "errors": 0,
+                "max_ms": 42.64458299999774,
+                "total_ms": 33598.153170998856
+              }
+            },
+            "peak_inflight": 92,
+            "proxy_overloads": 0
+          },
+          "terminal": 8769
+        }
+      },
+      "observer_duration_ms": 46.678,
+      "phase": "load",
+      "resources": {
+        "free_disk_bytes": 14988378112,
+        "host_load_average": [
+          3.9013671875,
+          2.85009765625,
+          2.416015625
+        ],
+        "journal_bytes": 37777200,
+        "processes": [
+          {
+            "cpu_percent_ps": 26.4,
+            "cpu_time": "0:48.12",
+            "name": "campaign",
+            "pid": 42181,
+            "rss_bytes": 98435072
+          },
+          {
+            "cpu_percent_ps": 18.5,
+            "cpu_time": "0:24.40",
+            "name": "redis",
+            "pid": 42184,
+            "rss_bytes": 26755072
+          },
+          {
+            "cpu_percent_ps": 115.7,
+            "cpu_time": "3:23.94",
+            "name": "solana",
+            "pid": 42189,
+            "rss_bytes": 327139328
+          },
+          {
+            "cpu_percent_ps": 29.9,
+            "cpu_time": "0:46.65",
+            "name": "engine",
+            "pid": 42211,
+            "rss_bytes": 51134464
+          }
+        ]
+      },
+      "seconds": 135.016
+    },
+    {
+      "chains": {
+        "solana": {
+          "admitted": 10472,
+          "attempted": 10413,
+          "client": {
+            "dispatched": 10501
+          },
+          "finalized": 0,
+          "included": 9455,
+          "observer_pending_signatures": 10413,
+          "responses": {
+            "202": 10473
+          },
+          "rpc": {
+            "accepted_unique_wires": 10413,
+            "active": 0,
+            "calls": {
+              "getLatestBlockhash": 10413,
+              "getSignatureStatuses": 85543,
+              "getTransaction": 9113,
+              "sendTransaction": 10413
+            },
+            "dropped_responses": 0,
+            "forwarded_sends": 10413,
+            "http_requests": 115482,
+            "http_transport": {
+              "active": 0,
+              "connection_attempts": 105,
+              "connection_reuses": 115377,
+              "connections_opened": 105,
+              "failures": [],
+              "owned_connections": 85,
+              "peak_active": 70,
+              "requests": 115482,
+              "responses": 115482,
+              "status_200": 115482
+            },
+            "methods": {
+              "getLatestBlockhash": {
+                "count": 10413,
+                "errors": 0,
+                "max_ms": 33.31024999999954,
+                "total_ms": 24547.74703400173
+              },
+              "getSignatureStatuses": {
+                "count": 85543,
+                "errors": 0,
+                "max_ms": 56.31858300000658,
+                "total_ms": 348552.33375200175
+              },
+              "getTransaction": {
+                "count": 9113,
+                "errors": 0,
+                "max_ms": 44.6842079999783,
+                "total_ms": 80504.71781599928
+              },
+              "sendTransaction": {
+                "count": 10413,
+                "errors": 0,
+                "max_ms": 42.64458299999774,
+                "total_ms": 35026.982828998545
+              }
+            },
+            "peak_inflight": 92,
+            "proxy_overloads": 0
+          },
+          "terminal": 9105
+        }
+      },
+      "observer_duration_ms": 6.936,
+      "phase": "load",
+      "resources": {
+        "free_disk_bytes": 15163502592,
+        "host_load_average": [
+          3.9091796875,
+          2.869140625,
+          2.42529296875
+        ],
+        "journal_bytes": 39071536,
+        "processes": [
+          {
+            "cpu_percent_ps": 20.7,
+            "cpu_time": "0:49.58",
+            "name": "campaign",
+            "pid": 42181,
+            "rss_bytes": 99205120
+          },
+          {
+            "cpu_percent_ps": 15.3,
+            "cpu_time": "0:25.18",
+            "name": "redis",
+            "pid": 42184,
+            "rss_bytes": 27344896
+          },
+          {
+            "cpu_percent_ps": 114.4,
+            "cpu_time": "3:30.05",
+            "name": "solana",
+            "pid": 42189,
+            "rss_bytes": 340393984
+          },
+          {
+            "cpu_percent_ps": 23.6,
+            "cpu_time": "0:48.10",
+            "name": "engine",
+            "pid": 42211,
+            "rss_bytes": 55066624
+          }
+        ]
+      },
+      "seconds": 140.012
+    },
+    {
+      "chains": {
+        "solana": {
+          "admitted": 10854,
+          "attempted": 10764,
+          "client": {
+            "dispatched": 10877
+          },
+          "finalized": 0,
+          "included": 9744,
+          "observer_pending_signatures": 10764,
+          "responses": {
+            "202": 10854
+          },
+          "rpc": {
+            "accepted_unique_wires": 10702,
+            "active": 0,
+            "calls": {
+              "getLatestBlockhash": 10774,
+              "getSignatureStatuses": 87813,
+              "getTransaction": 9498,
+              "sendTransaction": 10702
+            },
+            "dropped_responses": 0,
+            "forwarded_sends": 10702,
+            "http_requests": 118787,
+            "http_transport": {
+              "active": 0,
+              "connection_attempts": 106,
+              "connection_reuses": 118681,
+              "connections_opened": 106,
+              "failures": [],
+              "owned_connections": 84,
+              "peak_active": 70,
+              "requests": 118787,
+              "responses": 118787,
+              "status_200": 118787
+            },
+            "methods": {
+              "getLatestBlockhash": {
+                "count": 10774,
+                "errors": 0,
+                "max_ms": 33.31024999999954,
+                "total_ms": 25403.965074001502
+              },
+              "getSignatureStatuses": {
+                "count": 87813,
+                "errors": 0,
+                "max_ms": 56.31858300000658,
+                "total_ms": 352921.48852000193
+              },
+              "getTransaction": {
+                "count": 9498,
+                "errors": 0,
+                "max_ms": 44.6842079999783,
+                "total_ms": 82301.13634199911
+              },
+              "sendTransaction": {
+                "count": 10702,
+                "errors": 0,
+                "max_ms": 42.64458299999774,
+                "total_ms": 36369.08504699859
+              }
+            },
+            "peak_inflight": 92,
+            "proxy_overloads": 0
+          },
+          "terminal": 9498
+        }
+      },
+      "observer_duration_ms": 6.918,
+      "phase": "load",
+      "resources": {
+        "free_disk_bytes": 15132110848,
+        "host_load_average": [
+          3.755859375,
+          2.8544921875,
+          2.42236328125
+        ],
+        "journal_bytes": 40263472,
+        "processes": [
+          {
+            "cpu_percent_ps": 15.4,
+            "cpu_time": "0:50.97",
+            "name": "campaign",
+            "pid": 42181,
+            "rss_bytes": 99532800
+          },
+          {
+            "cpu_percent_ps": 12.3,
+            "cpu_time": "0:25.95",
+            "name": "redis",
+            "pid": 42184,
+            "rss_bytes": 28344320
+          },
+          {
+            "cpu_percent_ps": 118.1,
+            "cpu_time": "3:36.10",
+            "name": "solana",
+            "pid": 42189,
+            "rss_bytes": 350093312
+          },
+          {
+            "cpu_percent_ps": 22.9,
+            "cpu_time": "0:49.49",
+            "name": "engine",
+            "pid": 42211,
+            "rss_bytes": 56360960
+          }
+        ]
+      },
+      "seconds": 145.013
+    },
+    {
+      "chains": {
+        "solana": {
+          "admitted": 11244,
+          "attempted": 11155,
+          "client": {
+            "dispatched": 11252
+          },
+          "finalized": 0,
+          "included": 10061,
+          "observer_pending_signatures": 11155,
+          "responses": {
+            "202": 11244
+          },
+          "rpc": {
+            "accepted_unique_wires": 11155,
+            "active": 0,
+            "calls": {
+              "getLatestBlockhash": 11155,
+              "getSignatureStatuses": 90291,
+              "getTransaction": 9880,
+              "sendTransaction": 11155
+            },
+            "dropped_responses": 0,
+            "forwarded_sends": 11155,
+            "http_requests": 122481,
+            "http_transport": {
+              "active": 0,
+              "connection_attempts": 116,
+              "connection_reuses": 122365,
+              "connections_opened": 116,
+              "failures": [],
+              "owned_connections": 94,
+              "peak_active": 70,
+              "requests": 122481,
+              "responses": 122481,
+              "status_200": 122481
+            },
+            "methods": {
+              "getLatestBlockhash": {
+                "count": 11155,
+                "errors": 0,
+                "max_ms": 33.31024999999954,
+                "total_ms": 26768.12381800148
+              },
+              "getSignatureStatuses": {
+                "count": 90291,
+                "errors": 0,
+                "max_ms": 56.31858300000658,
+                "total_ms": 358657.913231003
+              },
+              "getTransaction": {
+                "count": 9880,
+                "errors": 0,
+                "max_ms": 44.6842079999783,
+                "total_ms": 84660.7463319996
+              },
+              "sendTransaction": {
+                "count": 11155,
+                "errors": 0,
+                "max_ms": 42.64458299999774,
+                "total_ms": 37845.420179998815
+              }
+            },
+            "peak_inflight": 92,
+            "proxy_overloads": 0
+          },
+          "terminal": 9810
+        }
+      },
+      "observer_duration_ms": 7.132,
+      "phase": "load",
+      "resources": {
+        "free_disk_bytes": 15100596224,
+        "host_load_average": [
+          3.615234375,
+          2.83984375,
+          2.41943359375
+        ],
+        "journal_bytes": 41541424,
+        "processes": [
+          {
+            "cpu_percent_ps": 29.2,
+            "cpu_time": "0:52.58",
+            "name": "campaign",
+            "pid": 42181,
+            "rss_bytes": 103268352
+          },
+          {
+            "cpu_percent_ps": 19.8,
+            "cpu_time": "0:26.81",
+            "name": "redis",
+            "pid": 42184,
+            "rss_bytes": 29786112
+          },
+          {
+            "cpu_percent_ps": 132.2,
+            "cpu_time": "3:42.31",
+            "name": "solana",
+            "pid": 42189,
+            "rss_bytes": 360038400
+          },
+          {
+            "cpu_percent_ps": 32.9,
+            "cpu_time": "0:51.06",
+            "name": "engine",
+            "pid": 42211,
+            "rss_bytes": 56623104
+          }
+        ]
+      },
+      "seconds": 150.015
+    },
+    {
+      "chains": {
+        "solana": {
+          "admitted": 11611,
+          "attempted": 11518,
+          "client": {
+            "dispatched": 11627
+          },
+          "finalized": 0,
+          "included": 10368,
+          "observer_pending_signatures": 11518,
+          "responses": {
+            "202": 11613
+          },
+          "rpc": {
+            "accepted_unique_wires": 11499,
+            "active": 4,
+            "calls": {
+              "getLatestBlockhash": 11518,
+              "getSignatureStatuses": 92856,
+              "getTransaction": 10185,
+              "sendTransaction": 11501
+            },
+            "dropped_responses": 0,
+            "forwarded_sends": 11501,
+            "http_requests": 126060,
+            "http_transport": {
+              "active": 0,
+              "connection_attempts": 116,
+              "connection_reuses": 125943,
+              "connections_opened": 116,
+              "failures": [],
+              "owned_connections": 94,
+              "peak_active": 70,
+              "requests": 126059,
+              "responses": 126059,
+              "status_200": 126059
+            },
+            "methods": {
+              "getLatestBlockhash": {
+                "count": 11518,
+                "errors": 0,
+                "max_ms": 34.67249999999922,
+                "total_ms": 28415.059310002012
+              },
+              "getSignatureStatuses": {
+                "count": 92856,
+                "errors": 0,
+                "max_ms": 56.31858300000658,
+                "total_ms": 363350.2481950025
+              },
+              "getTransaction": {
+                "count": 10185,
+                "errors": 0,
+                "max_ms": 44.6842079999783,
+                "total_ms": 85830.4229499997
+              },
+              "sendTransaction": {
+                "count": 11498,
+                "errors": 0,
+                "max_ms": 42.64458299999774,
+                "total_ms": 38905.41500599907
+              }
+            },
+            "peak_inflight": 92,
+            "proxy_overloads": 0
+          },
+          "terminal": 10185
+        }
+      },
+      "observer_duration_ms": 9.931,
+      "phase": "load",
+      "resources": {
+        "free_disk_bytes": 15085924352,
+        "host_load_average": [
+          4.12646484375,
+          2.95849609375,
+          2.46337890625
+        ],
+        "journal_bytes": 42802992,
+        "processes": [
+          {
+            "cpu_percent_ps": 29.8,
+            "cpu_time": "0:54.12",
+            "name": "campaign",
+            "pid": 42181,
+            "rss_bytes": 120553472
+          },
+          {
+            "cpu_percent_ps": 20.2,
+            "cpu_time": "0:27.65",
+            "name": "redis",
+            "pid": 42184,
+            "rss_bytes": 30441472
+          },
+          {
+            "cpu_percent_ps": 114.2,
+            "cpu_time": "3:48.55",
+            "name": "solana",
+            "pid": 42189,
+            "rss_bytes": 369754112
+          },
+          {
+            "cpu_percent_ps": 36.7,
+            "cpu_time": "0:52.61",
+            "name": "engine",
+            "pid": 42211,
+            "rss_bytes": 56639488
+          }
+        ]
+      },
+      "seconds": 155.016
+    },
+    {
+      "chains": {
+        "solana": {
+          "admitted": 11986,
+          "attempted": 11896,
+          "client": {
+            "dispatched": 12002
+          },
+          "finalized": 0,
+          "included": 10745,
+          "observer_pending_signatures": 11896,
+          "responses": {
+            "202": 11988
+          },
+          "rpc": {
+            "accepted_unique_wires": 11896,
+            "active": 0,
+            "calls": {
+              "getLatestBlockhash": 11896,
+              "getSignatureStatuses": 94694,
+              "getTransaction": 10637,
+              "sendTransaction": 11896
+            },
+            "dropped_responses": 0,
+            "forwarded_sends": 11896,
+            "http_requests": 129123,
+            "http_transport": {
+              "active": 0,
+              "connection_attempts": 116,
+              "connection_reuses": 129007,
+              "connections_opened": 116,
+              "failures": [],
+              "owned_connections": 94,
+              "peak_active": 70,
+              "requests": 129123,
+              "responses": 129123,
+              "status_200": 129123
+            },
+            "methods": {
+              "getLatestBlockhash": {
+                "count": 11896,
+                "errors": 0,
+                "max_ms": 34.67249999999922,
+                "total_ms": 29764.374056002445
+              },
+              "getSignatureStatuses": {
+                "count": 94694,
+                "errors": 0,
+                "max_ms": 56.31858300000658,
+                "total_ms": 367999.91053100163
+              },
+              "getTransaction": {
+                "count": 10637,
+                "errors": 0,
+                "max_ms": 44.6842079999783,
+                "total_ms": 87833.4234459999
+              },
+              "sendTransaction": {
+                "count": 11896,
+                "errors": 0,
+                "max_ms": 42.64458299999774,
+                "total_ms": 40171.74692399952
+              }
+            },
+            "peak_inflight": 92,
+            "proxy_overloads": 0
+          },
+          "terminal": 10540
+        }
+      },
+      "observer_duration_ms": 7.644,
+      "phase": "load",
+      "resources": {
+        "free_disk_bytes": 15115878400,
+        "host_load_average": [
+          4.0361328125,
+          2.958984375,
+          2.46630859375
+        ],
+        "journal_bytes": 44056368,
+        "processes": [
+          {
+            "cpu_percent_ps": 16.3,
+            "cpu_time": "0:55.55",
+            "name": "campaign",
+            "pid": 42181,
+            "rss_bytes": 104955904
+          },
+          {
+            "cpu_percent_ps": 12.7,
+            "cpu_time": "0:28.40",
+            "name": "redis",
+            "pid": 42184,
+            "rss_bytes": 31178752
+          },
+          {
+            "cpu_percent_ps": 133.7,
+            "cpu_time": "3:54.71",
+            "name": "solana",
+            "pid": 42189,
+            "rss_bytes": 379125760
+          },
+          {
+            "cpu_percent_ps": 22.1,
+            "cpu_time": "0:54.01",
+            "name": "engine",
+            "pid": 42211,
+            "rss_bytes": 65765376
+          }
+        ]
+      },
+      "seconds": 160.015
+    },
+    {
+      "chains": {
+        "solana": {
+          "admitted": 12337,
+          "attempted": 12207,
+          "client": {
+            "dispatched": 12377
+          },
+          "finalized": 0,
+          "included": 11056,
+          "observer_pending_signatures": 12207,
+          "responses": {
+            "202": 12338
+          },
+          "rpc": {
+            "accepted_unique_wires": 12207,
+            "active": 0,
+            "calls": {
+              "getLatestBlockhash": 12207,
+              "getSignatureStatuses": 96291,
+              "getTransaction": 10985,
+              "sendTransaction": 12207
+            },
+            "dropped_responses": 0,
+            "forwarded_sends": 12207,
+            "http_requests": 131690,
+            "http_transport": {
+              "active": 0,
+              "connection_attempts": 116,
+              "connection_reuses": 131574,
+              "connections_opened": 116,
+              "failures": [],
+              "owned_connections": 91,
+              "peak_active": 70,
+              "requests": 131690,
+              "responses": 131690,
+              "status_200": 131690
+            },
+            "methods": {
+              "getLatestBlockhash": {
+                "count": 12207,
+                "errors": 0,
+                "max_ms": 34.67249999999922,
+                "total_ms": 30614.365550002167
+              },
+              "getSignatureStatuses": {
+                "count": 96291,
+                "errors": 0,
+                "max_ms": 56.31858300000658,
+                "total_ms": 371538.5315230026
+              },
+              "getTransaction": {
+                "count": 10985,
+                "errors": 0,
+                "max_ms": 44.6842079999783,
+                "total_ms": 88898.93290699972
+              },
+              "sendTransaction": {
+                "count": 12207,
+                "errors": 0,
+                "max_ms": 42.64458299999774,
+                "total_ms": 41166.018509999565
+              }
+            },
+            "peak_inflight": 92,
+            "proxy_overloads": 0
+          },
+          "terminal": 10978
+        }
+      },
+      "observer_duration_ms": 5.885,
+      "phase": "load",
+      "resources": {
+        "free_disk_bytes": 15104258048,
+        "host_load_average": [
+          3.953125,
+          2.95947265625,
+          2.46923828125
+        ],
+        "journal_bytes": 45248304,
+        "processes": [
+          {
+            "cpu_percent_ps": 10.6,
+            "cpu_time": "0:56.75",
+            "name": "campaign",
+            "pid": 42181,
+            "rss_bytes": 105299968
+          },
+          {
+            "cpu_percent_ps": 11.1,
+            "cpu_time": "0:29.07",
+            "name": "redis",
+            "pid": 42184,
+            "rss_bytes": 31653888
+          },
+          {
+            "cpu_percent_ps": 108.5,
+            "cpu_time": "4:00.69",
+            "name": "solana",
+            "pid": 42189,
+            "rss_bytes": 388792320
+          },
+          {
+            "cpu_percent_ps": 15.7,
+            "cpu_time": "0:55.28",
+            "name": "engine",
+            "pid": 42211,
+            "rss_bytes": 65814528
+          }
+        ]
+      },
+      "seconds": 165.012
+    },
+    {
+      "chains": {
+        "solana": {
+          "admitted": 12681,
+          "attempted": 12506,
+          "client": {
+            "dispatched": 12744,
+            "dropped_client_capacity": 8
+          },
+          "finalized": 0,
+          "included": 11355,
+          "observer_pending_signatures": 12506,
+          "responses": {
+            "202": 12681
+          },
+          "rpc": {
+            "accepted_unique_wires": 12506,
+            "active": 0,
+            "calls": {
+              "getLatestBlockhash": 12506,
+              "getSignatureStatuses": 97661,
+              "getTransaction": 11228,
+              "sendTransaction": 12506
+            },
+            "dropped_responses": 0,
+            "forwarded_sends": 12506,
+            "http_requests": 133901,
+            "http_transport": {
+              "active": 0,
+              "connection_attempts": 116,
+              "connection_reuses": 133785,
+              "connections_opened": 116,
+              "failures": [],
+              "owned_connections": 87,
+              "peak_active": 70,
+              "requests": 133901,
+              "responses": 133901,
+              "status_200": 133901
+            },
+            "methods": {
+              "getLatestBlockhash": {
+                "count": 12506,
+                "errors": 0,
+                "max_ms": 34.67249999999922,
+                "total_ms": 31463.431176002345
+              },
+              "getSignatureStatuses": {
+                "count": 97661,
+                "errors": 0,
+                "max_ms": 56.31858300000658,
+                "total_ms": 374170.6437670027
+              },
+              "getTransaction": {
+                "count": 11228,
+                "errors": 0,
+                "max_ms": 44.6842079999783,
+                "total_ms": 89764.47436599979
+              },
+              "sendTransaction": {
+                "count": 12506,
+                "errors": 0,
+                "max_ms": 42.64458299999774,
+                "total_ms": 42263.29104899964
+              }
+            },
+            "peak_inflight": 92,
+            "proxy_overloads": 0
+          },
+          "terminal": 11210
+        }
+      },
+      "observer_duration_ms": 5.909,
+      "phase": "load",
+      "resources": {
+        "free_disk_bytes": 15072899072,
+        "host_load_average": [
+          4.03662109375,
+          2.9931640625,
+          2.48388671875
+        ],
+        "journal_bytes": 46346032,
+        "processes": [
+          {
+            "cpu_percent_ps": 0.4,
+            "cpu_time": "0:57.78",
+            "name": "campaign",
+            "pid": 42181,
+            "rss_bytes": 107085824
+          },
+          {
+            "cpu_percent_ps": 5.9,
+            "cpu_time": "0:29.61",
+            "name": "redis",
+            "pid": 42184,
+            "rss_bytes": 31801344
+          },
+          {
+            "cpu_percent_ps": 111.8,
+            "cpu_time": "4:06.67",
+            "name": "solana",
+            "pid": 42189,
+            "rss_bytes": 398376960
+          },
+          {
+            "cpu_percent_ps": 6.9,
+            "cpu_time": "0:56.33",
+            "name": "engine",
+            "pid": 42211,
+            "rss_bytes": 92356608
+          }
+        ]
+      },
+      "seconds": 170.016
+    },
+    {
+      "chains": {
+        "solana": {
+          "admitted": 13084,
+          "attempted": 12706,
+          "client": {
+            "dispatched": 13105,
+            "dropped_client_capacity": 22
+          },
+          "finalized": 0,
+          "included": 11524,
+          "observer_pending_signatures": 12706,
+          "responses": {
+            "202": 13084
+          },
+          "rpc": {
+            "accepted_unique_wires": 12675,
+            "active": 0,
+            "calls": {
+              "getLatestBlockhash": 12745,
+              "getSignatureStatuses": 98874,
+              "getTransaction": 11665,
+              "sendTransaction": 12675
+            },
+            "dropped_responses": 0,
+            "forwarded_sends": 12675,
+            "http_requests": 135959,
+            "http_transport": {
+              "active": 0,
+              "connection_attempts": 116,
+              "connection_reuses": 135843,
+              "connections_opened": 116,
+              "failures": [],
+              "owned_connections": 73,
+              "peak_active": 70,
+              "requests": 135959,
+              "responses": 135959,
+              "status_200": 135959
+            },
+            "methods": {
+              "getLatestBlockhash": {
+                "count": 12745,
+                "errors": 0,
+                "max_ms": 34.67249999999922,
+                "total_ms": 31768.545634002465
+              },
+              "getSignatureStatuses": {
+                "count": 98874,
+                "errors": 0,
+                "max_ms": 56.31858300000658,
+                "total_ms": 376916.23021600273
+              },
+              "getTransaction": {
+                "count": 11665,
+                "errors": 0,
+                "max_ms": 44.6842079999783,
+                "total_ms": 91182.60273899957
+              },
+              "sendTransaction": {
+                "count": 12675,
+                "errors": 0,
+                "max_ms": 42.64458299999774,
+                "total_ms": 42764.492052999754
+              }
+            },
+            "peak_inflight": 92,
+            "proxy_overloads": 0
+          },
+          "terminal": 11665
+        }
+      },
+      "observer_duration_ms": 4.385,
+      "phase": "load",
+      "resources": {
+        "free_disk_bytes": 15063453696,
+        "host_load_average": [
+          3.873046875,
+          2.9765625,
+          2.48095703125
+        ],
+        "journal_bytes": 47320880,
+        "processes": [
+          {
+            "cpu_percent_ps": 16.9,
+            "cpu_time": "0:58.71",
+            "name": "campaign",
+            "pid": 42181,
+            "rss_bytes": 106463232
+          },
+          {
+            "cpu_percent_ps": 11.2,
+            "cpu_time": "0:30.12",
+            "name": "redis",
+            "pid": 42184,
+            "rss_bytes": 31932416
+          },
+          {
+            "cpu_percent_ps": 130.9,
+            "cpu_time": "4:12.58",
+            "name": "solana",
+            "pid": 42189,
+            "rss_bytes": 408436736
+          },
+          {
+            "cpu_percent_ps": 24.1,
+            "cpu_time": "0:57.27",
+            "name": "engine",
+            "pid": 42211,
+            "rss_bytes": 92536832
+          }
+        ]
+      },
+      "seconds": 175.016
+    },
+    {
+      "chains": {
+        "solana": {
+          "admitted": 13445,
+          "attempted": 13082,
+          "client": {
+            "dispatched": 13478,
+            "dropped_client_capacity": 22
+          },
+          "finalized": 0,
+          "included": 11863,
+          "observer_pending_signatures": 13082,
+          "responses": {
+            "202": 13445
+          },
+          "rpc": {
+            "accepted_unique_wires": 13082,
+            "active": 1,
+            "calls": {
+              "getLatestBlockhash": 13082,
+              "getSignatureStatuses": 99104,
+              "getTransaction": 11830,
+              "sendTransaction": 13082
+            },
+            "dropped_responses": 0,
+            "forwarded_sends": 13082,
+            "http_requests": 137098,
+            "http_transport": {
+              "active": 1,
+              "connection_attempts": 116,
+              "connection_reuses": 136982,
+              "connections_opened": 116,
+              "failures": [],
+              "owned_connections": 73,
+              "peak_active": 70,
+              "requests": 137098,
+              "responses": 137097,
+              "status_200": 137097
+            },
+            "methods": {
+              "getLatestBlockhash": {
+                "count": 13082,
+                "errors": 0,
+                "max_ms": 34.67249999999922,
+                "total_ms": 32123.408254002366
+              },
+              "getSignatureStatuses": {
+                "count": 99104,
+                "errors": 0,
+                "max_ms": 56.31858300000658,
+                "total_ms": 377147.3548380023
+              },
+              "getTransaction": {
+                "count": 11829,
+                "errors": 0,
+                "max_ms": 44.6842079999783,
+                "total_ms": 91381.2393129996
+              },
+              "sendTransaction": {
+                "count": 13082,
+                "errors": 0,
+                "max_ms": 42.64458299999774,
+                "total_ms": 44741.22234499935
+              }
+            },
+            "peak_inflight": 92,
+            "proxy_overloads": 0
+          },
+          "terminal": 11783
+        }
+      },
+      "observer_duration_ms": 6.751,
+      "phase": "load",
+      "resources": {
+        "free_disk_bytes": 15041290240,
+        "host_load_average": [
+          3.72265625,
+          2.9599609375,
+          2.47802734375
+        ],
+        "journal_bytes": 48508720,
+        "processes": [
+          {
+            "cpu_percent_ps": 13.6,
+            "cpu_time": "0:59.30",
+            "name": "campaign",
+            "pid": 42181,
+            "rss_bytes": 106921984
+          },
+          {
+            "cpu_percent_ps": 9.1,
+            "cpu_time": "0:30.42",
+            "name": "redis",
+            "pid": 42184,
+            "rss_bytes": 32227328
+          },
+          {
+            "cpu_percent_ps": 117.0,
+            "cpu_time": "4:18.63",
+            "name": "solana",
+            "pid": 42189,
+            "rss_bytes": 419004416
+          },
+          {
+            "cpu_percent_ps": 15.1,
+            "cpu_time": "0:57.96",
+            "name": "engine",
+            "pid": 42211,
+            "rss_bytes": 92536832
+          }
+        ]
+      },
+      "seconds": 180.006
+    },
+    {
+      "chains": {
+        "solana": {
+          "admitted": 13447,
+          "attempted": 13082,
+          "client": {
+            "dispatched": 13478,
+            "dropped_client_capacity": 22
+          },
+          "finalized": 2048,
+          "included": 11952,
+          "observer_pending_signatures": 13082,
+          "responses": {
+            "202": 13448
+          },
+          "rpc": {
+            "accepted_unique_wires": 13082,
+            "active": 0,
+            "calls": {
+              "getLatestBlockhash": 13082,
+              "getSignatureStatuses": 99107,
+              "getTransaction": 11833,
+              "sendTransaction": 13082
+            },
+            "dropped_responses": 0,
+            "forwarded_sends": 13082,
+            "http_requests": 137104,
+            "http_transport": {
+              "active": 0,
+              "connection_attempts": 116,
+              "connection_reuses": 136988,
+              "connections_opened": 116,
+              "failures": [],
+              "owned_connections": 73,
+              "peak_active": 70,
+              "requests": 137104,
+              "responses": 137104,
+              "status_200": 137104
+            },
+            "methods": {
+              "getLatestBlockhash": {
+                "count": 13082,
+                "errors": 0,
+                "max_ms": 34.67249999999922,
+                "total_ms": 32123.408254002366
+              },
+              "getSignatureStatuses": {
+                "count": 99107,
+                "errors": 0,
+                "max_ms": 56.31858300000658,
+                "total_ms": 377150.2029210023
+              },
+              "getTransaction": {
+                "count": 11833,
+                "errors": 0,
+                "max_ms": 44.6842079999783,
+                "total_ms": 91388.8149799996
+              },
+              "sendTransaction": {
+                "count": 13082,
+                "errors": 0,
+                "max_ms": 42.64458299999774,
+                "total_ms": 44741.22234499935
+              }
+            },
+            "peak_inflight": 92,
+            "proxy_overloads": 0
+          },
+          "terminal": 11784
+        }
+      },
+      "observer_duration_ms": 20.246,
+      "phase": "client_drain",
+      "resources": {
+        "free_disk_bytes": 15041282048,
+        "host_load_average": [
+          3.72265625,
+          2.9599609375,
+          2.47802734375
+        ],
+        "journal_bytes": 48508720,
+        "processes": [
+          {
+            "cpu_percent_ps": 13.6,
+            "cpu_time": "0:59.31",
+            "name": "campaign",
+            "pid": 42181,
+            "rss_bytes": 104775680
+          },
+          {
+            "cpu_percent_ps": 9.1,
+            "cpu_time": "0:30.42",
+            "name": "redis",
+            "pid": 42184,
+            "rss_bytes": 32227328
+          },
+          {
+            "cpu_percent_ps": 117.0,
+            "cpu_time": "4:18.67",
+            "name": "solana",
+            "pid": 42189,
+            "rss_bytes": 419086336
+          },
+          {
+            "cpu_percent_ps": 15.1,
+            "cpu_time": "0:57.96",
+            "name": "engine",
+            "pid": 42211,
+            "rss_bytes": 92536832
+          }
+        ]
+      },
+      "seconds": 180.018
+    },
+    {
+      "chains": {
+        "solana": {
+          "admitted": 13478,
+          "attempted": 13082,
+          "client": {
+            "dispatched": 13478,
+            "dropped_client_capacity": 22
+          },
+          "finalized": 4096,
+          "included": 12202,
+          "observer_pending_signatures": 11034,
+          "responses": {
+            "202": 13478
+          },
+          "rpc": {
+            "accepted_unique_wires": 13082,
+            "active": 2,
+            "calls": {
+              "getLatestBlockhash": 13082,
+              "getSignatureStatuses": 99206,
+              "getTransaction": 11932,
+              "sendTransaction": 13082
+            },
+            "dropped_responses": 0,
+            "forwarded_sends": 13082,
+            "http_requests": 137302,
+            "http_transport": {
+              "active": 2,
+              "connection_attempts": 116,
+              "connection_reuses": 137186,
+              "connections_opened": 116,
+              "failures": [],
+              "owned_connections": 73,
+              "peak_active": 70,
+              "requests": 137302,
+              "responses": 137300,
+              "status_200": 137300
+            },
+            "methods": {
+              "getLatestBlockhash": {
+                "count": 13082,
+                "errors": 0,
+                "max_ms": 34.67249999999922,
+                "total_ms": 32123.408254002366
+              },
+              "getSignatureStatuses": {
+                "count": 99206,
+                "errors": 0,
+                "max_ms": 56.31858300000658,
+                "total_ms": 377265.3748470025
+              },
+              "getTransaction": {
+                "count": 11930,
+                "errors": 0,
+                "max_ms": 44.6842079999783,
+                "total_ms": 91503.58856299963
+              },
+              "sendTransaction": {
+                "count": 13082,
+                "errors": 0,
+                "max_ms": 42.64458299999774,
+                "total_ms": 44741.22234499935
+              }
+            },
+            "peak_inflight": 92,
+            "proxy_overloads": 0
+          },
+          "terminal": 11880
+        }
+      },
+      "observer_duration_ms": 20.748,
+      "phase": "drain",
+      "resources": {
+        "free_disk_bytes": 15041282048,
+        "host_load_average": [
+          3.72265625,
+          2.9599609375,
+          2.47802734375
+        ],
+        "journal_bytes": 48508720,
+        "processes": [
+          {
+            "cpu_percent_ps": 12.1,
+            "cpu_time": "0:59.41",
+            "name": "campaign",
+            "pid": 42181,
+            "rss_bytes": 119603200
+          },
+          {
+            "cpu_percent_ps": 9.0,
+            "cpu_time": "0:30.47",
+            "name": "redis",
+            "pid": 42184,
+            "rss_bytes": 32227328
+          },
+          {
+            "cpu_percent_ps": 110.5,
+            "cpu_time": "4:19.27",
+            "name": "solana",
+            "pid": 42189,
+            "rss_bytes": 420069376
+          },
+          {
+            "cpu_percent_ps": 12.8,
+            "cpu_time": "0:58.04",
+            "name": "engine",
+            "pid": 42211,
+            "rss_bytes": 92536832
+          }
+        ]
+      },
+      "seconds": 180.543
+    },
+    {
+      "chains": {
+        "solana": {
+          "admitted": 13478,
+          "attempted": 13478,
+          "client": {
+            "dispatched": 13478,
+            "dropped_client_capacity": 22
+          },
+          "finalized": 6144,
+          "included": 12433,
+          "observer_pending_signatures": 9382,
+          "responses": {
+            "202": 13478
+          },
+          "rpc": {
+            "accepted_unique_wires": 13478,
+            "active": 0,
+            "calls": {
+              "getLatestBlockhash": 13478,
+              "getSignatureStatuses": 100624,
+              "getTransaction": 12416,
+              "sendTransaction": 13478
+            },
+            "dropped_responses": 0,
+            "forwarded_sends": 13478,
+            "http_requests": 139996,
+            "http_transport": {
+              "active": 0,
+              "connection_attempts": 143,
+              "connection_reuses": 139853,
+              "connections_opened": 143,
+              "failures": [],
+              "owned_connections": 100,
+              "peak_active": 70,
+              "requests": 139996,
+              "responses": 139996,
+              "status_200": 139996
+            },
+            "methods": {
+              "getLatestBlockhash": {
+                "count": 13478,
+                "errors": 0,
+                "max_ms": 74.28066699998226,
+                "total_ms": 36110.78575100267
+              },
+              "getSignatureStatuses": {
+                "count": 100624,
+                "errors": 0,
+                "max_ms": 62.98316599998088,
+                "total_ms": 387816.45485600224
+              },
+              "getTransaction": {
+                "count": 12416,
+                "errors": 0,
+                "max_ms": 49.908625000000484,
+                "total_ms": 94104.36555599986
+              },
+              "sendTransaction": {
+                "count": 13478,
+                "errors": 0,
+                "max_ms": 73.68224999999029,
+                "total_ms": 54344.741773999216
+              }
+            },
+            "peak_inflight": 92,
+            "proxy_overloads": 0
+          },
+          "terminal": 12379
+        }
+      },
+      "observer_duration_ms": 20.653,
+      "phase": "drain",
+      "resources": {
+        "free_disk_bytes": 15030779904,
+        "host_load_average": [
+          3.58447265625,
+          2.94384765625,
+          2.47509765625
+        ],
+        "journal_bytes": 49491760,
+        "processes": [
+          {
+            "cpu_percent_ps": 6.8,
+            "cpu_time": "1:00.60",
+            "name": "campaign",
+            "pid": 42181,
+            "rss_bytes": 104972288
+          },
+          {
+            "cpu_percent_ps": 8.5,
+            "cpu_time": "0:31.10",
+            "name": "redis",
+            "pid": 42184,
+            "rss_bytes": 32702464
+          },
+          {
+            "cpu_percent_ps": 115.3,
+            "cpu_time": "4:24.91",
+            "name": "solana",
+            "pid": 42189,
+            "rss_bytes": 429965312
+          },
+          {
+            "cpu_percent_ps": 11.1,
+            "cpu_time": "0:59.17",
+            "name": "engine",
+            "pid": 42211,
+            "rss_bytes": 92913664
+          }
+        ]
+      },
+      "seconds": 185.014
+    },
+    {
+      "chains": {
+        "solana": {
+          "admitted": 13478,
+          "attempted": 13478,
+          "client": {
+            "dispatched": 13478,
+            "dropped_client_capacity": 22
+          },
+          "finalized": 6347,
+          "included": 12897,
+          "observer_pending_signatures": 7334,
+          "responses": {
+            "202": 13478
+          },
+          "rpc": {
+            "accepted_unique_wires": 13478,
+            "active": 0,
+            "calls": {
+              "getLatestBlockhash": 13478,
+              "getSignatureStatuses": 101484,
+              "getTransaction": 12430,
+              "sendTransaction": 13478
+            },
+            "dropped_responses": 0,
+            "forwarded_sends": 13478,
+            "http_requests": 140870,
+            "http_transport": {
+              "active": 0,
+              "connection_attempts": 143,
+              "connection_reuses": 140727,
+              "connections_opened": 143,
+              "failures": [],
+              "owned_connections": 100,
+              "peak_active": 70,
+              "requests": 140870,
+              "responses": 140870,
+              "status_200": 140870
+            },
+            "methods": {
+              "getLatestBlockhash": {
+                "count": 13478,
+                "errors": 0,
+                "max_ms": 74.28066699998226,
+                "total_ms": 36110.78575100267
+              },
+              "getSignatureStatuses": {
+                "count": 101484,
+                "errors": 0,
+                "max_ms": 70.8768329999998,
+                "total_ms": 399776.9798940024
+              },
+              "getTransaction": {
+                "count": 12430,
+                "errors": 0,
+                "max_ms": 49.908625000000484,
+                "total_ms": 94116.41576499988
+              },
+              "sendTransaction": {
+                "count": 13478,
+                "errors": 0,
+                "max_ms": 73.68224999999029,
+                "total_ms": 54344.741773999216
+              }
+            },
+            "peak_inflight": 92,
+            "proxy_overloads": 0
+          },
+          "terminal": 12430
+        }
+      },
+      "observer_duration_ms": 9.29,
+      "phase": "drain",
+      "resources": {
+        "free_disk_bytes": 15027613696,
+        "host_load_average": [
+          3.58447265625,
+          2.94384765625,
+          2.47509765625
+        ],
+        "journal_bytes": 49491760,
+        "processes": [
+          {
+            "cpu_percent_ps": 64.6,
+            "cpu_time": "1:00.98",
+            "name": "campaign",
+            "pid": 42181,
+            "rss_bytes": 104988672
+          },
+          {
+            "cpu_percent_ps": 41.9,
+            "cpu_time": "0:31.32",
+            "name": "redis",
+            "pid": 42184,
+            "rss_bytes": 33193984
+          },
+          {
+            "cpu_percent_ps": 118.7,
+            "cpu_time": "4:25.57",
+            "name": "solana",
+            "pid": 42189,
+            "rss_bytes": 430948352
+          },
+          {
+            "cpu_percent_ps": 61.8,
+            "cpu_time": "0:59.49",
+            "name": "engine",
+            "pid": 42211,
+            "rss_bytes": 92913664
+          }
+        ]
+      },
+      "seconds": 185.575
+    },
+    {
+      "chains": {
+        "solana": {
+          "admitted": 13478,
+          "attempted": 13478,
+          "client": {
+            "dispatched": 13478,
+            "dropped_client_capacity": 22
+          },
+          "finalized": 8395,
+          "included": 13033,
+          "observer_pending_signatures": 7131,
+          "responses": {
+            "202": 13478
+          },
+          "rpc": {
+            "accepted_unique_wires": 13478,
+            "active": 0,
+            "calls": {
+              "getLatestBlockhash": 13478,
+              "getSignatureStatuses": 103706,
+              "getTransaction": 12506,
+              "sendTransaction": 13478
+            },
+            "dropped_responses": 0,
+            "forwarded_sends": 13478,
+            "http_requests": 143168,
+            "http_transport": {
+              "active": 0,
+              "connection_attempts": 143,
+              "connection_reuses": 143025,
+              "connections_opened": 143,
+              "failures": [],
+              "owned_connections": 100,
+              "peak_active": 70,
+              "requests": 143168,
+              "responses": 143168,
+              "status_200": 143168
+            },
+            "methods": {
+              "getLatestBlockhash": {
+                "count": 13478,
+                "errors": 0,
+                "max_ms": 74.28066699998226,
+                "total_ms": 36110.78575100267
+              },
+              "getSignatureStatuses": {
+                "count": 103706,
+                "errors": 0,
+                "max_ms": 73.77366599999391,
+                "total_ms": 431574.45536800334
+              },
+              "getTransaction": {
+                "count": 12506,
+                "errors": 0,
+                "max_ms": 49.908625000000484,
+                "total_ms": 94872.54305999995
+              },
+              "sendTransaction": {
+                "count": 13478,
+                "errors": 0,
+                "max_ms": 73.68224999999029,
+                "total_ms": 54344.741773999216
+              }
+            },
+            "peak_inflight": 92,
+            "proxy_overloads": 0
+          },
+          "terminal": 12506
+        }
+      },
+      "observer_duration_ms": 16.886,
+      "phase": "drain",
+      "resources": {
+        "free_disk_bytes": 15000854528,
+        "host_load_average": [
+          3.45751953125,
+          2.927734375,
+          2.47216796875
+        ],
+        "journal_bytes": 49553200,
+        "processes": [
+          {
+            "cpu_percent_ps": 23.0,
+            "cpu_time": "1:01.98",
+            "name": "campaign",
+            "pid": 42181,
+            "rss_bytes": 105512960
+          },
+          {
+            "cpu_percent_ps": 16.4,
+            "cpu_time": "0:31.88",
+            "name": "redis",
+            "pid": 42184,
+            "rss_bytes": 34521088
+          },
+          {
+            "cpu_percent_ps": 108.9,
+            "cpu_time": "4:30.69",
+            "name": "solana",
+            "pid": 42189,
+            "rss_bytes": 439975936
+          },
+          {
+            "cpu_percent_ps": 25.4,
+            "cpu_time": "1:00.38",
+            "name": "engine",
+            "pid": 42211,
+            "rss_bytes": 93044736
+          }
+        ]
+      },
+      "seconds": 190.012
+    },
+    {
+      "chains": {
+        "solana": {
+          "admitted": 13478,
+          "attempted": 13478,
+          "client": {
+            "dispatched": 13478,
+            "dropped_client_capacity": 22
+          },
+          "finalized": 10443,
+          "included": 13226,
+          "observer_pending_signatures": 5083,
+          "responses": {
+            "202": 13478
+          },
+          "rpc": {
+            "accepted_unique_wires": 13478,
+            "active": 0,
+            "calls": {
+              "getLatestBlockhash": 13478,
+              "getSignatureStatuses": 103706,
+              "getTransaction": 12506,
+              "sendTransaction": 13478
+            },
+            "dropped_responses": 0,
+            "forwarded_sends": 13478,
+            "http_requests": 143168,
+            "http_transport": {
+              "active": 0,
+              "connection_attempts": 143,
+              "connection_reuses": 143025,
+              "connections_opened": 143,
+              "failures": [],
+              "owned_connections": 100,
+              "peak_active": 70,
+              "requests": 143168,
+              "responses": 143168,
+              "status_200": 143168
+            },
+            "methods": {
+              "getLatestBlockhash": {
+                "count": 13478,
+                "errors": 0,
+                "max_ms": 74.28066699998226,
+                "total_ms": 36110.78575100267
+              },
+              "getSignatureStatuses": {
+                "count": 103706,
+                "errors": 0,
+                "max_ms": 73.77366599999391,
+                "total_ms": 431574.45536800334
+              },
+              "getTransaction": {
+                "count": 12506,
+                "errors": 0,
+                "max_ms": 49.908625000000484,
+                "total_ms": 94872.54305999995
+              },
+              "sendTransaction": {
+                "count": 13478,
+                "errors": 0,
+                "max_ms": 73.68224999999029,
+                "total_ms": 54344.741773999216
+              }
+            },
+            "peak_inflight": 92,
+            "proxy_overloads": 0
+          },
+          "terminal": 12506
+        }
+      },
+      "observer_duration_ms": 16.741,
+      "phase": "drain",
+      "resources": {
+        "free_disk_bytes": 15000875008,
+        "host_load_average": [
+          3.45751953125,
+          2.927734375,
+          2.47216796875
+        ],
+        "journal_bytes": 49553200,
+        "processes": [
+          {
+            "cpu_percent_ps": 0.5,
+            "cpu_time": "1:01.99",
+            "name": "campaign",
+            "pid": 42181,
+            "rss_bytes": 105512960
+          },
+          {
+            "cpu_percent_ps": 2.8,
+            "cpu_time": "0:31.89",
+            "name": "redis",
+            "pid": 42184,
+            "rss_bytes": 34521088
+          },
+          {
+            "cpu_percent_ps": 106.6,
+            "cpu_time": "4:31.32",
+            "name": "solana",
+            "pid": 42189,
+            "rss_bytes": 440942592
+          },
+          {
+            "cpu_percent_ps": 4.3,
+            "cpu_time": "1:00.39",
+            "name": "engine",
+            "pid": 42211,
+            "rss_bytes": 93044736
+          }
+        ]
+      },
+      "seconds": 190.597
+    },
+    {
+      "chains": {
+        "solana": {
+          "admitted": 13478,
+          "attempted": 13478,
+          "client": {
+            "dispatched": 13478,
+            "dropped_client_capacity": 22
+          },
+          "finalized": 12491,
+          "included": 13478,
+          "observer_pending_signatures": 3035,
+          "responses": {
+            "202": 13478
+          },
+          "rpc": {
+            "accepted_unique_wires": 13478,
+            "active": 0,
+            "calls": {
+              "getLatestBlockhash": 13478,
+              "getSignatureStatuses": 105550,
+              "getTransaction": 12914,
+              "sendTransaction": 13478
+            },
+            "dropped_responses": 0,
+            "forwarded_sends": 13478,
+            "http_requests": 145420,
+            "http_transport": {
+              "active": 0,
+              "connection_attempts": 143,
+              "connection_reuses": 145277,
+              "connections_opened": 143,
+              "failures": [],
+              "owned_connections": 100,
+              "peak_active": 70,
+              "requests": 145420,
+              "responses": 145420,
+              "status_200": 145420
+            },
+            "methods": {
+              "getLatestBlockhash": {
+                "count": 13478,
+                "errors": 0,
+                "max_ms": 74.28066699998226,
+                "total_ms": 36110.78575100267
+              },
+              "getSignatureStatuses": {
+                "count": 105550,
+                "errors": 0,
+                "max_ms": 73.77366599999391,
+                "total_ms": 451474.5237700028
+              },
+              "getTransaction": {
+                "count": 12914,
+                "errors": 0,
+                "max_ms": 49.908625000000484,
+                "total_ms": 97389.12947599993
+              },
+              "sendTransaction": {
+                "count": 13478,
+                "errors": 0,
+                "max_ms": 73.68224999999029,
+                "total_ms": 54344.741773999216
+              }
+            },
+            "peak_inflight": 92,
+            "proxy_overloads": 0
+          },
+          "terminal": 12914
+        }
+      },
+      "observer_duration_ms": 16.751,
+      "phase": "drain",
+      "resources": {
+        "free_disk_bytes": 15052132352,
+        "host_load_average": [
+          3.34033203125,
+          2.912109375,
+          2.46923828125
+        ],
+        "journal_bytes": 49614640,
+        "processes": [
+          {
+            "cpu_percent_ps": 0.1,
+            "cpu_time": "1:02.92",
+            "name": "campaign",
+            "pid": 42181,
+            "rss_bytes": 105545728
+          },
+          {
+            "cpu_percent_ps": 4.1,
+            "cpu_time": "0:32.41",
+            "name": "redis",
+            "pid": 42184,
+            "rss_bytes": 34570240
+          },
+          {
+            "cpu_percent_ps": 108.8,
+            "cpu_time": "4:36.39",
+            "name": "solana",
+            "pid": 42189,
+            "rss_bytes": 448593920
+          },
+          {
+            "cpu_percent_ps": 5.3,
+            "cpu_time": "1:01.19",
+            "name": "engine",
+            "pid": 42211,
+            "rss_bytes": 93306880
+          }
+        ]
+      },
+      "seconds": 195.016
+    },
+    {
+      "chains": {
+        "solana": {
+          "admitted": 13478,
+          "attempted": 13478,
+          "client": {
+            "dispatched": 13478,
+            "dropped_client_capacity": 22
+          },
+          "finalized": 13035,
+          "included": 13478,
+          "observer_pending_signatures": 987,
+          "responses": {
+            "202": 13478
+          },
+          "rpc": {
+            "accepted_unique_wires": 13478,
+            "active": 0,
+            "calls": {
+              "getLatestBlockhash": 13478,
+              "getSignatureStatuses": 105550,
+              "getTransaction": 12914,
+              "sendTransaction": 13478
+            },
+            "dropped_responses": 0,
+            "forwarded_sends": 13478,
+            "http_requests": 145420,
+            "http_transport": {
+              "active": 0,
+              "connection_attempts": 143,
+              "connection_reuses": 145277,
+              "connections_opened": 143,
+              "failures": [],
+              "owned_connections": 100,
+              "peak_active": 70,
+              "requests": 145420,
+              "responses": 145420,
+              "status_200": 145420
+            },
+            "methods": {
+              "getLatestBlockhash": {
+                "count": 13478,
+                "errors": 0,
+                "max_ms": 74.28066699998226,
+                "total_ms": 36110.78575100267
+              },
+              "getSignatureStatuses": {
+                "count": 105550,
+                "errors": 0,
+                "max_ms": 73.77366599999391,
+                "total_ms": 451474.5237700028
+              },
+              "getTransaction": {
+                "count": 12914,
+                "errors": 0,
+                "max_ms": 49.908625000000484,
+                "total_ms": 97389.12947599993
+              },
+              "sendTransaction": {
+                "count": 13478,
+                "errors": 0,
+                "max_ms": 73.68224999999029,
+                "total_ms": 54344.741773999216
+              }
+            },
+            "peak_inflight": 92,
+            "proxy_overloads": 0
+          },
+          "terminal": 12914
+        }
+      },
+      "observer_duration_ms": 8.447,
+      "phase": "drain",
+      "resources": {
+        "free_disk_bytes": 15052099584,
+        "host_load_average": [
+          3.34033203125,
+          2.912109375,
+          2.46923828125
+        ],
+        "journal_bytes": 49614640,
+        "processes": [
+          {
+            "cpu_percent_ps": 0.6,
+            "cpu_time": "1:02.93",
+            "name": "campaign",
+            "pid": 42181,
+            "rss_bytes": 105562112
+          },
+          {
+            "cpu_percent_ps": 1.0,
+            "cpu_time": "0:32.42",
+            "name": "redis",
+            "pid": 42184,
+            "rss_bytes": 34570240
+          },
+          {
+            "cpu_percent_ps": 112.3,
+            "cpu_time": "4:37.06",
+            "name": "solana",
+            "pid": 42189,
+            "rss_bytes": 449527808
+          },
+          {
+            "cpu_percent_ps": 1.3,
+            "cpu_time": "1:01.20",
+            "name": "engine",
+            "pid": 42211,
+            "rss_bytes": 93306880
+          }
+        ]
+      },
+      "seconds": 195.622
+    },
+    {
+      "chains": {
+        "solana": {
+          "admitted": 13478,
+          "attempted": 13478,
+          "client": {
+            "dispatched": 13478,
+            "dropped_client_capacity": 22
+          },
+          "finalized": 13301,
+          "included": 13478,
+          "observer_pending_signatures": 443,
+          "responses": {
+            "202": 13478
+          },
+          "rpc": {
+            "accepted_unique_wires": 13478,
+            "active": 0,
+            "calls": {
+              "getLatestBlockhash": 13478,
+              "getSignatureStatuses": 106651,
+              "getTransaction": 13187,
+              "sendTransaction": 13478
+            },
+            "dropped_responses": 0,
+            "forwarded_sends": 13478,
+            "http_requests": 146794,
+            "http_transport": {
+              "active": 0,
+              "connection_attempts": 143,
+              "connection_reuses": 146651,
+              "connections_opened": 143,
+              "failures": [],
+              "owned_connections": 100,
+              "peak_active": 70,
+              "requests": 146794,
+              "responses": 146794,
+              "status_200": 146794
+            },
+            "methods": {
+              "getLatestBlockhash": {
+                "count": 13478,
+                "errors": 0,
+                "max_ms": 74.28066699998226,
+                "total_ms": 36110.78575100267
+              },
+              "getSignatureStatuses": {
+                "count": 106651,
+                "errors": 0,
+                "max_ms": 73.77366599999391,
+                "total_ms": 463903.14199600345
+              },
+              "getTransaction": {
+                "count": 13187,
+                "errors": 0,
+                "max_ms": 49.908625000000484,
+                "total_ms": 100305.81305700004
+              },
+              "sendTransaction": {
+                "count": 13478,
+                "errors": 0,
+                "max_ms": 73.68224999999029,
+                "total_ms": 54344.741773999216
+              }
+            },
+            "peak_inflight": 92,
+            "proxy_overloads": 0
+          },
+          "terminal": 13102
+        }
+      },
+      "observer_duration_ms": 5.236,
+      "phase": "drain",
+      "resources": {
+        "free_disk_bytes": 15028002816,
+        "host_load_average": [
+          3.31298828125,
+          2.9130859375,
+          2.47216796875
+        ],
+        "journal_bytes": 49676080,
+        "processes": [
+          {
+            "cpu_percent_ps": 0.0,
+            "cpu_time": "1:03.50",
+            "name": "campaign",
+            "pid": 42181,
+            "rss_bytes": 105562112
+          },
+          {
+            "cpu_percent_ps": 0.4,
+            "cpu_time": "0:32.72",
+            "name": "redis",
+            "pid": 42184,
+            "rss_bytes": 34619392
+          },
+          {
+            "cpu_percent_ps": 105.7,
+            "cpu_time": "4:41.92",
+            "name": "solana",
+            "pid": 42189,
+            "rss_bytes": 457097216
+          },
+          {
+            "cpu_percent_ps": 0.8,
+            "cpu_time": "1:01.69",
+            "name": "engine",
+            "pid": 42211,
+            "rss_bytes": 93306880
+          }
+        ]
+      },
+      "seconds": 200.01
+    },
+    {
+      "chains": {
+        "solana": {
+          "admitted": 13478,
+          "attempted": 13478,
+          "client": {
+            "dispatched": 13478,
+            "dropped_client_capacity": 22
+          },
+          "finalized": 13478,
+          "included": 13478,
+          "observer_pending_signatures": 177,
+          "responses": {
+            "202": 13478
+          },
+          "rpc": {
+            "accepted_unique_wires": 13478,
+            "active": 0,
+            "calls": {
+              "getLatestBlockhash": 13478,
+              "getSignatureStatuses": 106760,
+              "getTransaction": 13296,
+              "sendTransaction": 13478
+            },
+            "dropped_responses": 0,
+            "forwarded_sends": 13478,
+            "http_requests": 147012,
+            "http_transport": {
+              "active": 0,
+              "connection_attempts": 143,
+              "connection_reuses": 146869,
+              "connections_opened": 143,
+              "failures": [],
+              "owned_connections": 100,
+              "peak_active": 70,
+              "requests": 147012,
+              "responses": 147012,
+              "status_200": 147012
+            },
+            "methods": {
+              "getLatestBlockhash": {
+                "count": 13478,
+                "errors": 0,
+                "max_ms": 74.28066699998226,
+                "total_ms": 36110.78575100267
+              },
+              "getSignatureStatuses": {
+                "count": 106760,
+                "errors": 0,
+                "max_ms": 73.77366599999391,
+                "total_ms": 464314.89787100354
+              },
+              "getTransaction": {
+                "count": 13296,
+                "errors": 0,
+                "max_ms": 49.908625000000484,
+                "total_ms": 100709.66985400012
+              },
+              "sendTransaction": {
+                "count": 13478,
+                "errors": 0,
+                "max_ms": 73.68224999999029,
+                "total_ms": 54344.741773999216
+              }
+            },
+            "peak_inflight": 92,
+            "proxy_overloads": 0
+          },
+          "terminal": 13254
+        }
+      },
+      "observer_duration_ms": 2.846,
+      "phase": "drain",
+      "resources": {
+        "free_disk_bytes": 15026954240,
+        "host_load_average": [
+          3.31298828125,
+          2.9130859375,
+          2.47216796875
+        ],
+        "journal_bytes": 49741616,
+        "processes": [
+          {
+            "cpu_percent_ps": 16.5,
+            "cpu_time": "1:03.59",
+            "name": "campaign",
+            "pid": 42181,
+            "rss_bytes": 105562112
+          },
+          {
+            "cpu_percent_ps": 9.6,
+            "cpu_time": "0:32.78",
+            "name": "redis",
+            "pid": 42184,
+            "rss_bytes": 34619392
+          },
+          {
+            "cpu_percent_ps": 113.6,
+            "cpu_time": "4:42.63",
+            "name": "solana",
+            "pid": 42189,
+            "rss_bytes": 458047488
+          },
+          {
+            "cpu_percent_ps": 14.6,
+            "cpu_time": "1:01.78",
+            "name": "engine",
+            "pid": 42211,
+            "rss_bytes": 93306880
+          }
+        ]
+      },
+      "seconds": 200.636
+    },
+    {
+      "chains": {
+        "solana": {
+          "admitted": 13478,
+          "attempted": 13478,
+          "client": {
+            "dispatched": 13478,
+            "dropped_client_capacity": 22
+          },
+          "finalized": 13478,
+          "included": 13478,
+          "observer_pending_signatures": 0,
+          "responses": {
+            "202": 13478
+          },
+          "rpc": {
+            "accepted_unique_wires": 13478,
+            "active": 0,
+            "calls": {
+              "getLatestBlockhash": 13478,
+              "getSignatureStatuses": 106942,
+              "getTransaction": 13478,
+              "sendTransaction": 13478
+            },
+            "dropped_responses": 0,
+            "forwarded_sends": 13478,
+            "http_requests": 147376,
+            "http_transport": {
+              "active": 0,
+              "connection_attempts": 143,
+              "connection_reuses": 147233,
+              "connections_opened": 143,
+              "failures": [],
+              "owned_connections": 100,
+              "peak_active": 70,
+              "requests": 147376,
+              "responses": 147376,
+              "status_200": 147376
+            },
+            "methods": {
+              "getLatestBlockhash": {
+                "count": 13478,
+                "errors": 0,
+                "max_ms": 74.28066699998226,
+                "total_ms": 36110.78575100267
+              },
+              "getSignatureStatuses": {
+                "count": 106942,
+                "errors": 0,
+                "max_ms": 73.77366599999391,
+                "total_ms": 464548.33575000305
+              },
+              "getTransaction": {
+                "count": 13478,
+                "errors": 0,
+                "max_ms": 49.908625000000484,
+                "total_ms": 100961.4467670001
+              },
+              "sendTransaction": {
+                "count": 13478,
+                "errors": 0,
+                "max_ms": 73.68224999999029,
+                "total_ms": 54344.741773999216
+              }
+            },
+            "peak_inflight": 92,
+            "proxy_overloads": 0
+          },
+          "terminal": 13478
+        }
+      },
+      "observer_duration_ms": 1.76,
+      "phase": "drain",
+      "resources": {
+        "free_disk_bytes": 15025704960,
+        "host_load_average": [
+          3.20751953125,
+          2.8974609375,
+          2.46923828125
+        ],
+        "journal_bytes": 49803056,
+        "processes": [
+          {
+            "cpu_percent_ps": 0.0,
+            "cpu_time": "1:03.73",
+            "name": "campaign",
+            "pid": 42181,
+            "rss_bytes": 105562112
+          },
+          {
+            "cpu_percent_ps": 0.4,
+            "cpu_time": "0:32.88",
+            "name": "redis",
+            "pid": 42184,
+            "rss_bytes": 34619392
+          },
+          {
+            "cpu_percent_ps": 105.5,
+            "cpu_time": "4:47.53",
+            "name": "solana",
+            "pid": 42189,
+            "rss_bytes": 465338368
+          },
+          {
+            "cpu_percent_ps": 0.9,
+            "cpu_time": "1:01.95",
+            "name": "engine",
+            "pid": 42211,
+            "rss_bytes": 93306880
+          }
+        ]
+      },
+      "seconds": 205.016
+    },
+    {
+      "chains": {
+        "solana": {
+          "admitted": 13478,
+          "attempted": 13478,
+          "client": {
+            "dispatched": 13478,
+            "dropped_client_capacity": 22
+          },
+          "finalized": 13478,
+          "included": 13478,
+          "observer_pending_signatures": 0,
+          "responses": {
+            "202": 13478
+          },
+          "rpc": {
+            "accepted_unique_wires": 13478,
+            "active": 0,
+            "calls": {
+              "getLatestBlockhash": 13478,
+              "getSignatureStatuses": 106942,
+              "getTransaction": 13478,
+              "sendTransaction": 13478
+            },
+            "dropped_responses": 0,
+            "forwarded_sends": 13478,
+            "http_requests": 147376,
+            "http_transport": {
+              "active": 0,
+              "connection_attempts": 143,
+              "connection_reuses": 147233,
+              "connections_opened": 143,
+              "failures": [],
+              "owned_connections": 100,
+              "peak_active": 70,
+              "requests": 147376,
+              "responses": 147376,
+              "status_200": 147376
+            },
+            "methods": {
+              "getLatestBlockhash": {
+                "count": 13478,
+                "errors": 0,
+                "max_ms": 74.28066699998226,
+                "total_ms": 36110.78575100267
+              },
+              "getSignatureStatuses": {
+                "count": 106942,
+                "errors": 0,
+                "max_ms": 73.77366599999391,
+                "total_ms": 464548.33575000305
+              },
+              "getTransaction": {
+                "count": 13478,
+                "errors": 0,
+                "max_ms": 49.908625000000484,
+                "total_ms": 100961.4467670001
+              },
+              "sendTransaction": {
+                "count": 13478,
+                "errors": 0,
+                "max_ms": 73.68224999999029,
+                "total_ms": 54344.741773999216
+              }
+            },
+            "peak_inflight": 92,
+            "proxy_overloads": 0
+          },
+          "terminal": 13478
+        }
+      },
+      "observer_duration_ms": 1.262,
+      "phase": "drain",
+      "resources": {
+        "free_disk_bytes": 15041892352,
+        "host_load_average": [
+          3.20751953125,
+          2.8974609375,
+          2.46923828125
+        ],
+        "journal_bytes": 49803056,
+        "processes": [
+          {
+            "cpu_percent_ps": 0.1,
+            "cpu_time": "1:03.73",
+            "name": "campaign",
+            "pid": 42181,
+            "rss_bytes": 105562112
+          },
+          {
+            "cpu_percent_ps": 0.4,
+            "cpu_time": "0:32.88",
+            "name": "redis",
+            "pid": 42184,
+            "rss_bytes": 34619392
+          },
+          {
+            "cpu_percent_ps": 105.9,
+            "cpu_time": "4:48.20",
+            "name": "solana",
+            "pid": 42189,
+            "rss_bytes": 466370560
+          },
+          {
+            "cpu_percent_ps": 0.7,
+            "cpu_time": "1:01.96",
+            "name": "engine",
+            "pid": 42211,
+            "rss_bytes": 93306880
+          }
+        ]
+      },
+      "seconds": 205.647
+    }
+  ],
+  "schema_version": 1,
+  "scope": "local single-host shared Engine/Redis/SQLite capacity experiment",
+  "solana_confirmation_poll_seconds": 2,
+  "solana_workers": 100,
+  "source_commit": "f6791479187fe14bbc611ca32628cff63b69aa7e",
+  "source_status_porcelain": [
+    "?? docs/baselines/capacity-2026-09-26/capacity-op-100-candidate.full.json.gz",
+    "?? docs/baselines/capacity-2026-09-26/capacity-op-100-candidate.json",
+    "?? docs/baselines/capacity-2026-09-26/capacity-op-100-candidate.observations.jsonl.gz",
+    "?? docs/baselines/capacity-2026-09-26/reorg-gap-evidence.json",
+    "?? docs/baselines/capacity-2026-09-26/reorg-gap-evidence.md"
+  ],
+  "summary_note": "Compact report: full wire maps/audit tail omitted and failure examples capped at3; full immutable report and per-ID observations linked by digest.",
+  "warmup_seconds": 60
+}

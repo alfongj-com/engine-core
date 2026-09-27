@@ -1,0 +1,12 @@
+test_attempt_metadata_without_post_fault_send_is_rejected (test_local_eoa_reorg.RecoveryOracleTests) ... ok
+test_one_durable_attempt_proves_two_actual_sends (test_local_eoa_reorg.RecoveryOracleTests) ... ok
+test_original_wire_cannot_change_or_gain_a_duplicate_attempt (test_local_eoa_reorg.RecoveryOracleTests) ... ok
+test_receipt_must_match_canonical_block_and_outcome (test_local_eoa_reorg.RecoveryOracleTests) ... ok
+test_reverted_execution_requires_a_real_reverted_receipt (test_local_eoa_reorg.RecoveryOracleTests) ... ok
+test_same_nonce_fee_replacement_requires_explicit_legacy_mode (test_local_eoa_reorg.RecoveryOracleTests) ... ok
+test_wrong_nonce_signer_and_winner_are_rejected (test_local_eoa_reorg.RecoveryOracleTests) ... ok
+
+----------------------------------------------------------------------
+Ran 7 tests in 0.001s
+
+OK

@@ -1,0 +1,37 @@
+{
+  "note": "Rust correctness integration oracle still required a replacement instead of accepting verified exact-wire recovery; retained as failure evidence.",
+  "runs": [
+    {
+      "conclusion": "success",
+      "databaseId": 36280186020,
+      "headSha": "f6791479187fe14bbc611ca32628cff63b69aa7e",
+      "name": "Formal verification",
+      "status": "completed",
+      "url": "https://github.com/alfongj-com/engine-core/actions/runs/36280186020"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 36280186046,
+      "headSha": "f6791479187fe14bbc611ca32628cff63b69aa7e",
+      "name": "twmq Tests",
+      "status": "completed",
+      "url": "https://github.com/alfongj-com/engine-core/actions/runs/36280186046"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 36280186016,
+      "headSha": "f6791479187fe14bbc611ca32628cff63b69aa7e",
+      "name": "twmq Coverage",
+      "status": "completed",
+      "url": "https://github.com/alfongj-com/engine-core/actions/runs/36280186016"
+    },
+    {
+      "conclusion": "failure",
+      "databaseId": 36280186028,
+      "headSha": "f6791479187fe14bbc611ca32628cff63b69aa7e",
+      "name": "Rust correctness gates",
+      "status": "completed",
+      "url": "https://github.com/alfongj-com/engine-core/actions/runs/36280186028"
+    }
+  ]
+}

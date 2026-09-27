@@ -1,0 +1,156 @@
+{
+  "schema_version": 1,
+  "review": "read-only independent local artifact cross-check; no network/node activity",
+  "inputs": [
+    {
+      "path": "/tmp/capacity-reorg-gap-fixed.json",
+      "sha256": "b21e40793b4ae05e44d62b05a9f4e2e646438bcbfd748c186271d1118495b017"
+    },
+    {
+      "path": "/tmp/capacity-reorg-fixed.json",
+      "sha256": "82b51316a019c093c415a04886609ecda0b4518948c2b617132378c5a23c93e8"
+    },
+    {
+      "path": "/tmp/capacity-reorg-gap-fixed.observations.jsonl.gz",
+      "sha256": "91ab6a263ddb23fa97ec23f2119bbb4e44d8b6ba65d2fe435bafc12ba08f9834"
+    },
+    {
+      "path": "/tmp/capacity-reorg-fixed.observations.jsonl.gz",
+      "sha256": "ce87f310afb5f529d06565301459749b2f09105ef96eda7e23ac2d0b8f3e9e07"
+    },
+    {
+      "path": "/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/engine-capacity-nc8to4b2/evm2-rpc.jsonl",
+      "sha256": "e4674b8f94ff3daf65f9d8a63930b45d7d3225ea5ed3333e8cf65595dc888459"
+    }
+  ],
+  "new": {
+    "binary": "a3d360eba3dc470bd830ec9d3a32e0be8e11b6764f9bbf6efeb319f080eb8515",
+    "admissions": 225,
+    "durable_attempts": 225,
+    "terminal_proofs": 225,
+    "canonical_effects": 225,
+    "raw_forwards": 265,
+    "accepted_responses": 265,
+    "unique_wires": 225,
+    "replayed_nonce_range": [
+      57,
+      96
+    ],
+    "replayed_wires": 40,
+    "new_replacement_attempts": 0,
+    "replay_rounds_load_seconds": [
+      [
+        20.197229,
+        20.268674,
+        32
+      ],
+      [
+        25.199499,
+        25.223728,
+        8
+      ]
+    ],
+    "reorg_applied_load_seconds": 19.434591,
+    "drained_load_seconds": 55.071537,
+    "pool_observation": {
+      "after": {
+        "all_entries_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "all_transaction_count": 0,
+        "orphaned_target_hashes_present": 0,
+        "other_signer_hashes_present": 0,
+        "signer_hashes_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "signer_nonce_max": null,
+        "signer_nonce_min": null,
+        "signer_nonce_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "signer_pending_count": 0,
+        "signer_queued_count": 0,
+        "signer_transaction_count": 0
+      },
+      "after_rpc_returned_load_seconds": 19.425019125000002,
+      "atomic_with_drop": false,
+      "before": {
+        "all_entries_sha256": "8034561e5cc01bcde5060eff7fc5fe770de196f719955770f0573d70a43b4ede",
+        "all_transaction_count": 35,
+        "orphaned_target_hashes_present": 0,
+        "other_signer_hashes_present": 35,
+        "signer_hashes_sha256": "5aaa418d0747fa664b2fec218f51628eaa2f7f94aa519da76293a98cfb7e6091",
+        "signer_nonce_max": 96,
+        "signer_nonce_min": 62,
+        "signer_nonce_sha256": "b42162d03832e5d4710e5e47eddd5a155e836b9c9a36fdb96c127678e75fb02d",
+        "signer_pending_count": 35,
+        "signer_queued_count": 0,
+        "signer_transaction_count": 35
+      },
+      "before_rpc_started_load_seconds": 19.414315125,
+      "concurrency_note": "Engine stays live. Separate snapshots cannot prove the exact removed set when broadcasts interleave; counts describe the observed RPC snapshots.",
+      "drop_rpc_returned_load_seconds": 19.423946958000002,
+      "forwarded_sends_after": 97,
+      "forwarded_sends_before": 97,
+      "scope": "all pending and queued node pool transactions, not only orphaned mined batch",
+      "signer_hashes_not_seen_after": 35,
+      "signer_new_hashes_seen_after": 0
+    },
+    "final_pool": {
+      "complete_pool_observation": true,
+      "drain_count": 0,
+      "empty_pool_observed": true,
+      "nonce_pending_delta": 0,
+      "nonce_reference": "pinned reconciliation block",
+      "pending_count": 0,
+      "queued_count": 0,
+      "scope": "All accounts on the caller-owned local Anvil node at observation time.",
+      "source": "txpool_status",
+      "total_pool_count": 0
+    },
+    "before_checkpoint": {
+      "blockHash": "0xa4cd422bcdf87a9c692ed295a77eeed54348d41d4651362542b6249f63900e77",
+      "blockNumber": 5,
+      "checkpointHash": "0x349b4c50c1871d9b141e03c087eaf9f765e2eb09745a1aa1168da90347b3b278",
+      "checkpointNumber": 7,
+      "policy": {
+        "confirmations": 2,
+        "mode": "depth"
+      }
+    },
+    "engine_restarts": 0,
+    "offline_recovery_events": 0
+  },
+  "old": {
+    "binary": "c0014d2aae01a59b78f34d76d0288b9addfe49e2a1ee7d65555d7ff7373bcce4",
+    "canonical_effects": 40,
+    "unresolved": 185,
+    "durable_attempts": 234,
+    "two_attempt_ids": 9,
+    "reorg_applied_load_seconds": 14.260716,
+    "drain_deadline_load_seconds": 645.028541,
+    "before_checkpoint": {
+      "blockHash": "0xc0336b8eade17bf8c1d027895216f5b85ceaf94011192ac8e8fe74ae6a5ef0d1",
+      "blockNumber": 4,
+      "checkpointHash": "0xc0336b8eade17bf8c1d027895216f5b85ceaf94011192ac8e8fe74ae6a5ef0d1",
+      "checkpointNumber": 4,
+      "policy": {
+        "confirmations": 2,
+        "mode": "depth"
+      }
+    },
+    "pool_inventory_available": false
+  },
+  "checks": {
+    "all_sql_wires_match_observations_and_forward_audit": true,
+    "one_matching_terminal_and_canonical_execution_per_id": true,
+    "all_five_orphaned_hashes_reincluded_unchanged": true,
+    "all35_observed_lost_pending_hashes_match_nonce62_to96": true,
+    "all265_forwards_have_matching_acceptance": true,
+    "no_operator_recovery_event_or_engine_restart_reported": true
+  },
+  "limits": [
+    "Fault snapshots are not atomic with drop; forwarded-send count stayed97 across the snapshots, supporting but not making an atomic removed-set proof.",
+    "The35 pre-drop entries were pending, not queued; post-drop and final txpool_status include both pending and queued.",
+    "Both runs already used corrected depth-qualified checkpoints; the new improvement is consecutive gap recovery.",
+    "Different fault time, affected nonce range, prior terminal count, genesis and harness hashes prevent an exact controlled timing/speedup claim.",
+    "No recovery intervention is supported by controlled harness/source/events and zero SQL recovery events, not a cryptographic proof that no outside process acted.",
+    "55.072s is full225-intent drain from load start, not latency to resend40 wires and not a sustainable capacity result.",
+    "Report reorg_recovery_started is an observer milestone after replay; actual first replay is20.197s.",
+    "Finalized normalized observations mean explicit local depth2, not consensus-finalized/public-chain qualification."
+  ]
+}

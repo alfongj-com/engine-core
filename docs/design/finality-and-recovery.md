@@ -263,7 +263,7 @@ progress and unsigned backlog can rejoin the queue tail immediately; retries can
 continue indefinitely while evidence remains unknown. Admission and inflight
 bounds limit retained work, not lifetime provider spend. Recovery visits all
 borrowed records (potentially 4,096), so slow RPC can delay finality polling; the
-128 new-reservation limit does not cap borrowed or recycled recovery work.
+256 new-reservation limit does not cap borrowed or recycled recovery work.
 
 NOOP reserves its submitted hash before network I/O. An actually rejected NOOP
 remains unresolved and may block nonce progress; its exact signed bytes survive

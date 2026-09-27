@@ -1,0 +1,70 @@
+{
+  "arch": "aarch64",
+  "concurrency": 1,
+  "count": 768,
+  "durability": {
+    "fullfsync": true,
+    "journalMode": "WAL",
+    "synchronous": "FULL"
+  },
+  "logicalRecordBytesPerIntent": 1180,
+  "os": "macos",
+  "phases": [
+    {
+      "count": 768,
+      "elapsedSeconds": 3.475572792,
+      "latencyIncludesQueueWait": true,
+      "operationCompletionLatencyMs": {
+        "max": 11.368125,
+        "min": 1.701625,
+        "p50": 4.6927080000000005,
+        "p95": 5.1287080000000005,
+        "p99": 8.127708
+      },
+      "operationsPerSecond": 220.97077113958488,
+      "phase": "admission"
+    },
+    {
+      "count": 768,
+      "elapsedSeconds": 3.2900145,
+      "latencyIncludesQueueWait": true,
+      "operationCompletionLatencyMs": {
+        "max": 10.313417,
+        "min": 1.716125,
+        "p50": 4.037334,
+        "p95": 5.077500000000001,
+        "p99": 9.020167
+      },
+      "operationsPerSecond": 233.43362164513258,
+      "phase": "attempt"
+    },
+    {
+      "count": 768,
+      "elapsedSeconds": 3.23579875,
+      "latencyIncludesQueueWait": true,
+      "operationCompletionLatencyMs": {
+        "max": 10.6695,
+        "min": 1.543833,
+        "p50": 4.019458,
+        "p95": 5.032959,
+        "p99": 8.889375
+      },
+      "operationsPerSecond": 237.3447977875633,
+      "phase": "terminal"
+    }
+  ],
+  "reconciliation": {
+    "admissions": 768,
+    "attempts": 768,
+    "checkpoint": 2304,
+    "healthy": true,
+    "terminal": 768
+  },
+  "schema": "engine-recovery-journal-probe-v2",
+  "scope": "closed-loop real journal operations with the recorded terminal call sequence; excludes transaction construction, blockchain execution, provider RPC, finality assessment/checkpoint commits and Redis queue work; latency covers the complete selected phase operation; not isolated fsync cost or Engine transaction TPS",
+  "terminalCallSequence": [
+    "record_terminal"
+  ],
+  "terminalMode": "bare",
+  "threeStageIntentsPerSecond": 76.78935667264987
+}

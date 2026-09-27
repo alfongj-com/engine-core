@@ -1,0 +1,38 @@
+[
+  {
+    "reason": "compiler-artifact",
+    "package_id": "path+file:///Users/alfongj/Code/engine-core/core#engine-core@0.1.0",
+    "manifest_path": "/Users/alfongj/Code/engine-core/core/Cargo.toml",
+    "target": {
+      "kind": [
+        "lib"
+      ],
+      "crate_types": [
+        "lib"
+      ],
+      "name": "engine_core",
+      "src_path": "/Users/alfongj/Code/engine-core/core/src/lib.rs",
+      "edition": "2024",
+      "doc": true,
+      "doctest": true,
+      "test": true
+    },
+    "profile": {
+      "opt_level": "3",
+      "debuginfo": 0,
+      "debug_assertions": false,
+      "overflow_checks": false,
+      "test": true
+    },
+    "features": [],
+    "filenames": [
+      "/Users/alfongj/Code/engine-core/target/release/deps/engine_core-16a46ad4bcdb6259"
+    ],
+    "executable": "/Users/alfongj/Code/engine-core/target/release/deps/engine_core-16a46ad4bcdb6259",
+    "fresh": false
+  },
+  {
+    "reason": "build-finished",
+    "success": true
+  }
+]
