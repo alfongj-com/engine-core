@@ -38,7 +38,7 @@ the actual Rust tests cover the threshold and overflow. This abstraction missed
 the later discovered depth-tip checkpoint availability defect. The separate
 [DepthCheckpoint model](depth-checkpoint.md) adds explicit observed tip, qualified
 boundary and cross-cycle continuity; all five cases and the corresponding
-implementation regressions pass in the [candidate record](evidence/capacity-review/README.md). Both block identities
+implementation regressions pass in the [candidate record](https://github.com/alfongj-com/engine-core/blob/load-tests/formal/evidence/capacity-review/README.md). Both block identities
 and the weaker depth policy remain explicit.
 
 ## Configurations

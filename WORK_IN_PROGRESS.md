@@ -50,5 +50,7 @@ No new load test or paid RPC call ran in this work period. Prior failed-campaign
 custody remains untouched and Nitro remains paused. The original PR #1 executable
 is preserved privately at `/tmp/engine-stacked-pr2/engine-pr1`; SHA-256
 `35e307e16cafa7cbb17caafcf5ed90a840d58dddd2454542566619266e7a4c07`.
-Historical load reports and generated evidence are being separated onto the
-`load-tests` branch; they are not prerequisites for a normal build.
+Historical load reports and generated evidence are preserved on the
+[load-tests branch](https://github.com/alfongj-com/engine-core/tree/load-tests).
+They were removed from PR #1 and are not prerequisites for a normal build.
+The [targeted model WIP evidence](https://github.com/alfongj-com/engine-core/blob/load-tests/formal/evidence/recoverable-projection-wip/README.md) is archived separately.

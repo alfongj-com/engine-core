@@ -1,6 +1,6 @@
 # Docker Setup for Thirdweb Engine Server
 
-This document describes the inherited Docker deployment setup. Vault SSH dependencies have been removed, but this hardening pass did not build or run the container. See [the current signer configuration](../README.md) and [release gates](../TO_ALFONSO.md) before using it.
+This document describes the inherited Docker deployment setup. Vault SSH dependencies have been removed, but this hardening pass did not build or run the container. See [the current signer configuration](../README.md) and [release gates](https://github.com/alfongj-com/engine-core/blob/load-tests/TO_ALFONSO.md) before using it.
 
 ## Building the Image
 

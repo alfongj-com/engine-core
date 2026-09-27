@@ -59,7 +59,7 @@ The targeted regression passed: one parent test runs 11 isolated scenarios in
 8.78 seconds. The broader executor Redis suite passed 61 tests, executor unit
 suite 37, core journal suite 20 and core unit suite 20; these selections overlap
 and are not an aggregate coverage score. The frozen-source
-[formal rerun](../../formal/evidence/capacity-gap-review/README.md) passed all 61
+[formal rerun](https://github.com/alfongj-com/engine-core/blob/load-tests/formal/evidence/capacity-gap-review/README.md) passed all 61
 expected outcomes with 69 reviewed source hashes. Process-level qualification
 is separate and was pending when this record was written. The new
 [Redis/HTTP/SQLite regression](../../executors/src/eoa/worker/gap_replay_tests.rs)

@@ -1,5 +1,7 @@
 # Recoverable journal checkpoints and measured scheduling
 
+**Status: saved draft; recovery wiring and runtime validation remain unfinished.**
+
 ## Scope
 
 Follow-up to PR #1. One Engine process owns a durable local SQLite journal;

@@ -1,6 +1,6 @@
 # Configured RPCs and Solana recovery
 
-Status: implemented; initial public submission and process-recovery tests passed. Updated September 17, 2026. [Evidence and limits](../baselines/public-transactions.md).
+Status: implemented; initial public submission and process-recovery tests passed. Updated September 17, 2026. [Evidence and limits](https://github.com/alfongj-com/engine-core/blob/load-tests/docs/baselines/public-transactions.md).
 
 ## Purpose
 
@@ -82,4 +82,4 @@ This handles Engine process restarts while Redis retains its data. It assumes he
 
 ## Verification
 
-Local HTTP tests exercise pooling, header isolation, redirects, timeouts, oversized/malformed responses and Base nonce semantics. Real Redis plus injected RPC failures exercise persisted bytes, lost responses, expiry races, historical lookups, mismatched receipts, lease loss and terminal cleanup. Admission tests cover concurrent retries, changed intent, queue pruning, migration guards and aborted terminal commits. The local validator test verifies identical-byte crash recovery and no extra sends after completed queue history is pruned. Wire tests compare encoding with the Solana SDK and verify signatures independently. See [verification results](../verification.md) for executed commands and evidence.
+Local HTTP tests exercise pooling, header isolation, redirects, timeouts, oversized/malformed responses and Base nonce semantics. Real Redis plus injected RPC failures exercise persisted bytes, lost responses, expiry races, historical lookups, mismatched receipts, lease loss and terminal cleanup. Admission tests cover concurrent retries, changed intent, queue pruning, migration guards and aborted terminal commits. The local validator test verifies identical-byte crash recovery and no extra sends after completed queue history is pruned. Wire tests compare encoding with the Solana SDK and verify signatures independently. See [verification results](https://github.com/alfongj-com/engine-core/blob/load-tests/docs/verification.md) for executed commands and evidence.

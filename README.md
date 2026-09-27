@@ -2,7 +2,7 @@
 
 Rust transaction infrastructure forked from [thirdweb-dev/engine-core](https://github.com/thirdweb-dev/engine-core) at `b6b7a0b`. It combines a Redis job queue, EOA transaction state machine, ERC-4337/EIP-7702 executors, signing, HTTP APIs, and webhooks.
 
-**Status:** active hardening; local verification is not a production readiness or all-chain compatibility certification. Read [the handoff](TO_ALFONSO.md) for measured results and remaining release blockers.
+**Status:** active hardening; local verification is not a production readiness or all-chain compatibility certification. Read [the handoff](https://github.com/alfongj-com/engine-core/blob/load-tests/TO_ALFONSO.md) for measured results and remaining release blockers.
 
 ## Start here
 
@@ -16,7 +16,7 @@ Rust transaction infrastructure forked from [thirdweb-dev/engine-core](https://g
 - [UserOperation signing profiles](docs/design/userop-signing.md): supported default accounts, rejection rules and remaining qualification.
 - [Test and benchmark design](docs/design/testing-and-benchmarks.md): safety invariants, failure injection, local versus network evidence.
 - [Queue and EOA audit](docs/audit-queue.md) and [security audit](docs/audit-security.md): initial findings and scope.
-- [Baseline provenance](docs/baselines/upstream.md) and [queue measurements](docs/baselines/queue-results.md).
+- [Baseline provenance](https://github.com/alfongj-com/engine-core/blob/load-tests/docs/baselines/upstream.md) and [queue measurements](https://github.com/alfongj-com/engine-core/blob/load-tests/docs/baselines/queue-results.md).
 - [Existing EOA state-machine description](README_EOA.md): useful background; audit findings take precedence over its correctness claims.
 
 ## Build
@@ -63,4 +63,4 @@ Webhooks are disabled unless `ENGINE_WEBHOOK_ALLOWED_ORIGINS` lists exact HTTPS 
 
 ## Verification scope
 
-Queue jobs per second are not blockchain transactions per second. [Latest measurements](docs/baselines/review-2026-09-26/README.md) exercise the real server, independent durable journal, Redis AOF, and local EVM/Solana nodes. They report admission, inclusion and finalization separately. Production qualification still needs the intended RPC, signer, transaction workload, public-chain finality window and concurrent-chain load. Finite models and tests do not certify whole-program correctness. See the handoff for results and remaining work.
+Queue jobs per second are not blockchain transactions per second. [Latest measurements](https://github.com/alfongj-com/engine-core/blob/load-tests/docs/baselines/review-2026-09-26/README.md) exercise the real server, independent durable journal, Redis AOF, and local EVM/Solana nodes. They report admission, inclusion and finalization separately. Production qualification still needs the intended RPC, signer, transaction workload, public-chain finality window and concurrent-chain load. Finite models and tests do not certify whole-program correctness. See the handoff for results and remaining work.

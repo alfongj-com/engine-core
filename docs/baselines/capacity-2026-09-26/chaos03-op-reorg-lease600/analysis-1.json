@@ -1,9 +1,0 @@
-{
-  "reviewed_utc": "2026-09-27T05:43:41.297360+00:00",
-  "report_sha256": "c6b06fd4a2af2363615a547d3e7b47c2a63b2b733a62825524e18580ceb35169",
-  "independent_audit_sha256": "581924d3f836e15d9dbec391ffb58d2d2aa149011f6a9f80f5a07af637ae7ab9",
-  "accepted_ids": 3600,
-  "conclusion": "All original mixed offers settled exactly. Nineteen orphaned and 234 dropped-pool transactions replayed original wires and recovered, without Engine restart or manual rescue. Pool snapshots are separate non-atomic observations. No unresolved custody.",
-  "capacity_selected": false,
-  "next_action_authorized_by_root_review": "Run isolated final capacity brackets, then process/Redis faults; retain original evidence."
-}

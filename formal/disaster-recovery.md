@@ -1,5 +1,7 @@
 # Recovery authority and restartable Redis publication
 
+**Status: draft model revision. The matching Rust protocol is not wired or runtime-validated; see [saved work](../WORK_IN_PROGRESS.md).**
+
 ## Claim and limits
 
 Two finite models cover different parts of the protocol:

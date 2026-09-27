@@ -1,6 +1,0 @@
-NAME           SIZE FSTYPE  MOUNTPOINTS
-vda     25769803776         
-├─vda1  24694996480 ext4    /
-├─vda13   967836160 ext4    /boot
-└─vda15   103809536 vfat    /boot/efi
-vdb        19857408 iso9660 /mnt/lima-cidata

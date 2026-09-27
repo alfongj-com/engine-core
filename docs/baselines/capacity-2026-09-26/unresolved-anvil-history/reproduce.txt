@@ -1,2 +1,0 @@
-# Equivalent full-suite invocation inferred from the completed test log; run from repository root.
-PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=scripts ANVIL_BIN=/tmp/engine-finality/anvil CAST_BIN=/tmp/engine-capacity-tools/cast python3 -m unittest -v test_capacity_faults capacity_campaign_test capacity_scenarios_test capacity_pool_test capacity_assess_test capacity_fence_test capacity_resource_guard_test capacity_resource_phase_test capacity_resource_projection_test capacity_anvil_custody_test capacity_infrastructure_test test_local_eoa_reorg
