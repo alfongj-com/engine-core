@@ -1,0 +1,207 @@
+{
+  "active": {
+    "command": [
+      "/Library/Developer/CommandLineTools/usr/bin/python3",
+      "/Users/alfongj/Code/engine-core/scripts/capacity_campaign.py",
+      "--engine-bin",
+      "/Users/alfongj/Code/engine-core/target/release/thirdweb-engine",
+      "--solana-bin-dir",
+      "/tmp/engine-finality/solana-release/bin",
+      "--anvil-bin",
+      "/tmp/engine-finality/anvil",
+      "--redis-bin",
+      "/tmp/redis-7.4.2/src/redis-server",
+      "--cast-bin",
+      "/tmp/engine-capacity-tools/cast",
+      "--redis-fsync",
+      "everysec",
+      "--seconds",
+      "360",
+      "--drain-seconds",
+      "1800",
+      "--sample-seconds",
+      "5",
+      "--max-inflight",
+      "4096",
+      "--http-concurrency",
+      "64",
+      "--proxy-concurrency",
+      "256",
+      "--solana-confirmation-poll-seconds",
+      "1",
+      "--report",
+      "/private/tmp/capacity-dispatch-final-solana70-5057cdb7bab1.json",
+      "--chain",
+      "solana=70",
+      "--warmup-seconds",
+      "120",
+      "--late-window-seconds",
+      "180",
+      "--max-schedule-lag-ms",
+      "100",
+      "--eoa-broadcast-concurrency",
+      "32",
+      "--http-concurrency",
+      "128",
+      "--solana-confirmation-poll-seconds",
+      "5"
+    ],
+    "name": "capacity-dispatch-final-solana70",
+    "report": "/private/tmp/capacity-dispatch-final-solana70-5057cdb7bab1.json",
+    "timeout_seconds": 2880
+  },
+  "config": {
+    "drain_seconds": 1800,
+    "output_dir": "/private/tmp",
+    "setup_seconds": 120,
+    "verification_seconds": 600
+  },
+  "frozen_sha256": {
+    "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/bin/python3.9": "bdea59019a38eb6600cc9e71e984a97fedadc406448431281e7657030f54987e",
+    "/Users/alfongj/Code/engine-core/docs/baselines/capacity-2026-09-26/supervisor-v4/runner.py": "0f2d64f85a240d932ba1f558a2c105445a76370d04287967dea877e55eebb040",
+    "/Users/alfongj/Code/engine-core/scripts/capacity_assess.py": "8ebafce9dd136ce0a0179ab04292836d8c0d685fe9b31f9b455e45665e4b6865",
+    "/Users/alfongj/Code/engine-core/scripts/capacity_campaign.py": "88b282be9ee049cb42ae9c576b70000766ba8dc912e63bd9401b7330d8e88909",
+    "/Users/alfongj/Code/engine-core/scripts/capacity_faults.py": "59e2bc4d90bceca2682c27e35c5871ee538d4878a795f990fa90e6d5f90afa13",
+    "/Users/alfongj/Code/engine-core/scripts/capacity_resource_guard.py": "a23b228d7cc4c2007138d380b8dc16a1ddd9afdd7a28cdc68e0b545264b9bee7",
+    "/Users/alfongj/Code/engine-core/target/release/thirdweb-engine": "35e307e16cafa7cbb17caafcf5ed90a840d58dddd2454542566619266e7a4c07",
+    "/private/tmp/engine-capacity-dispatch-plan/final-sol-evm-op-jobs.json": "875f060355b74c519e80085ffd1d9724017f72ddcbecbb3ad79b54e4af6374f8",
+    "/tmp/engine-capacity-tools/cast": "da3334cc53dc92415c2a65a102a385ca30e3cdcf3e15a711ce206180a60c51fc",
+    "/tmp/engine-finality/anvil": "cad9ae8b74a37fd417e2b8d29b2caca869ba10fd015a1e92059ed15973188e66",
+    "/tmp/engine-finality/solana-release/bin/solana": "5cfbfb188edd6c0466d7a65dd9e8c1cbbb682a691e28281dde35b029555e35e9",
+    "/tmp/engine-finality/solana-release/bin/solana-keygen": "bde132e0af570fac97e15a6c24368183c4311c9f746b7b90738142ce6e9303ee",
+    "/tmp/engine-finality/solana-release/bin/solana-test-validator": "46e8e70b04a3bb020c3d90cf0aeef732a9c0e1663426f49a768d2f2a5ca779e6",
+    "/tmp/redis-7.4.2/src/redis-server": "7f82251c903404546f80b808de5b6641b8a7e757333c5ed2caf4d5753fe6a5b3"
+  },
+  "id": "5057cdb7bab1",
+  "jobs": [
+    {
+      "chains": [
+        "solana=70"
+      ],
+      "extra": [
+        "--warmup-seconds",
+        "120",
+        "--late-window-seconds",
+        "180",
+        "--max-schedule-lag-ms",
+        "100",
+        "--eoa-broadcast-concurrency",
+        "32",
+        "--http-concurrency",
+        "128",
+        "--solana-confirmation-poll-seconds",
+        "5"
+      ],
+      "name": "capacity-dispatch-final-solana70",
+      "seconds": 360
+    },
+    {
+      "chains": [
+        "evm12=60"
+      ],
+      "extra": [
+        "--warmup-seconds",
+        "120",
+        "--late-window-seconds",
+        "180",
+        "--max-schedule-lag-ms",
+        "100",
+        "--eoa-broadcast-concurrency",
+        "32",
+        "--http-concurrency",
+        "128",
+        "--solana-confirmation-poll-seconds",
+        "5"
+      ],
+      "name": "capacity-dispatch-final-evm60",
+      "seconds": 360
+    },
+    {
+      "chains": [
+        "evm2=60"
+      ],
+      "extra": [
+        "--warmup-seconds",
+        "120",
+        "--late-window-seconds",
+        "180",
+        "--max-schedule-lag-ms",
+        "100",
+        "--eoa-broadcast-concurrency",
+        "32",
+        "--http-concurrency",
+        "128",
+        "--solana-confirmation-poll-seconds",
+        "5"
+      ],
+      "name": "capacity-dispatch-final-op60",
+      "seconds": 360
+    }
+  ],
+  "review_required": {
+    "active": {
+      "command": [
+        "/Library/Developer/CommandLineTools/usr/bin/python3",
+        "/Users/alfongj/Code/engine-core/scripts/capacity_campaign.py",
+        "--engine-bin",
+        "/Users/alfongj/Code/engine-core/target/release/thirdweb-engine",
+        "--solana-bin-dir",
+        "/tmp/engine-finality/solana-release/bin",
+        "--anvil-bin",
+        "/tmp/engine-finality/anvil",
+        "--redis-bin",
+        "/tmp/redis-7.4.2/src/redis-server",
+        "--cast-bin",
+        "/tmp/engine-capacity-tools/cast",
+        "--redis-fsync",
+        "everysec",
+        "--seconds",
+        "360",
+        "--drain-seconds",
+        "1800",
+        "--sample-seconds",
+        "5",
+        "--max-inflight",
+        "4096",
+        "--http-concurrency",
+        "64",
+        "--proxy-concurrency",
+        "256",
+        "--solana-confirmation-poll-seconds",
+        "1",
+        "--report",
+        "/private/tmp/capacity-dispatch-final-solana70-5057cdb7bab1.json",
+        "--chain",
+        "solana=70",
+        "--warmup-seconds",
+        "120",
+        "--late-window-seconds",
+        "180",
+        "--max-schedule-lag-ms",
+        "100",
+        "--eoa-broadcast-concurrency",
+        "32",
+        "--http-concurrency",
+        "128",
+        "--solana-confirmation-poll-seconds",
+        "5"
+      ],
+      "name": "capacity-dispatch-final-solana70",
+      "report": "/private/tmp/capacity-dispatch-final-solana70-5057cdb7bab1.json",
+      "timeout_seconds": 2880
+    },
+    "reason": "RuntimeError: Trial requires recovery/review; every later job is blocked",
+    "utc": "2026-09-27T03:11:09Z"
+  },
+  "runs": [
+    {
+      "capacity_selected": false,
+      "exit": 1,
+      "name": "capacity-dispatch-final-solana70",
+      "report": "/private/tmp/capacity-dispatch-final-solana70-5057cdb7bab1.json",
+      "report_sha256": "0113bb8da0a4d64515cd5fad6b8e5ca2dabc4f39a36ce597a9122f5b7c2f8488",
+      "safely_settled": false
+    }
+  ],
+  "schema": "local-capacity-sequential-v4"
+}

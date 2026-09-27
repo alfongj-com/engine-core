@@ -1,0 +1,45 @@
+test_actual_reconcile_retains_prior_stop_and_captures_custody_without_rpc (capacity_resource_phase_test.CampaignBoundary) ... ok
+test_actual_reconcile_stops_engine_then_transitions_before_first_oracle_read (capacity_resource_phase_test.CampaignBoundary) ... ok
+test_failed_stop_keeps_original_budget_and_performs_no_new_probe (capacity_resource_phase_test.PhaseMonitor) ... ok
+test_monitor_cannot_assess_obsolete_horizon_after_engine_stop (capacity_resource_phase_test.PhaseMonitor) ... ok
+test_exact_incident_depletion_keeps_peak_but_only_reserves_verification (capacity_resource_phase_test.PhasePolicy) ... ok
+test_existing_load_stop_never_clears_at_phase_transition (capacity_resource_phase_test.PhasePolicy) ... ok
+test_no_setup_transition_and_verification_spike_still_fences (capacity_resource_phase_test.PhasePolicy) ... ok
+test_reconciliation_is_finite_nonrenewable_and_never_extends_original_deadline (capacity_resource_phase_test.PhasePolicy) ... ok
+test_compressed_failures_cannot_fake_elapsed_outage (capacity_resource_guard_test.Provider) ... ok
+test_no_public_credentialed_or_redirect_routing (capacity_resource_guard_test.Provider) ... ok
+test_outage_debounce_reset_then_latched_no_auto_recovery (capacity_resource_guard_test.Provider) ... ok
+test_read_probe_has_exact_one_request_no_retry_no_secret_error (capacity_resource_guard_test.Provider) ... ok
+test_success_identity_mismatch_rpc_error_and_oversize_are_distinguished (capacity_resource_guard_test.Provider) ... ok
+test_df_full_disk_and_inode_exhaustion_are_not_parse_failures (capacity_resource_guard_test.Resources) ... ok
+test_different_host_volume_is_rejected_before_lima_probe (capacity_resource_guard_test.Resources) ... ok
+test_fixed_setup_is_reserved_without_extrapolating_then_load_spikes_count (capacity_resource_guard_test.Resources) ... ok
+test_freed_space_does_not_reset_peak_and_other_resources_are_independent (capacity_resource_guard_test.Resources) ... ok
+test_invalid_budgets_never_disable_guard_silently (capacity_resource_guard_test.Resources) ... ok
+test_layout_change_missing_probe_and_horizon_are_fenced (capacity_resource_guard_test.Resources) ... ok
+test_monitor_evidence_is_private_no_overwrite_and_stops_before_child (capacity_resource_guard_test.Resources) ... ok
+test_monitor_probe_failure_is_fixed_category_not_subprocess_output (capacity_resource_guard_test.Resources) ... ok
+test_observed_growth_replaces_lower_declared_budget_and_latches (capacity_resource_guard_test.Resources) ... ok
+test_observer_programming_error_also_latches_instead_of_silently_stopping (capacity_resource_guard_test.Resources) ... ok
+test_preflight_reserves_the_entire_horizon_and_shutdown_not_only_floor (capacity_resource_guard_test.Resources) ... ok
+test_probe_is_only_bounded_read_commands_without_live_vm (capacity_resource_guard_test.Resources) ... ok
+test_realistic_host_margin_and_host_only_probe_cover_non_native_jobs (capacity_resource_guard_test.Resources) ... ok
+test_chaos_cannot_mutate_after_stop_during_trigger_wait_or_before_restart (capacity_infrastructure_test.CleanupGuards) ... ok
+test_custody_file_inventory_error_does_not_mask_original_exception (capacity_infrastructure_test.CleanupGuards) ... ok
+test_exception_joins_lifecycle_worker_before_custody_and_cleanup (capacity_infrastructure_test.CleanupGuards) ... ok
+test_guard_cleanup_failure_does_not_skip_children_or_report (capacity_infrastructure_test.CleanupGuards) ... ok
+test_held_http_202_finishes_before_exception_custody_snapshot (capacity_infrastructure_test.CleanupGuards) ... ok
+test_planned_proxy_rpc_errors_do_not_count_as_direct_provider_outage (capacity_infrastructure_test.CleanupGuards) ... ok
+test_stop_during_actual_reconcile_cannot_repromote_capacity (capacity_infrastructure_test.CleanupGuards) ... ok
+test_actual_load_stops_offers_skips_failed_end_sample_drain_hook_and_retries (capacity_infrastructure_test.Infrastructure) ... ok
+test_actual_run_preserves_wal_custody_when_oracle_is_unavailable (capacity_infrastructure_test.Infrastructure) ... ok
+test_already_queued_dispatch_and_retry_do_not_post_after_latch (capacity_infrastructure_test.Infrastructure) ... ok
+test_native_cli_requires_resource_guard_and_explicit_bounded_budget (capacity_infrastructure_test.Infrastructure) ... ok
+test_resource_preflight_rejects_before_starting_any_service (capacity_infrastructure_test.Infrastructure) ... ok
+test_transient_fault_does_not_abort_and_outage_latches_distinct_reason (capacity_infrastructure_test.Infrastructure) ... ok
+test_supervisor_preserves_outage_and_pause_failure_and_blocks_resume (capacity_infrastructure_test.SupervisorIntegration) ... ok
+
+----------------------------------------------------------------------
+Ran 40 tests in 0.127s
+
+OK

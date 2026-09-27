@@ -1,0 +1,7 @@
+{
+  "capacity_campaign.py": "88b282be9ee049cb42ae9c576b70000766ba8dc912e63bd9401b7330d8e88909",
+  "capacity_faults.py": "59e2bc4d90bceca2682c27e35c5871ee538d4878a795f990fa90e6d5f90afa13",
+  "capacity_resource_guard.py": "a23b228d7cc4c2007138d380b8dc16a1ddd9afdd7a28cdc68e0b545264b9bee7",
+  "local_eoa_recovery.py": "8490e994b9f71da17da632dc8735fdbb0a4bdcfd66242c397d91d701caa90554",
+  "local_solana_recovery.py": "8d62cb1ca1ef6e891e04347767f9adb282d0d19dfe76bdf92e0319e7592cdb14"
+}

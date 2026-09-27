@@ -1,0 +1,7 @@
+Slot 65 (root)
+  SlotMetaV3 { slot: 65, consumed: 288, received: 288, first_shred_timestamp: 1790478281988, last_index: Some(287), parent_slot: Some(64), next_slots: [66], connected_flags: ConnectedFlags(CONNECTED | PARENT_CONNECTED), completed_data_indexes: [31, 63, 95, 127, 159, 191, 223, 255, 287], parent_block_id: 11111111111111111111111111111111, replay_fec_set_index: 0 } is_full: true
+  Transactions: 10, hashes: 74, block_hash: 4KQW3CxUzpuznsGzbQWSX26NunBZsa5VBWEeXAj4Tkrd
+  Programs:
+11111111111111111111111111111111            : 9
+MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr : 9
+Vote111111111111111111111111111111111111111 : 1

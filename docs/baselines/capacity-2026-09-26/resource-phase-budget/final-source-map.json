@@ -1,0 +1,18 @@
+{
+  "stage": "Final combined phase-aware budget plus explicit local Solana ledger retention",
+  "git_head_before_commit": "36877e25294084b957bbd9903b6801ed30c41358",
+  "intermediate_stage": "source-map.json and applied.patch retain exact phase-only source/test evidence; ac297 is not the final combined campaign hash",
+  "sources": {
+    "scripts/capacity_campaign.py": "4935822f6d964624f49da6c4ff6fbadf45df5b5bec9a475d4d753b05b15b92e3",
+    "scripts/capacity_resource_guard.py": "3982ac9a2917545dc5307ebbef9d6dfd050264268508118850664219f2969c99",
+    "scripts/capacity_resource_phase_test.py": "fc9affe546932ff55c7468f5c43bdf7fc9271944e66f4c9d6825243d415df48d"
+  },
+  "retention_only_patch_sha256": "9c77b1e38dae4ca7f8b2b455b147efb3ed9a6448482c55140d66d356be8df842",
+  "tests": {
+    "passed": 94,
+    "new_cases_in_retention_change": 0,
+    "log": "combined-94-pass.log",
+    "note": "Repeated same94 tests after the explicit validator flag/metadata addition; do not add to unique count."
+  },
+  "scope": "No Rust change; no new workload run by this archive task"
+}

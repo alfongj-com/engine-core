@@ -48,6 +48,9 @@ from capacity_resource_guard import (Budget, ResourcePolicy, GuardMonitor, Provi
 
 # Separate from the RPC proxy client so transport pressure is attributable.
 LOCAL_HTTP = KeepAliveHttp()
+# Keep history for the bounded offer, drain and receipt audit. The validator's
+# 10,000-shred default can prune a completed trial when its ledger is reopened.
+SOLANA_LEDGER_SHRED_LIMIT = 1_000_000
 
 PROFILES = {
     "evm12": {"family": "evm", "chain_id": 31337, "block_seconds": 12.0},
@@ -899,6 +902,7 @@ class Campaign:
             addresses[name] = subprocess.check_output([str(binary / "solana-keygen"), "pubkey", str(key)], text=True, timeout=30).strip()
         self.payer, self.recipient = addresses["payer"], addresses["recipient"]
         self.spawn("solana", [binary / "solana-test-validator", "--quiet", "--reset", "--ledger", self.logs / "solana-ledger",
+                              "--limit-ledger-size", SOLANA_LEDGER_SHRED_LIMIT,
                               "--rpc-port", rpc_port, "--faucet-port", faucet, "--gossip-port", gossip,
                               "--dynamic-port-range", self.args.solana_dynamic_ports, "--bind-address", "127.0.0.1"])
         upstream = f"http://127.0.0.1:{rpc_port}"
@@ -911,7 +915,8 @@ class Campaign:
         return upstream, node, {"payer": self.payer, "recipient": self.recipient,
             "payer_balance": node.call("getBalance", [self.payer, {"commitment": "finalized"}])["value"],
             "recipient_balance": node.call("getBalance", [self.recipient, {"commitment": "finalized"}])["value"],
-            "ws_url": f"ws://127.0.0.1:{rpc_port + 1}", "version": node.call("getVersion", [])}
+            "ws_url": f"ws://127.0.0.1:{rpc_port + 1}", "version": node.call("getVersion", []),
+            "ledger_shred_limit": SOLANA_LEDGER_SHRED_LIMIT}
 
     def fixture(self, chain, index):
         from capacity_faults import evm_fixture, solana_fixture
@@ -1685,8 +1690,23 @@ class Campaign:
     def reconcile(self):
         from capacity_faults import evaluate_campaign
         self.phase = "reconciliation"
-        stop(self.children["engine"])
-        self.event("engine_stopped_for_consistent_reconciliation")
+        def stop_engine():
+            stop(self.children["engine"])
+            self.event("engine_stopped_for_consistent_reconciliation")
+        if self.resource_monitor:
+            # No future offers/retries or Engine work follow this boundary.
+            # The existing600s verification budget replaces unused drain time;
+            # floors, measured peak growth and a prior guard latch are retained.
+            assessment = self.resource_monitor.begin_reconciliation(stop_engine, remaining_seconds=600)
+            self.report["resource_guard"]["reconciliation_budget_seconds"] = 600
+            if not assessment["allowed"]:
+                self.capture_interrupted_custody()
+                return
+        else:
+            stop_engine()
+        if self.infrastructure_stop:
+            self.capture_interrupted_custody()
+            return
         self.chain_heads = {name: self.nodes[name].call("eth_blockNumber", []) for name, p in self.profiles.items() if p["family"] == "evm"}
         observations = self.read_journal()
         ids = list(observations)

@@ -1,0 +1,18 @@
+{
+  "genesis": "9PF4AM2UkxZ2NsF4WEhVUscNtnfEuFEiW4hi3BFH9GYu",
+  "finalized_slot": 784,
+  "receipt_checks": [
+    {
+      "signature": "ZoJJUNLr8VtCKLcbZNcnxEW1bi9kHxQ2D9Mxr2rfmwPRWQVdMkFF4sgGHqNmYy4ib9zQ64eMimnDUnpfZDGaKkq",
+      "saved_slot": 65,
+      "receipt_found": false,
+      "receipt_slot": null
+    },
+    {
+      "signature": "3Uz6HT8aJj4EbmDEVhZPX56RQDv2MYPmeqmkVEqzfazfuc66d9ajnJdUWYPEmFNfz8YL88woPvVEV3yVk2pRJ4L8",
+      "saved_slot": 772,
+      "receipt_found": false,
+      "receipt_slot": null
+    }
+  ]
+}

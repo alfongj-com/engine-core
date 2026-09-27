@@ -1,0 +1,42 @@
+{
+  "accepted": 25155,
+  "capacity_qualification": false,
+  "drain_scope": "Original all-response inventory, drain_target_reached event, six recorded zero queue indexes and final25155/25155 finalized sample. EOA borrowed/submitted indexes not applicable. No new Redis/node-pool measurement.",
+  "expected_genesis_hash": "9PF4AM2UkxZ2NsF4WEhVUscNtnfEuFEiW4hi3BFH9GYu",
+  "frozen_harness_sha256": {
+    "capacity_campaign.py": "88b282be9ee049cb42ae9c576b70000766ba8dc912e63bd9401b7330d8e88909",
+    "capacity_faults.py": "59e2bc4d90bceca2682c27e35c5871ee538d4878a795f990fa90e6d5f90afa13",
+    "capacity_resource_guard.py": "a23b228d7cc4c2007138d380b8dc16a1ddd9afdd7a28cdc68e0b545264b9bee7",
+    "local_eoa_recovery.py": "8490e994b9f71da17da632dc8735fdbb0a4bdcfd66242c397d91d701caa90554",
+    "local_solana_recovery.py": "8d62cb1ca1ef6e891e04347767f9adb282d0d19dfe76bdf92e0319e7592cdb14"
+  },
+  "historical_drain": {
+    "client_pending": 0,
+    "http_inflight": 0,
+    "journal_unresolved": 0,
+    "node_pending": 0,
+    "redis_active": 0,
+    "redis_borrowed": 0,
+    "redis_delayed": 0,
+    "redis_pending": 0,
+    "redis_submitted": 0
+  },
+  "journal_sha256": "84aa6b94599f4846ae10e06783091f45c81c3e8438343aad882e8fc8ef4d6627",
+  "known_429_unadmitted": 45,
+  "mode": "offline_preflight",
+  "no_engine_redis_funding_or_send": true,
+  "original_offered": 25200,
+  "original_report_sha256": "0113bb8da0a4d64515cd5fad6b8e5ca2dabc4f39a36ce597a9122f5b7c2f8488",
+  "outcome": "offline_preflight_pass",
+  "qualification_limit": "A successful accepted-intent custody review cannot promote the original25200-offer campaign:45known429, infrastructure interruption, unsigned backlog trend and no new offered window remain unchanged.",
+  "reviewed_utc": "2026-09-27T03:17:39.018345+00:00",
+  "runner_sha256": "7ddafb6e6f15cc38921e992bf31bc1f39c2aff552ab57aec7f6dcece732d8309",
+  "saved_slot_range": [
+    65,
+    772
+  ],
+  "schema": "solana-original-custody-v1",
+  "signed_attempts": 25155,
+  "terminal_proofs": 25155,
+  "transport_unknown": 0
+}

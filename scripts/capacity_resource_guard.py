@@ -126,6 +126,20 @@ class ResourcePolicy:
         self.stop = None
         self.in_setup = setup_phase
         self.initial_resources = None
+        self.reconciliation_deadline = None
+
+    def begin_reconciliation(self, now, remaining_seconds=600):
+        """One-way deadline reduction after the producer has actually stopped.
+
+        Never extend the original budget, clear a stop, or reset observed growth.
+        The monitor serializes this transition with its resource observations.
+        """
+        if (self.start is None or self.in_setup or not math.isfinite(now) or
+                now < self.previous['monotonic'] or not 1 <= remaining_seconds <= 600):
+            raise ValueError('Invalid reconciliation resource transition')
+        if self.reconciliation_deadline is not None:
+            raise RuntimeError('Reconciliation resource transition already recorded')
+        self.reconciliation_deadline = min(self.start + self.horizon, now + remaining_seconds)
 
     def failed_probe(self, category):
         if self.stop is None:
@@ -147,9 +161,13 @@ class ResourcePolicy:
         reasons, details = [], {}
         if previous and stamp <= previous['monotonic']:
             return self.failed_probe('nonmonotonic_resource_sample')
-        remaining = max(0, self.horizon - (stamp - self.start))
-        if stamp - self.start >= self.horizon:
-            reasons.append('declared_job_horizon_exhausted')
+        deadline = self.start + self.horizon
+        if self.reconciliation_deadline is not None:
+            deadline = min(deadline, self.reconciliation_deadline)
+        remaining = max(0, deadline - stamp)
+        if stamp >= deadline:
+            reasons.append('declared_reconciliation_horizon_exhausted' if self.reconciliation_deadline is not None
+                           else 'declared_job_horizon_exhausted')
         for key, budget in self.budgets.items():
             resource = resources[key]
             if previous:
@@ -174,7 +192,8 @@ class ResourcePolicy:
         self.previous = sample
         if reasons and self.stop is None:
             self.stop = {'reason': 'resource_reserve_insufficient', 'details': reasons}
-        return {'allowed': self.stop is None, 'resource_phase': 'setup' if self.in_setup else 'steady', 'remaining_horizon_seconds': remaining,
+        phase = 'reconciliation' if self.reconciliation_deadline is not None else ('setup' if self.in_setup else 'steady')
+        return {'allowed': self.stop is None, 'resource_phase': phase, 'remaining_horizon_seconds': remaining,
                 'resources': details, 'stop': dict(self.stop) if self.stop else None}
 
 
@@ -272,6 +291,15 @@ class GuardMonitor:
 
     def begin_load(self):
         return self.tick("load_baseline")
+
+    def begin_reconciliation(self, stop_producer, remaining_seconds=600):
+        # A monitor tick must not apply the obsolete whole-job horizon after
+        # producer stop but before the phase transition. Stop failure keeps the
+        # original budget, and a previously latched stop remains authoritative.
+        with self.tick_lock:
+            stop_producer()
+            self.policy.begin_reconciliation(time.monotonic(), remaining_seconds)
+            return self._tick('reconciliation_baseline')
 
     def _tick(self, phase):
         try:
