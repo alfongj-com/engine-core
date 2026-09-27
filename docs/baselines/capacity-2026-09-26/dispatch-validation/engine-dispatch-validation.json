@@ -1,0 +1,30 @@
+{
+  "records": [
+    {
+      "name": "targeted",
+      "command": [
+        "/Users/alfongj/.cargo/bin/cargo",
+        "test",
+        "--locked",
+        "-p",
+        "engine-executors",
+        "--lib",
+        "eoa::worker::send",
+        "--",
+        "--ignored",
+        "--test-threads=1",
+        "--nocapture"
+      ],
+      "exit": 101,
+      "seconds": 4.614,
+      "log": "/tmp/engine-dispatch-targeted.log",
+      "sha256": "3fcd0560bfdb24cc2a2a770fd8ffc6d74ee44b0b18c2192911a330660e639bae"
+    }
+  ],
+  "redis": {
+    "port": 64968,
+    "pid": 51111,
+    "exit": 0,
+    "folder": "/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/engine-dispatch-redis-iezouhml"
+  }
+}

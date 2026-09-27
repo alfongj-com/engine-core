@@ -1,0 +1,39 @@
+[
+  {
+    "command": [
+      "/Users/alfongj/.cargo/bin/cargo",
+      "test",
+      "--locked",
+      "-p",
+      "engine-executors",
+      "--lib",
+      "--",
+      "--nocapture",
+      "--test-threads=1"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 0.7945297499999999,
+    "redis_port": 49198,
+    "test_source_sha256": "e1454271f98daa9a727d6e41dc5533af583d35bb8fb3f8dd1d9f9c21c5468ef8",
+    "log": "/tmp/engine-dispatch-unit-fix1.log"
+  },
+  {
+    "command": [
+      "/Users/alfongj/.cargo/bin/cargo",
+      "test",
+      "--locked",
+      "-p",
+      "engine-executors",
+      "--lib",
+      "--",
+      "--ignored",
+      "--nocapture",
+      "--test-threads=1"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 16.195966416999998,
+    "redis_port": 49198,
+    "test_source_sha256": "e1454271f98daa9a727d6e41dc5533af583d35bb8fb3f8dd1d9f9c21c5468ef8",
+    "log": "/tmp/engine-dispatch-redis-fix1.log"
+  }
+]

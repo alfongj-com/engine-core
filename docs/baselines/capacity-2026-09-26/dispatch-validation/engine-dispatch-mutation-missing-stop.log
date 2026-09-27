@@ -1,0 +1,45 @@
+   Compiling engine-executors v0.1.0 (/Users/alfongj/Code/engine-core/executors)
+warning: unused variable: `stopped`
+  --> executors/src/eoa/worker/send.rs:50:18
+   |
+50 |         |(index, stopped, authorize, authorization_failed)| async move {
+   |                  ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_stopped`
+   |
+   = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: `engine-executors` (lib test) generated 1 warning (run `cargo fix --lib -p engine-executors --tests` to apply 1 suggestion)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 8.63s
+     Running unittests src/lib.rs (target/debug/deps/engine_executors-9561e3e0b1f29cca)
+
+running 1 test
+test eoa::worker::send::dispatch_tests::failed_authorization_drains_prefix_and_retains_whole_batch_for_exact_recovery ... 
+thread 'eoa::worker::send::dispatch_tests::failed_authorization_drains_prefix_and_retains_whole_batch_for_exact_recovery' (1569905) panicked at executors/src/eoa/worker/send_dispatch_tests.rs:56:5:
+
+running 1 test
+test eoa::worker::send::dispatch_tests::failed_authorization_drains_prefix_and_retains_whole_batch_for_exact_recovery ... FAILED
+
+failures:
+
+failures:
+    eoa::worker::send::dispatch_tests::failed_authorization_drains_prefix_and_retains_whole_batch_for_exact_recovery
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 103 filtered out; finished in 1.29s
+
+ 
+thread 'eoa::worker::send::dispatch_tests::failed_authorization_drains_prefix_and_retains_whole_batch_for_exact_recovery' (1569907) panicked at executors/src/eoa/worker/send_dispatch_tests.rs:560:9:
+assertion `left == right` failed: the suffix must never be authorized, including while prefix responses drain
+  left: [0, 1, 2]
+ right: [0, 1]
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+FAILED
+
+failures:
+
+failures:
+    eoa::worker::send::dispatch_tests::failed_authorization_drains_prefix_and_retains_whole_batch_for_exact_recovery
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 103 filtered out; finished in 1.30s
+
+error: test failed, to rerun pass `-p engine-executors --lib`

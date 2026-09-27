@@ -26,7 +26,117 @@ const NOOP_CONCURRENCY: usize = 32;
 
 const HEALTH_CHECK_INTERVAL_MS: u64 = 60 * 5 * 1000; // 5 minutes in milliseconds
 
+/// Authorize in input order while bounded, ordered RPC futures are driven.
+/// Only authorization errors stop the producer. RPC outcomes remain ordinary
+/// values, including uncertain sends. A known authorization error suppresses
+/// buffered work before its first dispatch poll. Already-started calls drain
+/// before the error returns; callers then retain the entire borrowed batch.
+async fn authorize_then_dispatch<A, AF, D, DF, T, E>(
+    count: usize,
+    concurrency: usize,
+    authorize: A,
+    dispatch: D,
+) -> Result<Vec<T>, E>
+where
+    A: Fn(usize) -> AF,
+    AF: Future<Output = Result<(), E>>,
+    D: Fn(usize) -> DF,
+    DF: Future<Output = T>,
+{
+    assert!(concurrency > 0, "broadcast concurrency must be positive");
+    let authorization_failed = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let producer = futures::stream::unfold(
+        (0usize, false, authorize, authorization_failed.clone()),
+        |(index, stopped, authorize, authorization_failed)| async move {
+            if stopped || index == count {
+                return None;
+            }
+            let authorization = authorize(index).await;
+            let stopped = authorization.is_err();
+            if stopped {
+                authorization_failed.store(true, std::sync::atomic::Ordering::Release);
+            }
+            Some((
+                (index, authorization),
+                (index + 1, stopped, authorize, authorization_failed),
+            ))
+        },
+    );
+    let outcomes = producer
+        .map(|(index, authorization)| {
+            let authorization_failed = authorization_failed.clone();
+            let dispatch = &dispatch;
+            async move {
+                authorization?;
+                // Buffered refills before polling sends. A later immediately
+                // ready authorization may already have failed: do not start a
+                // known-revoked prefix merely because it entered the buffer.
+                // Check only once, before constructing/polling network work.
+                if authorization_failed.load(std::sync::atomic::Ordering::Acquire) {
+                    return Ok(None);
+                }
+                Ok(Some(dispatch(index).await))
+            }
+        })
+        .buffered(concurrency)
+        .collect::<Vec<Result<Option<T>, E>>>()
+        .await;
+    // This synchronous collect cannot cancel a pending journal commit or send.
+    // Suppression is possible only alongside the included authorization error;
+    // it never becomes a terminal transaction outcome or partial success.
+    let completed = outcomes.into_iter().collect::<Result<Vec<_>, E>>()?;
+    Ok(completed.into_iter().flatten().collect())
+}
+
 impl<C: Chain> EoaExecutorWorker<C> {
+    /// Fence durable authorization on both sides of its awaited work.
+    /// Ownership can still change after the final read; previously authorized
+    /// calls may finish, and stale Redis state commits remain owner-fenced.
+    async fn authorize_while_owned<F>(&self, authorization: F) -> Result<(), EoaExecutorWorkerError>
+    where
+        F: Future<Output = Result<(), EoaExecutorWorkerError>>,
+    {
+        self.store.ensure_eoa_lock_owned().await?;
+        authorization.await?;
+        self.store.ensure_eoa_lock_owned().await?;
+        Ok(())
+    }
+
+    /// The caller has already atomically reserved every signed transaction in
+    /// borrowed state. An authorization failure leaves ALL reservations there,
+    /// even when earlier RPC calls were acknowledged while it was awaited.
+    async fn dispatch_reserved_transactions(
+        &self,
+        transactions: &[BorrowedTransaction],
+    ) -> Result<Vec<SubmissionResult>, EoaExecutorWorkerError> {
+        authorize_then_dispatch(
+            transactions.len(),
+            self.broadcast_concurrency,
+            |index| {
+                let borrowed = &transactions[index];
+                self.authorize_while_owned(crate::recovery::before_eoa(
+                    &borrowed.user_request,
+                    &borrowed.signed_transaction,
+                ))
+            },
+            |index| async move {
+                let borrowed = &transactions[index];
+                let sent = self
+                    .chain
+                    .provider()
+                    .send_tx_envelope(borrowed.signed_transaction.clone().into())
+                    .await;
+                SubmissionResult::from_send_result(
+                    borrowed,
+                    sent,
+                    SendContext::InitialBroadcast,
+                    &self.chain,
+                )
+            },
+        )
+        .await
+    }
+
     // ========== SEND FLOW ==========
     #[tracing::instrument(skip_all, fields(worker_id = self.store.worker_id))]
     pub async fn send_flow(&self) -> Result<u32, EoaExecutorWorkerError> {
@@ -237,42 +347,9 @@ impl<C: Chain> EoaExecutorWorker<C> {
                 "Moved transactions to borrowed state using recycled nonces"
             );
 
-            // Actually send the transactions to the blockchain
-            for borrowed in &cleaned_results {
-                crate::recovery::before_eoa(&borrowed.user_request, &borrowed.signed_transaction)
-                    .await?;
-            }
-            let send_tasks: Vec<_> = cleaned_results
-                .iter()
-                .map(|borrowed_tx| {
-                    let signed_tx = borrowed_tx.signed_transaction.clone();
-                    async move {
-                        self.chain
-                            .provider()
-                            .send_tx_envelope(signed_tx.into())
-                            .await
-                    }
-                })
-                .collect();
-
-            let send_results = futures::stream::iter(send_tasks)
-                .buffered(self.broadcast_concurrency)
-                .collect::<Vec<_>>()
-                .await;
-
-            // Process send results and update states
-            let submission_results = send_results
-                .into_iter()
-                .zip(cleaned_results.into_iter())
-                .map(|(send_result, borrowed_tx)| {
-                    SubmissionResult::from_send_result(
-                        &borrowed_tx,
-                        send_result,
-                        SendContext::InitialBroadcast,
-                        &self.chain,
-                    )
-                })
-                .collect();
+            let submission_results = self
+                .dispatch_reserved_transactions(&cleaned_results)
+                .await?;
 
             // Use batch processing to handle all submission results
             let processing_report = self
@@ -530,29 +607,12 @@ impl<C: Chain> EoaExecutorWorker<C> {
                 "JOB_LIFECYCLE - process_new_transactions: Moved transactions to borrowed state"
             );
 
-            // Send the transactions to the blockchain
-            for borrowed in &cleaned_results {
-                crate::recovery::before_eoa(&borrowed.user_request, &borrowed.signed_transaction)
-                    .await?;
-            }
+            // Authorization and RPC dispatch overlap; all durable/owner fences
+            // still precede the corresponding wire and all results stay ordered.
             let send_start = current_timestamp_ms();
-            let send_tasks: Vec<_> = cleaned_results
-                .iter()
-                .map(|borrowed_tx| {
-                    let signed_tx = borrowed_tx.signed_transaction.clone();
-                    async move {
-                        self.chain
-                            .provider()
-                            .send_tx_envelope(signed_tx.into())
-                            .await
-                    }
-                })
-                .collect();
-
-            let send_results = futures::stream::iter(send_tasks)
-                .buffered(self.broadcast_concurrency)
-                .collect::<Vec<_>>()
-                .await;
+            let submission_results = self
+                .dispatch_reserved_transactions(&cleaned_results)
+                .await?;
 
             tracing::info!(
                 duration_seconds = calculate_duration_seconds(send_start, current_timestamp_ms()),
@@ -560,25 +620,9 @@ impl<C: Chain> EoaExecutorWorker<C> {
                 transactions_sent = cleaned_results.len(),
                 eoa = ?self.eoa,
                 chain_id = self.chain_id,
-                worker_id = %self.store.worker_id,
-                "JOB_LIFECYCLE - process_new_transactions: Sent transactions to blockchain"
+                worker_id = %self.store.worker_id(),
+                "JOB_LIFECYCLE - process_new_transactions: Authorized and sent reserved transactions"
             );
-
-            // Process send results and update states
-            let submission_results = send_results
-                .into_iter()
-                .zip(cleaned_results.into_iter())
-                .map(|(send_result, borrowed_tx)| {
-                    let result = SubmissionResult::from_send_result(
-                        &borrowed_tx,
-                        send_result,
-                        SendContext::InitialBroadcast,
-                        &self.chain,
-                    );
-
-                    result
-                })
-                .collect();
 
             // Use batch processing to handle all submission results
             let process_start = current_timestamp_ms();
@@ -637,3 +681,7 @@ impl<C: Chain> EoaExecutorWorker<C> {
 #[cfg(test)]
 #[path = "send_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "send_dispatch_tests.rs"]
+mod dispatch_tests;

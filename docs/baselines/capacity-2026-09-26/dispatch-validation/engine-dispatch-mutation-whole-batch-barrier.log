@@ -1,0 +1,34 @@
+   Compiling engine-executors v0.1.0 (/Users/alfongj/Code/engine-core/executors)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 8.76s
+     Running unittests src/lib.rs (target/debug/deps/engine_executors-9561e3e0b1f29cca)
+
+running 1 test
+test eoa::worker::send::dispatch_tests::authorization_overlaps_http_and_preserves_order_and_uncertain_results ... 
+thread 'eoa::worker::send::dispatch_tests::authorization_overlaps_http_and_preserves_order_and_uncertain_results' (1569660) panicked at executors/src/eoa/worker/send_dispatch_tests.rs:56:5:
+
+running 1 test
+test eoa::worker::send::dispatch_tests::authorization_overlaps_http_and_preserves_order_and_uncertain_results ... FAILED
+
+failures:
+
+failures:
+    eoa::worker::send::dispatch_tests::authorization_overlaps_http_and_preserves_order_and_uncertain_results
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 103 filtered out; finished in 15.01s
+
+ 
+thread 'eoa::worker::send::dispatch_tests::authorization_overlaps_http_and_preserves_order_and_uncertain_results' (1569662) panicked at executors/src/eoa/worker/send_dispatch_tests.rs:528:14:
+controlled dispatch gates must finish: Elapsed(())
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+FAILED
+
+failures:
+
+failures:
+    eoa::worker::send::dispatch_tests::authorization_overlaps_http_and_preserves_order_and_uncertain_results
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 103 filtered out; finished in 15.02s
+
+error: test failed, to rerun pass `-p engine-executors --lib`

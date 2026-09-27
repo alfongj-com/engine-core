@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "/tmp/engine-nitro-incident-recovery/recover_original.py", line 288, in <module>
+    raise SystemExit(main())
+  File "/tmp/engine-nitro-incident-recovery/recover_original.py", line 215, in main
+    validate_preserved(before,inventory(opts.work_dir/'recovery.sqlite'))
+  File "/tmp/engine-nitro-incident-recovery/recover_original.py", line 67, in inventory
+    control = dict(zip(('deployment','epoch','namespace','checkpoint','halted'), db.execute('SELECT deployment,epoch,namespace,checkpoint,halted FROM control').fetchone()))
+sqlite3.OperationalError: unable to open database file

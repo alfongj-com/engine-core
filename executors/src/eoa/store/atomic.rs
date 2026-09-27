@@ -87,6 +87,17 @@ impl AtomicEoaExecutorStore {
         &self.worker_id
     }
 
+    /// Read the current owner without mutating the projection or WATCH state.
+    /// This is a boundary check, not a lease: an already-started network call
+    /// can finish after another worker takes ownership.
+    pub(crate) async fn ensure_eoa_lock_owned(&self) -> Result<(), TransactionStoreError> {
+        let owner: Option<String> = self.redis.clone().get(self.eoa_lock_key_name()).await?;
+        if owner.as_deref() != Some(self.worker_id()) {
+            return Err(self.eoa_lock_lost_error());
+        }
+        Ok(())
+    }
+
     /// Release EOA lock following the spec's finally pattern
     pub async fn release_eoa_lock(self) -> Result<EoaExecutorStore, TransactionStoreError> {
         // Use existing utility method that handles all the atomic lock checking

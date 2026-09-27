@@ -1,0 +1,103 @@
+{
+  "archived_utc": "2026-09-27T02:47:18.331901+00:00",
+  "scope": "Sanitized incident/custody/recovery evidence. No SQLite/AOF/raw signed-wire/private-key material is published. Sources remain private and immutable where recorded.",
+  "capacity_qualification": false,
+  "files": [
+    {
+      "file": "recovery-report.json.gz",
+      "bytes": 1553630,
+      "sha256": "7b68c84623ce6556dcdb3151f6de0b919699834e6e1789bde11faa39fbbaabab",
+      "source_sha256": "2d43b862b2613a34d6d95a20c09ed2734ef931c59960a8fb6069ed5ffe7b549e",
+      "encoding": "gzip of exact original bytes"
+    },
+    {
+      "file": "original-failure-report.json.gz",
+      "bytes": 407285,
+      "sha256": "06b521d23696a2adc9cb1b5184b3c67f5ed025bf011d5a4664f246ce1c07379b",
+      "source_sha256": "3b5fc318b24fbd4fd2bc210c0325a9118ff41a55b3b5b3e1ef40b3ec84842030",
+      "encoding": "gzip of exact original bytes"
+    },
+    {
+      "file": "preparation-3.json.gz",
+      "bytes": 2854,
+      "sha256": "c07abe0543ba45aa0f4921118cc7f70fa688d6d3d2acdf41dd883c4ca41f2c54",
+      "source_sha256": "4a49fe0f51d416de5cca2390beb5a7df0d0127d42c2924c416d18d3c86103f0f",
+      "encoding": "gzip of exact original bytes"
+    },
+    {
+      "file": "preparation-2.json.gz",
+      "bytes": 2849,
+      "sha256": "37e5a8638e1584159dbe7f64fdb3dd0ff16ca39fdf33d9830a57fb41f02b01ee",
+      "source_sha256": "ccae8da62b0d2be089b464a6fe3aee5af7b3f1ce5df7ab5eeed0d364713b5d89",
+      "encoding": "gzip of exact original bytes"
+    },
+    {
+      "file": "recovery-observations.jsonl.gz",
+      "bytes": 1643235,
+      "sha256": "2375239e14838e3f7fc2bcf8286f1a976561da6ff505ea39bfaf12a84f97fbac",
+      "source_sha256": "2375239e14838e3f7fc2bcf8286f1a976561da6ff505ea39bfaf12a84f97fbac",
+      "encoding": "exact original bytes"
+    },
+    {
+      "file": "recovery-rpc-audit.jsonl.gz",
+      "bytes": 1047954,
+      "sha256": "486dd2a72e0560034371140b3fd4b35c573b8fe3f8977d5e5e7a1e41b66fb345",
+      "source_sha256": "0679964a37732530caf5e24fa7dc8c6d1fa466c4a18df0dd0e5172374763bc10",
+      "encoding": "gzip of exact original bytes"
+    },
+    {
+      "file": "incident-summary.json",
+      "bytes": 4644,
+      "sha256": "000f32e965f6a72b7ae8e850917665fc64ebfddfbf2644e36f1569749d241682",
+      "source_sha256": "000f32e965f6a72b7ae8e850917665fc64ebfddfbf2644e36f1569749d241682",
+      "encoding": "exact original bytes"
+    },
+    {
+      "file": "frozen-runtime-manifest.json",
+      "bytes": 2546,
+      "sha256": "02cae45e1d1c9b369e11971a264bac245eba3db14af0b88bc40c1e032a696a72",
+      "source_sha256": "02cae45e1d1c9b369e11971a264bac245eba3db14af0b88bc40c1e032a696a72",
+      "encoding": "exact original bytes"
+    },
+    {
+      "file": "preparation-1.log",
+      "bytes": 626,
+      "sha256": "24cac8dcc9f4b4ec3cb13735103f03aa8a84c81a488bdcba5a89c29559eb8817",
+      "source_sha256": "24cac8dcc9f4b4ec3cb13735103f03aa8a84c81a488bdcba5a89c29559eb8817",
+      "encoding": "exact original bytes"
+    },
+    {
+      "file": "original-failure.log",
+      "bytes": 2112,
+      "sha256": "df6bfb637ab40fdbfa788282b655ad7e736becf45e55bc37b4de4743a2333d32",
+      "source_sha256": "df6bfb637ab40fdbfa788282b655ad7e736becf45e55bc37b4de4743a2333d32",
+      "encoding": "exact original bytes"
+    },
+    {
+      "file": "recovery-runner.py",
+      "bytes": 22574,
+      "sha256": "371372c177839596299b3907a82be73a80b1764fc65126b07b8664e4f233009d",
+      "source_sha256": "371372c177839596299b3907a82be73a80b1764fc65126b07b8664e4f233009d",
+      "encoding": "exact original bytes"
+    },
+    {
+      "file": "independent-audit.py",
+      "bytes": 10614,
+      "sha256": "3f9804dd8d6e52e4d6c3233ee62d3b68ff515560716c1d2c2a8bd7c54d6fabc0",
+      "source_sha256": "3f9804dd8d6e52e4d6c3233ee62d3b68ff515560716c1d2c2a8bd7c54d6fabc0",
+      "encoding": "exact original bytes"
+    },
+    {
+      "file": "independent-audit.json",
+      "bytes": 2559,
+      "sha256": "60b28ab7e707a47891c97c7b43bb91255e5b9b651b5ede8abe2ee91eeba2eecf",
+      "encoding": "review result"
+    },
+    {
+      "file": "README.md",
+      "bytes": 4716,
+      "sha256": "a7b82895965ecedff0569dbd359d39c6866736c4fd3d62406b717cd5c297526a",
+      "encoding": "review summary authored for this archive"
+    }
+  ]
+}

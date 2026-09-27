@@ -47,6 +47,13 @@ state counts, counterexamples and implementation regressions for that run. The
 manifest now contains **61 configurations**: the prior 56 plus five depth-checkpoint
 regressions. The new family distinguishes observed tip from qualified history,
 a gap not represented by the older height-collapsing Finality model. The
+[dispatch-pipeline record](evidence/capacity-dispatch-review/README.md)
+passes the same 61 outcomes and 76 reviewed source hashes, with three checker
+safeguards and unchanged positive state counts. Durable per-attempt authorization
+still precedes every dispatch; overlap with later authorization was already
+permitted by the models. First-poll suppression, owner-read races, ordered futures
+and cancellation are implementation-test obligations, not new proved scheduling
+or performance properties. The preceding
 [diagnostic-retention record](evidence/capacity-diagnostic-review/README.md)
 passes the same 61 expected outcomes and 75 reviewed source hashes, with three
 checker safeguards. Its 3,164,944 summed positive states are unchanged: capped

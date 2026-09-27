@@ -1,0 +1,833 @@
+TLC2 Version 2.19 of 08 August 2024 (rev: 5a47802)
+Running breadth-first search Model-Checking with fp 0 and seed 1 with 1 worker on 10 cores with 1820MB heap and 64MB offheap memory [pid: 52265] (Mac OS X 26.6.2 aarch64, Eclipse Adoptium 21.0.12.1 x86_64, MSBDiskFPSet, DiskStateQueue).
+Parsing file /Users/alfongj/Code/engine-core/formal/tla/SolanaRecovery.tla
+Parsing file /private/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/Naturals.tla
+Parsing file /private/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/FiniteSets.tla
+Parsing file /private/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/Sequences.tla
+Parsing file /private/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/TLC.tla
+Semantic processing of module Naturals
+Semantic processing of module Sequences
+Semantic processing of module FiniteSets
+Semantic processing of module TLC
+Semantic processing of module SolanaRecovery
+Starting... (2026-09-26 22:47:10)
+Computing initial states...
+Finished computing initial states: 1 distinct state generated at 2026-09-26 22:47:10.
+Progress(21) at 2026-09-26 22:47:13: 650,738 states generated (650,738 s/min), 131,470 distinct states found (131,470 ds/min), 33,688 states left on queue.
+Error: Invariant AtMostOneEffect is violated.
+Error: The behavior up to this point is:
+State 1: <Initial predicate>
+s = [ token |-> (w1 :> 0 @@ w2 :> 0),
+  queueOwner |-> 0,
+  storageOwner |-> 0,
+  messages |-> <<>>,
+  epoch |-> 0,
+  queue |-> "Pending",
+  admission |-> "Active",
+  attempt |-> 0,
+  broadcasts |-> 0,
+  checks |-> 0,
+  reservations |-> 0,
+  phase |-> (w1 :> "Idle" @@ w2 :> "Idle"),
+  local |-> (w1 :> 0 @@ w2 :> 0),
+  observed |-> (w1 :> "Unknown" @@ w2 :> "Unknown"),
+  chain |-> (s1 :> "Unseen" @@ s2 :> "Unseen"),
+  expired |-> {},
+  effects |-> {},
+  persistedEver |-> {},
+  terminalIdentity |-> 0,
+  terminalKind |-> "None",
+  staleTerminal |-> FALSE ]
+
+State 2: <Claim line 34, col 3 to line 37, col 86 of module SolanaRecovery>
+s = [ token |-> (w1 :> 1 @@ w2 :> 0),
+  queueOwner |-> 1,
+  storageOwner |-> 0,
+  messages |-> <<>>,
+  epoch |-> 1,
+  queue |-> "Active",
+  admission |-> "Active",
+  attempt |-> 0,
+  broadcasts |-> 0,
+  checks |-> 0,
+  reservations |-> 0,
+  phase |-> (w1 :> "Load" @@ w2 :> "Idle"),
+  local |-> (w1 :> 0 @@ w2 :> 0),
+  observed |-> (w1 :> "Unknown" @@ w2 :> "Unknown"),
+  chain |-> (s1 :> "Unseen" @@ s2 :> "Unseen"),
+  expired |-> {},
+  effects |-> {},
+  persistedEver |-> {},
+  terminalIdentity |-> 0,
+  terminalKind |-> "None",
+  staleTerminal |-> FALSE ]
+
+State 3: <Lock line 40, col 3 to line 41, col 72 of module SolanaRecovery>
+s = [ token |-> (w1 :> 1 @@ w2 :> 0),
+  queueOwner |-> 1,
+  storageOwner |-> 1,
+  messages |-> <<>>,
+  epoch |-> 1,
+  queue |-> "Active",
+  admission |-> "Active",
+  attempt |-> 0,
+  broadcasts |-> 0,
+  checks |-> 0,
+  reservations |-> 0,
+  phase |-> (w1 :> "Recover" @@ w2 :> "Idle"),
+  local |-> (w1 :> 0 @@ w2 :> 0),
+  observed |-> (w1 :> "Unknown" @@ w2 :> "Unknown"),
+  chain |-> (s1 :> "Unseen" @@ s2 :> "Unseen"),
+  expired |-> {},
+  effects |-> {},
+  persistedEver |-> {},
+  terminalIdentity |-> 0,
+  terminalKind |-> "None",
+  staleTerminal |-> FALSE ]
+
+State 4: <LoadAttempt line 44, col 3 to line 46, col 76 of module SolanaRecovery>
+s = [ token |-> (w1 :> 1 @@ w2 :> 0),
+  queueOwner |-> 1,
+  storageOwner |-> 1,
+  messages |-> <<>>,
+  epoch |-> 1,
+  queue |-> "Active",
+  admission |-> "Active",
+  attempt |-> 0,
+  broadcasts |-> 0,
+  checks |-> 0,
+  reservations |-> 0,
+  phase |-> (w1 :> "Build" @@ w2 :> "Idle"),
+  local |-> (w1 :> 0 @@ w2 :> 0),
+  observed |-> (w1 :> "Unknown" @@ w2 :> "Unknown"),
+  chain |-> (s1 :> "Unseen" @@ s2 :> "Unseen"),
+  expired |-> {},
+  effects |-> {},
+  persistedEver |-> {},
+  terminalIdentity |-> 0,
+  terminalKind |-> "None",
+  staleTerminal |-> FALSE ]
+
+State 5: <Build line 49, col 3 to line 51, col 57 of module SolanaRecovery>
+s = [ token |-> (w1 :> 1 @@ w2 :> 0),
+  queueOwner |-> 1,
+  storageOwner |-> 1,
+  messages |-> <<>>,
+  epoch |-> 1,
+  queue |-> "Active",
+  admission |-> "Active",
+  attempt |-> 0,
+  broadcasts |-> 0,
+  checks |-> 0,
+  reservations |-> 0,
+  phase |-> (w1 :> "Built" @@ w2 :> "Idle"),
+  local |-> (w1 :> s1 @@ w2 :> 0),
+  observed |-> (w1 :> "Unknown" @@ w2 :> "Unknown"),
+  chain |-> (s1 :> "Unseen" @@ s2 :> "Unseen"),
+  expired |-> {},
+  effects |-> {},
+  persistedEver |-> {},
+  terminalIdentity |-> 0,
+  terminalKind |-> "None",
+  staleTerminal |-> FALSE ]
+
+State 6: <Persist line 54, col 3 to line 56, col 86 of module SolanaRecovery>
+s = [ token |-> (w1 :> 1 @@ w2 :> 0),
+  queueOwner |-> 1,
+  storageOwner |-> 1,
+  messages |-> <<>>,
+  epoch |-> 1,
+  queue |-> "Active",
+  admission |-> "Active",
+  attempt |-> s1,
+  broadcasts |-> 0,
+  checks |-> 0,
+  reservations |-> 0,
+  phase |-> (w1 :> "PrepareSend" @@ w2 :> "Idle"),
+  local |-> (w1 :> s1 @@ w2 :> 0),
+  observed |-> (w1 :> "Unknown" @@ w2 :> "Unknown"),
+  chain |-> (s1 :> "Unseen" @@ s2 :> "Unseen"),
+  expired |-> {},
+  effects |-> {},
+  persistedEver |-> {s1},
+  terminalIdentity |-> 0,
+  terminalKind |-> "None",
+  staleTerminal |-> FALSE ]
+
+State 7: <PrepareSend line 59, col 3 to line 61, col 86 of module SolanaRecovery>
+s = [ token |-> (w1 :> 1 @@ w2 :> 0),
+  queueOwner |-> 1,
+  storageOwner |-> 1,
+  messages |-> <<>>,
+  epoch |-> 1,
+  queue |-> "Active",
+  admission |-> "Active",
+  attempt |-> s1,
+  broadcasts |-> 1,
+  checks |-> 0,
+  reservations |-> 1,
+  phase |-> (w1 :> "Send" @@ w2 :> "Idle"),
+  local |-> (w1 :> s1 @@ w2 :> 0),
+  observed |-> (w1 :> "Unknown" @@ w2 :> "Unknown"),
+  chain |-> (s1 :> "Unseen" @@ s2 :> "Unseen"),
+  expired |-> {},
+  effects |-> {},
+  persistedEver |-> {s1},
+  terminalIdentity |-> 0,
+  terminalKind |-> "None",
+  staleTerminal |-> FALSE ]
+
+State 8: <Send line 75, col 3 to line 78, col 68 of module SolanaRecovery>
+s = [ token |-> (w1 :> 1 @@ w2 :> 0),
+  queueOwner |-> 1,
+  storageOwner |-> 1,
+  messages |-> <<[identity |-> s1, persistedBefore |-> TRUE]>>,
+  epoch |-> 1,
+  queue |-> "Active",
+  admission |-> "Active",
+  attempt |-> s1,
+  broadcasts |-> 1,
+  checks |-> 0,
+  reservations |-> 1,
+  phase |-> (w1 :> "Retry" @@ w2 :> "Idle"),
+  local |-> (w1 :> s1 @@ w2 :> 0),
+  observed |-> (w1 :> "Unknown" @@ w2 :> "Unknown"),
+  chain |-> (s1 :> "Unseen" @@ s2 :> "Unseen"),
+  expired |-> {},
+  effects |-> {},
+  persistedEver |-> {s1},
+  terminalIdentity |-> 0,
+  terminalKind |-> "None",
+  staleTerminal |-> FALSE ]
+
+State 9: <Retry line 147, col 3 to line 152, col 62 of module SolanaRecovery>
+s = [ token |-> (w1 :> 0 @@ w2 :> 0),
+  queueOwner |-> 0,
+  storageOwner |-> 0,
+  messages |-> <<[identity |-> s1, persistedBefore |-> TRUE]>>,
+  epoch |-> 1,
+  queue |-> "Pending",
+  admission |-> "Active",
+  attempt |-> s1,
+  broadcasts |-> 1,
+  checks |-> 0,
+  reservations |-> 1,
+  phase |-> (w1 :> "Idle" @@ w2 :> "Idle"),
+  local |-> (w1 :> 0 @@ w2 :> 0),
+  observed |-> (w1 :> "Unknown" @@ w2 :> "Unknown"),
+  chain |-> (s1 :> "Unseen" @@ s2 :> "Unseen"),
+  expired |-> {},
+  effects |-> {},
+  persistedEver |-> {s1},
+  terminalIdentity |-> 0,
+  terminalKind |-> "None",
+  staleTerminal |-> FALSE ]
+
+State 10: <Claim line 34, col 3 to line 37, col 86 of module SolanaRecovery>
+s = [ token |-> (w1 :> 2 @@ w2 :> 0),
+  queueOwner |-> 2,
+  storageOwner |-> 0,
+  messages |-> <<[identity |-> s1, persistedBefore |-> TRUE]>>,
+  epoch |-> 2,
+  queue |-> "Active",
+  admission |-> "Active",
+  attempt |-> s1,
+  broadcasts |-> 1,
+  checks |-> 0,
+  reservations |-> 1,
+  phase |-> (w1 :> "Load" @@ w2 :> "Idle"),
+  local |-> (w1 :> 0 @@ w2 :> 0),
+  observed |-> (w1 :> "Unknown" @@ w2 :> "Unknown"),
+  chain |-> (s1 :> "Unseen" @@ s2 :> "Unseen"),
+  expired |-> {},
+  effects |-> {},
+  persistedEver |-> {s1},
+  terminalIdentity |-> 0,
+  terminalKind |-> "None",
+  staleTerminal |-> FALSE ]
+
+State 11: <Lock line 40, col 3 to line 41, col 72 of module SolanaRecovery>
+s = [ token |-> (w1 :> 2 @@ w2 :> 0),
+  queueOwner |-> 2,
+  storageOwner |-> 2,
+  messages |-> <<[identity |-> s1, persistedBefore |-> TRUE]>>,
+  epoch |-> 2,
+  queue |-> "Active",
+  admission |-> "Active",
+  attempt |-> s1,
+  broadcasts |-> 1,
+  checks |-> 0,
+  reservations |-> 1,
+  phase |-> (w1 :> "Recover" @@ w2 :> "Idle"),
+  local |-> (w1 :> 0 @@ w2 :> 0),
+  observed |-> (w1 :> "Unknown" @@ w2 :> "Unknown"),
+  chain |-> (s1 :> "Unseen" @@ s2 :> "Unseen"),
+  expired |-> {},
+  effects |-> {},
+  persistedEver |-> {s1},
+  terminalIdentity |-> 0,
+  terminalKind |-> "None",
+  staleTerminal |-> FALSE ]
+
+State 12: <LoadAttempt line 44, col 3 to line 46, col 76 of module SolanaRecovery>
+s = [ token |-> (w1 :> 2 @@ w2 :> 0),
+  queueOwner |-> 2,
+  storageOwner |-> 2,
+  messages |-> <<[identity |-> s1, persistedBefore |-> TRUE]>>,
+  epoch |-> 2,
+  queue |-> "Active",
+  admission |-> "Active",
+  attempt |-> s1,
+  broadcasts |-> 1,
+  checks |-> 0,
+  reservations |-> 1,
+  phase |-> (w1 :> "Check" @@ w2 :> "Idle"),
+  local |-> (w1 :> s1 @@ w2 :> 0),
+  observed |-> (w1 :> "Unknown" @@ w2 :> "Unknown"),
+  chain |-> (s1 :> "Unseen" @@ s2 :> "Unseen"),
+  expired |-> {},
+  effects |-> {},
+  persistedEver |-> {s1},
+  terminalIdentity |-> 0,
+  terminalKind |-> "None",
+  staleTerminal |-> FALSE ]
+
+State 13: <Observe line 102, col 3 to line 106, col 85 of module SolanaRecovery>
+s = [ token |-> (w1 :> 2 @@ w2 :> 0),
+  queueOwner |-> 2,
+  storageOwner |-> 2,
+  messages |-> <<[identity |-> s1, persistedBefore |-> TRUE]>>,
+  epoch |-> 2,
+  queue |-> "Active",
+  admission |-> "Active",
+  attempt |-> s1,
+  broadcasts |-> 1,
+  checks |-> 1,
+  reservations |-> 1,
+  phase |-> (w1 :> "Observed" @@ w2 :> "Idle"),
+  local |-> (w1 :> s1 @@ w2 :> 0),
+  observed |-> (w1 :> "Absent" @@ w2 :> "Unknown"),
+  chain |-> (s1 :> "Unseen" @@ s2 :> "Unseen"),
+  expired |-> {},
+  effects |-> {},
+  persistedEver |-> {s1},
+  terminalIdentity |-> 0,
+  terminalKind |-> "None",
+  staleTerminal |-> FALSE ]
+
+State 14: <Decide line 113, col 3 to line 117, col 67 of module SolanaRecovery>
+s = [ token |-> (w1 :> 2 @@ w2 :> 0),
+  queueOwner |-> 2,
+  storageOwner |-> 2,
+  messages |-> <<[identity |-> s1, persistedBefore |-> TRUE]>>,
+  epoch |-> 2,
+  queue |-> "Active",
+  admission |-> "Active",
+  attempt |-> s1,
+  broadcasts |-> 1,
+  checks |-> 1,
+  reservations |-> 1,
+  phase |-> (w1 :> "Validity" @@ w2 :> "Idle"),
+  local |-> (w1 :> s1 @@ w2 :> 0),
+  observed |-> (w1 :> "Absent" @@ w2 :> "Unknown"),
+  chain |-> (s1 :> "Unseen" @@ s2 :> "Unseen"),
+  expired |-> {},
+  effects |-> {},
+  persistedEver |-> {s1},
+  terminalIdentity |-> 0,
+  terminalKind |-> "None",
+  staleTerminal |-> FALSE ]
+
+State 15: <Execute line 83, col 3 to line 85, col 81 of module SolanaRecovery>
+s = [ token |-> (w1 :> 2 @@ w2 :> 0),
+  queueOwner |-> 2,
+  storageOwner |-> 2,
+  messages |-> <<[identity |-> s1, persistedBefore |-> TRUE]>>,
+  epoch |-> 2,
+  queue |-> "Active",
+  admission |-> "Active",
+  attempt |-> s1,
+  broadcasts |-> 1,
+  checks |-> 1,
+  reservations |-> 1,
+  phase |-> (w1 :> "Validity" @@ w2 :> "Idle"),
+  local |-> (w1 :> s1 @@ w2 :> 0),
+  observed |-> (w1 :> "Absent" @@ w2 :> "Unknown"),
+  chain |-> (s1 :> "ProcessedOk" @@ s2 :> "Unseen"),
+  expired |-> {},
+  effects |-> {s1},
+  persistedEver |-> {s1},
+  terminalIdentity |-> 0,
+  terminalKind |-> "None",
+  staleTerminal |-> FALSE ]
+
+State 16: <ExpireHash line 92, col 3 to line 93, col 43 of module SolanaRecovery>
+s = [ token |-> (w1 :> 2 @@ w2 :> 0),
+  queueOwner |-> 2,
+  storageOwner |-> 2,
+  messages |-> <<[identity |-> s1, persistedBefore |-> TRUE]>>,
+  epoch |-> 2,
+  queue |-> "Active",
+  admission |-> "Active",
+  attempt |-> s1,
+  broadcasts |-> 1,
+  checks |-> 1,
+  reservations |-> 1,
+  phase |-> (w1 :> "Validity" @@ w2 :> "Idle"),
+  local |-> (w1 :> s1 @@ w2 :> 0),
+  observed |-> (w1 :> "Absent" @@ w2 :> "Unknown"),
+  chain |-> (s1 :> "ProcessedOk" @@ s2 :> "Unseen"),
+  expired |-> {s1},
+  effects |-> {s1},
+  persistedEver |-> {s1},
+  terminalIdentity |-> 0,
+  terminalKind |-> "None",
+  staleTerminal |-> FALSE ]
+
+State 17: <Validity line 120, col 3 to line 122, col 77 of module SolanaRecovery>
+s = [ token |-> (w1 :> 2 @@ w2 :> 0),
+  queueOwner |-> 2,
+  storageOwner |-> 2,
+  messages |-> <<[identity |-> s1, persistedBefore |-> TRUE]>>,
+  epoch |-> 2,
+  queue |-> "Active",
+  admission |-> "Active",
+  attempt |-> s1,
+  broadcasts |-> 1,
+  checks |-> 1,
+  reservations |-> 1,
+  phase |-> (w1 :> "CheckAgain" @@ w2 :> "Idle"),
+  local |-> (w1 :> s1 @@ w2 :> 0),
+  observed |-> (w1 :> "Absent" @@ w2 :> "Unknown"),
+  chain |-> (s1 :> "ProcessedOk" @@ s2 :> "Unseen"),
+  expired |-> {s1},
+  effects |-> {s1},
+  persistedEver |-> {s1},
+  terminalIdentity |-> 0,
+  terminalKind |-> "None",
+  staleTerminal |-> FALSE ]
+
+State 18: <Observe line 102, col 3 to line 106, col 85 of module SolanaRecovery>
+s = [ token |-> (w1 :> 2 @@ w2 :> 0),
+  queueOwner |-> 2,
+  storageOwner |-> 2,
+  messages |-> <<[identity |-> s1, persistedBefore |-> TRUE]>>,
+  epoch |-> 2,
+  queue |-> "Active",
+  admission |-> "Active",
+  attempt |-> s1,
+  broadcasts |-> 1,
+  checks |-> 2,
+  reservations |-> 1,
+  phase |-> (w1 :> "ObservedAgain" @@ w2 :> "Idle"),
+  local |-> (w1 :> s1 @@ w2 :> 0),
+  observed |-> (w1 :> "Absent" @@ w2 :> "Unknown"),
+  chain |-> (s1 :> "ProcessedOk" @@ s2 :> "Unseen"),
+  expired |-> {s1},
+  effects |-> {s1},
+  persistedEver |-> {s1},
+  terminalIdentity |-> 0,
+  terminalKind |-> "None",
+  staleTerminal |-> FALSE ]
+
+State 19: <RefreshOnAbsence line 127, col 3 to line 130, col 72 of module SolanaRecovery>
+s = [ token |-> (w1 :> 2 @@ w2 :> 0),
+  queueOwner |-> 2,
+  storageOwner |-> 2,
+  messages |-> <<[identity |-> s1, persistedBefore |-> TRUE]>>,
+  epoch |-> 2,
+  queue |-> "Active",
+  admission |-> "Active",
+  attempt |-> 0,
+  broadcasts |-> 1,
+  checks |-> 2,
+  reservations |-> 1,
+  phase |-> (w1 :> "Built" @@ w2 :> "Idle"),
+  local |-> (w1 :> s2 @@ w2 :> 0),
+  observed |-> (w1 :> "Absent" @@ w2 :> "Unknown"),
+  chain |-> (s1 :> "ProcessedOk" @@ s2 :> "Unseen"),
+  expired |-> {s1},
+  effects |-> {s1},
+  persistedEver |-> {s1},
+  terminalIdentity |-> 0,
+  terminalKind |-> "None",
+  staleTerminal |-> FALSE ]
+
+State 20: <Persist line 54, col 3 to line 56, col 86 of module SolanaRecovery>
+s = [ token |-> (w1 :> 2 @@ w2 :> 0),
+  queueOwner |-> 2,
+  storageOwner |-> 2,
+  messages |-> <<[identity |-> s1, persistedBefore |-> TRUE]>>,
+  epoch |-> 2,
+  queue |-> "Active",
+  admission |-> "Active",
+  attempt |-> s2,
+  broadcasts |-> 0,
+  checks |-> 0,
+  reservations |-> 1,
+  phase |-> (w1 :> "PrepareSend" @@ w2 :> "Idle"),
+  local |-> (w1 :> s2 @@ w2 :> 0),
+  observed |-> (w1 :> "Absent" @@ w2 :> "Unknown"),
+  chain |-> (s1 :> "ProcessedOk" @@ s2 :> "Unseen"),
+  expired |-> {s1},
+  effects |-> {s1},
+  persistedEver |-> {s1, s2},
+  terminalIdentity |-> 0,
+  terminalKind |-> "None",
+  staleTerminal |-> FALSE ]
+
+State 21: <PrepareSend line 59, col 3 to line 61, col 86 of module SolanaRecovery>
+s = [ token |-> (w1 :> 2 @@ w2 :> 0),
+  queueOwner |-> 2,
+  storageOwner |-> 2,
+  messages |-> <<[identity |-> s1, persistedBefore |-> TRUE]>>,
+  epoch |-> 2,
+  queue |-> "Active",
+  admission |-> "Active",
+  attempt |-> s2,
+  broadcasts |-> 1,
+  checks |-> 0,
+  reservations |-> 2,
+  phase |-> (w1 :> "Send" @@ w2 :> "Idle"),
+  local |-> (w1 :> s2 @@ w2 :> 0),
+  observed |-> (w1 :> "Absent" @@ w2 :> "Unknown"),
+  chain |-> (s1 :> "ProcessedOk" @@ s2 :> "Unseen"),
+  expired |-> {s1},
+  effects |-> {s1},
+  persistedEver |-> {s1, s2},
+  terminalIdentity |-> 0,
+  terminalKind |-> "None",
+  staleTerminal |-> FALSE ]
+
+State 22: <Send line 75, col 3 to line 78, col 68 of module SolanaRecovery>
+s = [ token |-> (w1 :> 2 @@ w2 :> 0),
+  queueOwner |-> 2,
+  storageOwner |-> 2,
+  messages |->
+      << [identity |-> s1, persistedBefore |-> TRUE],
+         [identity |-> s2, persistedBefore |-> TRUE] >>,
+  epoch |-> 2,
+  queue |-> "Active",
+  admission |-> "Active",
+  attempt |-> s2,
+  broadcasts |-> 1,
+  checks |-> 0,
+  reservations |-> 2,
+  phase |-> (w1 :> "Retry" @@ w2 :> "Idle"),
+  local |-> (w1 :> s2 @@ w2 :> 0),
+  observed |-> (w1 :> "Unknown" @@ w2 :> "Unknown"),
+  chain |-> (s1 :> "ProcessedOk" @@ s2 :> "Unseen"),
+  expired |-> {s1},
+  effects |-> {s1},
+  persistedEver |-> {s1, s2},
+  terminalIdentity |-> 0,
+  terminalKind |-> "None",
+  staleTerminal |-> FALSE ]
+
+State 23: <Execute line 83, col 3 to line 85, col 81 of module SolanaRecovery>
+s = [ token |-> (w1 :> 2 @@ w2 :> 0),
+  queueOwner |-> 2,
+  storageOwner |-> 2,
+  messages |->
+      << [identity |-> s1, persistedBefore |-> TRUE],
+         [identity |-> s2, persistedBefore |-> TRUE] >>,
+  epoch |-> 2,
+  queue |-> "Active",
+  admission |-> "Active",
+  attempt |-> s2,
+  broadcasts |-> 1,
+  checks |-> 0,
+  reservations |-> 2,
+  phase |-> (w1 :> "Retry" @@ w2 :> "Idle"),
+  local |-> (w1 :> s2 @@ w2 :> 0),
+  observed |-> (w1 :> "Unknown" @@ w2 :> "Unknown"),
+  chain |-> (s1 :> "ProcessedOk" @@ s2 :> "ProcessedOk"),
+  expired |-> {s1},
+  effects |-> {s1, s2},
+  persistedEver |-> {s1, s2},
+  terminalIdentity |-> 0,
+  terminalKind |-> "None",
+  staleTerminal |-> FALSE ]
+
+The coverage statistics at 2026-09-26 22:47:15
+<Init line 23, col 1 to line 23, col 4 of module SolanaRecovery>: 2:2
+  line 23, col 9 to line 31, col 75 of module SolanaRecovery: 2
+<Claim line 33, col 1 to line 33, col 8 of module SolanaRecovery>: 6373:9049
+  line 34, col 6 to line 34, col 24 of module SolanaRecovery: 309402
+  |line 34, col 6 to line 34, col 15 of module SolanaRecovery: 300353
+  line 34, col 29 to line 34, col 47 of module SolanaRecovery: 72420
+  |line 34, col 29 to line 34, col 35 of module SolanaRecovery: 63371
+  line 34, col 52 to line 34, col 67 of module SolanaRecovery: 30775
+  |line 34, col 52 to line 34, col 63 of module SolanaRecovery: 21726
+  line 35, col 6 to line 35, col 24 of module SolanaRecovery: 9049
+  |line 35, col 6 to line 35, col 12 of module SolanaRecovery: 21726
+  |line 35, col 16 to line 35, col 24 of module SolanaRecovery: 21726
+  line 36, col 6 to line 37, col 86 of module SolanaRecovery: 9049
+<Lock line 39, col 1 to line 39, col 7 of module SolanaRecovery>: 3454:4062
+  line 40, col 6 to line 40, col 24 of module SolanaRecovery: 304413
+  |line 40, col 6 to line 40, col 15 of module SolanaRecovery: 300351
+  line 19, col 16 to line 19, col 29 of module SolanaRecovery: 48276
+  |line 19, col 16 to line 19, col 25 of module SolanaRecovery: 44214
+  line 19, col 34 to line 19, col 58 of module SolanaRecovery: 48276
+  |line 19, col 34 to line 19, col 43 of module SolanaRecovery: 44214
+  |line 19, col 47 to line 19, col 58 of module SolanaRecovery: 44214
+  line 40, col 38 to line 40, col 38 of module SolanaRecovery: 44214
+  line 40, col 44 to line 40, col 61 of module SolanaRecovery: 11878
+  |line 40, col 44 to line 40, col 57 of module SolanaRecovery: 7816
+  line 41, col 6 to line 41, col 72 of module SolanaRecovery: 4062
+<LoadAttempt line 43, col 1 to line 43, col 14 of module SolanaRecovery>: 2756:8755
+  line 44, col 6 to line 44, col 27 of module SolanaRecovery: 309104
+  |line 44, col 6 to line 44, col 15 of module SolanaRecovery: 300349
+  line 20, col 18 to line 20, col 31 of module SolanaRecovery: 39205
+  |line 20, col 18 to line 20, col 27 of module SolanaRecovery: 30450
+  line 20, col 36 to line 20, col 62 of module SolanaRecovery: 39205
+  |line 20, col 36 to line 20, col 45 of module SolanaRecovery: 30450
+  |line 20, col 49 to line 20, col 62 of module SolanaRecovery: 30450
+  line 44, col 43 to line 44, col 43 of module SolanaRecovery: 30450
+  line 45, col 6 to line 46, col 76 of module SolanaRecovery: 8755
+<Build line 48, col 1 to line 48, col 11 of module SolanaRecovery>: 140:577
+  line 49, col 6 to line 49, col 25 of module SolanaRecovery: 601252
+  |line 49, col 6 to line 49, col 15 of module SolanaRecovery: 600675
+  line 20, col 18 to line 20, col 31 of module SolanaRecovery: 19890
+  |line 20, col 18 to line 20, col 27 of module SolanaRecovery: 19313
+  line 20, col 36 to line 20, col 62 of module SolanaRecovery: 19890
+  |line 20, col 36 to line 20, col 45 of module SolanaRecovery: 19313
+  |line 20, col 49 to line 20, col 62 of module SolanaRecovery: 19313
+  line 49, col 41 to line 49, col 41 of module SolanaRecovery: 19313
+  line 49, col 47 to line 49, col 59 of module SolanaRecovery: 1730
+  |line 49, col 47 to line 49, col 55 of module SolanaRecovery: 1153
+  line 50, col 6 to line 50, col 23 of module SolanaRecovery: 1730
+  |line 50, col 6 to line 50, col 6 of module SolanaRecovery: 1153
+  |line 50, col 15 to line 50, col 23 of module SolanaRecovery: 1153
+  line 51, col 6 to line 51, col 57 of module SolanaRecovery: 577
+<Persist line 53, col 1 to line 53, col 10 of module SolanaRecovery>: 272:1633
+  line 54, col 6 to line 54, col 25 of module SolanaRecovery: 301980
+  |line 54, col 6 to line 54, col 15 of module SolanaRecovery: 300347
+  line 20, col 18 to line 20, col 31 of module SolanaRecovery: 18169
+  |line 20, col 18 to line 20, col 27 of module SolanaRecovery: 16536
+  line 20, col 36 to line 20, col 62 of module SolanaRecovery: 18169
+  |line 20, col 36 to line 20, col 45 of module SolanaRecovery: 16536
+  |line 20, col 49 to line 20, col 62 of module SolanaRecovery: 16536
+  line 54, col 41 to line 54, col 41 of module SolanaRecovery: 16536
+  line 54, col 47 to line 54, col 59 of module SolanaRecovery: 3266
+  |line 54, col 47 to line 54, col 55 of module SolanaRecovery: 1633
+  line 55, col 6 to line 56, col 86 of module SolanaRecovery: 1633
+<PrepareSend line 58, col 1 to line 58, col 14 of module SolanaRecovery>: 760:4351
+  line 59, col 6 to line 59, col 31 of module SolanaRecovery: 304696
+  |line 59, col 6 to line 59, col 15 of module SolanaRecovery: 300345
+  line 20, col 18 to line 20, col 31 of module SolanaRecovery: 20041
+  |line 20, col 18 to line 20, col 27 of module SolanaRecovery: 15690
+  line 20, col 36 to line 20, col 62 of module SolanaRecovery: 20041
+  |line 20, col 36 to line 20, col 45 of module SolanaRecovery: 15690
+  |line 20, col 49 to line 20, col 62 of module SolanaRecovery: 15690
+  line 59, col 47 to line 59, col 47 of module SolanaRecovery: 15690
+  line 59, col 53 to line 59, col 74 of module SolanaRecovery: 8702
+  |line 59, col 53 to line 59, col 61 of module SolanaRecovery: 4351
+  |line 59, col 65 to line 59, col 74 of module SolanaRecovery: 4351
+  line 60, col 6 to line 60, col 65 of module SolanaRecovery: 4351
+  line 61, col 6 to line 61, col 86 of module SolanaRecovery: 4351
+<NoSendAllowance line 63, col 1 to line 63, col 18 of module SolanaRecovery>: 0:0
+  line 64, col 6 to line 64, col 31 of module SolanaRecovery: 300343
+  line 64, col 36 to line 64, col 63 of module SolanaRecovery: 15688
+  line 65, col 6 to line 65, col 41 of module SolanaRecovery: 0
+<BypassPersistence line 67, col 1 to line 67, col 20 of module SolanaRecovery>: 0:0
+  line 69, col 6 to line 69, col 40 of module SolanaRecovery: 0
+<Send line 74, col 1 to line 74, col 7 of module SolanaRecovery>: 565:11443
+  line 75, col 6 to line 75, col 24 of module SolanaRecovery: 311786
+  |line 75, col 6 to line 75, col 15 of module SolanaRecovery: 300343
+  line 75, col 29 to line 75, col 57 of module SolanaRecovery: 11443
+  line 76, col 6 to line 78, col 68 of module SolanaRecovery: 11443
+<Execute line 82, col 1 to line 82, col 18 of module SolanaRecovery>: 2459:24165
+  line 83, col 6 to line 83, col 21 of module SolanaRecovery: 624823
+  |line 83, col 6 to line 83, col 6 of module SolanaRecovery: 600659
+  |line 83, col 12 to line 83, col 21 of module SolanaRecovery: 600659
+  ||line 21, col 15 to line 21, col 65 of module SolanaRecovery: 600659
+  |||line 21, col 16 to line 21, col 37 of module SolanaRecovery: 396421
+  |||line 21, col 47 to line 21, col 64 of module SolanaRecovery: 600659
+  line 83, col 26 to line 83, col 43 of module SolanaRecovery: 218767
+  |line 83, col 26 to line 83, col 26 of module SolanaRecovery: 194603
+  |line 83, col 35 to line 83, col 43 of module SolanaRecovery: 194603
+  line 83, col 48 to line 83, col 68 of module SolanaRecovery: 130449
+  |line 83, col 48 to line 83, col 57 of module SolanaRecovery: 106285
+  line 84, col 6 to line 85, col 81 of module SolanaRecovery: 24164
+  |line 84, col 11 to line 85, col 81 of module SolanaRecovery: 24165
+  ||line 84, col 12 to line 84, col 12 of module SolanaRecovery: 24165
+  ||line 84, col 21 to line 84, col 39 of module SolanaRecovery: 24165
+  ||line 85, col 33 to line 85, col 80 of module SolanaRecovery: 24165
+  |||line 85, col 36 to line 85, col 57 of module SolanaRecovery: 24165
+  |||line 85, col 64 to line 85, col 73 of module SolanaRecovery: 12084
+<Finalize line 87, col 1 to line 87, col 11 of module SolanaRecovery>: 2252:40474
+  line 88, col 6 to line 88, col 51 of module SolanaRecovery: 340806
+  |line 88, col 6 to line 88, col 15 of module SolanaRecovery: 300332
+  |line 88, col 21 to line 88, col 51 of module SolanaRecovery: 300332
+  line 89, col 6 to line 89, col 85 of module SolanaRecovery: 40474
+<ExpireHash line 91, col 1 to line 91, col 13 of module SolanaRecovery>: 8429:164126
+  line 92, col 6 to line 92, col 23 of module SolanaRecovery: 464458
+  |line 92, col 6 to line 92, col 6 of module SolanaRecovery: 300332
+  |line 92, col 15 to line 92, col 23 of module SolanaRecovery: 300332
+  line 93, col 6 to line 93, col 43 of module SolanaRecovery: 164126
+<Observe line 101, col 1 to line 101, col 18 of module SolanaRecovery>: 6584:20724
+  line 102, col 6 to line 102, col 43 of module SolanaRecovery: 1822732
+  |line 102, col 6 to line 102, col 15 of module SolanaRecovery: 1802008
+  |line 102, col 21 to line 102, col 43 of module SolanaRecovery: 1802008
+  line 20, col 18 to line 20, col 31 of module SolanaRecovery: 124282
+  |line 20, col 18 to line 20, col 27 of module SolanaRecovery: 103558
+  line 20, col 36 to line 20, col 62 of module SolanaRecovery: 124282
+  |line 20, col 36 to line 20, col 45 of module SolanaRecovery: 103558
+  |line 20, col 49 to line 20, col 62 of module SolanaRecovery: 103558
+  line 102, col 59 to line 102, col 59 of module SolanaRecovery: 103558
+  line 103, col 6 to line 103, col 27 of module SolanaRecovery: 67168
+  |line 103, col 6 to line 103, col 14 of module SolanaRecovery: 46444
+  |line 103, col 18 to line 103, col 27 of module SolanaRecovery: 46444
+  line 103, col 32 to line 103, col 51 of module SolanaRecovery: 20724
+  |line 103, col 32 to line 103, col 39 of module SolanaRecovery: 46444
+  |line 103, col 43 to line 103, col 51 of module SolanaRecovery: 46444
+  line 104, col 6 to line 104, col 47 of module SolanaRecovery: 66952
+  |line 104, col 6 to line 104, col 11 of module SolanaRecovery: 46228
+  |line 104, col 17 to line 104, col 47 of module SolanaRecovery: 46228
+  ||line 96, col 3 to line 99, col 81 of module SolanaRecovery: 46228
+  |||line 96, col 3 to line 98, col 80 of module SolanaRecovery: 46228
+  ||||line 96, col 3 to line 97, col 58 of module SolanaRecovery: 46228
+  |||||line 96, col 3 to line 96, col 21 of module SolanaRecovery: 46228
+  |||||line 97, col 9 to line 97, col 57 of module SolanaRecovery: 46228
+  ||||||line 97, col 12 to line 97, col 32 of module SolanaRecovery: 46228
+  ||||||line 97, col 39 to line 97, col 49 of module SolanaRecovery: 22232:44464
+  ||||||line 97, col 56 to line 97, col 57 of module SolanaRecovery: 23996:23996
+  ||||line 98, col 9 to line 98, col 79 of module SolanaRecovery: 46228
+  |||||line 98, col 12 to line 98, col 54 of module SolanaRecovery: 46228
+  ||||||line 98, col 12 to line 98, col 33 of module SolanaRecovery: 46228
+  ||||||line 98, col 38 to line 98, col 54 of module SolanaRecovery: 41380
+  |||||line 98, col 61 to line 98, col 71 of module SolanaRecovery: 4848:9696
+  |||||line 98, col 78 to line 98, col 79 of module SolanaRecovery: 41380:41380
+  |||line 99, col 9 to line 99, col 80 of module SolanaRecovery: 46228
+  ||||line 99, col 12 to line 99, col 55 of module SolanaRecovery: 46228
+  |||||line 99, col 12 to line 99, col 34 of module SolanaRecovery: 46228
+  |||||line 99, col 39 to line 99, col 55 of module SolanaRecovery: 41422
+  ||||line 99, col 62 to line 99, col 72 of module SolanaRecovery: 4806:9612
+  ||||line 99, col 79 to line 99, col 80 of module SolanaRecovery: 41422:41422
+  ||line 104, col 37 to line 104, col 46 of module SolanaRecovery: 46228
+  line 105, col 6 to line 106, col 85 of module SolanaRecovery: 20724
+<CheckBudget line 108, col 1 to line 108, col 14 of module SolanaRecovery>: 46:54
+  line 109, col 6 to line 109, col 43 of module SolanaRecovery: 300395
+  |line 109, col 6 to line 109, col 15 of module SolanaRecovery: 300341
+  |line 109, col 21 to line 109, col 43 of module SolanaRecovery: 300341
+  line 109, col 48 to line 109, col 67 of module SolanaRecovery: 17315
+  |line 109, col 48 to line 109, col 55 of module SolanaRecovery: 17261
+  |line 109, col 59 to line 109, col 67 of module SolanaRecovery: 17261
+  line 110, col 6 to line 110, col 40 of module SolanaRecovery: 54
+<Decide line 112, col 1 to line 112, col 9 of module SolanaRecovery>: 4840:36288
+  line 113, col 6 to line 113, col 49 of module SolanaRecovery: 336629
+  |line 113, col 6 to line 113, col 15 of module SolanaRecovery: 300341
+  |line 113, col 21 to line 113, col 49 of module SolanaRecovery: 300341
+  line 114, col 6 to line 117, col 67 of module SolanaRecovery: 36288
+  |line 114, col 11 to line 117, col 67 of module SolanaRecovery: 36288
+  ||line 114, col 12 to line 114, col 12 of module SolanaRecovery: 36288
+  ||line 114, col 21 to line 117, col 66 of module SolanaRecovery: 36288
+  ||line 115, col 8 to line 117, col 66 of module SolanaRecovery: 36288
+  |||line 115, col 11 to line 115, col 50 of module SolanaRecovery: 36288
+  |||line 116, col 13 to line 117, col 66 of module SolanaRecovery: 34048
+  ||||line 116, col 16 to line 116, col 53 of module SolanaRecovery: 34048
+  ||||line 117, col 13 to line 117, col 66 of module SolanaRecovery: 14168
+<Validity line 119, col 1 to line 119, col 11 of module SolanaRecovery>: 1320:3969
+  line 120, col 6 to line 120, col 28 of module SolanaRecovery: 304309
+  |line 120, col 6 to line 120, col 15 of module SolanaRecovery: 300340
+  line 20, col 18 to line 20, col 31 of module SolanaRecovery: 12871
+  |line 20, col 18 to line 20, col 27 of module SolanaRecovery: 8902
+  line 20, col 36 to line 20, col 62 of module SolanaRecovery: 12871
+  |line 20, col 36 to line 20, col 45 of module SolanaRecovery: 8902
+  |line 20, col 49 to line 20, col 62 of module SolanaRecovery: 8902
+  line 120, col 44 to line 120, col 44 of module SolanaRecovery: 8902
+  line 121, col 6 to line 122, col 77 of module SolanaRecovery: 3969
+<RefreshOnAbsence line 126, col 1 to line 126, col 22 of module SolanaRecovery>: 188:504
+  line 127, col 6 to line 127, col 26 of module SolanaRecovery: 504
+  line 127, col 31 to line 127, col 58 of module SolanaRecovery: 601178
+  |line 127, col 31 to line 127, col 40 of module SolanaRecovery: 600674
+  line 128, col 6 to line 128, col 29 of module SolanaRecovery: 7038
+  |line 128, col 6 to line 128, col 18 of module SolanaRecovery: 6534
+  line 20, col 18 to line 20, col 31 of module SolanaRecovery: 3254
+  |line 20, col 18 to line 20, col 27 of module SolanaRecovery: 2750
+  line 20, col 36 to line 20, col 62 of module SolanaRecovery: 3254
+  |line 20, col 36 to line 20, col 45 of module SolanaRecovery: 2750
+  |line 20, col 49 to line 20, col 62 of module SolanaRecovery: 2750
+  line 128, col 45 to line 128, col 45 of module SolanaRecovery: 2750
+  line 129, col 6 to line 129, col 29 of module SolanaRecovery: 2136
+  |line 129, col 6 to line 129, col 6 of module SolanaRecovery: 1632
+  |line 129, col 15 to line 129, col 29 of module SolanaRecovery: 1632
+  line 129, col 34 to line 129, col 51 of module SolanaRecovery: 1320
+  |line 129, col 34 to line 129, col 34 of module SolanaRecovery: 816
+  |line 129, col 43 to line 129, col 51 of module SolanaRecovery: 816
+  line 130, col 6 to line 130, col 72 of module SolanaRecovery: 504
+<ReleaseForCommit line 132, col 1 to line 132, col 19 of module SolanaRecovery>: 248:1349
+  line 133, col 6 to line 133, col 25 of module SolanaRecovery: 301688
+  |line 133, col 6 to line 133, col 15 of module SolanaRecovery: 300339
+  line 134, col 6 to line 135, col 44 of module SolanaRecovery: 1349
+<CommitTerminal line 137, col 1 to line 137, col 17 of module SolanaRecovery>: 130:193
+  line 138, col 6 to line 138, col 28 of module SolanaRecovery: 300532
+  |line 138, col 6 to line 138, col 15 of module SolanaRecovery: 300339
+  line 19, col 16 to line 19, col 29 of module SolanaRecovery: 779
+  |line 19, col 16 to line 19, col 25 of module SolanaRecovery: 586
+  line 19, col 34 to line 19, col 58 of module SolanaRecovery: 779
+  |line 19, col 34 to line 19, col 43 of module SolanaRecovery: 586
+  |line 19, col 47 to line 19, col 58 of module SolanaRecovery: 586
+  line 138, col 43 to line 138, col 43 of module SolanaRecovery: 586
+  line 139, col 6 to line 144, col 78 of module SolanaRecovery: 193
+<Retry line 146, col 1 to line 146, col 8 of module SolanaRecovery>: 255:43864
+  line 147, col 6 to line 147, col 25 of module SolanaRecovery: 344203
+  |line 147, col 6 to line 147, col 15 of module SolanaRecovery: 300339
+  line 148, col 6 to line 152, col 62 of module SolanaRecovery: 43864
+<Park line 154, col 1 to line 154, col 7 of module SolanaRecovery>: 175:341
+  line 155, col 6 to line 155, col 24 of module SolanaRecovery: 300679
+  |line 155, col 6 to line 155, col 15 of module SolanaRecovery: 300338
+  line 19, col 16 to line 19, col 29 of module SolanaRecovery: 1083
+  |line 19, col 16 to line 19, col 25 of module SolanaRecovery: 742
+  line 19, col 34 to line 19, col 58 of module SolanaRecovery: 1083
+  |line 19, col 34 to line 19, col 43 of module SolanaRecovery: 742
+  |line 19, col 47 to line 19, col 58 of module SolanaRecovery: 742
+  line 155, col 38 to line 155, col 38 of module SolanaRecovery: 742
+  line 156, col 6 to line 158, col 78 of module SolanaRecovery: 341
+<DiscardStale line 160, col 1 to line 160, col 15 of module SolanaRecovery>: 2337:189605
+  line 161, col 6 to line 161, col 24 of module SolanaRecovery: 489943
+  |line 161, col 6 to line 161, col 15 of module SolanaRecovery: 300338
+  line 161, col 29 to line 161, col 40 of module SolanaRecovery: 426574
+  |line 161, col 30 to line 161, col 40 of module SolanaRecovery: 236969
+  line 162, col 6 to line 164, col 62 of module SolanaRecovery: 189605
+<LoseRedisAttempt line 187, col 1 to line 187, col 16 of module SolanaRecovery>: 0:0
+  line 189, col 6 to line 189, col 66 of module SolanaRecovery: 0
+<Reorg line 191, col 1 to line 191, col 8 of module SolanaRecovery>: 0:0
+  line 193, col 6 to line 193, col 42 of module SolanaRecovery: 0
+<WorkerStep line 195, col 1 to line 195, col 13 of module SolanaRecovery (199 12 199 43)>: 9505:236969
+  line 199, col 12 to line 199, col 31 of module SolanaRecovery: 236969
+  line 167, col 6 to line 167, col 24 of module SolanaRecovery: 537307
+  |line 167, col 6 to line 167, col 15 of module SolanaRecovery: 300338
+  line 168, col 6 to line 169, col 62 of module SolanaRecovery: 236969
+  line 199, col 42 to line 199, col 42 of module SolanaRecovery: 300338
+<Next line 204, col 1 to line 204, col 4 of module SolanaRecovery (207 7 207 90)>: 142792:210970
+  line 207, col 7 to line 207, col 26 of module SolanaRecovery: 149157
+  line 172, col 6 to line 172, col 21 of module SolanaRecovery: 211367
+  |line 172, col 6 to line 172, col 17 of module SolanaRecovery: 150163
+  line 173, col 6 to line 173, col 58 of module SolanaRecovery: 61204
+  line 176, col 6 to line 176, col 23 of module SolanaRecovery: 232845
+  |line 176, col 6 to line 176, col 19 of module SolanaRecovery: 150163
+  line 177, col 6 to line 177, col 39 of module SolanaRecovery: 82682
+  line 180, col 6 to line 180, col 24 of module SolanaRecovery: 200966
+  |line 180, col 6 to line 180, col 12 of module SolanaRecovery: 150163
+  line 180, col 29 to line 180, col 44 of module SolanaRecovery: 101606
+  |line 180, col 29 to line 180, col 40 of module SolanaRecovery: 50803
+  line 181, col 6 to line 181, col 42 of module SolanaRecovery: 50803
+  line 184, col 6 to line 184, col 40 of module SolanaRecovery: 166444
+  |line 184, col 6 to line 184, col 12 of module SolanaRecovery: 150163
+  |line 184, col 18 to line 184, col 40 of module SolanaRecovery: 150163
+  line 184, col 45 to line 184, col 57 of module SolanaRecovery: 54337
+  |line 184, col 45 to line 184, col 53 of module SolanaRecovery: 38056
+  line 184, col 62 to line 184, col 79 of module SolanaRecovery: 52312
+  |line 184, col 62 to line 184, col 75 of module SolanaRecovery: 36031
+  line 185, col 6 to line 185, col 54 of module SolanaRecovery: 16281
+<TypeOK line 210, col 1 to line 210, col 6 of module SolanaRecovery>
+  line 211, col 3 to line 222, col 85 of module SolanaRecovery: 195881
+<AtMostOneEffect line 228, col 1 to line 228, col 15 of module SolanaRecovery>
+  line 228, col 20 to line 228, col 46 of module SolanaRecovery: 195881
+End of statistics.
+1013429 states generated, 195881 distinct states found, 45716 states left on queue.
+The depth of the complete state graph search is 23.
+The average outdegree of the complete state graph is 1 (minimum is 0, the maximum 8 and the 95th percentile is 4).
+Finished in 04s at (2026-09-26 22:47:15)

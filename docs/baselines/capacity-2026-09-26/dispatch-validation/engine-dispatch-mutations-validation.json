@@ -1,0 +1,138 @@
+{
+  "records": [
+    {
+      "name": "strong-suffix-baseline",
+      "command": [
+        "/Users/alfongj/.cargo/bin/cargo",
+        "test",
+        "--locked",
+        "-p",
+        "engine-executors",
+        "--lib",
+        "eoa::worker::send::dispatch_tests",
+        "--",
+        "--ignored",
+        "--test-threads=1",
+        "--nocapture"
+      ],
+      "exit": 0,
+      "seconds": 12.398,
+      "log": "/tmp/engine-dispatch-strong-suffix-baseline.log",
+      "sha256": "eb8732e96073e4428b275cd9c51ded236ada73a78fd74d972ff82a70a4ab98ec",
+      "expected_failure": false
+    },
+    {
+      "name": "mutation-whole-batch-barrier",
+      "command": [
+        "/Users/alfongj/.cargo/bin/cargo",
+        "test",
+        "--locked",
+        "-p",
+        "engine-executors",
+        "--lib",
+        "eoa::worker::send::dispatch_tests::authorization_overlaps_http_and_preserves_order_and_uncertain_results",
+        "--",
+        "--ignored",
+        "--test-threads=1",
+        "--nocapture"
+      ],
+      "exit": 101,
+      "seconds": 24.756,
+      "log": "/tmp/engine-dispatch-mutation-whole-batch-barrier.log",
+      "sha256": "7b79a2b796942c685bcb57dbb48a8d889e9bb0c607fc75cb502bc5e9920eba13",
+      "expected_failure": true
+    },
+    {
+      "name": "mutation-missing-stop",
+      "command": [
+        "/Users/alfongj/.cargo/bin/cargo",
+        "test",
+        "--locked",
+        "-p",
+        "engine-executors",
+        "--lib",
+        "eoa::worker::send::dispatch_tests::failed_authorization_drains_prefix_and_retains_whole_batch_for_exact_recovery",
+        "--",
+        "--ignored",
+        "--test-threads=1",
+        "--nocapture"
+      ],
+      "exit": 101,
+      "seconds": 10.908,
+      "log": "/tmp/engine-dispatch-mutation-missing-stop.log",
+      "sha256": "2286943a79e8a6cdb513cc863631de23b476e265432a567da51bd8aa973651e9",
+      "expected_failure": true
+    },
+    {
+      "name": "mutation-missing-post-owner",
+      "command": [
+        "/Users/alfongj/.cargo/bin/cargo",
+        "test",
+        "--locked",
+        "-p",
+        "engine-executors",
+        "--lib",
+        "eoa::worker::send::dispatch_tests::owner_changes_before_or_during_authorization_stop_dispatch_without_recycling",
+        "--",
+        "--ignored",
+        "--test-threads=1",
+        "--nocapture"
+      ],
+      "exit": 101,
+      "seconds": 24.701,
+      "log": "/tmp/engine-dispatch-mutation-missing-post-owner.log",
+      "sha256": "67c72e0019322fbeeb509b047cd6f4d0d922f835b7445618e6ca5501d444a51d",
+      "expected_failure": true
+    },
+    {
+      "name": "mutation-missing-first-poll-stop",
+      "command": [
+        "/Users/alfongj/.cargo/bin/cargo",
+        "test",
+        "--locked",
+        "-p",
+        "engine-executors",
+        "--lib",
+        "eoa::worker::send::dispatch_tests::first_auth_error_suppresses_ready_prefix_before_network_start",
+        "--",
+        "--ignored",
+        "--test-threads=1",
+        "--nocapture"
+      ],
+      "exit": 101,
+      "seconds": 11.043,
+      "log": "/tmp/engine-dispatch-mutation-missing-first-poll-stop.log",
+      "sha256": "58903efbf15ee48fb753ff2466f9494e837f37671e9b3c7bc0a69d0591153a54",
+      "expected_failure": true
+    },
+    {
+      "name": "restored-targeted",
+      "command": [
+        "/Users/alfongj/.cargo/bin/cargo",
+        "test",
+        "--locked",
+        "-p",
+        "engine-executors",
+        "--lib",
+        "eoa::worker::send",
+        "--",
+        "--ignored",
+        "--test-threads=1",
+        "--nocapture"
+      ],
+      "exit": 0,
+      "seconds": 12.2,
+      "log": "/tmp/engine-dispatch-restored-targeted.log",
+      "sha256": "9c89a19610f99b37581d5d846d1640a0770c003c6babbaf2834325d7ccf2a972",
+      "expected_failure": false
+    }
+  ],
+  "restored_source_sha256": "840db0be4003f554116847a0b144e1264c7333b2bf2f27676127b6107208d3bd",
+  "test_source_sha256": "3e9cbc5b29f1c1b88e25b3d3592544f62cb4c220c5bbcad2a01edb9020efb183",
+  "redis": {
+    "port": 51739,
+    "pid": 51914,
+    "exit": 0,
+    "folder": "/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/engine-dispatch-mutations-2_7gat13"
+  }
+}

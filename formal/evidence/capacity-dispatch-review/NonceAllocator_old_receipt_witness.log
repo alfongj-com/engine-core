@@ -1,0 +1,169 @@
+TLC2 Version 2.19 of 08 August 2024 (rev: 5a47802)
+Running breadth-first search Model-Checking with fp 0 and seed 1 with 1 worker on 10 cores with 1820MB heap and 64MB offheap memory [pid: 52506] (Mac OS X 26.6.2 aarch64, Eclipse Adoptium 21.0.12.1 x86_64, MSBDiskFPSet, DiskStateQueue).
+Parsing file /Users/alfongj/Code/engine-core/formal/tla/NonceAllocator.tla
+Parsing file /private/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/Integers.tla
+Parsing file /private/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/FiniteSets.tla
+Parsing file /private/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/TLC.tla
+Parsing file /private/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/Naturals.tla
+Parsing file /private/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/Sequences.tla
+Semantic processing of module Naturals
+Semantic processing of module Integers
+Semantic processing of module Sequences
+Semantic processing of module FiniteSets
+Semantic processing of module TLC
+Semantic processing of module NonceAllocator
+Starting... (2026-09-26 22:48:44)
+Computing initial states...
+Finished computing initial states: 1 distinct state generated at 2026-09-26 22:48:44.
+Error: Invariant OldReceiptCatchupNotReached is violated.
+Error: The behavior up to this point is:
+State 1: <Initial predicate>
+/\ consumed = 0
+/\ observed = 0
+/\ nextNonce = 0
+/\ borrowed = {}
+/\ retained = {}
+/\ everReserved = {}
+
+State 2: <Reserve line 18, col 5 to line 22, col 49 of module NonceAllocator>
+/\ consumed = 0
+/\ observed = 0
+/\ nextNonce = 1
+/\ borrowed = {0}
+/\ retained = {}
+/\ everReserved = {0}
+
+State 3: <Reserve line 18, col 5 to line 22, col 49 of module NonceAllocator>
+/\ consumed = 0
+/\ observed = 0
+/\ nextNonce = 2
+/\ borrowed = {0, 1}
+/\ retained = {}
+/\ everReserved = {0, 1}
+
+State 4: <Mine line 29, col 5 to line 31, col 74 of module NonceAllocator>
+/\ consumed = 1
+/\ observed = 0
+/\ nextNonce = 2
+/\ borrowed = {0, 1}
+/\ retained = {}
+/\ everReserved = {0, 1}
+
+State 5: <Mine line 29, col 5 to line 31, col 74 of module NonceAllocator>
+/\ consumed = 2
+/\ observed = 0
+/\ nextNonce = 2
+/\ borrowed = {0, 1}
+/\ retained = {}
+/\ everReserved = {0, 1}
+
+State 6: <Observe line 33, col 5 to line 36, col 63 of module NonceAllocator>
+/\ consumed = 2
+/\ observed = 2
+/\ nextNonce = 2
+/\ borrowed = {0, 1}
+/\ retained = {}
+/\ everReserved = {0, 1}
+
+State 7: <Submit line 24, col 5 to line 26, col 64 of module NonceAllocator>
+/\ consumed = 2
+/\ observed = 2
+/\ nextNonce = 2
+/\ borrowed = {1}
+/\ retained = {0}
+/\ everReserved = {0, 1}
+
+The coverage statistics at 2026-09-26 22:48:44
+<Init line 11, col 1 to line 11, col 4 of module NonceAllocator>: 2:2
+  line 12, col 5 to line 13, col 56 of module NonceAllocator: 2
+<Reserve line 17, col 1 to line 17, col 7 of module NonceAllocator>: 4:36
+  line 18, col 8 to line 18, col 29 of module NonceAllocator: 36
+  |line 18, col 8 to line 18, col 16 of module NonceAllocator: 42
+  |line 18, col 20 to line 18, col 29 of module NonceAllocator: 42
+  line 18, col 34 to line 18, col 62 of module NonceAllocator: 72
+  |line 18, col 34 to line 18, col 42 of module NonceAllocator: 36
+  |line 18, col 51 to line 18, col 62 of module NonceAllocator: 36
+  line 19, col 8 to line 19, col 44 of module NonceAllocator: 36
+  line 20, col 8 to line 20, col 52 of module NonceAllocator: 36
+  line 21, col 8 to line 21, col 33 of module NonceAllocator: 36
+  line 22, col 8 to line 22, col 49 of module NonceAllocator: 36
+<Submit line 23, col 1 to line 23, col 9 of module NonceAllocator>: 47:64
+  line 24, col 8 to line 24, col 21 of module NonceAllocator: 205
+  |line 24, col 8 to line 24, col 8 of module NonceAllocator: 142
+  |line 24, col 14 to line 24, col 21 of module NonceAllocator: 142
+  line 25, col 8 to line 25, col 33 of module NonceAllocator: 63
+  |line 25, col 20 to line 25, col 33 of module NonceAllocator: 64
+  line 25, col 38 to line 25, col 66 of module NonceAllocator: 63
+  |line 25, col 50 to line 25, col 66 of module NonceAllocator: 64
+  line 26, col 8 to line 26, col 64 of module NonceAllocator: 63
+<Mine line 28, col 1 to line 28, col 4 of module NonceAllocator>: 10:31
+  line 29, col 8 to line 29, col 42 of module NonceAllocator: 71
+  |line 29, col 8 to line 29, col 15 of module NonceAllocator: 40
+  |line 29, col 21 to line 29, col 42 of module NonceAllocator: 40
+  line 30, col 8 to line 30, col 31 of module NonceAllocator: 31
+  line 31, col 8 to line 31, col 74 of module NonceAllocator: 31
+<Observe line 32, col 1 to line 32, col 7 of module NonceAllocator>: 6:13
+  line 33, col 8 to line 33, col 26 of module NonceAllocator: 13
+  |line 33, col 8 to line 33, col 15 of module NonceAllocator: 38
+  |line 33, col 19 to line 33, col 26 of module NonceAllocator: 38
+  line 34, col 8 to line 34, col 27 of module NonceAllocator: 13
+  line 35, col 8 to line 35, col 72 of module NonceAllocator: 13
+  line 36, col 8 to line 36, col 63 of module NonceAllocator: 13
+<Settle line 39, col 1 to line 39, col 9 of module NonceAllocator>: 1:1
+  line 40, col 8 to line 40, col 21 of module NonceAllocator: 141
+  |line 40, col 8 to line 40, col 8 of module NonceAllocator: 140
+  |line 40, col 14 to line 40, col 21 of module NonceAllocator: 140
+  line 40, col 26 to line 40, col 37 of module NonceAllocator: 1
+  |line 40, col 26 to line 40, col 26 of module NonceAllocator: 25
+  |line 40, col 30 to line 40, col 37 of module NonceAllocator: 25
+  line 41, col 8 to line 41, col 33 of module NonceAllocator: 1
+  line 42, col 8 to line 42, col 74 of module NonceAllocator: 1
+<Clean line 43, col 1 to line 43, col 5 of module NonceAllocator (49 8 50 76)>: 0:37
+  line 49, col 11 to line 49, col 77 of module NonceAllocator: 37
+  |line 49, col 24 to line 49, col 77 of module NonceAllocator: 37
+  ||line 49, col 27 to line 49, col 47 of module NonceAllocator: 37
+  |||line 49, col 27 to line 49, col 35 of module NonceAllocator: 37
+  ||||line 48, col 22 to line 48, col 30 of module NonceAllocator: 37
+  |||||line 48, col 22 to line 48, col 26 of module NonceAllocator: 37
+  ||||||line 45, col 18 to line 47, col 95 of module NonceAllocator: 37
+  |||||||line 45, col 21 to line 45, col 59 of module NonceAllocator: 37
+  |||||||line 47, col 23 to line 47, col 95 of module NonceAllocator: 37
+  ||||||||line 9, col 17 to line 9, col 75 of module NonceAllocator: 37
+  |||||||||line 9, col 20 to line 9, col 25 of module NonceAllocator: 37
+  |||||||||line 9, col 32 to line 9, col 33 of module NonceAllocator: 1
+  |||||||||line 9, col 40 to line 9, col 75 of module NonceAllocator: 36
+  ||||||||||line 9, col 57 to line 9, col 75 of module NonceAllocator: 91
+  |||||||||||line 9, col 70 to line 9, col 75 of module NonceAllocator: 232
+  |||||||||||line 9, col 66 to line 9, col 66 of module NonceAllocator: 91
+  ||||||||||line 9, col 53 to line 9, col 53 of module NonceAllocator: 36
+  ||||||||line 47, col 33 to line 47, col 94 of module NonceAllocator: 37
+  |||||||||line 47, col 33 to line 47, col 43 of module NonceAllocator: 37
+  |||||||||line 47, col 51 to line 47, col 93 of module NonceAllocator: 37
+  ||||||||||line 47, col 54 to line 47, col 65 of module NonceAllocator: 37
+  ||||||||||line 47, col 72 to line 47, col 73 of module NonceAllocator: 31:30
+  ||||||||||line 47, col 80 to line 47, col 93 of module NonceAllocator: 6:12
+  |||line 49, col 39 to line 49, col 47 of module NonceAllocator: 37
+  ||line 49, col 69 to line 49, col 77 of module NonceAllocator: 37
+  line 50, col 11 to line 50, col 76 of module NonceAllocator: 37
+<TypeOK line 55, col 1 to line 55, col 6 of module NonceAllocator>
+  line 56, col 5 to line 59, col 34 of module NonceAllocator: 69
+<ObservedNonceFloor line 60, col 1 to line 60, col 18 of module NonceAllocator>
+  line 60, col 23 to line 60, col 43 of module NonceAllocator: 69
+<OutstandingNonceFloor line 61, col 1 to line 61, col 21 of module NonceAllocator>
+  line 61, col 26 to line 61, col 72 of module NonceAllocator: 69
+  |line 61, col 60 to line 61, col 72 of module NonceAllocator: 190
+  |line 61, col 35 to line 61, col 56 of module NonceAllocator: 69
+<OldReceiptCatchupNotReached line 64, col 1 to line 64, col 27 of module NonceAllocator>
+  line 65, col 5 to line 65, col 88 of module NonceAllocator: 69
+  |line 65, col 7 to line 65, col 87 of module NonceAllocator: 69
+  ||line 65, col 7 to line 65, col 61 of module NonceAllocator: 69
+  |||line 65, col 7 to line 65, col 37 of module NonceAllocator: 69
+  ||||line 65, col 7 to line 65, col 19 of module NonceAllocator: 69
+  ||||line 65, col 24 to line 65, col 37 of module NonceAllocator: 3
+  |||line 65, col 42 to line 65, col 61 of module NonceAllocator: 1
+  ||line 65, col 66 to line 65, col 87 of module NonceAllocator: 1
+End of statistics.
+172 states generated, 69 distinct states found, 32 states left on queue.
+The depth of the complete state graph search is 7.
+The average outdegree of the complete state graph is 2 (minimum is 0, the maximum 6 and the 95th percentile is 5).
+Finished in 00s at (2026-09-26 22:48:44)

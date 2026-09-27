@@ -1,0 +1,43 @@
+   Compiling engine-executors v0.1.0 (/Users/alfongj/Code/engine-core/executors)
+warning: unused variable: `authorization_failed`
+  --> executors/src/eoa/worker/send.rs:67:17
+   |
+67 |             let authorization_failed = authorization_failed.clone();
+   |                 ^^^^^^^^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_authorization_failed`
+   |
+   = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: `engine-executors` (lib test) generated 1 warning (run `cargo fix --lib -p engine-executors --tests` to apply 1 suggestion)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 8.72s
+     Running unittests src/lib.rs (target/debug/deps/engine_executors-9561e3e0b1f29cca)
+
+running 1 test
+test eoa::worker::send::dispatch_tests::first_auth_error_suppresses_ready_prefix_before_network_start ... 
+thread 'eoa::worker::send::dispatch_tests::first_auth_error_suppresses_ready_prefix_before_network_start' (1570382) panicked at executors/src/eoa/worker/send_dispatch_tests.rs:56:5:
+
+running 1 test
+test eoa::worker::send::dispatch_tests::first_auth_error_suppresses_ready_prefix_before_network_start ... FAILED
+
+failures:
+
+failures:
+    eoa::worker::send::dispatch_tests::first_auth_error_suppresses_ready_prefix_before_network_start
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 103 filtered out; finished in 1.27s
+
+ 
+thread 'eoa::worker::send::dispatch_tests::first_auth_error_suppresses_ready_prefix_before_network_start' (1570384) panicked at executors/src/eoa/worker/send_dispatch_tests.rs:924:9:
+known authorization failure must prevent even constructing network work
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+FAILED
+
+failures:
+
+failures:
+    eoa::worker::send::dispatch_tests::first_auth_error_suppresses_ready_prefix_before_network_start
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 103 filtered out; finished in 1.29s
+
+error: test failed, to rerun pass `-p engine-executors --lib`

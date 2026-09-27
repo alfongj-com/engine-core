@@ -1,0 +1,20 @@
+{
+  "command": [
+    "/Users/alfongj/.cargo/bin/cargo",
+    "test",
+    "--locked",
+    "-p",
+    "engine-executors",
+    "dispatch_tests",
+    "--",
+    "--ignored",
+    "--nocapture",
+    "--test-threads=1"
+  ],
+  "exit_code": 0,
+  "elapsed_seconds": 12.227298417,
+  "redis_port": 65446,
+  "redis_directory": "/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/engine-dispatch-fix1-42k2pne8",
+  "test_source_sha256": "e1454271f98daa9a727d6e41dc5533af583d35bb8fb3f8dd1d9f9c21c5468ef8",
+  "log": "/tmp/engine-dispatch-targeted-fix1.log"
+}

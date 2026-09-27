@@ -5,7 +5,20 @@ No paid RPC or blockchain transactions were used. This is finite protocol
 verification plus proofs of the production fee arithmetic, not an end-to-end
 proof of Engine. Trailing blank lines in stored test logs are normalized.
 
-## Latest gap-recovery candidate
+## Latest dispatch-pipeline review
+
+The [dispatch review](capacity-dispatch-review/README.md) passes the unchanged
+61 expected outcomes and 76 reviewed source hashes, plus three checker safeguards.
+Positive state spaces remain unchanged at 3,164,944 summed distinct states.
+Per-attempt network delivery may overlap later durable authorization; every send
+still preserves the modeled identity and journal premise. First-poll suppression,
+ordered futures, cancellation, ownership reads and throughput are implementation
+checks or explicit limits. Six real-I/O regressions, four runtime mutation failures,
+and two release-binary Anvil reorg scenarios are linked separately, not added to
+formal counts. The preceding [diagnostic review](capacity-diagnostic-review/README.md)
+and [index/broadcast review](capacity-index-broadcast-review/README.md) remain intact.
+
+## Earlier gap-recovery candidate
 
 The [gap-recovery review](capacity-gap-review/README.md) passes all 61 expected
 model outcomes and 69 reviewed source hashes. It adds source correspondence for

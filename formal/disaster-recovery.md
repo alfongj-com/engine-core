@@ -189,3 +189,31 @@ The cancellation test observes ownership retained until the blocking operation
 finishes. It does not simulate a machine power loss or prove filesystem durability.
 Faster query plans do not establish an Engine throughput improvement or bound
 retained history size and per-ID membership work.
+
+## Per-attempt dispatch pipeline correspondence
+
+The EOA [dispatch pipeline](../executors/src/eoa/worker/send.rs) overlaps one
+wire's network wait with later ordered authorizations. Every network call still
+requires its own successful `before_eoa` / `before_broadcast`, including immutable
+admission, exact signed intent, replay binding, durable attempt, Redis mirror and
+current authority checks. Redis worker ownership is separately read before and
+after authorization. That read is a boundary check, not a lease that prevents
+ownership changing afterward.
+
+The model already allows `Send` from an existing permit while another
+`AttemptCommit` or `Mirror` is pending, and permits that identity to execute after
+a halt or crash. It does not require a batch-wide barrier. An authorization
+failure creates no new permit; if a SQL commit completed before mirror failure,
+the existing mismatch/halt cut applies. Keeping the whole Redis borrowed batch
+on failure preserves exact recovery, even if a prefix reached the network.
+Suppressing buffered but unstarted sends is conservative relative to the modeled
+set of authorized deliveries. No model or configuration is added for this change.
+
+The failure flag's first-poll check, ordered results, draining already-started
+HTTP calls, cancellation, Redis worker takeover and finite concurrency are
+implementation-test obligations, not consequences of `EverySendJournaled`.
+The [six dispatch regressions](../executors/src/eoa/worker/send_dispatch_tests.rs)
+use a real journal and an independent HTTP receiver to check actual durable
+attempt membership before accepting bytes. Existing journal tests separately
+cover commit/mirror cancellation cuts. These models still do not compose SQLite,
+Redis queues and Tokio into a refinement proof or establish a throughput gain.

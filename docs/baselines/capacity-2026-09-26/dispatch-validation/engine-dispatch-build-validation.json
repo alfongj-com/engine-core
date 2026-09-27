@@ -1,0 +1,34 @@
+{
+  "results": [
+    {
+      "name": "workspace-no-run",
+      "command": [
+        "/Users/alfongj/.cargo/bin/cargo",
+        "test",
+        "--locked",
+        "--workspace",
+        "--no-run"
+      ],
+      "exit": 0,
+      "seconds": 18.578699667,
+      "log": "/tmp/engine-dispatch-workspace-no-run.log",
+      "sha256": "9b964c1467c47f1f79fcb7d2bd8deec0000fd29fc0076a26ea4736d6ee976ca3"
+    },
+    {
+      "name": "release",
+      "command": [
+        "/Users/alfongj/.cargo/bin/cargo",
+        "build",
+        "--locked",
+        "--release",
+        "-p",
+        "thirdweb-engine"
+      ],
+      "exit": 0,
+      "seconds": 38.565279167,
+      "log": "/tmp/engine-dispatch-release.log",
+      "sha256": "c7324013902c8f29678dbc01404c3d894c009267cd64d6191ab78e504cec78bc"
+    }
+  ],
+  "binary_sha256": "35e307e16cafa7cbb17caafcf5ed90a840d58dddd2454542566619266e7a4c07"
+}

@@ -77,9 +77,9 @@ cycle-local block reuse and receipt concurrency change scheduling, not the
 `Confirm` premise: exact receipt identity, durable sender/nonce/attempt membership
 and finality evidence are still required. The 20k page/churn and 10k isolated-cleanup
 Redis tests and 32-slot real HTTP test check those implementation boundaries.
-The current measured candidate consumes at most 256 new reservations per allocation cycle, with ordered
-32-task preparation/send concurrency; up to ten preparation refill passes can
-visit 2,560 rejected pending jobs. Borrowed and recycled recovery have separate
+The current measured candidate consumes at most 256 new reservations per allocation cycle,
+with 32-task preparation and separately configured ordered broadcast concurrency;
+up to ten preparation refill passes can visit 2,560 rejected pending jobs. Borrowed and recycled recovery have separate
 set-sized work. The inflight window is separately configured. These bounds do not
 prove polling fairness, elapsed-time latency, or sustained terminal throughput.
 
@@ -187,3 +187,44 @@ Redis observations lag. No composition or source-level refinement is implied.
 The 256 scheduling setting remains a measured candidate. The 100/s local sample
 did not demonstrate sustainable capacity or isolate an improvement over 128;
 model safety results imply neither throughput nor latency improvement.
+
+## Overlapped authorization and dispatch review
+
+The [new/recycled send paths](../executors/src/eoa/worker/send.rs) still reserve
+all prepared wires in Redis borrowed state before any dispatch. The producer
+then authorizes each wire in input order through `before_eoa`: validate immutable
+admission and signed intent, commit its independent journal attempt, and mirror
+the authority checkpoint. Redis worker ownership is checked immediately before
+and after that awaited authorization. A successfully authorized send can overlap
+the next authorization; result delivery remains in input order.
+
+The first authorization error stops the producer. A shared failure flag suppresses
+buffered work before its first dispatch poll; already-started RPC calls drain
+before the error returns. No partial success is committed to Redis on that path:
+the entire borrowed batch remains for exact-wire recovery. RPC errors remain
+`Uncertain` values and do not become authorization errors, nonce recycling, or
+terminal failure. External cancellation can interrupt draining; it likewise
+leaves the borrowed reservations and already-committed journal evidence intact.
+An interrupted SQL/mirror step retains the recovery authority's existing halt
+boundary rather than granting fresh send permission.
+
+`EoaRecovery.Broadcast` already permits delivery of any retained identity,
+independently of later reservations and replies. `DisasterRecovery.AttemptCommit`,
+`Mirror`, `Send` and `Crash` separately cover durable authorization and possible
+late execution. Removing the whole-batch authorization barrier adds no new
+identity or durability invariant. Suppressing an authorized but not-yet-started
+send is a permitted non-delivery in these safety abstractions. Their composition
+is still not proved, and neither model represents the barrier, first-poll flag,
+ordered futures, cancellation/draining mechanics, worker concurrency, recycled
+nonce preparation, elapsed-time fairness or throughput.
+
+Six [real Redis/SQLite/HTTP regressions](../executors/src/eoa/worker/send_dispatch_tests.rs)
+exercise overlap while authorization is held; out-of-order replies and uncertain
+results; a failed authorization with a draining accepted prefix; owner loss on
+both sides of journal work; cancellation and exact-wire recovery; and the
+immediately-ready failure before the first network poll. The actual new and
+recycled entry points are also exercised: two recycled holes sit below a real,
+durably authorized higher nonce, and the receiver independently checks journal
+identity and borrowed wire before accepting each request. These are executable
+implementation checks, not additional TLC theorems. Validation and negative
+controls are recorded separately; a source hash alone does not establish them.
