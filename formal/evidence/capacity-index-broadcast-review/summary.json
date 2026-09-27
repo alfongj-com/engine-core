@@ -1,0 +1,29 @@
+{
+  "date": "2026-09-27",
+  "source_scope": "Reviewed working-tree index/broadcast candidate based on 5d602581dd0e2270a520fdba88ac3e71def00d86; base commit is not the modified candidate. Exact source/model/config hashes in report.json.",
+  "runtime_release_sha256": "bb34deeec74afce0b52d03edb9ec73a84497429db0cc2e460590b9127c0d77ce",
+  "runtime_release_hash_source": "Security agent completed release build and rechecked after both actual-process reorg cases; TLC checks reviewed source, not machine code.",
+  "model_outcomes_passed": 61,
+  "kind_counts": {
+    "positive": 14,
+    "fault": 31,
+    "boundary": 11,
+    "witness": 5
+  },
+  "mapped_source_files": 72,
+  "positive_distinct_states_sum": 3164944,
+  "elapsed_model_seconds": 191.612,
+  "elapsed_runner_and_safeguard_seconds": 191.814,
+  "runner_safeguard_tests": 3,
+  "source_map_sha256": "66168eed358729dbc22c349ec975aa4501c74a4892089f111565b6b695edbd8b",
+  "model_manifest_sha256": "437106b5cc73de6b0b10202996f0b5ae63a0941803e09e8c729c421f4da9ff95",
+  "report_sha256": "f3e4fb760734eefffb568940e4bb6c67aed148c9bba5d590a464f6cafd72002d",
+  "qualification_limits": [
+    "Unchanged finite models; manual source correspondence, no Rust/TLA refinement or model composition proof.",
+    "Physical SQLite indexes stutter over logical authority; DDL/storage/OS locks/Tokio cancellation are implementation assumptions and tests, not formally verified.",
+    "Broadcast setting changes scheduling of existing authorized identities; no formal futures-buffer/concurrency/global-rate/elapsed-time/fairness or throughput proof.",
+    "Repeated wire identity and tests do not establish fresh high-concurrency capacity; matched process A/B and multichain fault qualification are separate.",
+    "Implementation suite selections overlap and include helper entries; do not sum them into a coverage score.",
+    "No new Kani run; mapped fee arithmetic implementation unchanged. Prior model/source evidence and the original failed source-guard CI log remain preserved."
+  ]
+}

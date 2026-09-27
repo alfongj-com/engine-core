@@ -1,0 +1,204 @@
+{
+  "schema": "engine-capacity-rpc-budget-review-v1",
+  "reviewed_at_utc": "2026-09-27T00:14:13.992854+00:00",
+  "source_scope": "Credential-free persisted local counters and completed local load reports; no provider account access or RPC calls.",
+  "pricing": {
+    "usd_per_million_cu": 0.3,
+    "ordinary_method_cu": 20,
+    "usd_per_million_ordinary_methods": 6,
+    "pricing_url": "https://drpc.org/docs/pricing/compute-units",
+    "billing_caveat": "Ordinary single-provider basis; quorum/routing and actual invoice require separate verification."
+  },
+  "persisted_budget": {
+    "version": 1,
+    "ceiling": 2000000,
+    "reserved": 374000,
+    "observed": 370084,
+    "startedAt": "2026-09-17T05:34:20.334Z"
+  },
+  "budget_file_sha256": "2f9c7b8e99d4089bbe7895f678f8dc16d8ed7b9094437ca3d0bcb88a7138755d",
+  "budget_file_modified_utc": "2026-09-18T01:46:32.316815+00:00",
+  "restart_remaining_calls": 1626000,
+  "restart_estimated_headroom_usd": 9.756,
+  "minimum_reconciliation_reserve_fraction": 0.25,
+  "new_work_call_allowance": 1219500,
+  "provider_balance": "unknown; historical user-provided $50 is not a current balance",
+  "profiles": [
+    {
+      "file": "capacity-evm12-100-candidate.json",
+      "chain": "evm12",
+      "source": "3a248ac5bd13e16ce682f3e0548a0096a7502fe0",
+      "binary": "c0014d2aae01a59b78f34d76d0288b9addfe49e2a1ee7d65555d7ff7373bcce4",
+      "fullEngineCalls": 54482,
+      "uniqueWires": 17999,
+      "callsPerIntent": 3.0269459414411912,
+      "fullMethods": {
+        "eth_blockNumber": 43,
+        "eth_feeHistory": 17999,
+        "eth_getBalance": 1,
+        "eth_getBlockByNumber": 257,
+        "eth_getCode": 2,
+        "eth_getTransactionCount": 182,
+        "eth_getTransactionReceipt": 17999,
+        "eth_sendRawTransaction": 17999
+      },
+      "lateWindow": [
+        120.016,
+        180.003
+      ],
+      "lateMethodRps": {
+        "eth_blockNumber": 0.066681114241419,
+        "eth_feeHistory": 17.070365245803263,
+        "eth_getBalance": 0.0,
+        "eth_getBlockByNumber": 0.933535599379866,
+        "eth_getCode": 0.0,
+        "eth_getTransactionCount": 0.15003250704319274,
+        "eth_getTransactionReceipt": 68.28146098321305,
+        "eth_sendRawTransaction": 21.337956557254078
+      },
+      "observerKeys": [
+        "evm12"
+      ],
+      "lateRps": 107.84003200693486,
+      "estimatedLateDollarsPerHour": 2.3293446913497933,
+      "fullEngineEstimateUsd": 0.326892,
+      "report_sha256": "c6d583bea3c6a517d64bd04d3eeceba802a19ae2c50c29400b85fe29a413ea61"
+    },
+    {
+      "file": "capacity-op-100-candidate.json",
+      "chain": "evm2",
+      "source": "f6791479187fe14bbc611ca32628cff63b69aa7e",
+      "binary": "a3d360eba3dc470bd830ec9d3a32e0be8e11b6764f9bbf6efeb319f080eb8515",
+      "fullEngineCalls": 54756,
+      "uniqueWires": 18000,
+      "callsPerIntent": 3.042,
+      "fullMethods": {
+        "eth_blockNumber": 49,
+        "eth_feeHistory": 18000,
+        "eth_getBalance": 1,
+        "eth_getBlockByNumber": 574,
+        "eth_getCode": 2,
+        "eth_getTransactionCount": 130,
+        "eth_getTransactionReceipt": 18000,
+        "eth_sendRawTransaction": 18000
+      },
+      "lateWindow": [
+        120.015,
+        180.003
+      ],
+      "lateMethodRps": {
+        "eth_blockNumber": 0.13336000533440023,
+        "eth_feeHistory": 42.67520170700808,
+        "eth_getBalance": 0.0,
+        "eth_getBlockByNumber": 1.3336000533440024,
+        "eth_getCode": 0.0,
+        "eth_getTransactionCount": 0.28339001133560054,
+        "eth_getTransactionReceipt": 38.40768153630727,
+        "eth_sendRawTransaction": 38.40768153630727
+      },
+      "observerKeys": [
+        "evm2"
+      ],
+      "lateRps": 121.24091484963662,
+      "estimatedLateDollarsPerHour": 2.6188037607521513,
+      "fullEngineEstimateUsd": 0.328536,
+      "report_sha256": "c57b8d85180d76ad491fed93d074981de928cef5b907184eceb1c78b4e175822"
+    },
+    {
+      "file": "capacity-nitro-100-candidate.json",
+      "chain": "nitro",
+      "source": "f6791479187fe14bbc611ca32628cff63b69aa7e",
+      "binary": "a3d360eba3dc470bd830ec9d3a32e0be8e11b6764f9bbf6efeb319f080eb8515",
+      "fullEngineCalls": 77276,
+      "uniqueWires": 18000,
+      "callsPerIntent": 4.293111111111111,
+      "fullMethods": {
+        "eth_blockNumber": 57,
+        "eth_estimateGas": 18000,
+        "eth_feeHistory": 18000,
+        "eth_getBalance": 1,
+        "eth_getBlockByNumber": 5085,
+        "eth_getCode": 2,
+        "eth_getTransactionCount": 131,
+        "eth_getTransactionReceipt": 18000,
+        "eth_sendRawTransaction": 18000
+      },
+      "lateWindow": [
+        120.016,
+        180.004
+      ],
+      "lateMethodRps": {
+        "eth_blockNumber": 0.15003000600120028,
+        "eth_estimateGas": 34.14016136560646,
+        "eth_feeHistory": 34.14016136560646,
+        "eth_getBalance": 0.0,
+        "eth_getBlockByNumber": 11.118890444755621,
+        "eth_getCode": 0.0,
+        "eth_getTransactionCount": 0.30006001200240057,
+        "eth_getTransactionReceipt": 38.591051543642074,
+        "eth_sendRawTransaction": 38.40768153630727
+      },
+      "observerKeys": [
+        "nitro"
+      ],
+      "lateRps": 156.8480362739215,
+      "estimatedLateDollarsPerHour": 3.3879175835167046,
+      "fullEngineEstimateUsd": 0.463656,
+      "report_sha256": "4a4b00c89530642a91f61d26bcdb9596255308c8d71dc2621059bb09c56a7c4d"
+    },
+    {
+      "file": "capacity-solana-75-candidate-poll2.json",
+      "chain": "solana",
+      "source": "f6791479187fe14bbc611ca32628cff63b69aa7e",
+      "binary": "a3d360eba3dc470bd830ec9d3a32e0be8e11b6764f9bbf6efeb319f080eb8515",
+      "fullEngineCalls": 147376,
+      "uniqueWires": 13478,
+      "callsPerIntent": 10.934560023742396,
+      "fullMethods": {
+        "getLatestBlockhash": 13478,
+        "getSignatureStatuses": 106942,
+        "getTransaction": 13478,
+        "sendTransaction": 13478
+      },
+      "lateWindow": [
+        120.007,
+        180.006
+      ],
+      "lateMethodRps": {
+        "getLatestBlockhash": 68.20113668561143,
+        "getSignatureStatuses": 417.6402940049001,
+        "getTransaction": 69.33448890814847,
+        "sendTransaction": 68.2844714078568
+      },
+      "observerKeys": [
+        "solana"
+      ],
+      "lateRps": 623.4603910065168,
+      "estimatedLateDollarsPerHour": 13.466744445740764,
+      "fullEngineEstimateUsd": 0.884256,
+      "report_sha256": "a1c30b97a082e7a40af4bbb992217f63bf34e946a262756f4d757b4731d7ee6e"
+    }
+  ],
+  "duration_examples": [
+    {
+      "budgeted_rpc_per_second": 500,
+      "ordinary_usd_per_hour": 10.8,
+      "minutes_within_new_work_call_allowance": 40.65
+    },
+    {
+      "budgeted_rpc_per_second": 1000,
+      "ordinary_usd_per_hour": 21.6,
+      "minutes_within_new_work_call_allowance": 20.325
+    },
+    {
+      "budgeted_rpc_per_second": 2000,
+      "ordinary_usd_per_hour": 43.2,
+      "minutes_within_new_work_call_allowance": 10.1625
+    },
+    {
+      "budgeted_rpc_per_second": 4000,
+      "ordinary_usd_per_hour": 86.4,
+      "minutes_within_new_work_call_allowance": 5.08125
+    }
+  ]
+}

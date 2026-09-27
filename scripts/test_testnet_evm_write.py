@@ -85,12 +85,19 @@ class GuardTests(unittest.TestCase):
                 connection = http.client.HTTPConnection("127.0.0.1", port, timeout=2)
                 try:
                     connection.request("POST", path, body, headers)
-                    with self.assertRaises(http.client.RemoteDisconnected):
+                    # The guard closes before reading the rejected request body.
+                    # Depending on TCP timing, the peer observes EOF or a reset.
+                    with self.assertRaises((http.client.RemoteDisconnected, ConnectionResetError)):
                         connection.getresponse()
                 finally:
                     connection.close()
             forward.assert_not_called()
         self.assertEqual(self.guard.calls, 0)
+        self.assertEqual(self.guard.errors, [
+            "AssertionError: Browser requests refused",
+            "AssertionError: Non-loopback Host refused",
+            "AssertionError: Unexpected guard path",
+        ])
 
 
 if __name__ == "__main__":

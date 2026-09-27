@@ -167,3 +167,25 @@ Redis insertion; the SQL-before-Redis failure cut parks rather than signs a fres
 attempt. Bundled EIP-7702 is disabled and legacy jobs park; it is not qualified by
 this model. Streaming snapshot export, API authentication, provider genesis checks
 and semaphore bounds are implementation checks outside the state-machine proof.
+
+## Physical history-index correspondence
+
+The September 27 [index change](../docs/design/recovery-history-indexes.md) adds
+nonunique `(id, sequence)` indexes for attempts and terminal evidence. It changes
+no rows, replay bindings, explicit query order, checkpoint, Redis marker or schema
+version. Fresh initialization includes both indexes in its existing transaction.
+Writable startup creates both in one transaction after acquiring ownership and
+checking health, and checks health again before returning the usable journal.
+Read-only status/export and offline recovery do not implicitly migrate.
+
+This physical maintenance stutters over the model's logical state. SQLite DDL
+atomicity and OS-lock/async-task behavior remain trusted implementation boundaries,
+not new TLA+ properties. Five [real journal tests](../core/src/recovery/history_index_tests.rs)
+cover populated legacy restart and unchanged export/Redis token; indexed query
+plans and original/latest history; first-proof ordering and contradictory-proof
+halt; read-only/ownership/health gates; rollback after the second DDL fails; and
+caller/async-startup cancellation while a separate SQLite writer blocks DDL.
+The cancellation test observes ownership retained until the blocking operation
+finishes. It does not simulate a machine power loss or prove filesystem durability.
+Faster query plans do not establish an Engine throughput improvement or bound
+retained history size and per-ID membership work.

@@ -1,0 +1,37 @@
+{
+  "started_at": "2026-09-27T00:45:53.364884+00:00",
+  "base_commit": "5d602581dd0e2270a520fdba88ac3e71def00d86",
+  "working_tree_candidate": true,
+  "binary_sha256": "bb34deeec74afce0b52d03edb9ec73a84497429db0cc2e460590b9127c0d77ce",
+  "source_map_sha256": "66168eed358729dbc22c349ec975aa4501c74a4892089f111565b6b695edbd8b",
+  "model_manifest_sha256": "437106b5cc73de6b0b10202996f0b5ae63a0941803e09e8c729c421f4da9ff95",
+  "commands": [
+    {
+      "argv": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "formal",
+        "-p",
+        "test_*.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "log": "checker-tests.log"
+    },
+    {
+      "argv": [
+        "python3",
+        "formal/check.py",
+        "--results",
+        "/tmp/engine-capacity-index-broadcast-formal"
+      ],
+      "exit_code": 0,
+      "log": "runner.log"
+    }
+  ],
+  "finished_at": "2026-09-27T00:49:05.107746+00:00",
+  "elapsed_seconds": 191.814
+}

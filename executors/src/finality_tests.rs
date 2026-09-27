@@ -314,6 +314,7 @@ async fn eoa_provisional_revert_or_orphan_retains_nonce_and_sending_capacity_unt
             address: Address::ZERO,
         },
         max_inflight: 50,
+        broadcast_concurrency: 32,
         max_recycled_nonces: 50,
         webhook_queue: f.webhooks.clone(),
         signer: Arc::new(EoaSigner::new(
@@ -819,6 +820,7 @@ async fn active_poll_detects_checkpoint_rollback_without_new_receipt() {
                     address: Address::ZERO,
                 },
                 max_inflight: 50,
+                broadcast_concurrency: 32,
                 max_recycled_nonces: 50,
                 webhook_queue: f.webhooks.clone(),
                 signer: Arc::new(EoaSigner::new(

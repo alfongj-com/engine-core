@@ -253,6 +253,7 @@ async fn builder_preserves_authorizations_even_when_recipient_is_already_delegat
         chain_id: 31337,
         noop_signing_credential: SigningCredential::PrivateKey(key.clone()),
         max_inflight: 1,
+        broadcast_concurrency: 32,
         max_recycled_nonces: 1,
         webhook_queue: webhooks,
         signer: Arc::new(EoaSigner::new(

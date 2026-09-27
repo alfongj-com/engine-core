@@ -1,0 +1,115 @@
+TLC2 Version 2.19 of 08 August 2024 (rev: 5a47802)
+Running breadth-first search Model-Checking with fp 0 and seed 1 with 1 worker on 10 cores with 1820MB heap and 64MB offheap memory [pid: 45829] (Mac OS X 26.6.2 aarch64, Eclipse Adoptium 21.0.12.1 x86_64, MSBDiskFPSet, DiskStateQueue).
+Parsing file /Users/alfongj/Code/engine-core/formal/tla/Admission.tla
+Parsing file /private/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/Naturals.tla
+Parsing file /private/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/FiniteSets.tla
+Parsing file /private/var/folders/ky/s5xblf5j3515d6h6ss25z3w80000gn/T/Sequences.tla
+Semantic processing of module Naturals
+Semantic processing of module Sequences
+Semantic processing of module FiniteSets
+Semantic processing of module Admission
+Starting... (2026-09-26 20:46:28)
+Computing initial states...
+Finished computing initial states: 1 distinct state generated at 2026-09-26 20:46:28.
+Model checking completed. No error has been found.
+  Estimates of the probability that TLC did not check all reachable states
+  because two distinct states had the same fingerprint:
+  calculated (optimistic):  val = 7.9E-17
+The coverage statistics at 2026-09-26 20:46:28
+<Init line 10, col 1 to line 10, col 4 of module Admission>: 1:1
+  line 11, col 5 to line 13, col 36 of module Admission: 1
+<Admit line 18, col 1 to line 18, col 8 of module Admission>: 6:6
+  line 19, col 8 to line 19, col 22 of module Admission: 128
+  |line 19, col 8 to line 19, col 15 of module Admission: 122
+  |line 19, col 19 to line 19, col 22 of module Admission: 122
+  line 19, col 27 to line 19, col 33 of module Admission: 32
+  |line 19, col 28 to line 19, col 33 of module Admission: 26
+  line 19, col 38 to line 19, col 51 of module Admission: 32
+  |line 19, col 38 to line 19, col 44 of module Admission: 26
+  |line 19, col 48 to line 19, col 51 of module Admission: 26
+  line 19, col 56 to line 19, col 71 of module Admission: 32
+  |line 19, col 57 to line 19, col 71 of module Admission: 26
+  line 20, col 8 to line 20, col 33 of module Admission: 6
+  |line 20, col 8 to line 20, col 17 of module Admission: 14
+  |line 20, col 21 to line 20, col 33 of module Admission: 14
+  line 21, col 8 to line 21, col 35 of module Admission: 6
+  line 22, col 8 to line 22, col 41 of module Admission: 6
+  line 23, col 8 to line 23, col 32 of module Admission: 6
+  line 24, col 8 to line 24, col 69 of module Admission: 6
+  line 25, col 8 to line 25, col 54 of module Admission: 6
+<ConflictingAdmission line 29, col 1 to line 29, col 23 of module Admission>: 0:0
+  line 31, col 8 to line 31, col 20 of module Admission: 0
+  line 32, col 8 to line 32, col 65 of module Admission: 0
+  line 33, col 8 to line 33, col 81 of module Admission: 0
+<PersistAttempt line 35, col 1 to line 35, col 14 of module Admission>: 6:6
+  line 36, col 8 to line 36, col 23 of module Admission: 67
+  |line 36, col 8 to line 36, col 12 of module Admission: 61
+  line 36, col 28 to line 36, col 33 of module Admission: 6
+  line 36, col 38 to line 36, col 51 of module Admission: 24
+  |line 36, col 38 to line 36, col 44 of module Admission: 18
+  |line 36, col 48 to line 36, col 51 of module Admission: 18
+  line 37, col 8 to line 37, col 55 of module Admission: 6
+  line 38, col 8 to line 39, col 39 of module Admission: 6
+<Execute line 43, col 1 to line 43, col 7 of module Admission>: 6:24
+  line 44, col 8 to line 44, col 21 of module Admission: 85
+  |line 44, col 8 to line 44, col 14 of module Admission: 61
+  |line 44, col 18 to line 44, col 21 of module Admission: 61
+  line 45, col 8 to line 45, col 40 of module Admission: 24
+  line 46, col 8 to line 47, col 47 of module Admission: 24
+<Complete line 49, col 1 to line 49, col 8 of module Admission>: 6:6
+  line 50, col 8 to line 50, col 23 of module Admission: 67
+  |line 50, col 8 to line 50, col 12 of module Admission: 61
+  line 50, col 28 to line 50, col 41 of module Admission: 24
+  |line 50, col 28 to line 50, col 34 of module Admission: 18
+  |line 50, col 38 to line 50, col 41 of module Admission: 18
+  line 50, col 46 to line 50, col 64 of module Admission: 18
+  |line 50, col 46 to line 50, col 52 of module Admission: 12
+  |line 50, col 58 to line 50, col 64 of module Admission: 12
+  line 51, col 8 to line 51, col 64 of module Admission: 6
+  line 52, col 8 to line 52, col 30 of module Admission: 6
+  line 53, col 8 to line 53, col 60 of module Admission: 6
+<Cancel line 55, col 1 to line 55, col 6 of module Admission>: 18:18
+  line 56, col 8 to line 56, col 23 of module Admission: 79
+  |line 56, col 8 to line 56, col 12 of module Admission: 61
+  line 56, col 28 to line 56, col 33 of module Admission: 18
+  line 57, col 8 to line 57, col 43 of module Admission: 18
+  line 58, col 8 to line 58, col 86 of module Admission: 18
+<PruneHistory line 60, col 1 to line 60, col 12 of module Admission>: 6:12
+  line 61, col 8 to line 61, col 50 of module Admission: 12
+  line 62, col 8 to line 62, col 84 of module Admission: 12
+<ExpireIdentity line 64, col 1 to line 64, col 14 of module Admission>: 12:12
+  line 65, col 8 to line 65, col 22 of module Admission: 73
+  |line 65, col 8 to line 65, col 15 of module Admission: 61
+  |line 65, col 19 to line 65, col 22 of module Admission: 61
+  line 66, col 8 to line 66, col 25 of module Admission: 60
+  |line 66, col 8 to line 66, col 12 of module Admission: 48
+  line 67, col 8 to line 67, col 23 of module Admission: 12
+  line 68, col 8 to line 68, col 62 of module Admission: 12
+  line 69, col 8 to line 69, col 84 of module Admission: 12
+<TypeOK line 76, col 1 to line 76, col 6 of module Admission>
+  line 77, col 5 to line 83, col 33 of module Admission: 61
+<ImmutableWithinRetention line 84, col 1 to line 84, col 24 of module Admission>
+  line 84, col 29 to line 84, col 78 of module Admission: 61
+  |line 84, col 51 to line 84, col 78 of module Admission: 180
+  ||line 84, col 51 to line 84, col 63 of module Admission: 180
+  ||line 84, col 68 to line 84, col 78 of module Admission: 100
+  |line 84, col 40 to line 84, col 47 of module Admission: 61
+<ActiveIdentityRetained line 85, col 1 to line 85, col 22 of module Admission>
+  line 85, col 27 to line 85, col 75 of module Admission: 61
+  |line 85, col 27 to line 85, col 56 of module Admission: 61
+  |line 85, col 61 to line 85, col 75 of module Admission: 36
+<AdmissionIsAtomic line 86, col 1 to line 86, col 17 of module Admission>
+  line 86, col 22 to line 86, col 47 of module Admission: 61
+  |line 86, col 22 to line 86, col 37 of module Admission: 61
+  |line 86, col 42 to line 86, col 47 of module Admission: 18
+<AttemptBoundToIntent line 87, col 1 to line 87, col 20 of module Admission>
+  line 87, col 25 to line 87, col 63 of module Admission: 61
+  |line 87, col 25 to line 87, col 38 of module Admission: 61
+  |line 87, col 43 to line 87, col 63 of module Admission: 24
+<LifetimeAtMostOnce line 89, col 1 to line 89, col 18 of module Admission>
+  line 89, col 23 to line 89, col 65 of module Admission: 61
+End of statistics.
+85 states generated, 61 distinct states found, 0 states left on queue.
+The depth of the complete state graph search is 13.
+The average outdegree of the complete state graph is 1 (minimum is 0, the maximum 2 and the 95th percentile is 2).
+Finished in 00s at (2026-09-26 20:46:28)

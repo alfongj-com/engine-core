@@ -81,6 +81,25 @@ class SchedulingTests(unittest.TestCase):
         self.assertAlmostEqual(clock.now, .9)
         self.assertEqual(campaign.schedule_phases({"only": 10}), {"only": 0})
 
+    def test_100ms_eligible_late_slots_are_bounded_microbursts(self):
+        for stalled, expected_dropped in ((.08, []), (.125, [0, 1])):
+            clock = Clock()
+            clock.now = stalled
+            sent, dropped = [], []
+            campaign.open_loop({"chain": 50}, .2, 0, .1,
+                lambda offer: sent.append((offer.index, offer.scheduled, clock.now)) or True,
+                lambda offer, reason: dropped.append((offer.index, reason)), clock.clock, clock.sleep)
+            self.assertEqual(dropped, [(index, "schedule_lag") for index in expected_dropped])
+            self.assertEqual([index for index, _, _ in sent], [i for i in range(10) if i not in expected_dropped])
+            self.assertEqual(len(sent) + len(dropped), 10)
+            for index, scheduled, actual in sent:
+                self.assertEqual(scheduled, index / 50)
+                self.assertLessEqual(actual - scheduled, .1)
+            immediate = sum(actual == stalled for _, _, actual in sent)
+            self.assertGreater(immediate, 1)
+            self.assertLessEqual(immediate, 6)  # floor(50 * .1) + current slot.
+            self.assertAlmostEqual(clock.now, .2)
+
     def test_pool_is_bounded_and_failure_releases_permit(self):
         pool = campaign.BoundedPool(2)
         blocked, release = threading.Event(), threading.Event()
@@ -182,10 +201,65 @@ class EvidenceTests(unittest.TestCase):
             with self.assertRaises(ValueError): campaign.check_loopback(url)
         self.assertEqual(campaign.check_loopback("http://127.0.0.1:1234/"), "http://127.0.0.1:1234/")
 
+    def test_http_start_lateness_is_distinct_and_excludes_retries(self):
+        from types import SimpleNamespace
+        instance = campaign.Campaign.__new__(campaign.Campaign)
+        instance.namespace = "fixture"
+        instance.profiles = {"evm": {"family": "evm"}}
+        instance.fixture = lambda *_: ({}, {})
+        instance.base, instance.token = "http://127.0.0.1:1", "fixture-token"
+        instance.args = SimpleNamespace(http_timeout=1)
+        instance.lock = threading.Lock()
+        instance.times, instance.statuses = {}, {}
+        instance.stats = {"evm": campaign.Counter()}
+        instance.responses = {"evm": campaign.Counter()}
+        instance.http_latency = {"evm": []}
+        instance.scheduled_latency = {"evm": []}
+        instance.http_start_lateness = {"evm": []}
+        offer = campaign.Offer("evm", 0, 9.98)
+        with patch.object(campaign, "request", return_value=(202, {})) as request_mock, \
+                patch.object(campaign.time, "monotonic", side_effect=[10, 10.04, 10.07, 11, 11.04, 11.10]):
+            instance.submit(offer)
+            instance.submit(offer, retry=True)
+        self.assertEqual(request_mock.call_count, 2)
+        self.assertEqual(instance.stats["evm"]["retry_dispatched"], 1)
+        self.assertEqual(len(instance.http_start_lateness["evm"]), 1)
+        self.assertAlmostEqual(instance.http_start_lateness["evm"][0], 60)
+        self.assertAlmostEqual(instance.scheduled_latency["evm"][0], 90)
+        self.assertEqual(campaign.distribution(instance.http_start_lateness["evm"]),
+                         {"count": 1, "p50": 60, "p95": 60, "p99": 60, "max": 60})
+
     def test_transport_diagnostics_keep_errno_without_secrets(self):
         error = urllib.error.URLError(OSError(49, "secret-token-in-error-message"))
         self.assertEqual(campaign.transport_error_details(error), {"type": "URLError", "cause_type": "OSError", "errno": 49})
         self.assertNotIn("secret", json.dumps(campaign.transport_error_details(error)))
+
+    def test_broadcast_concurrency_cli_reaches_actual_setup_env_without_ambient_override(self):
+        with tempfile.TemporaryDirectory() as directory:
+            engine = Path(directory) / "engine"
+            engine.write_text("fixture")
+            common = ["--engine-bin", str(engine), "--report", directory + "/report.json", "--chain", "evm12=1"]
+            for extra, expected in (([], "32"), (["--eoa-broadcast-concurrency", "64"], "64"),
+                                    (["--eoa-broadcast-concurrency", "128"], "128")):
+                args, _ = campaign.arguments(common + extra)
+                instance = campaign.Campaign.__new__(campaign.Campaign)
+                instance.args, instance.profiles = args, {}
+                instance.token, instance.namespace = "fixture", "fixture"
+                instance.redis_port, instance.engine_port = 1, 2
+                instance.journal = Path(directory) / "journal.sqlite"
+                instance.report, instance.initial = {}, {}
+                instance.start_redis = lambda: None
+                seen = []
+                instance.engine_command = lambda *_: seen.append(dict(instance.env))
+                instance.start_engine = lambda: seen.append(dict(instance.env))
+                with patch.dict(os.environ, {"APP__QUEUE__EOA_BROADCAST_CONCURRENCY": "91"}):
+                    instance.setup()
+                self.assertEqual(len(seen), 2)
+                self.assertTrue(all(env["APP__QUEUE__EOA_BROADCAST_CONCURRENCY"] == expected for env in seen))
+                self.assertEqual(instance.report["queue_settings"]["APP__QUEUE__EOA_BROADCAST_CONCURRENCY"], expected)
+            for invalid in ("0", "129"):
+                with self.assertRaises(ValueError):
+                    campaign.arguments(common + ["--eoa-broadcast-concurrency", invalid])
 
     def test_profile_bounds_and_individual_depths(self):
         with tempfile.TemporaryDirectory() as directory:

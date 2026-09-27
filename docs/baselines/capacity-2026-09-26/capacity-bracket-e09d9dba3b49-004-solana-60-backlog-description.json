@@ -1,0 +1,266 @@
+{
+  "chains": {
+    "solana": {
+      "aggregation_seconds": 30,
+      "method": "sample quantiles; nominal phase only; descriptive, not a pass/fail test",
+      "sample_window_seconds": [
+        120.016,
+        360.002
+      ],
+      "terminal": {
+        "groups": [
+          {
+            "max": 1081,
+            "mean": 1065.6666666666667,
+            "median": 1077.0,
+            "min": 1040,
+            "p10": 1041.0,
+            "p90": 1079.0,
+            "sample_count": 6,
+            "start_seconds": 120.0
+          },
+          {
+            "max": 1087,
+            "mean": 1056.6666666666667,
+            "median": 1049.0,
+            "min": 1038,
+            "p10": 1040.0,
+            "p90": 1081.0,
+            "sample_count": 6,
+            "start_seconds": 150.0
+          },
+          {
+            "max": 1082,
+            "mean": 1068.8333333333333,
+            "median": 1073.5,
+            "min": 1038,
+            "p10": 1054.0,
+            "p90": 1079.0,
+            "sample_count": 6,
+            "start_seconds": 180.0
+          },
+          {
+            "max": 1080,
+            "mean": 1063.6666666666667,
+            "median": 1073.5,
+            "min": 1022,
+            "p10": 1038.5,
+            "p90": 1079.0,
+            "sample_count": 6,
+            "start_seconds": 210.0
+          },
+          {
+            "max": 1082,
+            "mean": 1062.8333333333333,
+            "median": 1064.0,
+            "min": 1034,
+            "p10": 1044.0,
+            "p90": 1080.5,
+            "sample_count": 6,
+            "start_seconds": 240.0
+          },
+          {
+            "max": 1128,
+            "mean": 1080,
+            "median": 1087.0,
+            "min": 1013,
+            "p10": 1042.5,
+            "p90": 1110.5,
+            "sample_count": 6,
+            "start_seconds": 270.0
+          },
+          {
+            "max": 1179,
+            "mean": 1105.6666666666667,
+            "median": 1103.0,
+            "min": 1036,
+            "p10": 1058.0,
+            "p90": 1156.0,
+            "sample_count": 6,
+            "start_seconds": 300.0
+          },
+          {
+            "max": 1174,
+            "mean": 1126.3333333333333,
+            "median": 1122.5,
+            "min": 1079,
+            "p10": 1086.0,
+            "p90": 1170.5,
+            "sample_count": 6,
+            "start_seconds": 330.0
+          }
+        ],
+        "last_180_seconds_range": [
+          1013,
+          1179
+        ],
+        "paired_phase_growth": [
+          {
+            "end_seconds": 330.016,
+            "growth": 2.018411046627989,
+            "start_seconds": 120.016
+          },
+          {
+            "end_seconds": 335.015,
+            "growth": 84.99599679743801,
+            "start_seconds": 125.015
+          },
+          {
+            "end_seconds": 340.014,
+            "growth": 39.075479233226815,
+            "start_seconds": 130.014
+          },
+          {
+            "end_seconds": 345.02,
+            "growth": 96.91898379675945,
+            "start_seconds": 135.02
+          },
+          {
+            "end_seconds": 350.01300000000003,
+            "growth": 16.016203240647656,
+            "start_seconds": 140.013
+          },
+          {
+            "end_seconds": 355.017,
+            "growth": 124.95068163592646,
+            "start_seconds": 145.017
+          }
+        ],
+        "paired_phase_growth_min_median_max": [
+          2.018411046627989,
+          62.03573801533241,
+          124.95068163592646
+        ]
+      },
+      "unsigned": {
+        "groups": [
+          {
+            "max": 11,
+            "mean": 4.333333333333333,
+            "median": 2.0,
+            "min": 0,
+            "p10": 0.5,
+            "p90": 10.5,
+            "sample_count": 6,
+            "start_seconds": 120.0
+          },
+          {
+            "max": 11,
+            "mean": 4.5,
+            "median": 1.5,
+            "min": 1,
+            "p10": 1.0,
+            "p90": 11.0,
+            "sample_count": 6,
+            "start_seconds": 150.0
+          },
+          {
+            "max": 9,
+            "mean": 2.3333333333333335,
+            "median": 1.0,
+            "min": 0,
+            "p10": 0.5,
+            "p90": 5.5,
+            "sample_count": 6,
+            "start_seconds": 180.0
+          },
+          {
+            "max": 11,
+            "mean": 3.3333333333333335,
+            "median": 1.5,
+            "min": 1,
+            "p10": 1.0,
+            "p90": 7.5,
+            "sample_count": 6,
+            "start_seconds": 210.0
+          },
+          {
+            "max": 66,
+            "mean": 13.833333333333334,
+            "median": 4.5,
+            "min": 1,
+            "p10": 1.0,
+            "p90": 36.0,
+            "sample_count": 6,
+            "start_seconds": 240.0
+          },
+          {
+            "max": 71,
+            "mean": 48.166666666666664,
+            "median": 57.0,
+            "min": 4,
+            "p10": 19.0,
+            "p90": 68.5,
+            "sample_count": 6,
+            "start_seconds": 270.0
+          },
+          {
+            "max": 106,
+            "mean": 64,
+            "median": 59.0,
+            "min": 39,
+            "p10": 45.5,
+            "p90": 87.5,
+            "sample_count": 6,
+            "start_seconds": 300.0
+          },
+          {
+            "max": 328,
+            "mean": 135.83333333333334,
+            "median": 118.0,
+            "min": 47,
+            "p10": 49.0,
+            "p90": 240.5,
+            "sample_count": 6,
+            "start_seconds": 330.0
+          }
+        ],
+        "last_180_seconds_range": [
+          0,
+          328
+        ],
+        "paired_phase_growth": [
+          {
+            "end_seconds": 330.016,
+            "growth": 46.001600960576354,
+            "start_seconds": 120.016
+          },
+          {
+            "end_seconds": 335.015,
+            "growth": 40.05924739791777,
+            "start_seconds": 125.015
+          },
+          {
+            "end_seconds": 340.014,
+            "growth": 123.03913738019172,
+            "start_seconds": 130.014
+          },
+          {
+            "end_seconds": 345.02,
+            "growth": 151.17503500700124,
+            "start_seconds": 135.02
+          },
+          {
+            "end_seconds": 350.01300000000003,
+            "growth": 327.96499299860056,
+            "start_seconds": 140.013
+          },
+          {
+            "end_seconds": 355.017,
+            "growth": 100.98857257417808,
+            "start_seconds": 145.017
+          }
+        ],
+        "paired_phase_growth_min_median_max": [
+          40.05924739791777,
+          112.0138549771849,
+          327.96499299860056
+        ]
+      }
+    }
+  },
+  "descriptor_sha256": "50ef35bd4a3226521e58f2a3115e30fd546d678e18a4648781f38bdc0bb37f83",
+  "interpretation_policy_sha256": "9ce1b79f2428ad6a20bc2d097496b741d8bc147a790ef1f64359d6c719a61e3f",
+  "report": "/tmp/capacity-bracket-e09d9dba3b49-004-solana-60.json",
+  "report_sha256": "2fe9b5e6a678ca027ecd42b7e7b8d43f859e2fcdd18b3d36d7cb840ab9888b6d"
+}

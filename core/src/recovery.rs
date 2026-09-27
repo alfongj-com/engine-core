@@ -19,6 +19,11 @@ use twmq::redis::{self, aio::ConnectionManager};
 
 static GLOBAL: OnceLock<Arc<RecoveryJournal>> = OnceLock::new();
 const SCHEMA: i64 = 1;
+// Additive physical indexes: no journal-schema/token or evidence changes.
+const HISTORY_INDEX_SQL: &str = "
+    CREATE INDEX IF NOT EXISTS terminal_evidence_id_sequence ON terminal_evidence(id,sequence);
+    CREATE INDEX IF NOT EXISTS attempts_id_sequence ON attempts(id,sequence);
+";
 const MAX_RECORD_BYTES: usize = 16 * 1024 * 1024;
 // Admission waits are bounded; reconciliation and existing broadcasts do not
 // consume these permits and can drain work while intake is overloaded.
@@ -327,6 +332,15 @@ fn connection(path: &Path, readonly: bool) -> Result<Connection> {
     }
     Ok(conn)
 }
+/// One crash-atomic DDL transaction; an error rolls back both indexes.
+/// Only explicit initialization and healthy owned startup may invoke this.
+fn ensure_history_indexes(conn: &mut Connection) -> Result<()> {
+    let tx = conn.transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)?;
+    tx.execute_batch(HISTORY_INDEX_SQL)?;
+    tx.commit()?;
+    Ok(())
+}
+
 fn control(conn: &Connection) -> Result<Control> {
     let schema: i64 = conn.query_row(
         "SELECT schema_version FROM control WHERE singleton=1",
@@ -485,6 +499,7 @@ impl RecoveryJournal {
             CREATE TABLE chain_checkpoints(chain_id TEXT PRIMARY KEY,evidence TEXT NOT NULL);
             CREATE TABLE chain_halts(chain_id TEXT PRIMARY KEY,reason TEXT NOT NULL);
             CREATE TABLE recovery_events(sequence INTEGER PRIMARY KEY AUTOINCREMENT,event TEXT NOT NULL);")?;
+        conn.execute_batch(HISTORY_INDEX_SQL)?;
         conn.execute(
             "INSERT INTO control VALUES(1,?, ?,1,0,?,?,1,'initializing')",
             params![SCHEMA, uuid::Uuid::new_v4().to_string(), namespace, run_id],
@@ -536,8 +551,32 @@ impl RecoveryJournal {
             admission_slots: Semaphore::new(MAX_CONCURRENT_ADMISSIONS),
             failed: AtomicBool::new(false),
         });
-        this.ensure_healthy().await?;
+        Self::prepare_owned_startup(this.clone(), || {})
+            .await
+            .map_err(|_| RecoveryError::Storage)??;
         Ok(this)
+    }
+    /// The callback is a local synchronization seam for ownership tests; normal
+    /// startup uses a no-op. It never changes the DDL or its safety checks.
+    fn prepare_owned_startup(
+        preparing: Arc<Self>,
+        before_ddl: impl FnOnce() + Send + 'static,
+    ) -> tokio::task::JoinHandle<Result<Control>> {
+        // Retain ownership even if the caller cancels while SQLite is working.
+        tokio::spawn(async move {
+            let _guard = preparing.serial.lock().await;
+            preparing.healthy_locked().await?;
+            // Blocking work may outlive its async task during runtime shutdown.
+            let ddl_owner = preparing.clone();
+            preparing
+                .db(move |conn| {
+                    let _owner = ddl_owner;
+                    before_ddl();
+                    ensure_history_indexes(conn)
+                })
+                .await?;
+            preparing.healthy_locked().await
+        })
     }
     async fn db<T: Send + 'static>(
         &self,
@@ -1461,3 +1500,7 @@ mod benchmark;
 
 #[path = "recovery/export.rs"]
 mod export;
+
+#[cfg(test)]
+#[path = "recovery/history_index_tests.rs"]
+mod history_index_tests;

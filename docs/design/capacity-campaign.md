@@ -54,6 +54,28 @@ public-testnet checks and local timing simulations must be labeled separately.
 - Only one timed local workload runs at once. Record node versions, binary/source
   hashes, worker/inflight settings, host resources and faults with timestamps.
 
+### Tuning controls
+
+`APP__QUEUE__EOA_BROADCAST_CONCURRENCY` accepts 1–128 concurrent broadcast tasks
+per signer/chain worker; the default remains 32. It does not enlarge the nonce
+window, preparation concurrency, borrowed-receipt lookup limit, or sequential
+gap recovery. It is not a global RPC rate limit. The harness sets it explicitly
+with `--eoa-broadcast-concurrency` and records the setting. Compare settings on
+the same build before attributing any throughput change to this control.
+
+Solana's experimental confirmation polling interval accepts 1–5 seconds, with
+the existing one-second default. Longer intervals may reduce status traffic at
+the cost of detection latency; they do not relax commitment or signed-identity
+checks. Record it with `--solana-confirmation-poll-seconds`.
+
+The final rate search uses an explicit 100ms scheduling-lag allowance, following
+initial trials with the unchanged 25ms harness default. Absolute offer times,
+bounded client concurrency and missed-slot counts remain authoritative. Eligible
+late offers can produce bounded microbursts; this is not a hard real-time load
+generator. Reports include scheduled-to-HTTP-start lateness, distinct from
+response latency. Preserve both rounds; a later allowance does not repair an
+earlier missed offer.
+
 ### Confirmation assessment
 
 Run [`capacity_assess.py`](../../scripts/capacity_assess.py) on the original full

@@ -1,0 +1,25 @@
+protocols	Exhaust protocol models and require specific counterexamples	﻿2026-09-27T00:08:18.2079760Z ##[group]Run python3 formal/check.py
+protocols	Exhaust protocol models and require specific counterexamples	2026-09-27T00:08:18.2080290Z [36;1mpython3 formal/check.py[0m
+protocols	Exhaust protocol models and require specific counterexamples	2026-09-27T00:08:18.2145034Z shell: /usr/bin/bash -e {0}
+protocols	Exhaust protocol models and require specific counterexamples	2026-09-27T00:08:18.2145445Z env:
+protocols	Exhaust protocol models and require specific counterexamples	2026-09-27T00:08:18.2145906Z   JAVA_HOME: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/21.0.12-1/x64
+protocols	Exhaust protocol models and require specific counterexamples	2026-09-27T00:08:18.2146786Z   JAVA_HOME_21_X64: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/21.0.12-1/x64
+protocols	Exhaust protocol models and require specific counterexamples	2026-09-27T00:08:18.2147319Z ##[endgroup]
+protocols	Exhaust protocol models and require specific counterexamples	2026-09-27T00:08:18.2789189Z Verification failed: Modeled source changed; review models and the coverage map, then update formal/source-map.json. This guard is NOT a refinement proof.
+protocols	Exhaust protocol models and require specific counterexamples	2026-09-27T00:08:18.2790849Z scripts/local_eoa_reorg.py
+protocols	Exhaust protocol models and require specific counterexamples	2026-09-27T00:08:18.2871691Z ##[error]Process completed with exit code 1.
+protocols	Run actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02	﻿2026-09-27T00:08:18.2955554Z ##[group]Run actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+protocols	Run actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02	2026-09-27T00:08:18.2956159Z with:
+protocols	Run actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02	2026-09-27T00:08:18.2956497Z   name: protocol-model-results
+protocols	Run actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02	2026-09-27T00:08:18.2956874Z   path: formal/results/
+protocols	Run actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02	2026-09-27T00:08:18.2957230Z   if-no-files-found: error
+protocols	Run actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02	2026-09-27T00:08:18.2957598Z   compression-level: 6
+protocols	Run actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02	2026-09-27T00:08:18.2957940Z   overwrite: false
+protocols	Run actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02	2026-09-27T00:08:18.2958279Z   include-hidden-files: false
+protocols	Run actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02	2026-09-27T00:08:18.2958625Z env:
+protocols	Run actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02	2026-09-27T00:08:18.2959049Z   JAVA_HOME: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/21.0.12-1/x64
+protocols	Run actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02	2026-09-27T00:08:18.2959769Z   JAVA_HOME_21_X64: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/21.0.12-1/x64
+protocols	Run actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02	2026-09-27T00:08:18.2960280Z ##[endgroup]
+protocols	Run actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02	2026-09-27T00:08:18.4666890Z (node:2141) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+protocols	Run actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02	2026-09-27T00:08:18.4668047Z (Use `node --trace-deprecation ...` to show where the warning was created)
+protocols	Run actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02	2026-09-27T00:08:18.4722975Z ##[error]No files were found with the provided path: formal/results/. No artifacts will be uploaded.

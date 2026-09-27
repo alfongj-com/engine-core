@@ -1,0 +1,13 @@
+   Compiling engine-core v0.1.0 (/Users/alfongj/Code/engine-core/core)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 4.62s
+     Running unittests src/lib.rs (target/debug/deps/engine_core-cc5f92a341c79164)
+
+running 5 tests
+test recovery::history_index_tests::cancelled_startup_retains_owner_until_blocking_ddl_finishes ... ok
+test recovery::history_index_tests::legacy_readonly_inventory_and_locked_open_never_migrate ... ok
+test recovery::history_index_tests::legacy_restart_indexes_preserve_wire_history_first_proof_and_conflict_halt ... ok
+test recovery::history_index_tests::legacy_second_index_failure_rolls_back_first_and_refuses_startup ... ok
+test recovery::history_index_tests::legacy_unhealthy_projection_is_fenced_before_index_ddl ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 40 filtered out; finished in 0.70s
+

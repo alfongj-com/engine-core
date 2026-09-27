@@ -41,7 +41,7 @@
     },
     {
       "path": "core/src/recovery.rs",
-      "sha256": "addc886df1912164fed553b3a9a1f8a3233700ca941c16f063582fa11e8d8d6c",
+      "sha256": "2c42f792bb092c9b87e4f23a3d7c634601a2f9338dde886861fd4f85e1bdce67",
       "models": [
         "DisasterRecovery",
         "Finality",
@@ -54,6 +54,15 @@
         "DisasterRecovery"
       ],
       "sha256": "fc8dcd2bc04a2c671c999fa9bd97a05f77796e3c67ae1396631b60e175e7300a"
+    },
+    {
+      "path": "core/src/recovery/history_index_tests.rs",
+      "sha256": "f300a3ae043026c0d95d18483c5622ec8e744ae9c4e04a6fe68bedbd9848ab75",
+      "models": [
+        "DisasterRecovery",
+        "EoaRecovery",
+        "Finality"
+      ]
     },
     {
       "path": "core/src/recovery/tests.rs",
@@ -178,7 +187,7 @@
     },
     {
       "path": "executors/src/eoa/worker/fee_tests.rs",
-      "sha256": "7114fa6e969a445a28b459ecaaa43b5e23ce057b5153c415925fbead584a3e2a",
+      "sha256": "1d4f8b258453e88bf5e52d6d0e1eb94bd0862a038e88f4df7ddb59a6df8c72fd",
       "models": [
         "Fees"
       ]
@@ -193,7 +202,7 @@
     },
     {
       "path": "executors/src/eoa/worker/gap_replay_tests.rs",
-      "sha256": "b3256d8f956474dd3f623a4dbcaaab0f53e23233f60cfb8328b0058f50e23f93",
+      "sha256": "3405e2f312acb0a82425d8b885dc908e1910ea2a4f018d1da6c38a1b1573971f",
       "models": [
         "EoaRecovery",
         "DisasterRecovery",
@@ -202,7 +211,7 @@
     },
     {
       "path": "executors/src/eoa/worker/mod.rs",
-      "sha256": "f07e4e51a6c80cbe117ac44fede0ed59983dd9364697047e67b3c769826df4c9",
+      "sha256": "49521fedea87f87a1d0406a38002e4aa1a8f3b105407999179de7e41d5c18d51",
       "models": [
         "DisasterRecovery",
         "EoaRecovery",
@@ -211,7 +220,7 @@
     },
     {
       "path": "executors/src/eoa/worker/receipt_tests.rs",
-      "sha256": "8473009c9a9b8fba6963dd920bc8461a0035ae0316648c49973dff9c5158bab0",
+      "sha256": "ae63aed8e6a48697348f523a591ae4c712a251c8283d97b0c3dc6e24c28d6267",
       "models": [
         "EoaRecovery",
         "Finality"
@@ -227,7 +236,7 @@
     },
     {
       "path": "executors/src/eoa/worker/send.rs",
-      "sha256": "c775e94afb6fcc7f5ad6ae1417b17cd987c147cd910623f96ec01f64ec8f42ab",
+      "sha256": "325373af73642e7ba661fbd0ec111cd1864bc125c0fca060d4de62a400061089",
       "models": [
         "DisasterRecovery",
         "EoaRecovery",
@@ -241,7 +250,7 @@
         "DisasterRecovery",
         "NonceAllocator"
       ],
-      "sha256": "d1f98d8fb77c242e329b05fc90f6e10d2771760e97dbfd9bfc5fc27e69f1eaea"
+      "sha256": "7e1cfae36cb08e8f8578e437d757f4ead5b1be4f09bf646a4e4c2e0d1ce994db"
     },
     {
       "path": "executors/src/eoa/worker/transaction.rs",
@@ -284,7 +293,7 @@
     },
     {
       "path": "executors/src/finality_tests.rs",
-      "sha256": "ac8fc6ea5a705c47be3cbc34447f9b6e25ea2ec57c0097661787617f725f22dc",
+      "sha256": "37c59797c9d7b2179bfd0fab92b6e0adfd2e5315a005448b773720347b977620",
       "models": [
         "DisasterRecovery",
         "Finality",
@@ -308,7 +317,7 @@
     },
     {
       "path": "executors/src/recovery_tests.rs",
-      "sha256": "bce8876ea8f00d4ca4ad0deafd94c9c0ed2ced0ce96267a775da47b6a53bf268",
+      "sha256": "451a17e4cb4fc8a2a61ae18265e56c8995b9d740808657541cae8ace5faa1392",
       "models": [
         "DisasterRecovery"
       ]
@@ -352,6 +361,15 @@
       ]
     },
     {
+      "path": "scripts/capacity_faults.py",
+      "sha256": "59e2bc4d90bceca2682c27e35c5871ee538d4878a795f990fa90e6d5f90afa13",
+      "models": [
+        "Finality",
+        "EoaRecovery",
+        "DisasterRecovery"
+      ]
+    },
+    {
       "path": "scripts/local_eoa_recovery.py",
       "sha256": "8490e994b9f71da17da632dc8735fdbb0a4bdcfd66242c397d91d701caa90554",
       "models": [
@@ -361,9 +379,11 @@
     },
     {
       "path": "scripts/local_eoa_reorg.py",
-      "sha256": "7e4abc6a383a9baed86c5bcee43bb9dfc5dfbbeeac2fee533a333b71c3df0597",
+      "sha256": "9db7b030ac5bcdb626b7f42a4669603963d222e6cea6ea09faa59935e62f2e32",
       "models": [
-        "Finality"
+        "Finality",
+        "EoaRecovery",
+        "DisasterRecovery"
       ]
     },
     {
@@ -379,6 +399,15 @@
       "models": [
         "DisasterRecovery",
         "SolanaRecovery"
+      ]
+    },
+    {
+      "path": "scripts/test_local_eoa_reorg.py",
+      "sha256": "04fdc9c368ecab32a29b320be87d17f0fd4f98249137829658c06ff0f9938ce3",
+      "models": [
+        "Finality",
+        "EoaRecovery",
+        "DisasterRecovery"
       ]
     },
     {
@@ -404,7 +433,7 @@
     },
     {
       "path": "server/src/config.rs",
-      "sha256": "f1d4d3a4e99a06e5dfb601c3c1beadce00ff45617284e57a9e622b172aec416f",
+      "sha256": "4d0431850f33e1a01a6b308654a013ff67ed83b5361cfe8cfb3eb88895cc569a",
       "models": [
         "DisasterRecovery",
         "Finality"
@@ -463,7 +492,7 @@
     },
     {
       "path": "server/src/queue/manager.rs",
-      "sha256": "672834d8e9a304b3c7711546f231cec5c9a4d38823b3ca1439848c06507dc61c",
+      "sha256": "0929bb4a757f219855ce6405c5659ae1898d511a7d9a3571fe8aa5d47ff31646",
       "models": [
         "SolanaRecovery"
       ]
@@ -491,7 +520,7 @@
     },
     {
       "path": "server/tests/api_safety.rs",
-      "sha256": "fe53da7ae934c43c849952b3bbaa5272da1c576627cd3f963e628f11578065c9",
+      "sha256": "1c391a3d7c034e44edb2bdb733abfe04891888a569cc0d7f35f65ab5e251a0dd",
       "models": [
         "Admission",
         "DisasterRecovery",
@@ -603,6 +632,48 @@
         "executors/src/eoa/worker/gap_replay_tests.rs"
       ],
       "reason": "The bounded getter reads an existing EOA attempt and rejects mismatched key/kind, terminal/quarantined admission or halted chain; it is not dispatch authorization. Replay decodes/re-encodes original EIP-2718 bytes, checks nonce/hash/sender/chain/attempt membership, rechecks owner and runs before_eoa again. No signing, fee change, replay-key mutation or terminal proof is added. Repeated original transmission collapses to stuttering in EoaRecovery/DisasterRecovery; sent is possible future delivery, not an evictable mempool. Retained cached consumed-count high-water supports the allocator floor, but NonceAllocator assumes monotonic chain consumption and does not model actual rollback. Fixed recovery windows, owner-fenced cooldown reservations, 32 sequential calls, missing-gap stop, actual counter progress and unchanged unknown-response behavior are implementation regression obligations, not newly proved scheduling/liveness properties. The 11-scenario real Redis/HTTP/SQLite parent test and broad executor/core suites passed; process reorg qualification remains separate. NOOP gaps and missing authoritative/projection data can stay unresolved."
+    },
+    "reorg_oracle_followup": {
+      "date": "2026-09-27",
+      "base_commit": "5d602581dd0e2270a520fdba88ac3e71def00d86",
+      "status": "Source and existing passing implementation evidence reviewed; model rerun pending and not claimed by this metadata correction.",
+      "paths": [
+        "scripts/local_eoa_reorg.py",
+        "scripts/test_local_eoa_reorg.py",
+        "scripts/capacity_faults.py"
+      ],
+      "reason": "The strict process oracle now separates a retained attempt from transmissions: one unchanged durable wire must have an additional accepted Engine-only proxy send after the fault, then match the independently fetched signed transaction, canonical receipt/block, reserved nonce, outcome and delayed terminal proof. Terminal admission replay must add no send or attempt. The explicit legacy comparison option alone accepts an execution-equivalent fee replacement. Seven offline unittest methods include positive witnesses and adversarial evidence substitutions; their synthetic signatures do not verify cryptography. Normal and reverted real Anvil process cases passed against unchanged runtime binary a3d360eba3dc470bd830ec9d3a32e0be8e11b6764f9bbf6efeb319f080eb8515. Finality covers provisional versus terminal observations; EoaRecovery/DisasterRecovery cover retained identity and durable membership. Repeated identical dispatch is a stutter in the identity abstractions, not a new protocol transition. No model changes or new TLC cases are justified by this test-only oracle correction. Actual mempool eviction, timing, request pacing, node encoding and implementation/model composition remain outside those proofs. The capacity_faults.py mapping guards the shared raw-wire encoding and Engine-only accepted-send counter dependency; it does not claim formal coverage of the full capacity harness.",
+      "evidence": "formal/evidence/capacity-oracle-review/README.md",
+      "implementation_evidence": "docs/baselines/capacity-2026-09-26/reorg-oracle/validation.json"
+    },
+    "history_index_followup": {
+      "date": "2026-09-27",
+      "base_commit": "5d602581dd0e2270a520fdba88ac3e71def00d86",
+      "status": "Actual applied source matches independently reviewed draft; targeted implementation suites passed without source repairs; full model rerun recorded separately.",
+      "paths": [
+        "core/src/recovery.rs",
+        "core/src/recovery/history_index_tests.rs"
+      ],
+      "reason": "Nonunique (id,sequence) indexes change only physical lookup structure. Existing SQL ordering, every logical row/replay binding/checkpoint/Redis marker, and schema version remain unchanged. Initialization includes both in its existing transaction; writable open uses owner/health-fenced one-transaction DDL then rechecks health before returning a handle. Read-only/offline operations do not migrate. The owned startup task and blocking closure each retain the journal Arc through cancellation. Five real journal tests passed: populated legacy restart/export/token equality and query plans; first/latest membership and contradictory proof retention; readonly/owner/health gates; second-statement DDL rollback; deterministic caller and async-startup cancellation while an independent WAL writer blocks DDL. The migration stutters over DisasterRecovery logical state; SQLite DDL atomicity, real power loss, OS locks and Tokio cancellation remain implementation assumptions/tests, not new model theorems. No lookup-throughput improvement or bound on retained/per-ID history is claimed."
+    },
+    "broadcast_concurrency_followup": {
+      "date": "2026-09-27",
+      "base_commit": "5d602581dd0e2270a520fdba88ac3e71def00d86",
+      "status": "Applied formatted source matches reviewed draft; workspace compilation and existing targeted suites passed; measured higher-setting qualification remains separate.",
+      "paths": [
+        "executors/src/eoa/worker/fee_tests.rs",
+        "executors/src/eoa/worker/gap_replay_tests.rs",
+        "executors/src/eoa/worker/mod.rs",
+        "executors/src/eoa/worker/receipt_tests.rs",
+        "executors/src/eoa/worker/send.rs",
+        "executors/src/eoa/worker/send_tests.rs",
+        "executors/src/finality_tests.rs",
+        "executors/src/recovery_tests.rs",
+        "server/src/config.rs",
+        "server/src/queue/manager.rs",
+        "server/tests/api_safety.rs"
+      ],
+      "reason": "Actual QueueConfig accepts integer/environment-text broadcast concurrency1..128 with default32, wired through manager/handler/worker. Only existing new/recycled/borrowed ordered send buffers are configured; normal preparation stays32, NOOP combined prepare/send uses min(setting,32), borrowed receipt reads have a local32 permit cap released before send, gap replay and fee bumps stay sequential. Layered EngineConfig tests verify omitted/default/numeric/text/range/type handling; fixture additions retain32. Nonce windows, batch reservation, signed wire, journal preauthorization, ordered result attribution and unknown-response handling retain their prior transitions. Nondeterministic authorized dispatch was already modeled; no new TLA case or count is warranted. The models do not verify futures/Tokio scheduling, actual global/per-worker concurrency, RPC rates, wall-clock fairness, lease-loss overlap, or capacity. This is an experimental per-worker setting, not evidence of a throughput gain."
     }
   }
 }

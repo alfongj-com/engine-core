@@ -340,6 +340,7 @@ async fn legacy_fee_request_survives_storage_and_signed_wire_encoding() {
         chain_id: 31337,
         noop_signing_credential: SigningCredential::PrivateKey(key.clone()),
         max_inflight: 1,
+        broadcast_concurrency: 32,
         max_recycled_nonces: 1,
         webhook_queue: webhooks,
         signer: Arc::new(EoaSigner::new(

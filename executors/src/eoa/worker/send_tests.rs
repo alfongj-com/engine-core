@@ -211,6 +211,7 @@ async fn rpc_rejection_keeps_original_nonce_wire_and_unknown_webhook_state() {
         chain_id: 31337,
         noop_signing_credential: SigningCredential::Environment { address: eoa },
         max_inflight: 2,
+        broadcast_concurrency: 32,
         max_recycled_nonces: 2,
         webhook_queue: webhooks.clone(),
         signer: Arc::new(EoaSigner::new(

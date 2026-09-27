@@ -1,0 +1,32 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.78s
+     Running unittests src/lib.rs (target/debug/deps/engine_core-cc5f92a341c79164)
+
+running 25 tests
+test recovery::benchmark::journal_throughput_probe ... ok
+test recovery::export::tests::failed_streaming_export_never_publishes_partial_destination ... ok
+test recovery::export::tests::streaming_export_is_complete_private_and_snapshot_consistent ... ok
+test recovery::history_index_tests::cancelled_startup_retains_owner_until_blocking_ddl_finishes ... ok
+test recovery::history_index_tests::legacy_readonly_inventory_and_locked_open_never_migrate ... ok
+test recovery::history_index_tests::legacy_restart_indexes_preserve_wire_history_first_proof_and_conflict_halt ... ok
+test recovery::history_index_tests::legacy_second_index_failure_rolls_back_first_and_refuses_startup ... ok
+test recovery::history_index_tests::legacy_unhealthy_projection_is_fenced_before_index_ddl ... ok
+test recovery::tests::admission_overload_is_bounded_retryable_and_does_not_halt_reconciliation ... ok
+test recovery::tests::checkpoint_cas_prevents_stale_validation_and_conflicting_chain_progress ... ok
+test recovery::tests::exact_replay_cannot_bypass_missing_redis_continuity_or_terminal_state ... ok
+test recovery::tests::identical_attempt_replay_is_read_only_but_still_enforces_all_safety_fences ... ok
+test recovery::tests::identical_checkpoint_is_read_only_without_bypassing_cas_or_chain_halt ... ok
+test recovery::tests::immutable_admission_and_replay_ownership_survive_process_reopen ... ok
+test recovery::tests::initialization_is_explicit_private_exclusive_and_requires_empty_namespace ... ok
+test recovery::tests::lost_checkpoint_or_sql_commit_before_mirror_is_fail_closed ... ok
+test recovery::tests::reattach_requires_exact_checkpoint_and_cannot_clear_other_halts ... ok
+test recovery::tests::rollback_latches_halt_and_recovery_quarantines_ambiguous_attempts ... ok
+test recovery::tests::sigkill_before_send_and_after_response_loss_preserves_exact_attempt_and_blocks_new_identity ... ok
+test recovery::tests::solana_terminal_signature_and_chain_are_bound_to_recorded_attempt ... ok
+test recovery::tests::storage_write_failure_cannot_authorize_broadcast ... ok
+test recovery::tests::subprocess_broadcast_cut ... ok
+test recovery::tests::terminal_evidence_is_idempotent_and_conflicts_durably_stop_execution ... ok
+test recovery::tests::terminal_identity_must_belong_to_same_admission_not_merely_same_chain ... ok
+test recovery::tests::userop_terminal_hash_is_derived_from_signed_attempt_and_custom_entrypoint ... ok
+
+test result: ok. 25 passed; 0 failed; 0 ignored; 0 measured; 20 filtered out; finished in 5.13s
+

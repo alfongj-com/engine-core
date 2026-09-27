@@ -242,6 +242,7 @@ async fn gap_replay_retains_exact_wires_and_bounded_recovery_across_progress() {
         chain_id: 31337,
         noop_signing_credential: SigningCredential::Environment { address: eoa },
         max_inflight: 50,
+        broadcast_concurrency: 32,
         max_recycled_nonces: 50,
         webhook_queue: webhooks.clone(),
         signer: Arc::new(EoaSigner::new(

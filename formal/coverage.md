@@ -17,15 +17,16 @@ Model composition and Rust-to-TLA+ refinement are not machine-checked.
 | Old retained receipts cannot rewind below consumed nonce | NonceAllocator model + actual313/250 Redis regression | Reorg/lag policy, recycling and population generalization remain separate |
 | Terminal evidence belongs to the same admitted signed attempt | DisasterRecovery terminal-attribution mutation + journal/EOA/AA/Solana identity regressions | Cryptographic wire derivation and model composition are not proved; bundled7702 disabled |
 | Any post-dispatch EVM error preserves its nonce and wire | EVM abstraction + real HTTP/Redis/SQLite normal-path rejection/recovery regression + process crash tests | Message parsing is no longer a safety premise; NOOP automatic retry and bounded lifetime/backoff remain availability work |
-| A dropped EOA suffix reuses only existing journaled wires | EoaRecovery/DisasterRecovery identity abstraction plus new real Redis/HTTP/SQLite regression (11 isolated scenarios passed) | Mempool eviction, fixed-window cooldown, request pacing and bounded elapsed recovery are not modeled; NOOP gaps can remain parked |
+| A dropped EOA suffix reuses only existing journaled wires | EoaRecovery/DisasterRecovery identity abstraction; real Redis/HTTP/SQLite regression (11 isolated scenarios); strict original-wire Anvil success/revert recovery and seven offline oracle test methods | Mempool eviction, fixed-window cooldown, request pacing and bounded elapsed recovery are not modeled; NOOP gaps can remain parked |
 | A reverted EVM execution cannot be reported as success | EVM model + Redis lifecycle + reverting-contract crash test | Contract/application-level success definitions |
 | Fee recovery respects caller caps and integer bounds | Rust proofs + signed-wire tests | Whole transaction builder, gas estimate, provider replacement policy; global spending caps |
 | Solana attempt is persisted before broadcast; retry bytes stay fixed | Solana model + wire/RPC/crash tests | All serialization and cryptographic code is not formally proved |
 | Expired/absent Solana status cannot justify a fresh signature | Solana model + actual stale-history fixtures | Durable nonce intentionally unsupported; provider honesty is an assumption |
 | Solana retry budgets survive crash/resume | Bounded model + real worker tests | All production read-budget counts, rate pacing and clock behavior |
-| Ordinary pre-finality reorgs cannot produce a terminal outcome | Finality model + canonical RPC fixtures/executor tests + journal checkpoint CAS | Provider/chain qualification, continuous monitoring, independent consensus verification and immutable admission policy; dishonest RPC/finalized rollback remain negative boundaries |
+| Ordinary pre-finality reorgs cannot produce a terminal outcome | Finality model + canonical RPC fixtures/executor tests + journal checkpoint CAS + actual Anvil success/revert process cases | Provider/chain qualification, continuous monitoring, independent consensus verification and immutable admission policy; dishonest RPC/finalized rollback remain negative boundaries |
 | Shallow reorg above the depth-qualified boundary must not halt settlement | DepthCheckpoint model with old-tip and ignored-conflict mutations; five TLC cases and core/executor regressions passed | Multiple advancing checkpoints, migration and cross-model composition; deeper depth rollback remains a negative boundary |
 | Redis loss/rollback cannot authorize a fresh identity when local authority survives | DisasterRecovery model + journal failure-cut/SIGKILL tests + integrated process harness | Real power-loss/fsync assurance, authority loss/rollback, multi-host fencing, projection repair availability; no SQLite/filesystem refinement proof |
+| Adding physical history indexes preserves logical authority and owner fencing | Five real journal migration tests: unchanged rows/export/marker, ordered evidence, failed-DDL rollback, health/owner gates and async cancellation | Physical maintenance stutters in DisasterRecovery; SQLite DDL, filesystem durability and Tokio cancellation are not formally verified |
 | Every accepted request eventually terminates | Conditional EVM liveness only | Solana parked recovery/operator API, scheduler/lane fairness, bounded outage policy |
 | ERC-4337 / EIP-7702 identifiers remain stable | Implementation regressions + original-payload retry in DisasterRecovery | Dedicated protocol/bundler/paymaster/authorization models; independent 7702 bundler-result attribution |
 | Authentication binds the allowed signer, chain and request | HTTP/crypto/domain fixtures; prior audit | Formal policy model, key rotation and KMS credential-reference protocol |
@@ -34,8 +35,17 @@ Model composition and Rust-to-TLA+ refinement are not machine-checked.
 | RPC/webhook URLs cannot reach forbidden networks or expose secrets | Transport/policy/redaction tests and audit | DNS/network-policy threat modeling; not represented by protocol models |
 | Shutdown, deadlines and bounded concurrency preserve work | Process/queue tests | Tokio scheduling, wall-clock jumps, resource exhaustion and fairness models |
 | Useful EOA send/recovery progress can continue without a timer delay while polling-only work stays delayed | Real Redis scheduling regression through production result decision and TWMQ lease completion | No wall-clock/fairness proof; mixed-progress unknown retries can run sooner; local matched load is measured separately; public-chain capacity remains unqualified |
+| EOA broadcast tuning retains identity and result association | Reviewed ordered send buffers and durable gates; real EngineConfig range/default tests; existing executor identity/error regressions | Default 32, configurable 1–128 per worker; preparation/read caps remain separate. No formal concurrency/rate bound or measured gain; higher-setting process qualification is separate |
 | Throughput and resource use meet production targets | Local benchmarks + short public bursts; [pruning cost](evidence/pruning/README.md) | Bounded 20k page/churn and 10k cleanup-isolation tests, policy-head hint and false-high-count fixtures added; sustained finality-window load, memory/disk/backpressure and chain/provider quotas remain qualification work |
 | Dependencies, compiler, Redis and operating system behave correctly | Pinned versions, tests and dependency audit | These components remain in the trusted computing base |
+
+The [2026-09-27 oracle review](evidence/capacity-oracle-review/README.md) corrects
+test evidence association: one retained signed attempt can have multiple actual
+broadcasts. The seven offline test methods include positive witnesses and
+adversarial controls; synthetic signatures do not establish cryptographic
+correctness. This test-only change leaves model transitions unchanged. Identical
+retransmission is a stutter in the identity abstractions, not a proof of the
+recovery scheduler's liveness or a new TLC case.
 
 ## Next verification work
 

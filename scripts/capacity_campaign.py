@@ -170,9 +170,11 @@ def campaign_outcome(oracle, report, execution_error=False):
 
 
 def open_loop(rates, duration, start, max_lag, dispatch, dropped, clock=time.monotonic, sleep=time.sleep, cancelled=lambda: False):
-    """No work queue: one heap item per chain, bounded dispatch, no catch-up burst.
+    """No unbounded catch-up queue: one heap item per chain, bounded dispatch.
 
-    A late slot is discarded. A full client drops the current slot. Neither path
+    Eligible late offers can microburst up to the configured lag tolerance.
+
+    A slot older than that tolerance is discarded. A full client drops the slot. Neither path
     retries it. Dispatch returns immediately and must enforce a nonblocking bound.
     """
     phases = schedule_phases(rates)
@@ -517,6 +519,7 @@ class Campaign:
         self.transport_errors = {name: Counter() for name in profiles}
         self.http_latency = {name: [] for name in profiles}
         self.scheduled_latency = {name: [] for name in profiles}
+        self.http_start_lateness = {name: [] for name in profiles}
         self.times, self.statuses = {}, {}
         self.id_chain, self.expected = {}, {}
         self.created = time.monotonic()
@@ -537,7 +540,9 @@ class Campaign:
             "warmup_seconds": args.warmup_seconds, "minimum_late_window_seconds": args.late_window_seconds,
             "arrival_phase_seconds": schedule_phases({name: profile["rate"] for name, profile in profiles.items()}),
             "http_concurrency": args.http_concurrency, "rpc_proxy_concurrency": args.proxy_concurrency,
+            "max_schedule_lag_ms": args.max_schedule_lag_ms,
             "eoa_max_inflight_per_wallet": args.max_inflight, "solana_workers": args.solana_workers,
+            "eoa_broadcast_concurrency": args.eoa_broadcast_concurrency,
             "solana_confirmation_poll_seconds": args.solana_confirmation_poll_seconds,
             "mixed": args.mixed, "chaos": args.chaos, "log_directory": str(self.logs),
             "durability": {"sqlite": "WAL synchronous=FULL/fullfsync=ON", "redis_appendfsync": args.redis_fsync},
@@ -547,7 +552,7 @@ class Campaign:
             "harness_sha256": {name: hashlib.sha256((Path(__file__) if name == "capacity_campaign.py" else ROOT / "scripts" / name).read_bytes()).hexdigest()
                                for name in ("capacity_campaign.py", "capacity_faults.py")},
             "resources_scope": "Owned Engine/Redis/local nodes plus combined campaign+RPC proxy process; external node/VM CPU and memory require separate observation. ps CPU is its reported lifetime average.",
-            "latency_note": "HTTP service/deadline latency is measured directly; durable attempt/terminal timestamps are observer upper bounds, sampled independently.",
+            "latency_note": "HTTP service/deadline latency is measured directly; HTTP-start lateness is measured immediately before the request call (not first socket byte), excluding retries. Scheduler tolerance is not an OS real-time guarantee. Durable attempt/terminal timestamps are observer upper bounds, sampled independently.",
         }
 
     def event(self, event_name, **fields):
@@ -600,6 +605,7 @@ class Campaign:
             "APP__QUEUE__EXECUTION_NAMESPACE": self.namespace, "APP__QUEUE__LOCAL_CONCURRENCY": "4",
             "APP__QUEUE__POLLING_INTERVAL_MS": "20", "APP__QUEUE__LEASE_DURATION_SECONDS": "10",
             "APP__QUEUE__EOA_MAX_INFLIGHT": str(self.args.max_inflight),
+            "APP__QUEUE__EOA_BROADCAST_CONCURRENCY": str(self.args.eoa_broadcast_concurrency),
             "APP__QUEUE__EOA_EXECUTOR_WORKERS": str(sum(p["family"] == "evm" for p in self.profiles.values()) or 1),
             "APP__QUEUE__SOLANA_EXECUTOR_WORKERS": str(self.args.solana_workers),
             "APP__QUEUE__SOLANA_CONFIRMATION_POLL_INTERVAL_SECONDS": str(self.args.solana_confirmation_poll_seconds),
@@ -715,6 +721,7 @@ class Campaign:
         with self.lock:
             self.times.setdefault(txid, started)
             self.stats[offer.chain]["retry_dispatched" if retry else "dispatched"] += 1
+        http_started = time.monotonic()
         try:
             status, _ = request(self.base + path, payload, {"x-engine-signing-token": self.token}, timeout=self.args.http_timeout)
         except (OSError, http.client.HTTPException, ValueError, RuntimeError, urllib.error.URLError) as error:
@@ -730,6 +737,7 @@ class Campaign:
                 self.responses[offer.chain][str(status)] += 1
                 self.http_latency[offer.chain].append((finished - started) * 1000)
                 self.scheduled_latency[offer.chain].append((finished - offer.scheduled) * 1000)
+                self.http_start_lateness[offer.chain].append((http_started - offer.scheduled) * 1000)
             self.statuses[txid] = status
 
     def dropped(self, offer, reason):
@@ -1235,6 +1243,7 @@ class Campaign:
                 "transport_errors": [{**json.loads(detail), "count": count} for detail, count in self.transport_errors[chain].items()],
                 "http_service_latency_ms": distribution(self.http_latency[chain]),
                 "scheduled_to_response_latency_ms": distribution(self.scheduled_latency[chain]),
+                "scheduled_to_http_start_lateness_ms": distribution(self.http_start_lateness[chain]),
                 "durable_latency_upper_bounds_ms": {key: distribution(value) for key, value in self.observer.latencies[chain].items()},
                 "late_window": assessment}
 
@@ -1544,6 +1553,7 @@ def arguments(argv=None):
     parser.add_argument("--sample-seconds", type=float, default=5)
     parser.add_argument("--depth", action="append", default=[], help="PROFILE=BLOCKS (default2); modeled depth finality, per EVM profile")
     parser.add_argument("--max-inflight", type=int, default=4096)
+    parser.add_argument("--eoa-broadcast-concurrency", type=int, default=32, help="Bounded concurrent EOA RPC sends1..128; preparation stays32")
     parser.add_argument("--solana-workers", type=int, default=100)
     parser.add_argument("--solana-confirmation-poll-seconds", type=int, default=1, help="Experimental runtime setting; accepted-send/status polling interval1..5s")
     parser.add_argument("--http-concurrency", type=int, default=64)
@@ -1613,7 +1623,7 @@ def arguments(argv=None):
     if args.solana_park_every and "solana" not in profiles: raise ValueError("Solana sparse rejection requires Solana profile")
     ranges = [(args.seconds, 1, 3600), (args.drain_seconds, 1, 3600), (args.sample_seconds, .1, 60),
               (args.http_timeout, .1, 60), (args.max_inflight, 1, 4096), (args.solana_workers, 1, 1000),
-              (args.http_concurrency, 1, 1024), (args.proxy_concurrency, 1, 1024), (args.reconcile_concurrency, 1, 128),
+              (args.eoa_broadcast_concurrency, 1, 128), (args.http_concurrency, 1, 1024), (args.proxy_concurrency, 1, 1024), (args.reconcile_concurrency, 1, 128),
               (args.chaos_after, 1, 250000), (args.fault_count, 0, 250000),
               (args.duplicate_count, 0, 250000), (args.max_intents, 1, 500000), (args.max_schedule_lag_ms, 0, 1000),
               (args.solana_confirmation_poll_seconds, 1, 5), (args.reorg_min_transactions, 1, 10000), (args.reorg_hold_seconds, 6, 60), (args.recovery_probe_count, 1, 1000), (args.max_admission_p99_ms, 1, 60000), (args.solana_park_every, 0, 250000), (args.late_window_seconds, 1, 600), (args.warmup_seconds, 0, 1800)]

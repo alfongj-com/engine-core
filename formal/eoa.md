@@ -110,7 +110,8 @@ nonce available to another intent. A rejected or indefinitely absent NOOP has
 no automatic borrowed-wire retry slot: it requires explicit offline journal
 reconciliation. The model's conditional liveness must not be read as proving
 NOOP availability. Normal uncertain borrowed retries occur once per worker cycle,
-with 32 RPC tasks in flight. Unknown-only/no-progress cycles retain the 200ms
+with a configurable broadcast-task ceiling (1–128, default 32) and at most 32
+receipt reads. Unknown-only/no-progress cycles retain the 200ms
 requeue delay, which TWMQ rounds to one second. A successful nondelegated cycle
 with acknowledged send or reconciled recovery progress and unsigned backlog
 instead rejoins the queue tail immediately. Mixed cycles can therefore retry
@@ -139,6 +140,24 @@ This changes how soon existing transitions are scheduled, not their identity,
 finality or durable authorization premises. The TLA+ model already permits those
 steps without wall-clock delays; no new invariant or throughput theorem follows.
 Its conditional fairness assumptions and the unmodeled RPC budget remain explicit.
+
+## Broadcast concurrency correspondence
+
+`queue.eoa_broadcast_concurrency` changes scheduling of the existing new,
+recycled and borrowed send tasks. It preserves ordered result association,
+original signed identity, nonce reservation and durable authorization. Normal
+preparation remains at 32 tasks; combined NOOP preparation/send uses the lower
+of the setting and 32. Borrowed receipt lookups hold a separate 32-permit
+semaphore only for the read, releasing it before send. Gap replay and fee bumps
+remain sequential. The layered `EngineConfig` regression checks the actual
+default and integer/string bounds rather than a copy of the configuration type.
+
+The model already permits nondeterministic dispatch of authorized identities;
+no new protocol transition or model case follows from this parameter. It does
+**not** prove Tokio buffer/semaphore behavior, a global concurrency or rate limit,
+fairness, or a throughput improvement. Already-authorized work may overlap lease
+loss or a halt. The runtime's new 64/128 settings still require process-level
+capacity and lost-response qualification on the measured binary.
 
 ## Exact-wire gap recovery correspondence
 

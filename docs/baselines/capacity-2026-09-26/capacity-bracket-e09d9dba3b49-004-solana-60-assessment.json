@@ -1,0 +1,95 @@
+{
+  "analyzer_sha256": "b21a97c6580fe0c7ee48804732b4840c58164ac037d97db559819e246cfef3dd",
+  "limitations": [
+    "Finite windows do not prove an absolute or indefinitely sustainable maximum.",
+    "Aggregation integrates observed samples linearly; original raw reports are preserved.",
+    "Existing reports lack per-sample block heads, so cadence alignment is nominal.",
+    "Positive ambiguous trends are not promoted; long repeated windows remain required."
+  ],
+  "method": "strict-posthoc-v1",
+  "reports": [
+    {
+      "chains": {
+        "solana": {
+          "aggregation_seconds": 30.0,
+          "aligned_mean_backlogs": {
+            "terminal": [
+              1062.7504053924506,
+              1059.0030447872618,
+              1069.663728321254,
+              1059.8304048323669,
+              1067.084464543758,
+              1084.006999292846,
+              1101.1701867770976,
+              1126.84507708894
+            ],
+            "unsigned": [
+              5.16683213501099,
+              3.665967894941084,
+              2.333633553331268,
+              3.3333497500499893,
+              19.009740365260328,
+              47.501060382303514,
+              63.33806597246827,
+              139.61717129323824
+            ]
+          },
+          "aligned_mean_slopes_tps": {
+            "terminal": 0.28166169158345195,
+            "unsigned": 0.5518638994742328
+          },
+          "backlog_endpoints": {
+            "terminal": {
+              "end": 1085.0,
+              "growth": 8.0,
+              "start": 1077.0
+            },
+            "unsigned": {
+              "end": 92.0,
+              "growth": 91.0,
+              "start": 1.0
+            }
+          },
+          "classification": "unconfirmed_growth_or_cadence_ambiguity",
+          "complete_aggregation_windows": 8,
+          "from_seconds": 120.016,
+          "nominal_complete_block_cycles": null,
+          "notes": [
+            "no_fixed_block_cadence_assumed"
+          ],
+          "offered_tps": 60.0,
+          "one_transaction_rate_allowance_tps": 0.0041669097364012905,
+          "original_candidate": false,
+          "persistent_growth_stages": [],
+          "reasons": [
+            "stage_rate_below_offered_beyond_one_transaction",
+            "unsigned_backlog_endpoint_growth",
+            "unsigned_backlog_positive_aligned_mean_trend",
+            "terminal_backlog_endpoint_growth",
+            "terminal_backlog_positive_aligned_mean_trend",
+            "original_exact_qualification_incomplete",
+            "intake_not_fully_clean"
+          ],
+          "sample_interval_seconds": 5.0,
+          "stage_rates_tps": {
+            "admitted": 59.69514888368489,
+            "attempted": 59.31596009767237,
+            "included": 51.72385055794921,
+            "terminal": 59.661813605793675
+          },
+          "to_seconds": 360.002,
+          "window_seconds": 239.986
+        }
+      },
+      "report": "/private/tmp/capacity-bracket-e09d9dba3b49-004-solana-60.json",
+      "report_sha256": "2fe9b5e6a678ca027ecd42b7e7b8d43f859e2fcdd18b3d36d7cb840ab9888b6d"
+    }
+  ],
+  "thresholds": {
+    "endpoint_growth_tx": 1,
+    "max_backlog_slope_tps": 0.01,
+    "min_aligned_groups": 3,
+    "post_warmup_seconds": 180,
+    "stage_deficit_allowance": "one transaction per analyzed window"
+  }
+}

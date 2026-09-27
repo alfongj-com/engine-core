@@ -20,7 +20,9 @@ use crate::{
 // Bound a worker cycle independently from the larger mempool window. A slow
 // durable store must not defer receipt polling behind thousands of signatures.
 const MAX_NEW_TRANSACTIONS_PER_CYCLE: u64 = 256;
-const SEND_CONCURRENCY: usize = 32;
+const PREPARATION_CONCURRENCY: usize = 32;
+// NOOP combines preparation and dispatch; never exceed its prior ceiling.
+const NOOP_CONCURRENCY: usize = 32;
 
 const HEALTH_CHECK_INTERVAL_MS: u64 = 60 * 5 * 1000; // 5 minutes in milliseconds
 
@@ -200,7 +202,7 @@ impl<C: Chain> EoaExecutorWorker<C> {
 
             // Build and sign all transactions in parallel
             let prepared_results = futures::stream::iter(build_tasks)
-                .buffered(SEND_CONCURRENCY)
+                .buffered(PREPARATION_CONCURRENCY)
                 .collect::<Vec<_>>()
                 .await;
             let prepared_results_with_pending = pending_txs
@@ -254,7 +256,7 @@ impl<C: Chain> EoaExecutorWorker<C> {
                 .collect();
 
             let send_results = futures::stream::iter(send_tasks)
-                .buffered(SEND_CONCURRENCY)
+                .buffered(self.broadcast_concurrency)
                 .collect::<Vec<_>>()
                 .await;
 
@@ -298,7 +300,7 @@ impl<C: Chain> EoaExecutorWorker<C> {
             }
 
             let send_results = futures::stream::iter(build_tasks)
-                .buffered(SEND_CONCURRENCY)
+                .buffered(self.broadcast_concurrency.min(NOOP_CONCURRENCY))
                 .collect::<Vec<_>>()
                 .await;
 
@@ -464,7 +466,7 @@ impl<C: Chain> EoaExecutorWorker<C> {
                 .collect();
 
             let prepared_results = futures::stream::iter(build_tasks)
-                .buffered(SEND_CONCURRENCY)
+                .buffered(PREPARATION_CONCURRENCY)
                 .collect::<Vec<_>>()
                 .await;
 
@@ -548,7 +550,7 @@ impl<C: Chain> EoaExecutorWorker<C> {
                 .collect();
 
             let send_results = futures::stream::iter(send_tasks)
-                .buffered(SEND_CONCURRENCY)
+                .buffered(self.broadcast_concurrency)
                 .collect::<Vec<_>>()
                 .await;
 

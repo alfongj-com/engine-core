@@ -87,6 +87,7 @@ async fn state_with_rpc(
         userop_confirm_workers: 1,
         eoa_executor_workers: 1,
         eoa_max_inflight: 50,
+        eoa_broadcast_concurrency: 32,
         solana_executor_workers: 1,
         solana_confirmation_poll_interval_seconds: 1,
         execution_namespace: Some("api_safety".into()),

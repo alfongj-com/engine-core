@@ -1,0 +1,37 @@
+{
+  "scope": "CI reorg oracle repair; no production changes or build",
+  "binary_sha256": "a3d360eba3dc470bd830ec9d3a32e0be8e11b6764f9bbf6efeb319f080eb8515",
+  "offline": {
+    "command": "PYTHONPATH=scripts python3 -m unittest test_local_eoa_reorg -v",
+    "passed": 7,
+    "log": "/tmp/engine-reorg-oracle-tests.log"
+  },
+  "process_cases": [
+    {
+      "command": "ANVIL_BIN=/tmp/engine-finality/anvil REDIS_SERVER_BIN=/tmp/redis-7.4.2/src/redis-server REDIS_CLI_BIN=/tmp/redis-7.4.2/src/redis-cli python3 scripts/local_eoa_reorg.py --engine-bin /Users/alfongj/Code/engine-core/target/release/thirdweb-engine --report /tmp/local-eoa-reorg-exact-wire.json",
+      "report": "/tmp/local-eoa-reorg-exact-wire.json",
+      "log": "/tmp/local-eoa-reorg-exact-wire.log",
+      "outcome": "pass",
+      "attempts": 1,
+      "recovery_mode": "exact_wire",
+      "post_restart_accepted_winning_sends": 1,
+      "elapsed_seconds": 18.929,
+      "terminal_status": "confirmed",
+      "manual_signed_wire_replay": false
+    },
+    {
+      "command": "ANVIL_BIN=/tmp/engine-finality/anvil REDIS_SERVER_BIN=/tmp/redis-7.4.2/src/redis-server REDIS_CLI_BIN=/tmp/redis-7.4.2/src/redis-cli python3 scripts/local_eoa_reorg.py --revert --engine-bin /Users/alfongj/Code/engine-core/target/release/thirdweb-engine --report /tmp/local-eoa-reorg-revert-exact-wire.json",
+      "report": "/tmp/local-eoa-reorg-revert-exact-wire.json",
+      "log": "/tmp/local-eoa-reorg-revert-exact-wire.log",
+      "outcome": "pass",
+      "attempts": 1,
+      "recovery_mode": "exact_wire",
+      "post_restart_accepted_winning_sends": 1,
+      "elapsed_seconds": 19.388,
+      "terminal_status": "failed",
+      "manual_signed_wire_replay": false
+    }
+  ],
+  "all_owned_children_stopped": true,
+  "prior_failed_fixture_evidence": "/tmp/local-eoa-reorg-exact-wire-key-fixture-failure.json"
+}

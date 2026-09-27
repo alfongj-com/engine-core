@@ -252,6 +252,7 @@ async fn stalled_nonce_preserves_capped_unbuildable_and_missing_intents() {
             chain_id: 31337,
             noop_signing_credential: SigningCredential::PrivateKey(key),
             max_inflight: 1,
+            broadcast_concurrency: 32,
             max_recycled_nonces: 1,
             webhook_queue: webhooks,
             signer: Arc::new(EoaSigner::new(

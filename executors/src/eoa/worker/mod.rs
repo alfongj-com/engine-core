@@ -144,6 +144,7 @@ where
 
     pub eoa_signer: Arc<EoaSigner>,
     pub max_inflight: u64, // Note: Spec uses MAX_INFLIGHT_PER_EOA constant
+    pub broadcast_concurrency: usize,
     pub max_recycled_nonces: u64, // Note: Spec uses MAX_RECYCLED_THRESHOLD constant
 
     // EOA metrics abstraction with encapsulated configuration
@@ -230,6 +231,7 @@ where
             } else {
                 self.max_inflight
             },
+            broadcast_concurrency: self.broadcast_concurrency,
             max_recycled_nonces: self.max_recycled_nonces,
             webhook_queue: self.webhook_queue.clone(),
             signer: self.eoa_signer.clone(),
@@ -302,6 +304,7 @@ pub struct EoaExecutorWorker<C: Chain> {
     pub noop_signing_credential: SigningCredential,
 
     pub max_inflight: u64,
+    pub broadcast_concurrency: usize,
     pub max_recycled_nonces: u64,
 
     pub webhook_queue: Arc<Queue<WebhookJobHandler>>,
@@ -518,13 +521,23 @@ impl<C: Chain> EoaExecutorWorker<C> {
                 to_broadcast.push(borrowed.clone());
             }
         }
+        // Broadcast tuning must not increase the existing borrowed-receipt
+        // lookup fanout. Release the read permit before awaiting the raw send.
+        let receipt_slots = tokio::sync::Semaphore::new(32);
+        let receipt_slots = &receipt_slots;
         let recovery_results =
             futures::stream::iter(to_broadcast.into_iter().map(|borrowed| async move {
                 let hash = *borrowed.signed_transaction.hash();
                 // A matching inclusion permits receipt polling, not a terminal outcome.
                 // Wrong-hash, absent or failed reads are unknown; retry the original wire.
-                if let Ok(Some(receipt)) = self.chain.provider().get_transaction_receipt(hash).await
-                {
+                let receipt = {
+                    let _permit = receipt_slots
+                        .acquire()
+                        .await
+                        .expect("local receipt semaphore is never closed");
+                    self.chain.provider().get_transaction_receipt(hash).await
+                };
+                if let Ok(Some(receipt)) = receipt {
                     if receipt.transaction_hash == hash
                         && receipt.block_number.is_some()
                         && receipt.block_hash.is_some()
@@ -547,7 +560,7 @@ impl<C: Chain> EoaExecutorWorker<C> {
                     &self.chain,
                 )
             }))
-            .buffered(32)
+            .buffered(self.broadcast_concurrency)
             .collect::<Vec<_>>()
             .await;
         submission_results.extend(recovery_results);

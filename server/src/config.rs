@@ -79,6 +79,12 @@ pub struct QueueConfig {
         deserialize_with = "deserialize_eoa_max_inflight"
     )]
     pub eoa_max_inflight: u64,
+    /// Per signer/chain broadcast tasks, independent of build/sign concurrency.
+    #[serde(
+        default = "default_eoa_broadcast_concurrency",
+        deserialize_with = "deserialize_eoa_broadcast_concurrency"
+    )]
+    pub eoa_broadcast_concurrency: usize,
     pub solana_executor_workers: usize,
     /// Whole seconds; TWMQ already rounds the prior 200ms delay to one second.
     #[serde(
@@ -142,6 +148,31 @@ fn deserialize_solana_confirmation_poll_interval_seconds<'de, D: serde::Deserial
     if !(1..=5).contains(&value) {
         return Err(serde::de::Error::custom(
             "solana_confirmation_poll_interval_seconds must be between 1 and 5",
+        ));
+    }
+    Ok(value)
+}
+
+fn default_eoa_broadcast_concurrency() -> usize {
+    32
+}
+
+fn deserialize_eoa_broadcast_concurrency<'de, D: serde::Deserializer<'de>>(
+    deserializer: D,
+) -> Result<usize, D::Error> {
+    #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum Number {
+        Integer(usize),
+        Text(String),
+    }
+    let value = match Number::deserialize(deserializer)? {
+        Number::Integer(value) => value,
+        Number::Text(value) => value.parse().map_err(serde::de::Error::custom)?,
+    };
+    if !(1..=128).contains(&value) {
+        return Err(serde::de::Error::custom(
+            "eoa_broadcast_concurrency must be between 1 and 128",
         ));
     }
     Ok(value)
@@ -342,6 +373,39 @@ mod throughput_config_tests {
             config::Value::from("1e3"),
         ] {
             assert!(configured(Some(("queue.eoa_max_inflight", value))).is_err());
+        }
+    }
+
+    #[test]
+    fn broadcast_concurrency_preserves_default_and_validates_production_config() {
+        assert_eq!(
+            configured(None).unwrap().queue.eoa_broadcast_concurrency,
+            32
+        );
+        for expected in [1u64, 32, 64, 128] {
+            for value in [
+                config::Value::from(expected),
+                config::Value::from(expected.to_string()),
+            ] {
+                let config = configured(Some(("queue.eoa_broadcast_concurrency", value))).unwrap();
+                assert_eq!(config.queue.eoa_broadcast_concurrency, expected as usize);
+                // This override must not enlarge the separate nonce window.
+                assert_eq!(config.queue.eoa_max_inflight, 50);
+            }
+        }
+        for value in [
+            config::Value::from(0u64),
+            config::Value::from(129u64),
+            config::Value::from("0"),
+            config::Value::from("129"),
+            config::Value::from(-1i64),
+            config::Value::from(1.5f64),
+            config::Value::from(true),
+            config::Value::from("32.0"),
+            config::Value::from("1e2"),
+            config::Value::from(""),
+        ] {
+            assert!(configured(Some(("queue.eoa_broadcast_concurrency", value))).is_err());
         }
     }
 

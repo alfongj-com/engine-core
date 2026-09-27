@@ -262,6 +262,7 @@ impl QueueManager {
             redis: redis_client.get_connection_manager().await?,
             authorization_cache,
             max_inflight: queue_config.eoa_max_inflight,
+            broadcast_concurrency: queue_config.eoa_broadcast_concurrency,
             max_recycled_nonces: 50,
             eoa_metrics,
             kms_client_cache,
