@@ -38,7 +38,7 @@ the 192 outstanding requests or prove resumed execution for that signer.
 
 An older disposable EVM test still has 1,980 unverified outcomes after losing node
 history. That evidence gap remains visible. The journal-reader bug found in this
-campaign is fixed; all **163 harness regressions pass**. The **61 formal-model
+campaign is fixed; all **163 harness regressions pass on macOS and Linux**. The **61 formal-model
 outcomes** are bounded checks, not proof of the whole service.
 
 ## Next priorities

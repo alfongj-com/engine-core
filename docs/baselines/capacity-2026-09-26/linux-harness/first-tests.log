@@ -1,0 +1,218 @@
+test_cast_recovers_real_wire_hash_and_sender_without_node_history (test_capacity_faults.EvmDecoderTests.test_cast_recovers_real_wire_hash_and_sender_without_node_history) ... ok
+test_legacy_access_list_and_type4_layout_agree_with_independent_cast (test_capacity_faults.EvmDecoderTests.test_legacy_access_list_and_type4_layout_agree_with_independent_cast) ... ok
+test_real_captured_wire_rejects_changed_rpc_signature_nonce_or_fees (test_capacity_faults.EvmDecoderTests.test_real_captured_wire_rejects_changed_rpc_signature_nonce_or_fees) ... ok
+test_audit_is_full_on_disk_bounded_in_memory_and_not_overwritten (test_capacity_faults.FixtureTests.test_audit_is_full_on_disk_bounded_in_memory_and_not_overwritten) ... ok
+test_evm_mixed_fixture_uses_unique_slots_and_normalized_chain_tx (test_capacity_faults.FixtureTests.test_evm_mixed_fixture_uses_unique_slots_and_normalized_chain_tx) ... ok
+test_mixed_solana_wire_decodes_without_copying_expectations (test_capacity_faults.FixtureTests.test_mixed_solana_wire_decodes_without_copying_expectations) ... ok
+test_actual_socket_reuse_on_both_proxy_hops (test_capacity_faults.KeepAliveTests.test_actual_socket_reuse_on_both_proxy_hops) ... ok
+test_idle_server_close_reconnects_before_next_post_without_replaying_it (test_capacity_faults.KeepAliveTests.test_idle_server_close_reconnects_before_next_post_without_replaying_it) ... ok
+test_lost_accepted_post_never_retries_inside_transport (test_capacity_faults.KeepAliveTests.test_lost_accepted_post_never_retries_inside_transport) ... ok
+test_response_cap_discards_socket_and_diagnostics_do_not_print_url (test_capacity_faults.KeepAliveTests.test_response_cap_discards_socket_and_diagnostics_do_not_print_url) ... ok
+test_valid_json_with_truncated_http_framing_is_not_accepted_or_retried (test_capacity_faults.KeepAliveTests.test_valid_json_with_truncated_http_framing_is_not_accepted_or_retried) ... ok
+test_changed_attempt_payload_or_nonce_is_unsafe (test_capacity_faults.OracleTests.test_changed_attempt_payload_or_nonce_is_unsafe) ... ok
+test_duplicate_execution_cannot_hide_behind_matching_terminal (test_capacity_faults.OracleTests.test_duplicate_execution_cannot_hide_behind_matching_terminal) ... ok
+test_expected_parked_requires_persisted_attempt_never_capacity_pass (test_capacity_faults.OracleTests.test_expected_parked_requires_persisted_attempt_never_capacity_pass) ... ok
+test_extra_intent_fee_and_effect_mutations_fail (test_capacity_faults.OracleTests.test_extra_intent_fee_and_effect_mutations_fail) ... ok
+test_fee_only_replacement_same_nonce_can_settle_once (test_capacity_faults.OracleTests.test_fee_only_replacement_same_nonce_can_settle_once) ... ok
+test_full_evidence_passes (test_capacity_faults.OracleTests.test_full_evidence_passes) ... ok
+test_hidden_queue_load_and_dropped_offers_fail_liveness (test_capacity_faults.OracleTests.test_hidden_queue_load_and_dropped_offers_fail_liveness) ... ok
+test_one_chain_effect_cannot_be_attributed_to_two_offered_ids (test_capacity_faults.OracleTests.test_one_chain_effect_cannot_be_attributed_to_two_offered_ids) ... ok
+test_wrong_terminal_or_early_finality_is_unsafe (test_capacity_faults.OracleTests.test_wrong_terminal_or_early_finality_is_unsafe) ... ok
+test_designated_invalid_solana_wire_only_preflight_override (test_capacity_faults.ProxyTests.test_designated_invalid_solana_wire_only_preflight_override) ... /usr/lib/python3.14/tempfile.py:484: ResourceWarning: Implicitly cleaning up <HTTPError 502: 'Bad Gateway'>
+  _warnings.warn(self.warn_message, ResourceWarning)
+ok
+test_finite_error_latency_and_release_are_observable (test_capacity_faults.ProxyTests.test_finite_error_latency_and_release_are_observable) ... ok
+test_lifecycle_steps_follow_acceptance_and_failed_step_stops_sequence (test_capacity_faults.ProxyTests.test_lifecycle_steps_follow_acceptance_and_failed_step_stops_sequence) ... ok
+test_local_only_and_browser_boundary (test_capacity_faults.ProxyTests.test_local_only_and_browser_boundary) ... ok
+test_lost_response_requires_actual_acceptance_and_retries_same_wire (test_capacity_faults.ProxyTests.test_lost_response_requires_actual_acceptance_and_retries_same_wire) ... ok
+test_proxy_capacity_rejects_instead_of_hiding_unbounded_work (test_capacity_faults.ProxyTests.test_proxy_capacity_rejects_instead_of_hiding_unbounded_work) ... /usr/lib/python3.14/tempfile.py:484: ResourceWarning: Implicitly cleaning up <HTTPError 503: 'Service Unavailable'>
+  _warnings.warn(self.warn_message, ResourceWarning)
+ok
+test_rejection_does_not_trigger_crash_or_consume_loss_budget (test_capacity_faults.ProxyTests.test_rejection_does_not_trigger_crash_or_consume_loss_budget) ... ok
+test_response_loss_trigger_waits_for_threshold_and_audits_batch_collateral (test_capacity_faults.ProxyTests.test_response_loss_trigger_waits_for_threshold_and_audits_batch_collateral) ... ok
+test_broadcast_concurrency_cli_reaches_actual_setup_env_without_ambient_override (capacity_campaign_test.EvidenceTests.test_broadcast_concurrency_cli_reaches_actual_setup_env_without_ambient_override) ... ok
+test_explicit_short_queue_lease_is_recorded_and_reaches_init_and_engine (capacity_campaign_test.EvidenceTests.test_explicit_short_queue_lease_is_recorded_and_reaches_init_and_engine) ... ok
+test_http_start_lateness_is_distinct_and_excludes_retries (capacity_campaign_test.EvidenceTests.test_http_start_lateness_is_distinct_and_excludes_retries) ... ok
+test_journal_observer_counts_ids_not_fee_bump_attempt_rows (capacity_campaign_test.EvidenceTests.test_journal_observer_counts_ids_not_fee_bump_attempt_rows) ... ok
+test_local_only_urls_reject_secrets_or_nonlocal_hosts (capacity_campaign_test.EvidenceTests.test_local_only_urls_reject_secrets_or_nonlocal_hosts) ... ok
+test_profile_bounds_and_individual_depths (capacity_campaign_test.EvidenceTests.test_profile_bounds_and_individual_depths) ... ok
+test_publish_is_private_atomic_no_overwrite (capacity_campaign_test.EvidenceTests.test_publish_is_private_atomic_no_overwrite) ... ok
+test_queue_lease_default_matches_both_production_config_layers_and_actual_setup (capacity_campaign_test.EvidenceTests.test_queue_lease_default_matches_both_production_config_layers_and_actual_setup) ... ERROR
+test_queue_lease_rejects_outside_bounds_and_non_integer_values (capacity_campaign_test.EvidenceTests.test_queue_lease_rejects_outside_bounds_and_non_integer_values) ... ok
+test_transport_diagnostics_keep_errno_without_secrets (capacity_campaign_test.EvidenceTests.test_transport_diagnostics_keep_errno_without_secrets) ... ok
+test_api_post_connection_reused_without_ambient_proxy (capacity_campaign_test.HttpTests.test_api_post_connection_reused_without_ambient_proxy) ... ok
+test_lost_accepted_post_is_not_automatically_retried (capacity_campaign_test.HttpTests.test_lost_accepted_post_is_not_automatically_retried) ... ok
+test_redirect_is_returned_without_following (capacity_campaign_test.HttpTests.test_redirect_is_returned_without_following) ... ok
+test_complete_constant_lag_window_is_only_candidate_input (capacity_campaign_test.MeasurementTests.test_complete_constant_lag_window_is_only_candidate_input) ... ok
+test_draining_everything_cannot_mask_unsigned_backlog_growth (capacity_campaign_test.MeasurementTests.test_draining_everything_cannot_mask_unsigned_backlog_growth) ... ok
+test_fault_classification_preserves_safety_and_durable_fences (capacity_campaign_test.MeasurementTests.test_fault_classification_preserves_safety_and_durable_fences) ... ok
+test_recovered_proxy_failures_still_disqualify_nominal_capacity (capacity_campaign_test.MeasurementTests.test_recovered_proxy_failures_still_disqualify_nominal_capacity) ... ok
+test_short_window_never_claims_capacity (capacity_campaign_test.MeasurementTests.test_short_window_never_claims_capacity) ... ok
+test_100ms_eligible_late_slots_are_bounded_microbursts (capacity_campaign_test.SchedulingTests.test_100ms_eligible_late_slots_are_bounded_microbursts) ... ok
+test_equal_rate_phases_prevent_alphabetical_capacity_starvation (capacity_campaign_test.SchedulingTests.test_equal_rate_phases_prevent_alphabetical_capacity_starvation) ... ok
+test_full_dispatch_has_no_hidden_queue_and_other_chain_still_offered (capacity_campaign_test.SchedulingTests.test_full_dispatch_has_no_hidden_queue_and_other_chain_still_offered) ... ok
+test_pool_is_bounded_and_failure_releases_permit (capacity_campaign_test.SchedulingTests.test_pool_is_bounded_and_failure_releases_permit) ... ok
+test_stall_discards_missed_slots_without_catchup_or_retry (capacity_campaign_test.SchedulingTests.test_stall_discards_missed_slots_without_catchup_or_retry) ... ok
+test_continuous_arrivals_revisit_old_signatures_before_intake_stops (capacity_campaign_test.SolanaLiveObserverTests.test_continuous_arrivals_revisit_old_signatures_before_intake_stops) ... ok
+test_incremental_journal_enqueues_once_without_reviving_finalized (capacity_campaign_test.SolanaLiveObserverTests.test_incremental_journal_enqueues_once_without_reviving_finalized) ... ok
+test_partial_rpc_failure_keeps_unprocessed_work_for_next_sample (capacity_campaign_test.SolanaLiveObserverTests.test_partial_rpc_failure_keeps_unprocessed_work_for_next_sample) ... ok
+test_removals_do_not_skip_waiting_signatures_and_wave_is_bounded (capacity_campaign_test.SolanaLiveObserverTests.test_removals_do_not_skip_waiting_signatures_and_wave_is_bounded) ... ok
+test_repeated_first_batch_errors_do_not_starve_other_pending_work (capacity_campaign_test.SolanaLiveObserverTests.test_repeated_first_batch_errors_do_not_starve_other_pending_work) ... ok
+test_wrong_status_count_cannot_remove_or_silently_skip_pending_work (capacity_campaign_test.SolanaLiveObserverTests.test_wrong_status_count_cannot_remove_or_silently_skip_pending_work) ... ok
+test_bounded_guard_probes_cover_ends_without_duplicate_ids (capacity_scenarios_test.RecoveryInventoryTests.test_bounded_guard_probes_cover_ends_without_duplicate_ids) ... ok
+test_exact_restore_preserves_original_random_uid_and_unknown_binding (capacity_scenarios_test.RecoveryInventoryTests.test_exact_restore_preserves_original_random_uid_and_unknown_binding) ... ok
+test_payload_replay_and_evidence_tampering_are_independently_rejected (capacity_scenarios_test.RecoveryInventoryTests.test_payload_replay_and_evidence_tampering_are_independently_rejected) ... ok
+test_recovery_must_advance_epoch_without_changing_deployment (capacity_scenarios_test.RecoveryInventoryTests.test_recovery_must_advance_epoch_without_changing_deployment) ... ok
+test_unknown_attempt_may_not_be_reactivated_or_reported_terminal (capacity_scenarios_test.RecoveryInventoryTests.test_unknown_attempt_may_not_be_reactivated_or_reported_terminal) ... ok
+test_poll_experiment_is_bounded_and_explicit (capacity_scenarios_test.ScenarioConfigurationTests.test_poll_experiment_is_bounded_and_explicit) ... ERROR
+test_reorg_rejects_uncontrolled_or_unrepresentable_finality (capacity_scenarios_test.ScenarioConfigurationTests.test_reorg_rejects_uncontrolled_or_unrepresentable_finality) ... ERROR
+test_unstable_solana_balance_cut_is_not_qualified_as_redis_recovery (capacity_scenarios_test.ScenarioConfigurationTests.test_unstable_solana_balance_cut_is_not_qualified_as_redis_recovery) ... ok
+test_clean_drain_remains_only_numeric_counters (capacity_pool_test.PoolTests.test_clean_drain_remains_only_numeric_counters) ... ok
+test_hash_digest_detects_changed_identity_even_same_count_and_nonce (capacity_pool_test.PoolTests.test_hash_digest_detects_changed_identity_even_same_count_and_nonce) ... ok
+test_inventory_distinguishes_orphaned_targets_from_later_queued_loss (capacity_pool_test.PoolTests.test_inventory_distinguishes_orphaned_targets_from_later_queued_loss) ... ok
+test_local_pool_count_requires_both_valid_counters (capacity_pool_test.PoolTests.test_local_pool_count_requires_both_valid_counters) ... ok
+test_native_nonce_delta_never_claims_empty_pool_or_calls_txpool (capacity_pool_test.PoolTests.test_native_nonce_delta_never_claims_empty_pool_or_calls_txpool) ... ok
+test_other_wallet_and_malformed_pool_are_not_miscounted (capacity_pool_test.PoolTests.test_other_wallet_and_malformed_pool_are_not_miscounted) ... ok
+test_queued_transactions_behind_nonce_gap_fail_empty_drain (capacity_pool_test.PoolTests.test_queued_transactions_behind_nonce_gap_fail_empty_drain) ... ok
+test_3_percent_terminal_growth_is_never_promoted (capacity_assess_test.AssessmentTests.test_3_percent_terminal_growth_is_never_promoted) ... ok
+test_aligned_12_second_sawtooth_is_steady (capacity_assess_test.AssessmentTests.test_aligned_12_second_sawtooth_is_steady) ... ok
+test_observer_error_cannot_be_promoted_despite_complete_exact_reconciliation (capacity_assess_test.AssessmentTests.test_observer_error_cannot_be_promoted_despite_complete_exact_reconciliation) ... ok
+test_short_clean_screen_stays_unconfirmed (capacity_assess_test.AssessmentTests.test_short_clean_screen_stays_unconfirmed) ... ok
+test_tiny_sample_clock_drift_does_not_discard_whole_window (capacity_assess_test.AssessmentTests.test_tiny_sample_clock_drift_does_not_discard_whole_window) ... ok
+test_actual_reconcile_never_calls_a_fenced_engine_restart_recovered (capacity_fence_test.DurableFenceTests.test_actual_reconcile_never_calls_a_fenced_engine_restart_recovered) ... ok
+test_arbitrary_restart_failure_never_fabricates_a_durable_fence (capacity_fence_test.DurableFenceTests.test_arbitrary_restart_failure_never_fabricates_a_durable_fence) ... ok
+test_drain_detects_chain_fence_without_rpc_or_retry_and_hides_reason (capacity_fence_test.DurableFenceTests.test_drain_detects_chain_fence_without_rpc_or_retry_and_hides_reason) ... ok
+test_fence_appearing_during_drain_stops_at_next_existing_poll (capacity_fence_test.DurableFenceTests.test_fence_appearing_during_drain_stops_at_next_existing_poll) ... ok
+test_missing_invalid_or_unreadable_journal_is_not_a_fence (capacity_fence_test.DurableFenceTests.test_missing_invalid_or_unreadable_journal_is_not_a_fence) ... ok
+test_restart_fence_aborts_every_remaining_offer_without_claiming_recovery (capacity_fence_test.DurableFenceTests.test_restart_fence_aborts_every_remaining_offer_without_claiming_recovery) ... ok
+test_run_still_reconciles_accepted_unknown_ids_before_owned_node_cleanup (capacity_fence_test.DurableFenceTests.test_run_still_reconciles_accepted_unknown_ids_before_owned_node_cleanup) ... ok
+test_unrecognized_private_reason_is_not_copied_or_interpreted (capacity_fence_test.DurableFenceTests.test_unrecognized_private_reason_is_not_copied_or_interpreted) ... ok
+test_compressed_failures_cannot_fake_elapsed_outage (capacity_resource_guard_test.Provider.test_compressed_failures_cannot_fake_elapsed_outage) ... ok
+test_no_public_credentialed_or_redirect_routing (capacity_resource_guard_test.Provider.test_no_public_credentialed_or_redirect_routing) ... ok
+test_outage_debounce_reset_then_latched_no_auto_recovery (capacity_resource_guard_test.Provider.test_outage_debounce_reset_then_latched_no_auto_recovery) ... ok
+test_read_probe_has_exact_one_request_no_retry_no_secret_error (capacity_resource_guard_test.Provider.test_read_probe_has_exact_one_request_no_retry_no_secret_error) ... ok
+test_success_identity_mismatch_rpc_error_and_oversize_are_distinguished (capacity_resource_guard_test.Provider.test_success_identity_mismatch_rpc_error_and_oversize_are_distinguished) ... ok
+test_df_full_disk_and_inode_exhaustion_are_not_parse_failures (capacity_resource_guard_test.Resources.test_df_full_disk_and_inode_exhaustion_are_not_parse_failures) ... ok
+test_different_host_volume_is_rejected_before_lima_probe (capacity_resource_guard_test.Resources.test_different_host_volume_is_rejected_before_lima_probe) ... ok
+test_fixed_setup_is_reserved_without_extrapolating_then_load_spikes_count (capacity_resource_guard_test.Resources.test_fixed_setup_is_reserved_without_extrapolating_then_load_spikes_count) ... ok
+test_freed_space_does_not_reset_peak_and_other_resources_are_independent (capacity_resource_guard_test.Resources.test_freed_space_does_not_reset_peak_and_other_resources_are_independent) ... ok
+test_invalid_budgets_never_disable_guard_silently (capacity_resource_guard_test.Resources.test_invalid_budgets_never_disable_guard_silently) ... ok
+test_layout_change_missing_probe_and_horizon_are_fenced (capacity_resource_guard_test.Resources.test_layout_change_missing_probe_and_horizon_are_fenced) ... ok
+test_monitor_evidence_is_private_no_overwrite_and_stops_before_child (capacity_resource_guard_test.Resources.test_monitor_evidence_is_private_no_overwrite_and_stops_before_child) ... ok
+test_monitor_probe_failure_is_fixed_category_not_subprocess_output (capacity_resource_guard_test.Resources.test_monitor_probe_failure_is_fixed_category_not_subprocess_output) ... ok
+test_observed_growth_replaces_lower_declared_budget_and_latches (capacity_resource_guard_test.Resources.test_observed_growth_replaces_lower_declared_budget_and_latches) ... ok
+test_observer_programming_error_also_latches_instead_of_silently_stopping (capacity_resource_guard_test.Resources.test_observer_programming_error_also_latches_instead_of_silently_stopping) ... ok
+test_preflight_reserves_the_entire_horizon_and_shutdown_not_only_floor (capacity_resource_guard_test.Resources.test_preflight_reserves_the_entire_horizon_and_shutdown_not_only_floor) ... ok
+test_probe_is_only_bounded_read_commands_without_live_vm (capacity_resource_guard_test.Resources.test_probe_is_only_bounded_read_commands_without_live_vm) ... ok
+test_realistic_host_margin_and_host_only_probe_cover_non_native_jobs (capacity_resource_guard_test.Resources.test_realistic_host_margin_and_host_only_probe_cover_non_native_jobs) ... ok
+test_actual_reconcile_retains_prior_stop_and_captures_custody_without_rpc (capacity_resource_phase_test.CampaignBoundary.test_actual_reconcile_retains_prior_stop_and_captures_custody_without_rpc) ... ok
+test_actual_reconcile_stops_engine_then_transitions_before_first_oracle_read (capacity_resource_phase_test.CampaignBoundary.test_actual_reconcile_stops_engine_then_transitions_before_first_oracle_read) ... ok
+test_failed_stop_keeps_original_budget_and_performs_no_new_probe (capacity_resource_phase_test.PhaseMonitor.test_failed_stop_keeps_original_budget_and_performs_no_new_probe) ... ok
+test_monitor_cannot_assess_obsolete_horizon_after_engine_stop (capacity_resource_phase_test.PhaseMonitor.test_monitor_cannot_assess_obsolete_horizon_after_engine_stop) ... ok
+test_exact_incident_depletion_keeps_evidence_and_reduces_verification_horizon (capacity_resource_phase_test.PhasePolicy.test_exact_incident_depletion_keeps_evidence_and_reduces_verification_horizon) ... ok
+test_existing_load_stop_never_clears_at_phase_transition (capacity_resource_phase_test.PhasePolicy.test_existing_load_stop_never_clears_at_phase_transition) ... ok
+test_no_setup_transition_and_verification_spike_still_fences (capacity_resource_phase_test.PhasePolicy.test_no_setup_transition_and_verification_spike_still_fences) ... ok
+test_reconciliation_is_finite_nonrenewable_and_never_extends_original_deadline (capacity_resource_phase_test.PhasePolicy.test_reconciliation_is_finite_nonrenewable_and_never_extends_original_deadline) ... ok
+test_declared_growth_always_covers_full_horizon_without_observations (capacity_resource_projection_test.SustainedProjection.test_declared_growth_always_covers_full_horizon_without_observations) ... ok
+test_first_observed_fast_decline_stops_before_the_floor_is_reached (capacity_resource_projection_test.SustainedProjection.test_first_observed_fast_decline_stops_before_the_floor_is_reached) ... ok
+test_host_guest_and_inode_pressure_remain_independent (capacity_resource_projection_test.SustainedProjection.test_host_guest_and_inode_pressure_remain_independent) ... ok
+test_one_late_observation_cannot_fake_three_intervals (capacity_resource_projection_test.SustainedProjection.test_one_late_observation_cannot_fake_three_intervals) ... ok
+test_one_minute_burst_does_not_become_permanent_full_horizon_rate (capacity_resource_projection_test.SustainedProjection.test_one_minute_burst_does_not_become_permanent_full_horizon_rate) ... ok
+test_short_cleanup_does_not_cancel_positive_consumption_in_window (capacity_resource_projection_test.SustainedProjection.test_short_cleanup_does_not_cancel_positive_consumption_in_window) ... ok
+test_sustained_underdeclared_consumption_stops_at_three_minutes (capacity_resource_projection_test.SustainedProjection.test_sustained_underdeclared_consumption_stops_at_three_minutes) ... ok
+test_thirty_second_observations_still_require_three_minutes (capacity_resource_projection_test.SustainedProjection.test_thirty_second_observations_still_require_three_minutes) ... ok
+test_window_clips_partial_intervals_instead_of_averaging_samples (capacity_resource_projection_test.SustainedProjection.test_window_clips_partial_intervals_instead_of_averaging_samples) ... ok
+test_ethereum_history_and_pending_exclusion (capacity_anvil_custody_test.ActualAnvilRestore.test_ethereum_history_and_pending_exclusion) ... ok
+test_optimism_history_and_pending_exclusion (capacity_anvil_custody_test.ActualAnvilRestore.test_optimism_history_and_pending_exclusion) ... ok
+test_actual_floor_stops_snapshot_before_rpc (capacity_anvil_custody_test.SnapshotBounds.test_actual_floor_stops_snapshot_before_rpc) ... ok
+test_interrupted_run_stops_engine_before_snapshot_and_keeps_failed_verdict (capacity_anvil_custody_test.SnapshotBounds.test_interrupted_run_stops_engine_before_snapshot_and_keeps_failed_verdict) ... ok
+test_oversized_gzip_or_expired_budget_never_publishes_state (capacity_anvil_custody_test.SnapshotBounds.test_oversized_gzip_or_expired_budget_never_publishes_state) ... ok
+test_private_synced_no_overwrite_and_pool_limit_is_explicit (capacity_anvil_custody_test.SnapshotBounds.test_private_synced_no_overwrite_and_pool_limit_is_explicit) ... ok
+test_existing_interrupted_custody_is_not_snapshotted_twice (capacity_anvil_custody_test.UnresolvedCleanup.test_existing_interrupted_custody_is_not_snapshotted_twice) ... ok
+test_fail_closed_retains_history_after_reconciliation_before_node_cleanup (capacity_anvil_custody_test.UnresolvedCleanup.test_fail_closed_retains_history_after_reconciliation_before_node_cleanup) ... ok
+test_missing_engine_process_records_unavailable_boundary_without_snapshot (capacity_anvil_custody_test.UnresolvedCleanup.test_missing_engine_process_records_unavailable_boundary_without_snapshot) ... ok
+test_ordinary_incomplete_oracle_also_retains_unresolved_history (capacity_anvil_custody_test.UnresolvedCleanup.test_ordinary_incomplete_oracle_also_retains_unresolved_history) ... ok
+test_quarantine_preserves_proven_oracle_and_original_verdict (capacity_anvil_custody_test.UnresolvedCleanup.test_quarantine_preserves_proven_oracle_and_original_verdict) ... ok
+test_settled_normal_outcome_needs_no_snapshot_or_extra_rpc (capacity_anvil_custody_test.UnresolvedCleanup.test_settled_normal_outcome_needs_no_snapshot_or_extra_rpc) ... ok
+test_snapshot_failure_remains_visible_without_hiding_oracle_or_cleanup (capacity_anvil_custody_test.UnresolvedCleanup.test_snapshot_failure_remains_visible_without_hiding_oracle_or_cleanup) ... ok
+test_stop_boundary_failure_never_snapshots_and_cleanup_still_runs (capacity_anvil_custody_test.UnresolvedCleanup.test_stop_boundary_failure_never_snapshots_and_cleanup_still_runs) ... ok
+test_chaos_cannot_mutate_after_stop_during_trigger_wait_or_before_restart (capacity_infrastructure_test.CleanupGuards.test_chaos_cannot_mutate_after_stop_during_trigger_wait_or_before_restart) ... ok
+test_custody_file_inventory_error_does_not_mask_original_exception (capacity_infrastructure_test.CleanupGuards.test_custody_file_inventory_error_does_not_mask_original_exception) ... ok
+test_exception_joins_lifecycle_worker_before_custody_and_cleanup (capacity_infrastructure_test.CleanupGuards.test_exception_joins_lifecycle_worker_before_custody_and_cleanup) ... ok
+test_guard_cleanup_failure_does_not_skip_children_or_report (capacity_infrastructure_test.CleanupGuards.test_guard_cleanup_failure_does_not_skip_children_or_report) ... ok
+test_held_http_202_finishes_before_exception_custody_snapshot (capacity_infrastructure_test.CleanupGuards.test_held_http_202_finishes_before_exception_custody_snapshot) ... ok
+test_planned_proxy_rpc_errors_do_not_count_as_direct_provider_outage (capacity_infrastructure_test.CleanupGuards.test_planned_proxy_rpc_errors_do_not_count_as_direct_provider_outage) ... ok
+test_stop_during_actual_reconcile_cannot_repromote_capacity (capacity_infrastructure_test.CleanupGuards.test_stop_during_actual_reconcile_cannot_repromote_capacity) ... ok
+test_actual_load_stops_offers_skips_failed_end_sample_drain_hook_and_retries (capacity_infrastructure_test.Infrastructure.test_actual_load_stops_offers_skips_failed_end_sample_drain_hook_and_retries) ... ok
+test_actual_run_preserves_wal_custody_when_oracle_is_unavailable (capacity_infrastructure_test.Infrastructure.test_actual_run_preserves_wal_custody_when_oracle_is_unavailable) ... ok
+test_already_queued_dispatch_and_retry_do_not_post_after_latch (capacity_infrastructure_test.Infrastructure.test_already_queued_dispatch_and_retry_do_not_post_after_latch) ... ok
+test_native_cli_requires_resource_guard_and_explicit_bounded_budget (capacity_infrastructure_test.Infrastructure.test_native_cli_requires_resource_guard_and_explicit_bounded_budget) ... ok
+test_resource_preflight_rejects_before_starting_any_service (capacity_infrastructure_test.Infrastructure.test_resource_preflight_rejects_before_starting_any_service) ... ok
+test_transient_fault_does_not_abort_and_outage_latches_distinct_reason (capacity_infrastructure_test.Infrastructure.test_transient_fault_does_not_abort_and_outage_latches_distinct_reason) ... ok
+test_supervisor_preserves_outage_and_pause_failure_and_blocks_resume (capacity_infrastructure_test.SupervisorIntegration.test_supervisor_preserves_outage_and_pause_failure_and_blocks_resume) ... ok
+test_absent_database_is_not_created (capacity_journal_reader_test.JournalReaderTests.test_absent_database_is_not_created) ... ok
+test_actual_custody_backup_of_closed_ledger_keeps_original_verdict (capacity_journal_reader_test.JournalReaderTests.test_actual_custody_backup_of_closed_ledger_keeps_original_verdict) ... ok
+test_actual_observer_and_fence_can_read_closed_ledger (capacity_journal_reader_test.JournalReaderTests.test_actual_observer_and_fence_can_read_closed_ledger) ... ok
+test_closed_checkpointed_wal_without_sidecars_is_readable (capacity_journal_reader_test.JournalReaderTests.test_closed_checkpointed_wal_without_sidecars_is_readable) ... ok
+test_connection_closes_on_normal_and_exception_paths (capacity_journal_reader_test.JournalReaderTests.test_connection_closes_on_normal_and_exception_paths) ... ok
+test_live_committed_wal_visible_uncommitted_and_rollback_hidden (capacity_journal_reader_test.JournalReaderTests.test_live_committed_wal_visible_uncommitted_and_rollback_hidden) ... ok
+test_reader_transaction_is_one_snapshot_then_next_reader_sees_commit (capacity_journal_reader_test.JournalReaderTests.test_reader_transaction_is_one_snapshot_then_next_reader_sees_commit) ... ok
+test_sql_mutations_fail_and_rows_remain (capacity_journal_reader_test.JournalReaderTests.test_sql_mutations_fail_and_rows_remain) ... ok
+test_attempt_metadata_without_post_fault_send_is_rejected (test_local_eoa_reorg.RecoveryOracleTests.test_attempt_metadata_without_post_fault_send_is_rejected) ... ok
+test_one_durable_attempt_proves_two_actual_sends (test_local_eoa_reorg.RecoveryOracleTests.test_one_durable_attempt_proves_two_actual_sends) ... ok
+test_original_wire_cannot_change_or_gain_a_duplicate_attempt (test_local_eoa_reorg.RecoveryOracleTests.test_original_wire_cannot_change_or_gain_a_duplicate_attempt) ... ok
+test_receipt_must_match_canonical_block_and_outcome (test_local_eoa_reorg.RecoveryOracleTests.test_receipt_must_match_canonical_block_and_outcome) ... ok
+test_reverted_execution_requires_a_real_reverted_receipt (test_local_eoa_reorg.RecoveryOracleTests.test_reverted_execution_requires_a_real_reverted_receipt) ... ok
+test_same_nonce_fee_replacement_requires_explicit_legacy_mode (test_local_eoa_reorg.RecoveryOracleTests.test_same_nonce_fee_replacement_requires_explicit_legacy_mode) ... ok
+test_wrong_nonce_signer_and_winner_are_rejected (test_local_eoa_reorg.RecoveryOracleTests.test_wrong_nonce_signer_and_winner_are_rejected) ... ok
+
+======================================================================
+ERROR: test_queue_lease_default_matches_both_production_config_layers_and_actual_setup (capacity_campaign_test.EvidenceTests.test_queue_lease_default_matches_both_production_config_layers_and_actual_setup)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/alfongj.guest/engine-python-qualification.mbADwr/scripts/capacity_campaign_test.py", line 429, in test_queue_lease_default_matches_both_production_config_layers_and_actual_setup
+    source = (campaign.ROOT / "server/configuration" / name).read_text()
+  File "/usr/lib/python3.14/pathlib/__init__.py", line 788, in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors, newline=newline) as f:
+         ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.14/pathlib/__init__.py", line 772, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/home/alfongj.guest/engine-python-qualification.mbADwr/server/configuration/server_base.yaml'
+
+======================================================================
+ERROR: test_poll_experiment_is_bounded_and_explicit (capacity_scenarios_test.ScenarioConfigurationTests.test_poll_experiment_is_bounded_and_explicit)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/alfongj.guest/engine-python-qualification.mbADwr/scripts/capacity_scenarios_test.py", line 80, in test_poll_experiment_is_bounded_and_explicit
+    args, _ = self.parse("--solana-confirmation-poll-seconds", "5")
+              ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/alfongj.guest/engine-python-qualification.mbADwr/scripts/capacity_scenarios_test.py", line 67, in parse
+    return campaign.arguments(["--chain", "evm2=5", "--report", "/tmp/not-created.json", *flags])
+           ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/alfongj.guest/engine-python-qualification.mbADwr/scripts/capacity_campaign.py", line 2150, in arguments
+    if not args.engine_bin.is_file(): raise ValueError("Engine binary missing")
+                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError: Engine binary missing
+
+======================================================================
+ERROR: test_reorg_rejects_uncontrolled_or_unrepresentable_finality (capacity_scenarios_test.ScenarioConfigurationTests.test_reorg_rejects_uncontrolled_or_unrepresentable_finality)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/alfongj.guest/engine-python-qualification.mbADwr/scripts/capacity_scenarios_test.py", line 72, in test_reorg_rejects_uncontrolled_or_unrepresentable_finality
+    args, profiles = self.parse("--chaos", "reorg", "--depth", "evm2=2")
+                     ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/alfongj.guest/engine-python-qualification.mbADwr/scripts/capacity_scenarios_test.py", line 67, in parse
+    return campaign.arguments(["--chain", "evm2=5", "--report", "/tmp/not-created.json", *flags])
+           ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/alfongj.guest/engine-python-qualification.mbADwr/scripts/capacity_campaign.py", line 2150, in arguments
+    if not args.engine_bin.is_file(): raise ValueError("Engine binary missing")
+                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError: Engine binary missing
+
+----------------------------------------------------------------------
+Ran 163 tests in 13.803s
+
+FAILED (errors=3)
+{"network": "ethereum", "anvil_sha256": "1815e4dc42ea51a89adb69e68981d22ccd0f7d5c185d6373f7a813ad5f31871b", "restored_receipts": 3, "pending_not_in_snapshot": 2, "head_hash_preserved": true, "historical_balances_preserved": true}
+{"network": "optimism", "anvil_sha256": "1815e4dc42ea51a89adb69e68981d22ccd0f7d5c185d6373f7a813ad5f31871b", "restored_receipts": 3, "pending_not_in_snapshot": 2, "head_hash_preserved": true, "historical_balances_preserved": true}

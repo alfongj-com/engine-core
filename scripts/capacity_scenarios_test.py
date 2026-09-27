@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Offline scenarios: inventory conservation and deliberate fault prerequisites."""
 import copy
+import tempfile
 import unittest
 
 import capacity_campaign as campaign
@@ -64,7 +65,11 @@ class RecoveryInventoryTests(unittest.TestCase):
 
 class ScenarioConfigurationTests(unittest.TestCase):
     def parse(self, *flags):
-        return campaign.arguments(["--chain", "evm2=5", "--report", "/tmp/not-created.json", *flags])
+        # These tests validate configuration and never execute Engine. Supply an
+        # existing placeholder so a clean checkout does not need a release build.
+        with tempfile.NamedTemporaryFile() as engine:
+            return campaign.arguments(["--engine-bin", engine.name, "--chain", "evm2=5",
+                                       "--report", "/tmp/not-created.json", *flags])
 
     def test_reorg_rejects_uncontrolled_or_unrepresentable_finality(self):
         for flags in (("--depth", "evm2=1"), ("--block-seconds", "evm2=.25")):

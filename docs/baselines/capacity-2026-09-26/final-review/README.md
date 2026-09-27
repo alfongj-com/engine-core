@@ -14,7 +14,8 @@ binary remained `35e307e16cafa7cbb17caafcf5ed90a840d58dddd2454542566619266e7a4c0
   time. These do not identify whole-host or storage bottlenecks.
 - [RPC sizing](RPC-SIZING.md): measured request pressure and public-price
   assumptions; no paid RPC calls were made for this campaign.
-- [CI metadata](ci-1ebe25c.json): four passing gates at the named commit.
+- [Campaign CI metadata](ci-cf25a68.json): all four gates passed at `cf25a68`.
+  The [earlier CI record](ci-1ebe25c.json) remains unchanged.
   Additional capacity Python checks are separately recorded in the
   [journal-reader validation](../journal-reader/README.md); the workflow patch
   has not been installed because the GitHub token lacks workflow permission.
@@ -25,3 +26,7 @@ operating envelope. The earlier reviews do not override those measurements.
 The three new unresolved/recovery fixtures are also copied to private durable
 storage, with every regular file hash verified. [Publication metadata](private-custody-summary.json)
 contains only paths, sizes and digests; private contents remain outside Git.
+
+The [additional Linux/macOS run](../linux-harness/README.md) passes all 163
+harness tests after the test-only clean-checkout correction. It changes no
+Engine source or benchmark settings.

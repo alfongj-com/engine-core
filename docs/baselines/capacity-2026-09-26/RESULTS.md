@@ -111,3 +111,8 @@ An earlier interrupted EVM 55 run retained 3,274 signed intents, but **1,980 can
 Prioritize operator reconciliation of retained work before more load. For performance work, measure journal-lock, commit and Redis wait times separately; investigate cross-chain scheduling/admission fairness; then evaluate bounded Solana status batching. Preserve existing durability, identity and finality checks. Synthetic journal probes and finite formal models do not establish an Engine capacity ceiling or verify the whole service.
 
 The [five-area review](final-review/OUTCOME.md) summarizes performance, security, reliability, readability and test/proof coverage. The [verification record](../../verification.md) binds the named Linux CI results, 163 local harness tests, compiled negative controls and finite-model evidence to their actual sources. Additional capacity CI steps remain a patch, not an executed Linux gate. **These findings do not qualify the service for unattended production operation.**
+
+The final [Linux/macOS harness qualification](linux-harness/README.md) passed all
+163 tests on both platforms, including actual node snapshot restores. Its first
+Linux fixture failures and the test-only correction remain recorded. Engine and
+the measured campaign source were unchanged.

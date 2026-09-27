@@ -26,11 +26,13 @@ A reproduced sidecar-free WAL reader failure in the campaign was fixed without
 changing Engine. **163 integrated Python tests passed**, including actual
 Ethereum/OP snapshot restores; both targeted original-reader negative controls
 failed as expected. [Reader evidence](baselines/capacity-2026-09-26/journal-reader/README.md).
-The four existing Linux gates passed at `1ebe25cced2b7e65e0879c5231d54944d894b770`;
-[metadata](baselines/capacity-2026-09-26/final-review/ci-1ebe25c.json) identifies them.
+The four existing Linux gates passed at `cf25a68090730ae7a5931662c3e5f105891c8e45`;
+[metadata](baselines/capacity-2026-09-26/final-review/ci-cf25a68.json) identifies them.
 The additional capacity CI steps remain a [patch](baselines/capacity-2026-09-26/ci.patch)
 because the GitHub token lacks workflow permission. They are local verification,
-not an executed Linux gate.
+not an executed Linux gate. A subsequent [local Linux qualification](baselines/capacity-2026-09-26/linux-harness/README.md)
+also passed all 163 tests with zero skips after removing a configuration-test
+dependency on a local release build; the macOS repeat passed too.
 
 No paid RPC calls were used for this campaign. See the
 [five-area review](baselines/capacity-2026-09-26/final-review/OUTCOME.md) for performance,

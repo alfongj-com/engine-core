@@ -1,0 +1,28 @@
+{
+  "first_run": {
+    "tests": 163,
+    "passed": 160,
+    "errors": 3,
+    "skips": 0,
+    "log_sha256": "d0d90a5eadc7296f4ff8f3a2911ab37aaf4cf4c43836d1c2f22ef9276fac09d7"
+  },
+  "repeat": {
+    "tests": 163,
+    "passed": 163,
+    "errors": 0,
+    "skips": 0,
+    "log_sha256": "11d850edd9afbc7603b3ed9a5d586ae8894fec686a50608bfa755d5b9fe4bfa7",
+    "wall_seconds": 13.95608489499864
+  },
+  "engine_code_changed": false,
+  "test_only_correction": "capacity_scenarios_test.py explicit temporary engine path",
+  "fixture_copy": "two unchanged public configuration YAML files",
+  "all_37_sources_hash_matched": true,
+  "native_container_unchanged": "ef6c1dba5d02e3102e3ff8f84731734e46972a84364d6b351e68cee4dffe152d paused true 3719",
+  "guest_home_preserved": true,
+  "remaining_owned_processes": false,
+  "directory_bytes": 234425478,
+  "platform": "Linux-7.0.0-28-generic-aarch64-with-glibc2.43",
+  "python": "3.14.4 (main, Jun 18 2026, 14:25:02) [GCC 15.2.0]",
+  "sqlite": "3.46.1"
+}
