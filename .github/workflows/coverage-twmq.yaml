@@ -13,10 +13,12 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  TEST_REDIS_URL: redis://127.0.0.1:6379/
 
 jobs:
   coverage:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     services:
       redis:
@@ -30,17 +32,12 @@ jobs:
           --health-retries 5
 
     steps:
-      - name: Give GitHub Actions access to @thirdweb-dev/vault
-        uses: webfactory/ssh-agent@a6f90b1f127823b31d4d4a8d96047790581349bd #@v0.9.1
-        with:
-          ssh-private-key: ${{ secrets.VAULT_REPO_DEPLOY_KEY }}
-
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 #checkout@v4
 
       - name: Install CI dependencies
         uses: taiki-e/install-action@9185c192a96ba09167ad8663015b3fbbf007ec79 #@2.56.2
         with:
-          tool: cargo-tarpaulin
+          tool: cargo-tarpaulin@0.32.8
 
       - name: Cache
         uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684
@@ -53,7 +50,7 @@ jobs:
 
         # Run coverage with tarpaulin
       - name: Run coverage
-        run: cargo tarpaulin -p twmq --skip-clean --timeout 300 --out Xml --out Html --output-dir coverage --exclude-files "aa-core/*" --exclude-files "core/*" --exclude-files "server/*" --exclude-files "thirdweb-core/*" --exclude-files "executors/*"
+        run: cargo tarpaulin --locked -p twmq --skip-clean --timeout 300 --out Xml --out Html --output-dir coverage --exclude-files "aa-core/*" --exclude-files "core/*" --exclude-files "server/*" --exclude-files "thirdweb-core/*" --exclude-files "executors/*" -- --include-ignored --test-threads=1
 
       # Upload coverage to Codecov
       # TODO: Uncomment once we have open-sourced the repo

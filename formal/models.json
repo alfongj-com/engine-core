@@ -1,0 +1,368 @@
+[
+  {
+    "module": "EoaRecovery",
+    "config": "EoaRecovery.cfg",
+    "expected": "pass",
+    "kind": "positive"
+  },
+  {
+    "module": "EoaRecovery",
+    "config": "EoaRecovery_progress.cfg",
+    "expected": "pass",
+    "kind": "positive"
+  },
+  {
+    "module": "EoaRecovery",
+    "config": "EoaRecovery_stale_reservation.cfg",
+    "expected": "invariant:OneIntentPerNonce",
+    "kind": "fault"
+  },
+  {
+    "module": "EoaRecovery",
+    "config": "EoaRecovery_missing_receipt.cfg",
+    "expected": "invariant:AtMostOneEffect",
+    "kind": "fault"
+  },
+  {
+    "module": "EoaRecovery",
+    "config": "EoaRecovery_reverted_success.cfg",
+    "expected": "invariant:TerminalMatchesExecution",
+    "kind": "fault"
+  },
+  {
+    "module": "EoaRecovery",
+    "config": "EoaRecovery_reorg_boundary.cfg",
+    "expected": "invariant:TerminalMatchesExecution",
+    "kind": "boundary"
+  },
+  {
+    "module": "EoaRecovery",
+    "config": "EoaRecovery_unfair_boundary.cfg",
+    "expected": "liveness",
+    "kind": "boundary"
+  },
+  {
+    "module": "Admission",
+    "config": "Admission.cfg",
+    "expected": "pass",
+    "kind": "positive"
+  },
+  {
+    "module": "Admission",
+    "config": "Admission_conflict.cfg",
+    "expected": "invariant:ImmutableWithinRetention",
+    "kind": "fault"
+  },
+  {
+    "module": "Admission",
+    "config": "Admission_active_expiry.cfg",
+    "expected": "invariant:ActiveIdentityRetained",
+    "kind": "fault"
+  },
+  {
+    "module": "Admission",
+    "config": "Admission_partial_commit.cfg",
+    "expected": "invariant:AdmissionIsAtomic",
+    "kind": "fault"
+  },
+  {
+    "module": "Admission",
+    "config": "Admission_retention_boundary.cfg",
+    "expected": "invariant:LifetimeAtMostOnce",
+    "kind": "boundary"
+  },
+  {
+    "module": "SolanaRecovery",
+    "config": "SolanaRecovery.cfg",
+    "expected": "pass",
+    "kind": "positive"
+  },
+  {
+    "module": "SolanaRecovery",
+    "config": "SolanaRecoveryBudget.cfg",
+    "expected": "pass",
+    "kind": "positive"
+  },
+  {
+    "module": "SolanaRecovery",
+    "config": "SolanaRecoveryLimit20.cfg",
+    "expected": "pass",
+    "kind": "positive"
+  },
+  {
+    "module": "SolanaRecovery",
+    "config": "SolanaRecoveryRefreshFault.cfg",
+    "expected": "invariant:AtMostOneEffect",
+    "kind": "fault"
+  },
+  {
+    "module": "SolanaRecovery",
+    "config": "SolanaRecoveryPersistFault.cfg",
+    "expected": "invariant:EverySendDurable",
+    "kind": "fault"
+  },
+  {
+    "module": "SolanaRecovery",
+    "config": "SolanaRecoveryLeaseFault.cfg",
+    "expected": "invariant:TerminalCommitOwned",
+    "kind": "fault"
+  },
+  {
+    "module": "SolanaRecovery",
+    "config": "SolanaRecoveryProviderBoundary.cfg",
+    "expected": "invariant:TerminalHasChainProof",
+    "kind": "boundary"
+  },
+  {
+    "module": "SolanaRecovery",
+    "config": "SolanaRecoveryRedisBoundary.cfg",
+    "expected": "invariant:UnresolvedEvidenceRetained",
+    "kind": "boundary"
+  },
+  {
+    "module": "SolanaRecovery",
+    "config": "SolanaRecoveryReorgBoundary.cfg",
+    "expected": "invariant:TerminalHasChainProof",
+    "kind": "boundary"
+  },
+  {
+    "module": "SolanaRecovery",
+    "config": "SolanaRecoveryLimit20Witness.cfg",
+    "expected": "invariant:BroadcastLimitWitnessNotReached",
+    "kind": "witness"
+  },
+  {
+    "module": "QueueLease",
+    "config": "QueueLease.cfg",
+    "expected": "pass",
+    "kind": "positive"
+  },
+  {
+    "module": "QueueLease",
+    "config": "QueueLease_delayed_prune_bug.cfg",
+    "expected": "invariant:LiveRecordIntegrity",
+    "kind": "fault"
+  },
+  {
+    "module": "QueueLease",
+    "config": "QueueLease_exec_abort_bug.cfg",
+    "expected": "invariant:NoFalseCommit",
+    "kind": "fault"
+  },
+  {
+    "module": "QueueLease",
+    "config": "QueueLease_historical_cancel_bug.cfg",
+    "expected": "invariant:CancellationNoReborrow",
+    "kind": "fault"
+  },
+  {
+    "module": "QueueLease",
+    "config": "QueueLease_id_reuse_bug.cfg",
+    "expected": "invariant:FencedEffects",
+    "kind": "fault"
+  },
+  {
+    "module": "QueueLease",
+    "config": "QueueLease_prune_live_bug.cfg",
+    "expected": "invariant:LiveRecordIntegrity",
+    "kind": "fault"
+  },
+  {
+    "module": "QueueLease",
+    "config": "QueueLease_reuse.cfg",
+    "expected": "pass",
+    "kind": "positive"
+  },
+  {
+    "module": "QueueLease",
+    "config": "QueueLease_shared_session_bug.cfg",
+    "expected": "invariant:FencedEffects",
+    "kind": "fault"
+  },
+  {
+    "module": "QueueLease",
+    "config": "QueueLease_stale_owner_bug.cfg",
+    "expected": "invariant:FencedEffects",
+    "kind": "fault"
+  },
+  {
+    "module": "QueueLease",
+    "config": "QueueLease_permanent.cfg",
+    "expected": "pass",
+    "kind": "positive"
+  },
+  {
+    "module": "QueueLease",
+    "config": "QueueLease_combined.cfg",
+    "expected": "pass",
+    "kind": "positive"
+  },
+  {
+    "module": "QueueLease",
+    "config": "QueueLease_retained_history_bug.cfg",
+    "expected": "invariant:RetainedHistoryIntegrity",
+    "kind": "fault"
+  },
+  {
+    "module": "QueueLease",
+    "config": "QueueLease_orphan_cancel_bug.cfg",
+    "expected": "invariant:RetainedHistoryIntegrity",
+    "kind": "fault"
+  },
+  {
+    "module": "Finality",
+    "config": "Finality.cfg",
+    "expected": "pass",
+    "kind": "positive"
+  },
+  {
+    "module": "Finality",
+    "config": "Finality_early_inclusion.cfg",
+    "expected": "invariant:TerminalRequiresFinality",
+    "kind": "fault"
+  },
+  {
+    "module": "Finality",
+    "config": "Finality_missing_hash.cfg",
+    "expected": "invariant:CanonicalAtCommit",
+    "kind": "fault"
+  },
+  {
+    "module": "Finality",
+    "config": "Finality_revert_early.cfg",
+    "expected": "invariant:RevertNeedsFinality",
+    "kind": "fault"
+  },
+  {
+    "module": "Finality",
+    "config": "Finality_dishonest_provider.cfg",
+    "expected": "invariant:TerminalRequiresFinality",
+    "kind": "boundary"
+  },
+  {
+    "module": "Finality",
+    "config": "Finality_finalized_rollback.cfg",
+    "expected": "invariant:TerminalRemainsCanonical",
+    "kind": "boundary"
+  },
+  {
+    "module": "Finality",
+    "config": "Finality_depth_boundary.cfg",
+    "expected": "invariant:TerminalRemainsCanonical",
+    "kind": "boundary"
+  },
+  {
+    "module": "Finality",
+    "config": "Finality_reinclusion_witness.cfg",
+    "expected": "invariant:ReinclusionWitnessNotReached",
+    "kind": "witness"
+  },
+  {
+    "module": "DisasterRecovery",
+    "config": "DisasterRecovery.cfg",
+    "expected": "pass",
+    "kind": "positive"
+  },
+  {
+    "module": "DisasterRecovery",
+    "config": "DisasterRecovery_send_before_journal.cfg",
+    "expected": "invariant:EverySendJournaled",
+    "kind": "fault"
+  },
+  {
+    "module": "DisasterRecovery",
+    "config": "DisasterRecovery_id_binding.cfg",
+    "expected": "invariant:ImmutableAdmission",
+    "kind": "fault"
+  },
+  {
+    "module": "DisasterRecovery",
+    "config": "DisasterRecovery_key_binding.cfg",
+    "expected": "invariant:ReplayKeyUnique",
+    "kind": "fault"
+  },
+  {
+    "module": "DisasterRecovery",
+    "config": "DisasterRecovery_shared_owner.cfg",
+    "expected": "invariant:NoOldEpochAuthorization",
+    "kind": "fault"
+  },
+  {
+    "module": "DisasterRecovery",
+    "config": "DisasterRecovery_fresh_recovery.cfg",
+    "expected": "invariant:AtMostOneEffectPerId",
+    "kind": "fault"
+  },
+  {
+    "module": "DisasterRecovery",
+    "config": "DisasterRecovery_retry_uid.cfg",
+    "expected": "invariant:OriginalPayloadOnRetry",
+    "kind": "fault"
+  },
+  {
+    "module": "DisasterRecovery",
+    "config": "DisasterRecovery_authority_rollback.cfg",
+    "expected": "invariant:AtMostOneEffectPerId",
+    "kind": "boundary"
+  },
+  {
+    "module": "DisasterRecovery",
+    "config": "DisasterRecovery_late_execution_witness.cfg",
+    "expected": "invariant:LateExecutionWitnessNotReached",
+    "kind": "witness"
+  },
+  {
+    "module": "NonceAllocator",
+    "config": "NonceAllocator.cfg",
+    "expected": "pass",
+    "kind": "positive"
+  },
+  {
+    "module": "NonceAllocator",
+    "config": "NonceAllocator_missing_floor.cfg",
+    "expected": "invariant:ObservedNonceFloor",
+    "kind": "fault"
+  },
+  {
+    "module": "NonceAllocator",
+    "config": "NonceAllocator_old_receipt_witness.cfg",
+    "expected": "invariant:OldReceiptCatchupNotReached",
+    "kind": "witness"
+  },
+  {
+    "module": "DisasterRecovery",
+    "config": "DisasterRecovery_terminal_attribution.cfg",
+    "expected": "invariant:TerminalHasOwnEffect",
+    "kind": "fault"
+  },
+  {
+    "module": "DepthCheckpoint",
+    "config": "DepthCheckpoint.cfg",
+    "expected": "pass",
+    "kind": "positive"
+  },
+  {
+    "module": "DepthCheckpoint",
+    "config": "DepthCheckpoint_tip_anchor.cfg",
+    "expected": "invariant:NoSpuriousHalt",
+    "kind": "fault"
+  },
+  {
+    "module": "DepthCheckpoint",
+    "config": "DepthCheckpoint_missing_halt.cfg",
+    "expected": "invariant:PositiveConflictHalts",
+    "kind": "fault"
+  },
+  {
+    "module": "DepthCheckpoint",
+    "config": "DepthCheckpoint_shallow_witness.cfg",
+    "expected": "invariant:ShallowReorgSurvivalNotReached",
+    "kind": "witness"
+  },
+  {
+    "module": "DepthCheckpoint",
+    "config": "DepthCheckpoint_rollback_boundary.cfg",
+    "expected": "invariant:AcceptedBoundaryRemainsCanonical",
+    "kind": "boundary"
+  }
+]

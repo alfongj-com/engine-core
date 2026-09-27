@@ -1,31 +1,61 @@
 use alloy::{
-    rpc::json_rpc::{RequestPacket, ResponsePacket},
+    rpc::json_rpc::{RequestPacket, Response, ResponsePacket, ResponsePayload},
     transports::{
         TransportError, TransportErrorKind, TransportFut, TransportResult, http::reqwest,
     },
 };
-use std::task;
+use std::{fmt, task};
 use tower::Service;
-use tracing::{Instrument, debug, debug_span, trace};
+use tracing::{Instrument, debug, debug_span};
 
-/// A transport that uses a shared reqwest client but injects custom headers per request
-#[derive(Clone, Debug)]
+/// Engine methods return bounded transaction/receipt data. Reject unexpectedly
+/// large provider responses before retaining their entire body in memory.
+const MAX_RPC_RESPONSE_BYTES: usize = 16 * 1024 * 1024;
+
+/// Endpoint paths, queries, userinfo and even subdomains may contain credentials.
+/// Chain IDs identify the destination in diagnostics without exposing its URL.
+pub fn diagnostic_url(url: &reqwest::Url) -> String {
+    format!("{}://[redacted]", url.scheme())
+}
+
+fn push_url_secret_variants(secrets: &mut Vec<String>, value: &str) {
+    secrets.push(value.to_owned());
+    // Path/userinfo percent decoding preserves '+'. Query form decoding is
+    // collected separately because it also interprets '+' as a space.
+    secrets.push(
+        percent_encoding::percent_decode_str(value)
+            .decode_utf8_lossy()
+            .into_owned(),
+    );
+}
+
+/// Shared HTTP connection pool with request-scoped headers. Credentials are never
+/// installed as client defaults, so one service cannot inherit another's headers.
+#[derive(Clone)]
 pub struct HeaderInjectingTransport {
-    /// The shared reqwest client (this is where connection pooling happens)
     client: reqwest::Client,
-    /// The URL to send requests to
     url: reqwest::Url,
-    /// Headers to inject into every request made by this transport
     custom_headers: reqwest::header::HeaderMap,
 }
 
+impl fmt::Debug for HeaderInjectingTransport {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("HeaderInjectingTransport")
+            .field("endpoint", &diagnostic_url(&self.url))
+            .field("headers", &"[redacted]")
+            .finish()
+    }
+}
+
 impl HeaderInjectingTransport {
-    /// Create a new transport with a shared client and custom headers
     pub fn new(
         client: reqwest::Client,
         url: reqwest::Url,
-        headers: reqwest::header::HeaderMap,
+        mut headers: reqwest::header::HeaderMap,
     ) -> Self {
+        for value in headers.values_mut() {
+            value.set_sensitive(true);
+        }
         Self {
             client,
             url,
@@ -33,7 +63,6 @@ impl HeaderInjectingTransport {
         }
     }
 
-    /// Create a transport with authentication headers
     pub fn with_auth(
         client: reqwest::Client,
         url: reqwest::Url,
@@ -43,85 +72,185 @@ impl HeaderInjectingTransport {
         let mut headers = reqwest::header::HeaderMap::new();
         headers.insert("x-client-id", client_id.parse()?);
         headers.insert("x-secret-key", secret_key.parse()?);
-
         Ok(Self::new(client, url, headers))
     }
 
-    /// The core request handling - similar to alloy's reqwest transport but with header injection
-    async fn do_request(self, req: RequestPacket) -> TransportResult<ResponsePacket> {
-        // Build the HTTP request with custom headers
-        let mut request_builder = self.client.post(self.url).json(&req); // This serializes the JSON-RPC request
-
-        // Inject our custom headers
-        for (name, value) in &self.custom_headers {
-            request_builder = request_builder.header(name, value);
+    fn redact(&self, text: &str) -> String {
+        let mut secrets = vec![self.url.as_str().to_owned()];
+        // Some RPC services put an API key in a subdomain, and may echo only
+        // that label in an error rather than the complete endpoint URL.
+        if let Some(host) = self.url.host_str() {
+            secrets.push(host.to_owned());
         }
+        if let Some(domain) = self.url.domain() {
+            let labels: Vec<_> = domain.split('.').collect();
+            secrets.extend(
+                labels[..labels.len().saturating_sub(2)]
+                    .iter()
+                    .map(|label| (*label).to_owned()),
+            );
+        }
+        for segment in self.url.path_segments().into_iter().flatten() {
+            // URL path segments remain percent-encoded, while providers may
+            // echo their decoded routing/key value.
+            push_url_secret_variants(&mut secrets, segment);
+        }
+        if let Some(query) = self.url.query() {
+            for pair in query.split('&') {
+                if let Some((_, value)) = pair.split_once('=') {
+                    push_url_secret_variants(&mut secrets, value);
+                }
+            }
+        }
+        secrets.extend(self.url.query_pairs().map(|(_, value)| value.into_owned()));
+        push_url_secret_variants(&mut secrets, self.url.username());
+        if let Some(password) = self.url.password() {
+            push_url_secret_variants(&mut secrets, password);
+        }
+        for value in self.custom_headers.values() {
+            if let Ok(value) = value.to_str() {
+                secrets.push(value.to_owned());
+                // Protect a bearer token even if the endpoint omits the scheme when echoing it.
+                if let Some((scheme, token)) = value.split_once(char::is_whitespace) {
+                    if scheme.eq_ignore_ascii_case("bearer") {
+                        secrets.push(token.trim().to_owned());
+                    }
+                }
+            }
+        }
+        secrets.sort_by_key(|value| std::cmp::Reverse(value.len()));
+        let mut result = text.to_owned();
+        for secret in secrets.into_iter().filter(|value| !value.is_empty()) {
+            result = result.replace(&secret, "[redacted]");
+        }
+        result
+    }
 
-        // Send the request using the shared client
-        let resp = request_builder
+    fn redact_response(&self, response: &mut Response) {
+        if let ResponsePayload::Failure(error) = &mut response.payload {
+            error.message = self.redact(&error.message).into();
+            if let Some(data) = &error.data {
+                // Decode before redaction so JSON escaping cannot hide a credential.
+                if let Ok(mut value) = serde_json::from_str::<serde_json::Value>(data.get()) {
+                    self.redact_json(&mut value);
+                    error.data = serde_json::value::to_raw_value(&value).ok();
+                } else {
+                    error.data = None;
+                }
+            }
+        }
+    }
+
+    fn redact_json(&self, value: &mut serde_json::Value) {
+        match value {
+            serde_json::Value::String(text) => *text = self.redact(text),
+            serde_json::Value::Array(items) => {
+                items.iter_mut().for_each(|item| self.redact_json(item))
+            }
+            serde_json::Value::Object(fields) => {
+                // Keys may also contain echoed credentials.
+                let old = std::mem::take(fields);
+                for (key, mut value) in old {
+                    self.redact_json(&mut value);
+                    fields.insert(self.redact(&key), value);
+                }
+            }
+            _ => {}
+        }
+    }
+
+    async fn do_request(self, req: RequestPacket) -> TransportResult<ResponsePacket> {
+        let mut resp = self
+            .client
+            .post(self.url.clone())
+            .json(&req)
+            .headers(self.custom_headers.clone())
             .send()
             .await
-            .map_err(TransportErrorKind::custom)?;
-
+            .map_err(|error| TransportErrorKind::custom(error.without_url()))?;
         let status = resp.status();
-        debug!(?status, "received response from server");
-
-        // Get response body
-        let body = resp.bytes().await.map_err(TransportErrorKind::custom)?;
-        debug!(bytes = body.len(), "retrieved response body");
-        trace!(body = ?String::from_utf8_lossy(&body), "response body");
-
-        // Check for HTTP errors
+        debug!(?status, "RPC HTTP response");
+        // HTTP error pages frequently echo credential-bearing request URLs.
         if !status.is_success() {
             return Err(TransportErrorKind::http_error(
                 status.as_u16(),
-                String::from_utf8_lossy(&body).into_owned(),
+                "RPC response body withheld".into(),
             ));
         }
-
-        // Deserialize JSON-RPC response
-        serde_json::from_slice(&body)
-            .map_err(|err| TransportError::deser_err(err, String::from_utf8_lossy(&body)))
+        let too_large = || {
+            TransportErrorKind::custom(std::io::Error::other(
+                "RPC response exceeded the 16 MiB limit; body withheld",
+            ))
+        };
+        if resp
+            .content_length()
+            .is_some_and(|length| length > MAX_RPC_RESPONSE_BYTES as u64)
+        {
+            return Err(too_large());
+        }
+        let mut body = Vec::new();
+        while let Some(chunk) = resp
+            .chunk()
+            .await
+            .map_err(|error| TransportErrorKind::custom(error.without_url()))?
+        {
+            if chunk.len() > MAX_RPC_RESPONSE_BYTES - body.len() {
+                return Err(too_large());
+            }
+            body.extend_from_slice(&chunk);
+        }
+        let mut response: ResponsePacket = serde_json::from_slice(&body).map_err(|_| {
+            // serde's own diagnostic can echo a malformed string from the body.
+            let error: serde_json::Error = serde::de::Error::custom("Invalid RPC response");
+            TransportError::deser_err(error, "RPC response body withheld")
+        })?;
+        match &mut response {
+            ResponsePacket::Single(item) => self.redact_response(item),
+            ResponsePacket::Batch(items) => {
+                items.iter_mut().for_each(|item| self.redact_response(item))
+            }
+        }
+        Ok(response)
     }
 }
 
-// This is the key implementation - makes it work with alloy's RpcClient
 impl Service<RequestPacket> for HeaderInjectingTransport {
     type Response = ResponsePacket;
     type Error = TransportError;
     type Future = TransportFut<'static>;
 
-    #[inline]
     fn poll_ready(&mut self, _cx: &mut task::Context<'_>) -> task::Poll<Result<(), Self::Error>> {
-        // reqwest always returns ready
         task::Poll::Ready(Ok(()))
     }
 
-    #[inline]
     fn call(&mut self, req: RequestPacket) -> Self::Future {
-        let this = self.clone(); // Clone is cheap - just clones the Arc inside Client
-        let span = debug_span!("HeaderInjectingTransport", url = ?this.url);
-        Box::pin(this.do_request(req).instrument(span))
+        Box::pin(
+            self.clone()
+                .do_request(req)
+                .instrument(debug_span!("RPC HTTP request")),
+        )
     }
 }
 
-/// Builder for creating transports with different header configurations
-/// All transports created by this builder share the same connection pool
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct SharedClientTransportBuilder {
-    /// The shared reqwest client - this is where connection pooling magic happens
     shared_client: reqwest::Client,
 }
 
+impl fmt::Debug for SharedClientTransportBuilder {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("SharedClientTransportBuilder")
+            .finish_non_exhaustive()
+    }
+}
+
 impl SharedClientTransportBuilder {
-    /// Create a new builder with a shared client
     pub fn new(client: reqwest::Client) -> Self {
         Self {
             shared_client: client,
         }
     }
 
-    /// Create a transport with custom headers
     pub fn with_headers(
         &self,
         url: reqwest::Url,
@@ -130,204 +259,162 @@ impl SharedClientTransportBuilder {
         HeaderInjectingTransport::new(self.shared_client.clone(), url, headers)
     }
 
-    /// Create a transport with no additional headers (uses client's defaults)
     pub fn default_transport(&self, url: reqwest::Url) -> HeaderInjectingTransport {
-        HeaderInjectingTransport::new(
-            self.shared_client.clone(),
-            url,
-            reqwest::header::HeaderMap::new(),
-        )
+        self.with_headers(url, reqwest::header::HeaderMap::new())
     }
 }
 
-// // Updated ThirdwebChain implementation
-// use crate::error::EngineError;
-// use crate::rpc_clients::{BundlerClient, PaymasterClient};
-// use alloy::{
-//     providers::{ProviderBuilder, RootProvider},
-//     rpc::client::RpcClient,
-// };
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-// pub struct ThirdwebChain {
-//     /// Builder for creating transports that share the same connection pool
-//     transport_builder: SharedClientTransportBuilder,
+    #[test]
+    fn error_redaction_protects_bearer_tokens_and_credential_subdomains() {
+        let mut headers = reqwest::header::HeaderMap::new();
+        headers.insert("authorization", "bEaReR private-token".parse().unwrap());
+        let transport = HeaderInjectingTransport::new(
+            reqwest::Client::new(),
+            "https://private-subdomain.rpc.example/keypath?token=query-secret"
+                .parse()
+                .unwrap(),
+            headers,
+        );
+        let message =
+            transport.redact("nonce too low: private-subdomain private-token keypath query-secret");
+        assert!(message.starts_with("nonce too low:"));
+        for secret in [
+            "private-subdomain",
+            "private-token",
+            "keypath",
+            "query-secret",
+        ] {
+            assert!(!message.contains(secret), "credential fragment leaked");
+        }
+        // An IP's individual octets are not secret labels. Replacing them would
+        // corrupt ordinary nonce/fee diagnostics and revert data.
+        let local = HeaderInjectingTransport::new(
+            reqwest::Client::new(),
+            "http://127.0.0.1:8788".parse().unwrap(),
+            reqwest::header::HeaderMap::new(),
+        );
+        assert_eq!(
+            local.redact("nonce too low: expected 10"),
+            "nonce too low: expected 10"
+        );
+    }
 
-//     chain_id: u64,
-//     rpc_url: Url,
-//     bundler_url: Url,
-//     paymaster_url: Url,
+    #[test]
+    fn error_redaction_protects_encoded_and_decoded_path_credentials() {
+        let transport = HeaderInjectingTransport::new(
+            reqwest::Client::new(),
+            "https://rpc.example/api%2Fsecret/key%20with+plus/%E2%98%83"
+                .parse()
+                .unwrap(),
+            reqwest::header::HeaderMap::new(),
+        );
+        let mut response: Response = serde_json::from_value(serde_json::json!({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "error": {
+                "code": -32000,
+                "message": "nonce too low: api/secret api%2Fsecret key with+plus key%20with+plus ☃ %E2%98%83",
+                "data": {"api/secret": ["key with+plus", {"nested": "☃"}]}
+            }
+        })).unwrap();
 
-//     /// Default clients (these also use the shared connection pool)
-//     pub bundler_client: BundlerClient,
-//     pub paymaster_client: PaymasterClient,
-//     pub provider: RootProvider,
-// }
+        transport.redact_response(&mut response);
 
-// impl ThirdwebChain {
-//     /// Create a bundler client with custom authentication
-//     /// This is the method you were asking about!
-//     pub fn create_bundler_client_with_auth(
-//         &self,
-//         client_id: &str,
-//         secret_key: &str,
-//     ) -> Result<BundlerClient, reqwest::header::InvalidHeaderValue> {
-//         // Create a transport with custom auth headers
-//         // This transport shares the connection pool with all other transports
-//         let transport =
-//             self.transport_builder
-//                 .with_auth(self.bundler_url.clone(), client_id, secret_key)?;
+        let ResponsePayload::Failure(error) = response.payload else {
+            panic!("expected RPC error");
+        };
+        assert_eq!(error.code, -32000);
+        assert_eq!(
+            error.message,
+            "nonce too low: [redacted] [redacted] [redacted] [redacted] [redacted] [redacted]"
+        );
+        let data: serde_json::Value = serde_json::from_str(error.data.unwrap().get()).unwrap();
+        assert_eq!(
+            data,
+            serde_json::json!({"[redacted]": ["[redacted]", {"nested": "[redacted]"}]})
+        );
+    }
 
-//         // Create RPC client using the custom transport
-//         let rpc_client = RpcClient::builder().transport(transport, false);
+    #[test]
+    fn error_redaction_protects_raw_and_decoded_userinfo_and_query_values() {
+        let transport = HeaderInjectingTransport::new(
+            reqwest::Client::new(),
+            "https://operator%40engine:pass%2Fword+plus@rpc.example/?key=opaque%2Fquery%2Bpart+with%20space"
+                .parse()
+                .unwrap(),
+            reqwest::header::HeaderMap::new(),
+        );
+        let credentials = [
+            "operator%40engine",
+            "operator@engine",
+            "pass%2Fword+plus",
+            "pass/word+plus",
+            "opaque%2Fquery%2Bpart+with%20space",
+            "opaque/query+part+with space",
+            "opaque/query+part with space",
+        ];
+        let mut response: Response = serde_json::from_value(serde_json::json!({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "error": {
+                "code": -32000,
+                "message": format!("authentication failed: {}", credentials.join(" | ")),
+                "data": {"opaque%2Fquery%2Bpart+with%20space": {"operator@engine": "pass/word+plus"}}
+            }
+        })).unwrap();
 
-//         Ok(BundlerClient { inner: rpc_client })
-//     }
+        transport.redact_response(&mut response);
 
-//     /// Create a paymaster client with custom authentication
-//     pub fn create_paymaster_client_with_auth(
-//         &self,
-//         client_id: &str,
-//         secret_key: &str,
-//     ) -> Result<PaymasterClient, reqwest::header::InvalidHeaderValue> {
-//         let transport =
-//             self.transport_builder
-//                 .with_auth(self.paymaster_url.clone(), client_id, secret_key)?;
+        let ResponsePayload::Failure(error) = response.payload else {
+            panic!("expected RPC error");
+        };
+        assert_eq!(error.code, -32000);
+        assert_eq!(
+            error.message,
+            format!("authentication failed: {}", ["[redacted]"; 7].join(" | "))
+        );
+        let data: serde_json::Value = serde_json::from_str(error.data.unwrap().get()).unwrap();
+        assert_eq!(
+            data,
+            serde_json::json!({"[redacted]": {"[redacted]": "[redacted]"}})
+        );
+    }
 
-//         let rpc_client = RpcClient::builder().transport(transport, false);
-//         Ok(PaymasterClient { inner: rpc_client })
-//     }
+    #[test]
+    fn url_redaction_preserves_success_payloads_and_revert_bytes() {
+        let transport = HeaderInjectingTransport::new(
+            reqwest::Client::new(),
+            "https://operator%40engine:pass%2Fword+plus@rpc.example/api%2Fsecret?key=opaque%2Fquery"
+                .parse()
+                .unwrap(),
+            reqwest::header::HeaderMap::new(),
+        );
+        // Successful results can legitimately contain arbitrary strings. Only
+        // RPC error diagnostics are redacted, never successful contract output.
+        let mut success: Response = serde_json::from_str(
+            r#"{"jsonrpc":"2.0","id":1,"result":{"value":"api/secret","encoded":"api%2Fsecret","userinfo":"operator@engine pass/word+plus","query":"opaque/query opaque%2Fquery"}}"#,
+        )
+        .unwrap();
+        let original_success = serde_json::to_string(&success).unwrap();
+        transport.redact_response(&mut success);
+        assert_eq!(serde_json::to_string(&success).unwrap(), original_success);
 
-//     /// Create clients with completely custom headers
-//     pub fn create_bundler_client_with_headers(&self, headers: HeaderMap) -> BundlerClient {
-//         let transport = self
-//             .transport_builder
-//             .with_headers(self.bundler_url.clone(), headers);
-//         let rpc_client = RpcClient::builder().transport(transport, false);
-//         BundlerClient { inner: rpc_client }
-//     }
-// }
-
-// impl<'a> ThirdwebChainConfig<'a> {
-//     pub fn to_chain(&self) -> Result<ThirdwebChain, EngineError> {
-//         let rpc_url = Url::parse(&format!(
-//             "https://{chain_id}.{base_url}/{client_id}",
-//             chain_id = self.chain_id,
-//             base_url = self.rpc_base_url,
-//             client_id = self.client_id,
-//         ))
-//         .map_err(|e| EngineError::RpcConfigError {
-//             message: format!("Failed to parse RPC URL: {}", e.to_string()),
-//         })?;
-
-//         let bundler_url = Url::parse(&format!(
-//             "https://{chain_id}.{base_url}/v2",
-//             chain_id = self.chain_id,
-//             base_url = self.bundler_base_url,
-//         ))
-//         .map_err(|e| EngineError::RpcConfigError {
-//             message: format!("Failed to parse Bundler URL: {}", e.to_string()),
-//         })?;
-
-//         let paymaster_url = Url::parse(&format!(
-//             "https://{chain_id}.{base_url}/v2",
-//             chain_id = self.chain_id,
-//             base_url = self.paymaster_base_url,
-//         ))
-//         .map_err(|e| EngineError::RpcConfigError {
-//             message: format!("Failed to parse Paymaster URL: {}", e.to_string()),
-//         })?;
-
-//         // Create default headers for the shared client
-//         let mut default_headers = HeaderMap::new();
-//         default_headers.insert(
-//             "x-client-id",
-//             reqwest::header::HeaderValue::from_str(&self.client_id).map_err(|e| {
-//                 EngineError::RpcConfigError {
-//                     message: format!("Invalid client-id: {e}"),
-//                 }
-//             })?,
-//         );
-//         default_headers.insert(
-//             "x-secret-key",
-//             reqwest::header::HeaderValue::from_str(&self.secret_key).map_err(|e| {
-//                 EngineError::RpcConfigError {
-//                     message: format!("Invalid secret-key: {e}"),
-//                 }
-//             })?,
-//         );
-
-//         // Create the single shared reqwest client - this is the connection pool
-//         let shared_client = reqwest::ClientBuilder::new()
-//             .default_headers(default_headers)
-//             .build()
-//             .map_err(|e| EngineError::RpcConfigError {
-//                 message: format!("Failed to build HTTP client: {e}"),
-//             })?;
-
-//         // Create the transport builder that will create transports sharing this client
-//         let transport_builder = SharedClientTransportBuilder::new(shared_client);
-
-//         // Create default transports for the default clients
-//         let default_bundler_transport = transport_builder.default_transport(bundler_url.clone());
-//         let default_paymaster_transport =
-//             transport_builder.default_transport(paymaster_url.clone());
-
-//         // Create default RPC clients
-//         let bundler_rpc_client = RpcClient::builder().transport(default_bundler_transport, false);
-//         let paymaster_rpc_client =
-//             RpcClient::builder().transport(default_paymaster_transport, false);
-
-//         Ok(ThirdwebChain {
-//             transport_builder,
-//             chain_id: self.chain_id,
-//             rpc_url: rpc_url.clone(),
-//             bundler_url,
-//             paymaster_url,
-//             bundler_client: BundlerClient {
-//                 inner: bundler_rpc_client,
-//             },
-//             paymaster_client: PaymasterClient {
-//                 inner: paymaster_rpc_client,
-//             },
-//             provider: ProviderBuilder::new()
-//                 .disable_recommended_fillers()
-//                 .connect_http(rpc_url)
-//                 .into(),
-//         })
-//     }
-// }
-
-// // Usage examples showing proper connection sharing
-// impl ThirdwebChainService {
-//     pub async fn send_user_op_with_custom_auth(
-//         &self,
-//         chain_id: u64,
-//         user_op: &crate::userop::UserOpVersion,
-//         entrypoint: alloy_primitives::Address,
-//         client_id: &str,
-//         secret_key: &str,
-//     ) -> Result<alloy_primitives::Bytes, EngineError> {
-//         let chain = self.get_chain(chain_id)?;
-
-//         // This creates a new transport that shares the connection pool
-//         let custom_bundler = chain
-//             .create_bundler_client_with_auth(client_id, secret_key)
-//             .map_err(|e| EngineError::RpcConfigError {
-//                 message: format!("Failed to create client: {e}"),
-//             })?;
-
-//         // When this is called:
-//         // 1. alloy serializes user_op + entrypoint to JSON-RPC
-//         // 2. RpcClient calls our HeaderInjectingTransport.call(RequestPacket)
-//         // 3. Our transport.do_request() is called
-//         // 4. We build reqwest POST with custom headers + JSON body
-//         // 5. shared_client.post().headers().json().send() - reuses connections!
-//         // 6. Response comes back through alloy's deserialization
-//         custom_bundler
-//             .send_user_op(user_op, entrypoint)
-//             .await
-//             .map_err(|e| EngineError::RpcConfigError {
-//                 message: format!("Request failed: {e}"),
-//             })
-//     }
-// }
+        // Solidity Panic(uint256), code 0x11: callers need these exact bytes to
+        // classify the revert rather than a changed or discarded error payload.
+        let revert_bytes =
+            "0x4e487b710000000000000000000000000000000000000000000000000000000000000011";
+        let mut reverted: Response = serde_json::from_value(serde_json::json!({
+            "jsonrpc": "2.0",
+            "id": 2,
+            "error": {"code": 3, "message": "execution reverted", "data": revert_bytes}
+        }))
+        .unwrap();
+        let original_revert = serde_json::to_string(&reverted).unwrap();
+        transport.redact_response(&mut reverted);
+        assert_eq!(serde_json::to_string(&reverted).unwrap(), original_revert);
+    }
+}

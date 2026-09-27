@@ -1,6 +1,6 @@
 use alloy::{
     eips::eip7702::Authorization,
-    primitives::{Address, U256},
+    primitives::{Address, B256, U256},
 };
 use engine_core::{
     chain::{Chain, ChainService, RpcCredentials},
@@ -48,6 +48,8 @@ pub struct Eip7702SendJobData {
     #[serde(default)]
     pub webhook_options: Vec<WebhookOptions>,
     pub rpc_credentials: RpcCredentials,
+    /// Persisted WrappedCalls UID. The legacy JSON field name is retained.
+    /// Missing values must be reconciled rather than retried with a new UID.
     pub nonce: Option<U256>,
 }
 
@@ -180,7 +182,27 @@ where
         &self,
         job: &BorrowedJob<Self::JobData>,
     ) -> JobResult<Self::Output, Self::ErrorData> {
+        super::require_bundled_execution_qualification()
+            .map_err(|error| Eip7702SendError::InternalError {
+                message: error.to_string(),
+            })
+            .map_err_nack(
+                Some(Duration::from_secs(3600)),
+                twmq::job::RequeuePosition::Last,
+            )?;
         let job_data = &job.job.data;
+        crate::recovery::validate("eip7702", &job_data.transaction_id, job_data)
+            .await
+            .map_err(|error| Eip7702SendError::InternalError {
+                message: error.to_string(),
+            })
+            .map_err_nack(
+                Some(Duration::from_secs(10)),
+                twmq::job::RequeuePosition::Last,
+            )?;
+        let call_uid = job_data.nonce.ok_or_else(|| Eip7702SendError::InternalError {
+            message: "Job has no persisted replay UID. Reconcile its on-chain outcome before resubmitting; legacy jobs cannot be retried safely.".to_string(),
+        }).map_err_fail()?;
 
         let now_secs = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
@@ -253,7 +275,8 @@ where
                 account.session_key_transaction(target_address, &job_data.transactions)
             }
             None => account.owner_transaction(&job_data.transactions),
-        };
+        }
+        .with_uid(B256::from(call_uid.to_be_bytes::<32>()));
 
         // Get delegation contract from cache
         let delegation_contract = self
@@ -314,6 +337,29 @@ where
             .map_err(|e| Eip7702SendError::SigningFailed { inner_error: e })
             .map_err_fail()?;
 
+        if let Some(journal) = engine_core::recovery::global() {
+            let replay_key = format!(
+                "eip7702:{}:{owner_address:#x}:{call_uid}",
+                job_data.chain_id
+            );
+            journal
+                .before_broadcast(
+                    "eip7702",
+                    &job_data.transaction_id,
+                    &replay_key,
+                    serde_json::json!({"chainId":job_data.chain_id, "sender":owner_address,
+                    "uid":call_uid, "wrappedCalls":wrapped_calls, "signature":signature,
+                    "authorization":transactions.authorization()}),
+                )
+                .await
+                .map_err(|error| Eip7702SendError::InternalError {
+                    message: error.to_string(),
+                })
+                .map_err_nack(
+                    Some(Duration::from_secs(10)),
+                    twmq::job::RequeuePosition::Last,
+                )?;
+        }
         let transaction_id = transactions
             .account()
             .chain()
@@ -475,9 +521,6 @@ fn is_build_error_retryable(e: &EngineError) -> bool {
         EngineError::PaymasterError { kind, .. } | EngineError::BundlerError { kind, .. } => {
             is_retryable_rpc_error(kind)
         }
-
-        // Vault errors are never retryable (auth/encryption issues)
-        EngineError::VaultError { .. } => false,
 
         // All other errors are not retryable by default
         _ => false,

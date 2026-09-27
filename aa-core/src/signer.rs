@@ -6,6 +6,7 @@ use alloy::{
     sol,
     sol_types::{SolCall, SolValue, eip712_domain},
 };
+use engine_core::signer::MessageFormat;
 use engine_core::{
     chain::Chain,
     credentials::SigningCredential,
@@ -13,7 +14,6 @@ use engine_core::{
     signer::{AccountSigner, EoaSigner, EoaSigningOptions, Erc4337SigningOptions},
 };
 use serde::Serialize;
-use vault_types::enclave::encrypted::eoa::MessageFormat;
 
 use crate::{
     account_factory::{AccountFactory, get_account_factory},
@@ -279,25 +279,14 @@ impl<C: Chain + Clone> SmartAccountSigner<C> {
                 message: "Invalid signature hex".to_string(),
             })?;
 
-        let mut output_buffer = Vec::new();
-
-        // Factory address (20 bytes)
-        output_buffer.extend_from_slice(self.options.entrypoint_details.factory_address.as_slice());
-
-        // Factory calldata length (32 bytes) + calldata
-        let init_code_len = alloy::primitives::U256::from(self.init_calldata.len());
-        output_buffer.extend_from_slice(&init_code_len.to_be_bytes::<32>());
-        output_buffer.extend_from_slice(&self.init_calldata);
-
-        // Signature length (32 bytes) + signature
-        let sig_len = alloy::primitives::U256::from(signature_bytes.len());
-        output_buffer.extend_from_slice(&sig_len.to_be_bytes::<32>());
-        output_buffer.extend_from_slice(&signature_bytes);
-
-        // Magic suffix
-        output_buffer.extend_from_slice(&ERC6492_MAGIC_SUFFIX);
-
-        Ok(format!("0x{}", hex::encode(output_buffer)))
+        Ok(format!(
+            "0x{}",
+            hex::encode(encode_erc6492_signature(
+                self.options.entrypoint_details.factory_address,
+                &self.init_calldata,
+                &signature_bytes,
+            ))
+        ))
     }
 
     /// Hash message according to format
@@ -374,6 +363,61 @@ impl<C: Chain + Clone> SmartAccountSigner<C> {
         } else {
             // Create ERC-6492 signature for undeployed accounts
             self.create_erc6492_signature(&signature).await
+        }
+    }
+}
+
+/// ERC-6492 requires abi.encode(address, bytes, bytes), including dynamic offsets
+/// and word padding, followed by the fixed detection suffix.
+fn encode_erc6492_signature(factory: Address, calldata: &[u8], signature: &[u8]) -> Vec<u8> {
+    let mut encoded = (
+        factory,
+        alloy::primitives::Bytes::copy_from_slice(calldata),
+        alloy::primitives::Bytes::copy_from_slice(signature),
+    )
+        .abi_encode_params();
+    encoded.extend_from_slice(&ERC6492_MAGIC_SUFFIX);
+    encoded
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use alloy::primitives::{Bytes, address};
+
+    #[test]
+    fn erc6492_matches_standard_abi_layout() {
+        // Independent ABI fixture: head words are address, offset 0x60, offset
+        // 0xa0. The two tails contain their length and right-padded payload.
+        let expected = hex::decode(concat!(
+            "0000000000000000000000001111111111111111111111111111111111111111",
+            "0000000000000000000000000000000000000000000000000000000000000060",
+            "00000000000000000000000000000000000000000000000000000000000000a0",
+            "0000000000000000000000000000000000000000000000000000000000000003",
+            "abcdef0000000000000000000000000000000000000000000000000000000000",
+            "0000000000000000000000000000000000000000000000000000000000000002",
+            "1234000000000000000000000000000000000000000000000000000000000000",
+            "6492649264926492649264926492649264926492649264926492649264926492"
+        ))
+        .unwrap();
+        let actual = encode_erc6492_signature(
+            address!("1111111111111111111111111111111111111111"),
+            &[0xab, 0xcd, 0xef],
+            &[0x12, 0x34],
+        );
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn erc6492_verifier_can_decode_empty_and_non_word_aligned_payloads() {
+        for length in [0, 1, 31, 32, 33, 65] {
+            let calldata = vec![0x42; length];
+            let signature = vec![0x24; 65];
+            let encoded = encode_erc6492_signature(Address::ZERO, &calldata, &signature);
+            let (body, suffix) = encoded.split_at(encoded.len() - ERC6492_MAGIC_SUFFIX.len());
+            assert_eq!(suffix, ERC6492_MAGIC_SUFFIX);
+            let decoded = <(Address, Bytes, Bytes)>::abi_decode_params(body).unwrap();
+            assert_eq!(decoded, (Address::ZERO, calldata.into(), signature.into()));
         }
     }
 }

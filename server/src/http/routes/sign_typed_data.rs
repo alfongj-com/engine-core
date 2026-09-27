@@ -104,7 +104,7 @@ pub struct SignResultData {
         ("x-thirdweb-client-id" = Option<String>, Header, description = "Thirdweb client ID, passed along with the service key"),
         ("x-thirdweb-service-key" = Option<String>, Header, description = "Thirdweb service key, passed when using the client ID"),
         ("x-thirdweb-secret-key" = Option<String>, Header, description = "Thirdweb secret key, passed standalone"),
-        ("x-vault-access-token" = Option<String>, Header, description = "Vault access token"),
+
     )
 )]
 /// Sign Typed Data
@@ -147,6 +147,14 @@ async fn sign_single_typed_data(
                 .await
         }
         SigningOptions::ERC4337(smart_account_options) => {
+            if state.chains.is_configured(smart_account_options.chain_id)
+                && !matches!(signing_credential, SigningCredential::Environment { .. })
+            {
+                return BatchResultItem::failure(EngineError::ValidationError {
+                    message: "Configured RPC access requires the authenticated environment signer"
+                        .into(),
+                });
+            }
             // Smart account signing via builder
             match state.chains.get_chain(smart_account_options.chain_id) {
                 Ok(chain) => {

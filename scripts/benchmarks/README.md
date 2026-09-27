@@ -26,7 +26,7 @@ A comprehensive benchmark tool for stress testing the `/v1/write/transaction` en
    FROM=0x1234567890123456789012345678901234567890
    CHAIN_ID=1337
    SECRET_KEY=your-secret-key
-   VAULT_ACCESS_TOKEN=your-vault-access-token
+   ENGINE_SIGNING_TOKEN=your-environment-signing-token
    CONCURRENT_REQUESTS=10
    TOTAL_REQUESTS=100
    ```
@@ -75,7 +75,7 @@ Aggregate results include:
 | `FROM` | *required* | Sender address |
 | `CHAIN_ID` | `1337` | Blockchain network ID |
 | `SECRET_KEY` | *required* | API secret key |
-| `VAULT_ACCESS_TOKEN` | *required* | Vault access token |
+| `ENGINE_SIGNING_TOKEN` | *required* | Configured environment signing token |
 | `CONCURRENT_REQUESTS` | `10` | Number of concurrent requests |
 | `TOTAL_REQUESTS` | `100` | Total number of requests to send |
 

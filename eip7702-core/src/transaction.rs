@@ -1,6 +1,6 @@
 use alloy::{
     dyn_abi::TypedData,
-    primitives::{Address, U256},
+    primitives::{Address, B256, U256},
     sol,
     sol_types::{SolCall, eip712_domain},
 };
@@ -184,6 +184,14 @@ impl<C: Chain> DelegatedAccount<C> {
 }
 
 impl<C: Chain> MinimalAccountTransaction<C> {
+    /// Reuse the durable replay identifier when rebuilding a queued operation.
+    /// Generating another identifier after an ambiguous broadcast can execute
+    /// the same calls twice.
+    pub fn with_uid(mut self, uid: B256) -> Self {
+        self.wrapped_calls.uid = uid;
+        self
+    }
+
     /// Set the authorization for delegation setup
     pub fn set_authorization(&mut self, authorization: alloy::eips::eip7702::SignedAuthorization) {
         self.authorization = Some(authorization);
@@ -306,5 +314,79 @@ impl<C: Chain> MinimalAccountTransaction<C> {
 
         // Use Alloy's native TypedData creation from struct
         TypedData::from_struct(&self.wrapped_calls, Some(domain))
+    }
+}
+
+#[cfg(test)]
+mod replay_identity_tests {
+    use super::*;
+    use alloy::signers::{SignerSync, local::PrivateKeySigner};
+    use engine_core::chain::ThirdwebChainConfig;
+
+    #[test]
+    fn rebuilding_with_persisted_uid_preserves_signed_calls() {
+        let signer = PrivateKeySigner::random();
+        let make_account = || {
+            DelegatedAccount::new(
+                signer.address(),
+                ThirdwebChainConfig {
+                    secret_key: "unused",
+                    client_id: "unused",
+                    chain_id: 31337,
+                    rpc_base_url: "invalid",
+                    bundler_base_url: "invalid",
+                    paymaster_base_url: "invalid",
+                }
+                .to_chain()
+                .unwrap(),
+            )
+        };
+        let calls = [InnerTransaction {
+            to: Some(Address::repeat_byte(0x11)),
+            data: vec![0x12, 0x34].into(),
+            value: U256::from(7),
+            gas_limit: None,
+            transaction_type_data: None,
+        }];
+        let uid = B256::repeat_byte(0x42);
+        for session_key in [false, true] {
+            let build = || {
+                if session_key {
+                    make_account().session_key_transaction(Address::repeat_byte(0x22), &calls)
+                } else {
+                    make_account().owner_transaction(&calls)
+                }
+                .with_uid(uid)
+            };
+            let first = build();
+            let retry = build();
+            assert_eq!(
+                serde_json::to_value(&first.wrapped_calls).unwrap(),
+                serde_json::to_value(&retry.wrapped_calls).unwrap()
+            );
+            let first_hash = first
+                .create_wrapped_calls_typed_data()
+                .eip712_signing_hash()
+                .unwrap();
+            let retry_hash = retry
+                .create_wrapped_calls_typed_data()
+                .eip712_signing_hash()
+                .unwrap();
+            assert_eq!(first_hash, retry_hash);
+            let signature = signer.sign_hash_sync(&first_hash).unwrap();
+            assert_eq!(
+                signature.recover_address_from_prehash(&retry_hash).unwrap(),
+                signer.address()
+            );
+            let changed_hash = build()
+                .with_uid(B256::repeat_byte(0x43))
+                .create_wrapped_calls_typed_data()
+                .eip712_signing_hash()
+                .unwrap();
+            assert_ne!(
+                first_hash, changed_hash,
+                "the UID must participate in replay protection"
+            );
+        }
     }
 }

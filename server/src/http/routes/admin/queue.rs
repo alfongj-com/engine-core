@@ -7,7 +7,10 @@ use axum::{
 use serde::Serialize;
 use utoipa::ToSchema;
 
-use crate::http::{error::ApiEngineError, server::EngineServerState, types::SuccessResponse};
+use crate::http::{
+    error::ApiEngineError, extractors::DiagnosticAuthExtractor, server::EngineServerState,
+    types::SuccessResponse,
+};
 
 // ===== TYPES =====
 
@@ -30,6 +33,7 @@ pub struct EmptyIdempotencySetResponse {
     ),
     params(
         ("queue_name" = String, Path, description = "Queue name - one of: webhook, external_bundler_send, userop_confirm, eoa_executor, eip7702_send, eip7702_confirm"),
+        ("x-diagnostic-access-password" = String, Header, description = "Administrative access password"),
     )
 )]
 /// Empty Queue Idempotency Set
@@ -38,9 +42,15 @@ pub struct EmptyIdempotencySetResponse {
 /// allowing duplicate jobs to be submitted again.
 #[debug_handler]
 pub async fn empty_queue_idempotency_set(
+    _auth: DiagnosticAuthExtractor,
     State(state): State<EngineServerState>,
     Path(queue_name): Path<String>,
 ) -> Result<impl IntoResponse, ApiEngineError> {
+    if engine_core::recovery::global().is_some() && queue_name != "webhook" {
+        return Err(ApiEngineError(engine_core::error::EngineError::ValidationError {
+            message: "Transaction deduplication cannot be cleared while recovery protection is active; reconcile through the offline recovery tool".into(),
+        }));
+    }
     tracing::info!(
         queue_name = queue_name,
         "Processing empty idempotency set request"

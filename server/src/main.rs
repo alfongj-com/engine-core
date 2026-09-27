@@ -23,6 +23,68 @@ use tracing_subscriber::{filter::EnvFilter, layer::SubscriberExt, util::Subscrib
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let config = config::get_config();
+    let arguments: Vec<_> = std::env::args().skip(1).collect();
+    anyhow::ensure!(
+        arguments.len() <= 1,
+        "Expected at most one recovery command"
+    );
+    if arguments
+        .first()
+        .is_some_and(|arg| arg == "--initialize-recovery")
+    {
+        engine_core::recovery::RecoveryJournal::initialize(
+            &config.recovery.journal_path,
+            &config.redis.url,
+            config.queue.execution_namespace.clone(),
+        )
+        .await?;
+        println!("Recovery journal initialized for an empty Redis namespace.");
+        return Ok(());
+    }
+    if arguments
+        .first()
+        .is_some_and(|arg| arg == "--reattach-recovery")
+    {
+        engine_core::recovery::RecoveryJournal::reattach(
+            &config.recovery.journal_path,
+            &config.redis.url,
+            config.queue.execution_namespace.clone(),
+        )
+        .await?;
+        println!("Intact Redis checkpoint reattached; replay bindings retained.");
+        return Ok(());
+    }
+    if arguments
+        .first()
+        .is_some_and(|arg| arg == "--recover-redis")
+    {
+        engine_core::recovery::RecoveryJournal::recover(
+            &config.recovery.journal_path,
+            &config.redis.url,
+            config.queue.execution_namespace.clone(),
+        )
+        .await?;
+        println!("Fresh Redis namespace activated; uncertain broadcasts remain quarantined.");
+        return Ok(());
+    }
+    anyhow::ensure!(
+        arguments.is_empty(),
+        "Unknown command; expected --initialize-recovery, --reattach-recovery or --recover-redis"
+    );
+    let recovery = engine_core::recovery::RecoveryJournal::open(
+        &config.recovery.journal_path,
+        &config.redis.url,
+        config.queue.execution_namespace.clone(),
+    )
+    .await?;
+    engine_core::recovery::install(recovery.clone())?;
+    if std::env::var_os("ENGINE_PRIVATE_KEY").is_some() {
+        anyhow::ensure!(
+            std::env::var("ENGINE_SIGNING_TOKEN").is_ok_and(|token| token.len() >= 32),
+            "ENGINE_SIGNING_TOKEN must contain at least 32 bytes when ENGINE_PRIVATE_KEY is configured"
+        );
+        engine_core::credentials::SigningCredential::environment()?;
+    }
 
     let subscriber = tracing_subscriber::registry()
         .with(EnvFilter::try_from_default_env().unwrap_or_else(|_| {
@@ -39,19 +101,10 @@ async fn main() -> anyhow::Result<()> {
         config::LogFormat::Pretty => subscriber.with(tracing_subscriber::fmt::layer()).init(),
     }
 
-    let vault_client = vault_sdk::VaultClient::builder(config.thirdweb.urls.vault)
-        .build()
-        .await?;
-
-    tracing::info!("Vault client initialized");
-
-    let chains = Arc::new(ThirdwebChainService {
-        secret_key: config.thirdweb.secret.clone(),
-        client_id: config.thirdweb.client_id.clone(),
-        bundler_base_url: config.thirdweb.urls.bundler,
-        paymaster_base_url: config.thirdweb.urls.paymaster,
-        rpc_base_url: config.thirdweb.urls.rpc,
-    });
+    let chains = Arc::new(ThirdwebChainService::new(
+        &config.thirdweb,
+        &config.evm_rpc,
+    )?);
 
     let iaw_client = IAWClient::new(&config.thirdweb.urls.iaw_service)?;
     tracing::info!("IAW client initialized");
@@ -65,11 +118,10 @@ async fn main() -> anyhow::Result<()> {
     tracing::info!("KMS client cache initialized");
 
     let signer = Arc::new(UserOpSigner {
-        vault_client: vault_client.clone(),
         iaw_client: iaw_client.clone(),
     });
-    let eoa_signer = Arc::new(EoaSigner::new(vault_client.clone(), iaw_client.clone()));
-    let solana_signer = Arc::new(SolanaSigner::new(vault_client.clone(), iaw_client));
+    let eoa_signer = Arc::new(EoaSigner::new(iaw_client.clone()));
+    let solana_signer = Arc::new(SolanaSigner::new(iaw_client));
     let redis_client = twmq::redis::Client::open(config.redis.url.as_str())?;
 
     let authorization_cache = EoaAuthorizationCache::new(
@@ -110,6 +162,17 @@ async fn main() -> anyhow::Result<()> {
     tracing::info!("Starting queue workers...");
     let all_workers = queue_manager.start_workers(&config.queue);
 
+    let recovery_monitor = tokio::spawn(async move {
+        let mut interval = tokio::time::interval(Duration::from_secs(1));
+        loop {
+            interval.tick().await;
+            if let Err(error) = recovery.ensure_healthy().await {
+                tracing::error!(error = %error, "Recovery journal halted transaction admission and broadcast");
+                break;
+            }
+        }
+    });
+
     let abi_service = ThirdwebAbiServiceBuilder::new(
         &config.thirdweb.urls.abi_service,
         ThirdwebAuth::SecretKey(config.thirdweb.secret.clone()),
@@ -128,7 +191,6 @@ async fn main() -> anyhow::Result<()> {
         eip7702_confirm_queue: queue_manager.eip7702_confirm_queue.clone(),
         solana_executor_queue: queue_manager.solana_executor_queue.clone(),
         transaction_registry: queue_manager.transaction_registry.clone(),
-        vault_client: Arc::new(vault_client.clone()),
         chains: chains.clone(),
     };
 
@@ -148,7 +210,6 @@ async fn main() -> anyhow::Result<()> {
         solana_signer: solana_signer.clone(),
         solana_rpc_cache: solana_rpc_cache.clone(),
         abi_service: Arc::new(abi_service),
-        vault_client: Arc::new(vault_client),
         chains,
         execution_router: Arc::new(execution_router),
         queue_manager: Arc::new(queue_manager),
@@ -171,6 +232,7 @@ async fn main() -> anyhow::Result<()> {
 
     // Orchestrate shutdown with minimal wrapping since internal methods handle their own instrumentation
     tracing::info!("Starting coordinated shutdown");
+    recovery_monitor.abort();
 
     if let Err(e) = server.shutdown().await {
         tracing::error!("Error during coordinated shutdown: {}", e);

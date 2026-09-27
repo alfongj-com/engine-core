@@ -10,7 +10,10 @@ use serde::Serialize;
 use twmq::{CancelResult as TwmqCancelResult, error::TwmqError};
 use utoipa::ToSchema;
 
-use crate::http::{error::ApiEngineError, server::EngineServerState, types::SuccessResponse};
+use crate::http::{
+    error::ApiEngineError, extractors::DiagnosticAuthExtractor, server::EngineServerState,
+    types::SuccessResponse,
+};
 
 // ===== TYPES =====
 
@@ -42,13 +45,16 @@ pub enum CancelResult {
     ),
     params(
         ("id" = String, Path, description = "Transaction ID to cancel"),
+        ("x-diagnostic-access-password" = String, Header, description = "Administrative access password"),
     )
 )]
 /// Cancel Transaction
 ///
 /// Attempt to cancel a queued transaction. Transactions that have been sent and are waiting for mine cannot be cancelled.
+/// Requires administrative access because transaction IDs do not carry tenant ownership.
 #[debug_handler]
 pub async fn cancel_transaction(
+    _auth: DiagnosticAuthExtractor,
     State(state): State<EngineServerState>,
     Path(transaction_id): Path<String>,
 ) -> Result<impl IntoResponse, ApiEngineError> {
@@ -64,6 +70,27 @@ pub async fn cancel_transaction(
         .get_transaction_queue(&transaction_id)
         .await
         .map_err(|e| ApiEngineError(e.into()))?;
+
+    if queue_name.as_deref() == Some("external_bundler_send") {
+        if let Some(journal) = engine_core::recovery::global() {
+            let admission = journal
+                .admission("erc4337", &transaction_id)
+                .await
+                .map_err(|error| {
+                    ApiEngineError(engine_core::error::EngineError::RecoveryRequired {
+                        message: error.to_string(),
+                    })
+                })?;
+            if admission.is_some_and(|record| record.replay_key.is_some()) {
+                return Ok((StatusCode::OK, Json(SuccessResponse::new(TransactionCancelResponse {
+                    transaction_id,
+                    result: CancelResult::CannotCancel {
+                        reason: "A broadcast attempt is durably reserved; its on-chain outcome may be unknown. Preserve reconciliation rather than cancelling tracking.".into(),
+                    },
+                }))));
+            }
+        }
+    }
 
     let result = match queue_name.as_deref() {
         Some("external_bundler_send") => {

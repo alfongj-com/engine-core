@@ -26,7 +26,7 @@ interface BenchmarkConfig {
   from: string;
   chainId: number;
   secretKey: string;
-  vaultAccessToken?: string;
+  engineSigningToken?: string;
   concurrentRequests: number;
   totalRequests: number;
   awsAccessKeyId?: string;
@@ -90,7 +90,7 @@ const config: BenchmarkConfig = {
   from: process.env.FROM!,
   chainId: parseInt(process.env.CHAIN_ID || "1337"),
   secretKey: process.env.SECRET_KEY!,
-  vaultAccessToken: process.env.VAULT_ACCESS_TOKEN,
+  engineSigningToken: process.env.ENGINE_SIGNING_TOKEN,
   awsAccessKeyId: process.env.AWS_ACCESS_KEY_ID,
   awsKmsArn: process.env.AWS_KMS_ARN,
   awsSecretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
@@ -201,9 +201,9 @@ async function sendTransaction(): Promise<TransactionMetrics> {
       headers: {
         "Content-Type": "application/json",
         "x-thirdweb-secret-key": config.secretKey,
-        ...(config.vaultAccessToken
+        ...(config.engineSigningToken
           ? {
-              "x-vault-access-token": config.vaultAccessToken,
+              "x-engine-signing-token": config.engineSigningToken,
             }
           : {}),
         ...(config.awsAccessKeyId &&

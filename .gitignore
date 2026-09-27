@@ -3,3 +3,20 @@
 .DS_Store
 coverage
 .env.test
+# Local credentials and load artifacts
+.env
+.env.*
+!.env.example
+__pycache__/
+*.pyc
+# Independent recovery authority and credential-bearing private exports
+/server/data/
+/data/
+# Formal verification downloads, solver outputs and local state graphs
+/formal/.cache/
+/formal/results/
+/formal/fees/target/
+/formal/fees/results/
+/formal/tla/states/
+/formal/tla/*_TTrace_*.tla
+/formal/tla/*_TTrace_*.bin

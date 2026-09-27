@@ -28,4 +28,3 @@ alloy = { workspace = true, features = [
   "contract",
   "eip712",
 ] }
-vault-types = { workspace = true }

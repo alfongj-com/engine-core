@@ -1,19 +1,32 @@
-use std::sync::Arc;
+use std::{
+    sync::{Arc, LazyLock},
+    time::Duration,
+};
 
-use axum::{Json, Router, routing::get};
+use axum::{
+    Json, Router,
+    extract::{Request, State},
+    http::{Method, StatusCode},
+    middleware::{self, Next},
+    response::{IntoResponse, Response},
+    routing::get,
+};
 use engine_core::{
     credentials::KmsClientCache,
     signer::{EoaSigner, SolanaSigner},
     userop::UserOpSigner,
 };
 use engine_executors::solana_executor::rpc_cache::SolanaRpcCache;
+use http_body_util::BodyExt;
 use serde_json::json;
 use thirdweb_core::abi::ThirdwebAbiService;
-use tokio::{sync::watch, task::JoinHandle};
+use tokio::{
+    sync::{Semaphore, watch},
+    task::JoinHandle,
+};
 use utoipa::OpenApi;
 use utoipa_axum::{router::OpenApiRouter, routes};
 use utoipa_scalar::{Scalar, Servable};
-use vault_sdk::VaultClient;
 
 use crate::{
     chains::ThirdwebChainService, execution_router::ExecutionRouter,
@@ -32,7 +45,6 @@ pub struct EngineServerState {
     pub solana_signer: Arc<SolanaSigner>,
     pub solana_rpc_cache: Arc<SolanaRpcCache>,
     pub abi_service: Arc<ThirdwebAbiService>,
-    pub vault_client: Arc<VaultClient>,
 
     pub execution_router: Arc<ExecutionRouter>,
     pub queue_manager: Arc<QueueManager>,
@@ -111,8 +123,14 @@ impl EngineServer {
         let router = router
             .merge(Scalar::with_url("/reference", api).custom_html(SCALAR_HTML))
             // health endpoint with 200 and JSON response {}
-            .route("/health", get(|| async { Json(json!({"status": "ok"})) }))
-            .route("/api.json", get(|| async { Json(api_clone) }));
+            .route("/health", get(recovery_health))
+            .route("/api.json", get(|| async { Json(api_clone) }))
+            .layer(middleware::from_fn(recovery_gate))
+            // Outer layer rejects pressure before the journal/auth/handler can queue.
+            .layer(middleware::from_fn_with_state(
+                Arc::new(Semaphore::new(MAX_CONCURRENT_MUTATIONS)),
+                mutation_limit,
+            ));
 
         Self {
             handle: None,
@@ -174,3 +192,113 @@ impl EngineServer {
         Ok(())
     }
 }
+
+const MAX_CONCURRENT_MUTATIONS: usize = 64;
+
+fn is_mutation(method: &Method) -> bool {
+    !matches!(*method, Method::GET | Method::HEAD | Method::OPTIONS)
+}
+
+async fn mutation_limit(
+    State(slots): State<Arc<Semaphore>>,
+    request: Request,
+    next: Next,
+) -> Response {
+    if !is_mutation(request.method()) {
+        return next.run(request).await;
+    }
+    let Ok(permit) = slots.try_acquire_owned() else {
+        let mut response =
+            super::error::ApiEngineError(engine_core::error::EngineError::Overloaded {
+                message: "Too many concurrent mutation requests; retry the same idempotency key"
+                    .into(),
+            })
+            .into_response();
+        response.headers_mut().insert(
+            axum::http::header::RETRY_AFTER,
+            axum::http::HeaderValue::from_static("1"),
+        );
+        return response;
+    };
+    let response = next.run(request).await;
+    response.map(|body| {
+        // Keep the permit until the response body is consumed or dropped. This
+        // also releases it when a client disconnects or a handler is cancelled.
+        axum::body::Body::new(body.map_frame(move |frame| {
+            let _keep_permit = &permit;
+            frame
+        }))
+    })
+}
+
+async fn recovery_gate(request: Request, next: Next) -> Response {
+    if is_mutation(request.method()) {
+        if engine_core::recovery::ensure_healthy().await.is_err() {
+            return (StatusCode::SERVICE_UNAVAILABLE, Json(json!({
+                "error": "RECOVERY_REQUIRED", "message": "Transaction writes and signing are paused; inspect the recovery journal"
+            }))).into_response();
+        }
+    }
+    next.run(request).await
+}
+
+const MAX_CONCURRENT_HEALTH_CHECKS: usize = 4;
+const HEALTH_CHECK_TIMEOUT: Duration = Duration::from_secs(5);
+static HEALTH_CHECK_SLOTS: LazyLock<Arc<Semaphore>> =
+    LazyLock::new(|| Arc::new(Semaphore::new(MAX_CONCURRENT_HEALTH_CHECKS)));
+
+async fn recovery_health() -> Response {
+    bounded_recovery_health(
+        HEALTH_CHECK_SLOTS.clone(),
+        HEALTH_CHECK_TIMEOUT,
+        engine_core::recovery::ensure_healthy(),
+    )
+    .await
+}
+
+/// Public probes must not queue unbounded work on the journal's shared mutex.
+/// Admission/signing fences remain independent and uncached. Only a freshly
+/// completed healthy check returns 200; saturation and timeout mean unknown.
+async fn bounded_recovery_health(
+    slots: Arc<Semaphore>,
+    timeout: Duration,
+    check: impl Future<Output = Result<(), engine_core::recovery::RecoveryError>> + Send + 'static,
+) -> Response {
+    let Ok(permit) = slots.try_acquire_owned() else {
+        let mut response = (
+            StatusCode::SERVICE_UNAVAILABLE,
+            Json(json!({"status": "busy"})),
+        )
+            .into_response();
+        response.headers_mut().insert(
+            axum::http::header::RETRY_AFTER,
+            axum::http::HeaderValue::from_static("1"),
+        );
+        return response;
+    };
+    // The journal can await blocking SQLite work and persist a detected halt.
+    // Neither a disconnected client nor this HTTP deadline may cancel it and
+    // free its slot while that work still runs. A detached task owns the slot
+    // until completion; four stuck checks remain four, with no readiness cache.
+    let mut task = tokio::spawn(async move {
+        let _permit = permit;
+        check.await
+    });
+    match tokio::time::timeout(timeout, &mut task).await {
+        Ok(Ok(Ok(()))) => Json(json!({"status": "ok"})).into_response(),
+        Ok(Ok(Err(_))) => (
+            StatusCode::SERVICE_UNAVAILABLE,
+            Json(json!({"status": "recovery_required"})),
+        )
+            .into_response(),
+        Err(_) | Ok(Err(_)) => (
+            StatusCode::SERVICE_UNAVAILABLE,
+            Json(json!({"status": "unknown"})),
+        )
+            .into_response(),
+    }
+}
+
+#[cfg(test)]
+#[path = "server_tests.rs"]
+mod tests;

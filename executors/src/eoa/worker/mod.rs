@@ -8,6 +8,7 @@ use engine_core::{
     signer::EoaSigner,
 };
 use engine_eip7702_core::delegated_account::DelegatedAccount;
+use futures::StreamExt;
 use serde::{Deserialize, Serialize};
 use std::{sync::Arc, time::Duration};
 use twmq::Queue;
@@ -30,13 +31,10 @@ pub mod error;
 mod send;
 mod transaction;
 
-use error::{EoaExecutorWorkerError, SendContext};
+#[cfg(test)]
+mod scheduling_tests;
 
-// ========== SPEC-COMPLIANT CONSTANTS ==========
-const MAX_INFLIGHT_PER_EOA: u64 = 100; // Default from spec
-const MAX_RECYCLED_THRESHOLD: u64 = 50; // Circuit breaker from spec
-const TARGET_TRANSACTIONS_PER_EOA: u64 = 10; // Fleet management from spec
-const MIN_TRANSACTIONS_PER_EOA: u64 = 1; // Fleet management from spec
+use error::{EoaExecutorWorkerError, SendContext};
 
 const MAX_PENDING_TRANSACTION_AGE_MS: u64 = 24 * 60 * 60 * 1000;
 const MAX_STALE_PENDING_PER_CYCLE: u64 = 500;
@@ -60,7 +58,7 @@ pub struct EoaExecutorWorkerResult {
     /// Number of transactions we confirmed
     pub confirmed_transactions: u32,
 
-    /// Number of transactions we failed due to deterministic errors
+    /// Number of mined transactions whose execution reverted in this cycle
     pub failed_transactions: u32,
 
     /// Number of transactions we sent
@@ -90,6 +88,29 @@ impl EoaExecutorWorkerResult {
             || self.recycled_nonces > 0
             || self.submitted_transactions > 0
     }
+
+    fn into_job_result(self, delegation: Option<bool>) -> JobResult<Self, EoaExecutorWorkerError> {
+        if !self.is_work_remaining() {
+            return Ok(self);
+        }
+
+        // Yield the queue slot after each bounded send cycle, but do not put
+        // useful unsigned backlog behind TWMQ's one-second minimum delay.
+        // Unknown dispatches do not increment these progress counters. Keep
+        // ordinary polling delays unless non-delegation was positively read.
+        let delay = match delegation {
+            Some(true) => Some(Duration::from_secs(2)),
+            Some(false)
+                if self.pending_transactions > 0
+                    && (self.sent_transactions > 0 || self.recovered_transactions > 0) =>
+            {
+                None
+            }
+            _ => Some(Duration::from_millis(200)),
+        };
+        Err(EoaExecutorWorkerError::WorkRemaining { result: self })
+            .map_err_nack(delay, RequeuePosition::Last)
+    }
 }
 
 // ========== MAIN WORKER ==========
@@ -118,10 +139,12 @@ where
     pub authorization_cache: EoaAuthorizationCache,
 
     pub redis: ConnectionManager,
+    pub redis_client: twmq::redis::Client,
     pub namespace: Option<String>,
 
     pub eoa_signer: Arc<EoaSigner>,
     pub max_inflight: u64, // Note: Spec uses MAX_INFLIGHT_PER_EOA constant
+    pub broadcast_concurrency: usize,
     pub max_recycled_nonces: u64, // Note: Spec uses MAX_RECYCLED_THRESHOLD constant
 
     // EOA metrics abstraction with encapsulated configuration
@@ -169,22 +192,22 @@ where
             data.chain_id,
             self.completed_transaction_ttl_seconds,
         )
-        .acquire_eoa_lock_aggressively(&worker_id, self.eoa_metrics.clone())
+        .acquire_eoa_lock_aggressively(&worker_id, self.eoa_metrics.clone(), &self.redis_client)
         .await
         .map_err(|e| Into::<EoaExecutorWorkerError>::into(e).handle())?;
 
         let delegated_account = DelegatedAccount::new(data.eoa_address, chain.clone());
 
         // if there's an error checking 7702 delegation here, we'll just assume it's not a minimal account for the purposes of max in flight
-        let is_minimal_account = self
+        let delegation = self
             .authorization_cache
             .is_minimal_account(&delegated_account, None)
             .await
             .inspect_err(|e| {
                 tracing::error!(error = ?e, "Error checking 7702 delegation");
             })
-            .ok()
-            .unwrap_or(false);
+            .ok();
+        let is_minimal_account = delegation.unwrap_or(false);
 
         let chain_id = chain.chain_id();
 
@@ -208,6 +231,7 @@ where
             } else {
                 self.max_inflight
             },
+            broadcast_concurrency: self.broadcast_concurrency,
             max_recycled_nonces: self.max_recycled_nonces,
             webhook_queue: self.webhook_queue.clone(),
             signer: self.eoa_signer.clone(),
@@ -240,26 +264,7 @@ where
             "JOB_LIFECYCLE - EOA executor job completed"
         );
 
-        let delay = if is_minimal_account {
-            Some(Duration::from_secs(2))
-        } else {
-            Some(Duration::from_millis(200))
-        };
-
-        if result.is_work_remaining() {
-            Err(EoaExecutorWorkerError::WorkRemaining { result })
-                .map_err_nack(delay, RequeuePosition::Last)
-        } else {
-            Ok(result)
-        }
-
-        // // initiate health data if doesn't exist
-        // self.get_eoa_health(&scoped, &chain)
-        //     .await
-        //     .map_err_nack(Some(Duration::from_secs(10)), RequeuePosition::Last)?;
-
-        // // Execute main workflow with proper error handling
-        // self.execute_main_workflow(&scoped, &chain).await
+        result.into_job_result(delegation)
     }
 
     async fn on_success(
@@ -299,6 +304,7 @@ pub struct EoaExecutorWorker<C: Chain> {
     pub noop_signing_credential: SigningCredential,
 
     pub max_inflight: u64,
+    pub broadcast_concurrency: usize,
     pub max_recycled_nonces: u64,
 
     pub webhook_queue: Arc<Queue<WebhookJobHandler>>,
@@ -358,7 +364,8 @@ impl<C: Chain> EoaExecutorWorker<C> {
             worker_id = self.store.worker_id(),
             duration_seconds = duration,
             confirmed = confirmations_report.moved_to_success,
-            failed = confirmations_report.moved_to_pending,
+            failed = confirmations_report.moved_to_failed,
+            replaced = confirmations_report.moved_to_pending,
             "JOB_LIFECYCLE - Confirm flow completed"
         );
 
@@ -395,7 +402,7 @@ impl<C: Chain> EoaExecutorWorker<C> {
         tracing::info!(
             recovered = recovered,
             confirmed = confirmations_report.moved_to_success,
-            temp_failed = confirmations_report.moved_to_pending,
+            failed = confirmations_report.moved_to_failed,
             replacements = confirmations_report.moved_to_pending,
             currently_submitted = counts.submitted_transactions,
             currently_pending = counts.pending_transactions,
@@ -407,7 +414,7 @@ impl<C: Chain> EoaExecutorWorker<C> {
         Ok(EoaExecutorWorkerResult {
             recovered_transactions: recovered,
             confirmed_transactions: confirmations_report.moved_to_success as u32,
-            failed_transactions: confirmations_report.moved_to_pending as u32,
+            failed_transactions: confirmations_report.moved_to_failed as u32,
             sent_transactions: sent,
             replaced_transactions: confirmations_report.moved_to_pending as u32,
             submitted_transactions: counts.submitted_transactions as u32,
@@ -477,56 +484,86 @@ impl<C: Chain> EoaExecutorWorker<C> {
         }
 
         tracing::warn!(
-            "Recovering {} borrowed transactions. This indicates a worker crash or system issue",
+            "Reconciling {} retained borrowed transactions after interruption or uncertain dispatch",
             borrowed_transactions.len()
         );
 
         // Sort borrowed transactions by nonce to ensure proper ordering
         borrowed_transactions.sort_by_key(|tx| tx.signed_transaction.nonce());
 
-        // Rebroadcast all transactions in parallel
-        let rebroadcast_futures: Vec<_> = borrowed_transactions
-            .iter()
-            .map(|borrowed| {
-                let tx_envelope = borrowed.signed_transaction.clone().into();
-                let nonce = borrowed.signed_transaction.nonce();
-                let transaction_id = borrowed.transaction_id.clone();
-
-                tracing::info!(
-                    transaction_id = ?transaction_id,
-                    nonce = nonce,
-                    "Recovering borrowed transaction"
-                );
-
-                async move {
-                    let send_result = self.chain.provider().send_tx_envelope(tx_envelope).await;
-                    (borrowed, send_result)
+        // A crash can leave the Redis projection behind a durable final outcome.
+        // Restore it to submitted and revalidate the final receipt; never rebroadcast.
+        let mut submission_results = Vec::new();
+        let mut to_broadcast = Vec::new();
+        for borrowed in &borrowed_transactions {
+            let terminal_hash = if let Some(journal) = engine_core::recovery::global() {
+                crate::finality::terminal_eoa_projection(
+                    &journal,
+                    &borrowed.user_request,
+                    borrowed.signed_transaction.nonce(),
+                )
+                .await
+                .map_err(crate::recovery::eoa_error)?
+            } else {
+                None
+            };
+            if let Some(hash) = terminal_hash {
+                let mut transaction: crate::eoa::store::SubmittedTransaction =
+                    borrowed.clone().into();
+                transaction.data.transaction_hash = hash.to_string();
+                submission_results.push(SubmissionResult {
+                    transaction,
+                    result: crate::eoa::store::SubmissionResultType::Reconcile,
+                });
+            } else {
+                crate::recovery::before_eoa(&borrowed.user_request, &borrowed.signed_transaction)
+                    .await?;
+                to_broadcast.push(borrowed.clone());
+            }
+        }
+        // Broadcast tuning must not increase the existing borrowed-receipt
+        // lookup fanout. Release the read permit before awaiting the raw send.
+        let receipt_slots = tokio::sync::Semaphore::new(32);
+        let receipt_slots = &receipt_slots;
+        let recovery_results =
+            futures::stream::iter(to_broadcast.into_iter().map(|borrowed| async move {
+                let hash = *borrowed.signed_transaction.hash();
+                // A matching inclusion permits receipt polling, not a terminal outcome.
+                // Wrong-hash, absent or failed reads are unknown; retry the original wire.
+                let receipt = {
+                    let _permit = receipt_slots
+                        .acquire()
+                        .await
+                        .expect("local receipt semaphore is never closed");
+                    self.chain.provider().get_transaction_receipt(hash).await
+                };
+                if let Ok(Some(receipt)) = receipt {
+                    if receipt.transaction_hash == hash
+                        && receipt.block_number.is_some()
+                        && receipt.block_hash.is_some()
+                    {
+                        return SubmissionResult {
+                            transaction: borrowed.clone().into(),
+                            result: crate::eoa::store::SubmissionResultType::Reconcile,
+                        };
+                    }
                 }
-            })
-            .collect();
-
-        let rebroadcast_results = futures::future::join_all(rebroadcast_futures).await;
-
-        // Convert results to SubmissionResult for batch processing
-        let submission_results: Vec<SubmissionResult> = rebroadcast_results
-            .into_iter()
-            .map(|(borrowed, send_result)| {
+                let send_result = self
+                    .chain
+                    .provider()
+                    .send_tx_envelope(borrowed.signed_transaction.clone().into())
+                    .await;
                 SubmissionResult::from_send_result(
-                    borrowed,
+                    &borrowed,
                     send_result,
                     SendContext::Rebroadcast,
                     &self.chain,
                 )
-            })
-            .collect();
-
-        // TODO: Implement post-processing analysis for balance threshold updates and nonce resets
-        // Currently we lose the granular error handling that was in the individual atomic operations.
-        // Consider:
-        // 1. Analyzing submission_results for specific error patterns
-        // 2. Calling update_balance_threshold if needed
-        // 3. Detecting nonce reset conditions
-        // 4. Or move this logic into the batch processor itself
+            }))
+            .buffered(self.broadcast_concurrency)
+            .collect::<Vec<_>>()
+            .await;
+        submission_results.extend(recovery_results);
 
         // Process all results in one batch operation
         let report = self
@@ -534,18 +571,12 @@ impl<C: Chain> EoaExecutorWorker<C> {
             .process_borrowed_transactions(submission_results, self.webhook_queue.clone())
             .await?;
 
-        // TODO: Handle post-processing updates here if needed
-        // For now, we skip the individual error analysis that was done in the old atomic approach
-
         tracing::info!(
-            "Recovered {} transactions: {} submitted, {} recycled, {} failed",
-            report.total_processed,
-            report.moved_to_submitted,
-            report.moved_to_pending,
-            report.failed_transactions
+            submitted = report.moved_to_submitted,
+            uncertain = report.retained_uncertain,
+            "Borrowed recovery cycle completed"
         );
-
-        Ok(report.total_processed as u32)
+        Ok(report.moved_to_submitted as u32)
     }
 
     // ========== HEALTH ACCESSOR ==========
@@ -583,6 +614,8 @@ impl<C: Chain> EoaExecutorWorker<C> {
                     last_confirmation_at: now,
                     last_nonce_movement_at: now,
                     nonce_resets: Vec::new(),
+                    last_finality_poll_at: 0,
+                    finality_scan_offset: 0,
                 };
 
                 // Save to store

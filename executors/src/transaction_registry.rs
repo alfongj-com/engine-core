@@ -29,7 +29,7 @@ impl TransactionRegistry {
         Self { redis, namespace }
     }
 
-    fn registry_key(&self) -> String {
+    pub fn registry_key(&self) -> String {
         match &self.namespace {
             Some(ns) => format!("{ns}:tx_registry"),
             None => "tx_registry".to_string(),

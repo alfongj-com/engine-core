@@ -18,15 +18,12 @@ resolver = "2"
 alloy = { version = "1.0.36" }
 alloy-signer-aws = { version = "1.0.23" }
 
-# Vault
-vault-types = { version = "0.1.0", git = "ssh://git@github.com/thirdweb-dev/vault.git", branch = "main" }
-vault-sdk = { version = "0.1.0", git = "ssh://git@github.com/thirdweb-dev/vault.git", branch = "main" }
 
 # Solana
 solana-sdk = "3.0"
-solana-client = "3.0"
+solana-rpc-client = "3.0"
+solana-rpc-client-api = "3.0"
 solana-transaction-status = "3.0"
-solana-connection-cache = "3.0"
 solana-commitment-config = "3.0"
 solana-compute-budget-interface = "3.0"
 solana-system-interface = { version = "2.0", features = ["bincode"] }
@@ -35,8 +32,10 @@ spl-token-2022-interface = "2.1"
 
 # AWS
 aws-config = "1.8.2"
-aws-sdk-kms = "1.79.0"
+aws-sdk-kms = { version = "1.79.0", default-features = false, features = ["rt-tokio", "default-https-client"] }
 aws-credential-types = "1.2.4"
+# aws-config 1.12 uses smithy-json 0.63, which is incompatible with Document in types 1.7.
+aws-smithy-types = "=1.6.3"
 
 # Serialization
 serde = { version = "1.0.228", features = ["derive"] }
@@ -90,7 +89,7 @@ hmac = "0.12.1"
 sha2 = "0.10.9"
 
 # Metrics
-prometheus = "0.13.4"
+prometheus = { version = "0.13.4", default-features = false }
 lazy_static = "1.5.0"
 
 # Configuration

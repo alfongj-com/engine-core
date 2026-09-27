@@ -172,7 +172,7 @@ impl AccountSigner for MockEoaSigner {
         &self,
         _options: EoaSigningOptions,
         _message: &str,
-        _format: vault_types::enclave::encrypted::eoa::MessageFormat,
+        _format: engine_core::signer::MessageFormat,
         credentials: &SigningCredential,
     ) -> Result<String, EngineError> {
         match credentials {
@@ -654,6 +654,7 @@ impl TestSetup {
 }
 
 #[tokio::test]
+#[ignore = "requires live Thirdweb bundler and Base Sepolia contract bytecode; see testing design"]
 async fn test_eip7702_integration() -> Result<(), Box<dyn std::error::Error>> {
     // Set up test environment
     let mut setup = TestSetup::new().await?;

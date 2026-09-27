@@ -9,7 +9,9 @@ use twmq::error::TwmqError;
 use twmq::job::{BorrowedJob, JobResult};
 use twmq::{DurableExecution, MultilaneQueue, UserCancellable};
 
-const REDIS_URL: &str = "redis://127.0.0.1:6379/";
+fn redis_url() -> String {
+    std::env::var("TEST_REDIS_URL").expect("set TEST_REDIS_URL to a disposable Redis instance")
+}
 
 // Simple test job that just holds an ID
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -74,7 +76,7 @@ impl MultilaneTestHarness {
         let handler = DummyHandler;
 
         let queue = Arc::new(
-            MultilaneQueue::new(REDIS_URL, &queue_id, None, handler)
+            MultilaneQueue::new(&redis_url(), &queue_id, None, handler)
                 .await
                 .expect("Failed to create multilane queue"),
         );

@@ -11,8 +11,6 @@ use alloy::{
 use serde::{Deserialize, Serialize};
 use serde_with::{DisplayFromStr, PickFirst, serde_as};
 use thirdweb_core::iaw::IAWClient;
-use vault_sdk::VaultClient;
-use vault_types::enclave::encrypted::eoa::MessageFormat;
 
 use crate::{
     credentials::SigningCredential,
@@ -20,6 +18,14 @@ use crate::{
     error::{EngineError, SerialisableAwsSdkError, SerialisableAwsSignerError},
     execution_options::aa::{EntrypointAndFactoryDetails, EntrypointAndFactoryDetailsDeserHelper},
 };
+
+/// Encoding of a message before EIP-191 personal signing.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, utoipa::ToSchema)]
+#[serde(rename_all = "lowercase")]
+pub enum MessageFormat {
+    Text,
+    Hex,
+}
 
 /// EOA signing options
 #[serde_as]
@@ -202,17 +208,13 @@ pub trait AccountSigner {
 /// EOA signer implementation
 #[derive(Clone)]
 pub struct EoaSigner {
-    pub vault_client: VaultClient,
     pub iaw_client: IAWClient,
 }
 
 impl EoaSigner {
     /// Create a new EOA signer
-    pub fn new(vault_client: VaultClient, iaw_client: IAWClient) -> Self {
-        Self {
-            vault_client,
-            iaw_client,
-        }
+    pub fn new(iaw_client: IAWClient) -> Self {
+        Self { iaw_client }
     }
 }
 
@@ -225,24 +227,9 @@ impl AccountSigner for EoaSigner {
         credentials: &SigningCredential,
     ) -> Result<String, EngineError> {
         match credentials {
-            SigningCredential::Vault(auth_method) => {
-                let vault_result = self
-                    .vault_client
-                    .sign_message(
-                        auth_method.clone(),
-                        message.to_string(),
-                        options.from,
-                        options.chain_id,
-                        Some(format),
-                    )
-                    .await
-                    .map_err(|e| {
-                        tracing::error!("Error signing message with EOA (Vault): {:?}", e);
-                        e
-                    })?;
-
-                Ok(vault_result.signature)
-            }
+            SigningCredential::SolanaEnvironment { .. } => Err(EngineError::ValidationError {
+                message: "Solana credentials cannot sign EVM payloads".into(),
+            }),
             SigningCredential::Iaw {
                 auth_token,
                 thirdweb_auth,
@@ -273,6 +260,10 @@ impl AccountSigner for EoaSigner {
             }
             SigningCredential::AwsKms(creds) => {
                 let signer = creds.get_signer(options.chain_id).await?;
+                crate::credentials::validate_signer_address(
+                    Signer::address(&signer),
+                    options.from,
+                )?;
                 let message = match format {
                     MessageFormat::Text => message.to_string().into_bytes(),
                     MessageFormat::Hex => {
@@ -295,7 +286,12 @@ impl AccountSigner for EoaSigner {
                 })?;
                 Ok(signature.to_string())
             }
-            SigningCredential::PrivateKey(signer) => {
+            SigningCredential::PrivateKey(_) | SigningCredential::Environment { .. } => {
+                let signer = credentials.local_signer()?;
+                crate::credentials::validate_signer_address(
+                    Signer::address(&signer),
+                    options.from,
+                )?;
                 let message_bytes = match format {
                     MessageFormat::Text => message.to_string().into_bytes(),
                     MessageFormat::Hex => {
@@ -323,18 +319,9 @@ impl AccountSigner for EoaSigner {
         credentials: &SigningCredential,
     ) -> Result<String, EngineError> {
         match &credentials {
-            SigningCredential::Vault(auth_method) => {
-                let vault_result = self
-                    .vault_client
-                    .sign_typed_data(auth_method.clone(), typed_data.clone(), options.from)
-                    .await
-                    .map_err(|e| {
-                        tracing::error!("Error signing typed data with EOA (Vault): {:?}", e);
-                        e
-                    })?;
-
-                Ok(vault_result.signature)
-            }
+            SigningCredential::SolanaEnvironment { .. } => Err(EngineError::ValidationError {
+                message: "Solana credentials cannot sign EVM payloads".into(),
+            }),
             SigningCredential::Iaw {
                 auth_token,
                 thirdweb_auth,
@@ -353,6 +340,10 @@ impl AccountSigner for EoaSigner {
 
             SigningCredential::AwsKms(creds) => {
                 let signer = creds.get_signer(options.chain_id).await?;
+                crate::credentials::validate_signer_address(
+                    Signer::address(&signer),
+                    options.from,
+                )?;
 
                 // TODO: create serialisable error for @alloy-signer::error::Error
                 let signature = signer
@@ -370,7 +361,12 @@ impl AccountSigner for EoaSigner {
                     })?;
                 Ok(signature.to_string())
             }
-            SigningCredential::PrivateKey(signer) => {
+            SigningCredential::PrivateKey(_) | SigningCredential::Environment { .. } => {
+                let signer = credentials.local_signer()?;
+                crate::credentials::validate_signer_address(
+                    Signer::address(&signer),
+                    options.from,
+                )?;
                 let signature = signer
                     .sign_dynamic_typed_data(typed_data)
                     .await
@@ -392,18 +388,9 @@ impl AccountSigner for EoaSigner {
         credentials: &SigningCredential,
     ) -> Result<String, EngineError> {
         match credentials {
-            SigningCredential::Vault(auth_method) => {
-                let vault_result = self
-                    .vault_client
-                    .sign_transaction(auth_method.clone(), transaction.clone(), options.from)
-                    .await
-                    .map_err(|e| {
-                        tracing::error!("Error signing transaction with EOA (Vault): {:?}", e);
-                        e
-                    })?;
-
-                Ok(vault_result.signature)
-            }
+            SigningCredential::SolanaEnvironment { .. } => Err(EngineError::ValidationError {
+                message: "Solana credentials cannot sign EVM payloads".into(),
+            }),
             SigningCredential::Iaw {
                 auth_token,
                 thirdweb_auth,
@@ -421,6 +408,10 @@ impl AccountSigner for EoaSigner {
             }
             SigningCredential::AwsKms(creds) => {
                 let signer = creds.get_signer(options.chain_id).await?;
+                crate::credentials::validate_signer_address(
+                    Signer::address(&signer),
+                    options.from,
+                )?;
                 let mut transaction = transaction.clone();
 
                 // TODO: create serialisable error for @alloy-signer::error::Error
@@ -439,7 +430,12 @@ impl AccountSigner for EoaSigner {
                     })?;
                 Ok(signature.to_string())
             }
-            SigningCredential::PrivateKey(signer) => {
+            SigningCredential::PrivateKey(_) | SigningCredential::Environment { .. } => {
+                let signer = credentials.local_signer()?;
+                crate::credentials::validate_signer_address(
+                    Signer::address(&signer),
+                    options.from,
+                )?;
                 let mut transaction = transaction.clone();
                 let signature = signer
                     .sign_transaction(&mut transaction)
@@ -470,19 +466,9 @@ impl AccountSigner for EoaSigner {
             nonce,
         };
         match credentials {
-            SigningCredential::Vault(auth_method) => {
-                let vault_result = self
-                    .vault_client
-                    .sign_authorization(auth_method.clone(), options.from, authorization)
-                    .await
-                    .map_err(|e| {
-                        tracing::error!("Error signing authorization with EOA (Vault): {:?}", e);
-                        e
-                    })?;
-
-                // Return the signed authorization as Authorization
-                Ok(vault_result.signed_authorization)
-            }
+            SigningCredential::SolanaEnvironment { .. } => Err(EngineError::ValidationError {
+                message: "Solana credentials cannot sign EVM payloads".into(),
+            }),
             SigningCredential::Iaw {
                 auth_token,
                 thirdweb_auth,
@@ -501,6 +487,10 @@ impl AccountSigner for EoaSigner {
             }
             SigningCredential::AwsKms(creds) => {
                 let signer = creds.get_signer(options.chain_id).await?;
+                crate::credentials::validate_signer_address(
+                    Signer::address(&signer),
+                    options.from,
+                )?;
                 let authorization_hash = authorization.signature_hash();
 
                 let signature = signer.sign_hash(&authorization_hash).await.map_err(|e| {
@@ -516,7 +506,12 @@ impl AccountSigner for EoaSigner {
 
                 Ok(authorization.into_signed(signature))
             }
-            SigningCredential::PrivateKey(signer) => {
+            SigningCredential::PrivateKey(_) | SigningCredential::Environment { .. } => {
+                let signer = credentials.local_signer()?;
+                crate::credentials::validate_signer_address(
+                    Signer::address(&signer),
+                    options.from,
+                )?;
                 let authorization_hash = authorization.signature_hash();
                 let signature = signer.sign_hash_sync(&authorization_hash).map_err(|e| {
                     tracing::error!("Error signing authorization with EOA (PrivateKey): {:?}", e);
@@ -552,78 +547,53 @@ fn default_account_salt() -> String {
 /// Solana Signer Implementation
 #[derive(Clone)]
 pub struct SolanaSigner {
-    pub vault_client: VaultClient,
     pub iaw_client: IAWClient,
 }
 
 impl SolanaSigner {
     /// Create a new Solana signer
-    pub fn new(vault_client: VaultClient, iaw_client: IAWClient) -> Self {
-        Self {
-            vault_client,
-            iaw_client,
-        }
+    pub fn new(iaw_client: IAWClient) -> Self {
+        Self { iaw_client }
     }
 
-    /// Sign a Solana transaction using Vault
+    /// Sign only the configured payer's slot. Preserve the message and valid
+    /// co-signatures; a partially signed transaction must supply every other signer.
     pub async fn sign_transaction(
         &self,
         mut transaction: solana_sdk::transaction::VersionedTransaction,
         from: solana_sdk::pubkey::Pubkey,
         credentials: &SigningCredential,
     ) -> Result<solana_sdk::transaction::VersionedTransaction, EngineError> {
-        let signature = match credentials {
-            SigningCredential::Vault(auth_method) => {
-                let vault_result = self
-                    .vault_client
-                    .sign_solana_transaction(auth_method.clone(), transaction.clone(), from)
-                    .await
-                    .map_err(|e| {
-                        tracing::error!("Error signing Solana transaction (Vault): {:?}", e);
-                        e
-                    })?;
-
-                vault_result.signature
-            }
-            SigningCredential::Iaw { .. } => {
-                return Err(EngineError::ValidationError {
-                    message: "IAW does not support Solana transaction signing".to_string(),
-                });
-            }
-            SigningCredential::AwsKms(_) => {
-                // AWS KMS does not support Solana signing yet
-                return Err(EngineError::ValidationError {
-                    message: "AWS KMS does not support Solana transaction signing".to_string(),
-                });
-            }
-            SigningCredential::PrivateKey(_) => {
-                // Private key signing for Solana would require a different signer type
-                return Err(EngineError::ValidationError {
-                    message: "Private key signing not yet implemented for Solana".to_string(),
-                });
-            }
+        use solana_sdk::{signature::Signature, signer::Signer};
+        let invalid = |message: &str| EngineError::ValidationError {
+            message: message.into(),
         };
-
-        // add the signature to the correct position in the transaction
-        // get the index of the signer
-        let signer_index = transaction
-            .message
-            .static_account_keys()
-            .iter()
-            .position(|key| key == &from)
-            .ok_or(EngineError::ValidationError {
-                message: "Signer not found in transaction".to_string(),
-            })?;
-
-        if signer_index >= transaction.signatures.len() {
-            transaction.signatures.resize(
-                signer_index + 1,
-                solana_sdk::signature::Signature::default(),
-            );
-        };
-
-        transaction.signatures[signer_index] = signature;
-
+        transaction
+            .sanitize()
+            .map_err(|_| invalid("Malformed Solana transaction or signature count"))?;
+        let required = usize::from(transaction.message.header().num_required_signatures);
+        let keys = transaction.message.static_account_keys();
+        if required == 0 || keys.first() != Some(&from) {
+            return Err(invalid("Solana fee payer must match the requested signer"));
+        }
+        let keypair = credentials.solana_keypair()?;
+        if keypair.pubkey() != from {
+            return Err(invalid(
+                "Configured Solana key does not match the requested signer",
+            ));
+        }
+        let message = transaction.message.serialize();
+        for (index, signature) in transaction.signatures.iter().enumerate() {
+            if index == 0 && *signature == Signature::default() {
+                continue;
+            }
+            if !signature.verify(keys[index].as_ref(), &message) {
+                return Err(invalid("Missing or invalid required Solana signature"));
+            }
+        }
+        if transaction.signatures[0] == Signature::default() {
+            transaction.signatures[0] = keypair.sign_message(&message);
+        }
         Ok(transaction)
     }
 }

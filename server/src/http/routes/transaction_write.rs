@@ -30,7 +30,7 @@ use crate::http::{
         ("x-thirdweb-client-id" = Option<String>, Header, description = "Thirdweb client ID, passed along with the service key"),
         ("x-thirdweb-service-key" = Option<String>, Header, description = "Thirdweb service key, passed when using the client ID"),
         ("x-thirdweb-secret-key" = Option<String>, Header, description = "Thirdweb secret key, passed standalone"),
-        ("x-vault-access-token" = Option<String>, Header, description = "Vault access token"),
+
     )
 )]
 /// Write Transaction

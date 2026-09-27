@@ -92,7 +92,6 @@ impl ContractWrite {
         ("x-thirdweb-service-key" = Option<String>, Header, description = "Thirdweb service key, passed when using the client ID"),
         ("x-thirdweb-secret-key" = Option<String>, Header, description = "Thirdweb secret key, passed standalone"),
 
-        ("x-vault-access-token" = Option<String>, Header, description = "Vault access token"),
     )
 )]
 /// Write Contract
@@ -106,6 +105,7 @@ pub async fn write_contract(
 ) -> Result<impl IntoResponse, ApiEngineError> {
     let auth: Option<ThirdwebAuth> = match &rpc_credentials {
         engine_core::chain::RpcCredentials::Thirdweb(auth) => Some(auth.clone()),
+        engine_core::chain::RpcCredentials::Configured => None,
     };
 
     let chain_id: ChainId = request.execution_options.chain_id();

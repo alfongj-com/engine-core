@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use twmq::Queue;
-use twmq::redis::{AsyncCommands, Pipeline, aio::ConnectionManager};
+use twmq::redis::{AsyncCommands, Pipeline, aio::MultiplexedConnection};
 
 use crate::eoa::EoaExecutorStore;
 use crate::eoa::{
@@ -10,7 +10,6 @@ use crate::eoa::{
         EoaExecutorStoreKeys, TransactionStoreError, atomic::SafeRedisTransaction,
         submitted::SubmittedTransaction,
     },
-    worker::error::EoaExecutorWorkerError,
 };
 use crate::metrics::{EoaMetrics, calculate_duration_seconds, current_timestamp_ms};
 use crate::webhook::{WebhookJobHandler, queue_webhook_envelopes};
@@ -18,8 +17,10 @@ use crate::webhook::{WebhookJobHandler, queue_webhook_envelopes};
 #[derive(Debug, Clone)]
 pub enum SubmissionResultType {
     Success,
-    Nack(EoaExecutorWorkerError),
-    Fail(EoaExecutorWorkerError),
+    /// Restore submitted projection without asserting a new network send.
+    Reconcile,
+    /// Dispatch returned an error; preserve the exact borrowed signed bytes.
+    Uncertain,
 }
 
 /// Result of a submission attempt
@@ -41,13 +42,13 @@ pub struct ProcessBorrowedTransactions<'a> {
     pub keys: &'a EoaExecutorStoreKeys,
     pub webhook_queue: Arc<Queue<WebhookJobHandler>>,
     pub eoa_metrics: &'a EoaMetrics,
-    pub completed_transaction_ttl_seconds: u64,
 }
 
 #[derive(Debug, Default)]
 pub struct BorrowedProcessingReport {
     pub total_processed: usize,
     pub moved_to_submitted: usize,
+    pub retained_uncertain: usize,
     pub moved_to_pending: usize,
     pub failed_transactions: usize,
     pub webhook_events_queued: usize,
@@ -71,7 +72,7 @@ impl SafeRedisTransaction for ProcessBorrowedTransactions<'_> {
 
     async fn validation(
         &self,
-        conn: &mut ConnectionManager,
+        conn: &mut MultiplexedConnection,
         _store: &EoaExecutorStore,
     ) -> Result<Self::ValidationData, TransactionStoreError> {
         // Get all borrowed transaction IDs
@@ -104,11 +105,15 @@ impl SafeRedisTransaction for ProcessBorrowedTransactions<'_> {
     ) -> Self::OperationResult {
         let valid_results = validation_data;
         let mut report = BorrowedProcessingReport::default();
-        let now = chrono::Utc::now().timestamp_millis().max(0) as u64;
 
         for result in &valid_results {
             let transaction_id = result.transaction_id();
-            let nonce = result.transaction.nonce;
+            if matches!(result.result, SubmissionResultType::Uncertain) {
+                // Do not mutate status, recycle the nonce, or announce success.
+                // The next worker cycle reconciles/rebroadcasts these same bytes.
+                report.retained_uncertain += 1;
+                continue;
+            }
 
             // Remove from borrowed hashmap
             pipeline.hdel(
@@ -122,17 +127,19 @@ impl SafeRedisTransaction for ProcessBorrowedTransactions<'_> {
             // pipeline.lpush(&attempts_key, &attempt_json);
 
             match &result.result {
-                SubmissionResultType::Success => {
+                SubmissionResultType::Success | SubmissionResultType::Reconcile => {
                     // Record metrics: transaction queued to sent
                     let sent_timestamp = current_timestamp_ms();
                     let queued_to_sent_duration =
                         calculate_duration_seconds(result.transaction.queued_at, sent_timestamp);
                     // Record metrics using the clean EoaMetrics abstraction
-                    self.eoa_metrics.record_transaction_sent(
-                        self.keys.eoa,
-                        self.keys.chain_id,
-                        queued_to_sent_duration,
-                    );
+                    if matches!(result.result, SubmissionResultType::Success) {
+                        self.eoa_metrics.record_transaction_sent(
+                            self.keys.eoa,
+                            self.keys.chain_id,
+                            queued_to_sent_duration,
+                        );
+                    }
 
                     // Add to submitted zset
                     let (submitted_tx_redis_string, nonce) =
@@ -162,7 +169,9 @@ impl SafeRedisTransaction for ProcessBorrowedTransactions<'_> {
 
                     let envelope =
                         event.send_attempt_success_envelope(result.transaction.data.clone());
-                    if !result.transaction.user_request.webhook_options.is_empty() {
+                    if matches!(result.result, SubmissionResultType::Success)
+                        && !result.transaction.user_request.webhook_options.is_empty()
+                    {
                         let mut tx_context = self
                             .webhook_queue
                             .transaction_context_from_pipeline(pipeline);
@@ -180,88 +189,7 @@ impl SafeRedisTransaction for ProcessBorrowedTransactions<'_> {
 
                     report.moved_to_submitted += 1;
                 }
-                SubmissionResultType::Nack(err) => {
-                    // Add back to pending
-                    pipeline.zadd(
-                        self.keys.pending_transactions_zset_name(),
-                        transaction_id,
-                        now,
-                    );
-
-                    // Update transaction data status
-                    let tx_data_key = self.keys.transaction_data_key_name(transaction_id);
-                    pipeline.hset(&tx_data_key, "status", "pending");
-
-                    // ask for this nonce to be recycled because we did not consume the nonce
-                    pipeline.zadd(self.keys.recycled_nonces_zset_name(), nonce, nonce);
-
-                    // Queue webhook event using user_request from SubmissionResult
-                    let event = EoaExecutorEvent {
-                        transaction_id: transaction_id.to_string(),
-                        address: result.transaction.user_request.from,
-                    };
-                    let envelope = event.send_attempt_nack_envelope(nonce, err.clone(), 1);
-
-                    if !result.transaction.user_request.webhook_options.is_empty() {
-                        let mut tx_context = self
-                            .webhook_queue
-                            .transaction_context_from_pipeline(pipeline);
-                        if let Err(e) = queue_webhook_envelopes(
-                            envelope,
-                            result.transaction.user_request.webhook_options.clone(),
-                            &mut tx_context,
-                            self.webhook_queue.clone(),
-                        ) {
-                            tracing::error!("Failed to queue webhook for nack: {}", e);
-                        } else {
-                            report.webhook_events_queued += 1;
-                        }
-                    }
-
-                    report.moved_to_pending += 1;
-                }
-                SubmissionResultType::Fail(err) => {
-                    // Mark as failed
-                    let tx_data_key = self.keys.transaction_data_key_name(transaction_id);
-                    pipeline.hset(&tx_data_key, "status", "failed");
-                    pipeline.hset(&tx_data_key, "completed_at", now);
-                    pipeline.hset(&tx_data_key, "failure_reason", err.to_string());
-
-                    // Add TTL expiration
-                    let ttl_seconds = self.completed_transaction_ttl_seconds as i64;
-                    pipeline.expire(&tx_data_key, ttl_seconds);
-                    pipeline.expire(
-                        self.keys.transaction_attempts_list_name(transaction_id),
-                        ttl_seconds,
-                    );
-
-                    // ask for this nonce to be recycled because we did not consume the nonce
-                    pipeline.zadd(self.keys.recycled_nonces_zset_name(), nonce, nonce);
-
-                    // Queue webhook event using user_request from SubmissionResult
-                    let event = EoaExecutorEvent {
-                        transaction_id: transaction_id.to_string(),
-                        address: result.transaction.user_request.from,
-                    };
-                    let envelope = event.transaction_failed_envelope(err.clone(), 1);
-                    if !result.transaction.user_request.webhook_options.is_empty() {
-                        let mut tx_context = self
-                            .webhook_queue
-                            .transaction_context_from_pipeline(pipeline);
-                        if let Err(e) = queue_webhook_envelopes(
-                            envelope,
-                            result.transaction.user_request.webhook_options.clone(),
-                            &mut tx_context,
-                            self.webhook_queue.clone(),
-                        ) {
-                            tracing::error!("Failed to queue webhook for fail: {}", e);
-                        } else {
-                            report.webhook_events_queued += 1;
-                        }
-                    }
-
-                    report.failed_transactions += 1;
-                }
+                SubmissionResultType::Uncertain => unreachable!("handled before mutation"),
             }
         }
 

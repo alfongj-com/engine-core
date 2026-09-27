@@ -25,7 +25,9 @@ use twmq::{
     queue::QueueOptions,
 };
 
-const REDIS_URL: &str = "redis://127.0.0.1:6379/";
+fn redis_url() -> String {
+    std::env::var("TEST_REDIS_URL").expect("set TEST_REDIS_URL to a disposable Redis instance")
+}
 
 // Shared state to control test flow
 static SHOULD_NACK: AtomicBool = AtomicBool::new(true);
@@ -209,7 +211,7 @@ async fn test_prune_race_condition_two_workers() {
 
     // Create queue
     let queue = Arc::new(
-        Queue::new(REDIS_URL, &queue_name, Some(queue_options), handler)
+        Queue::new(&redis_url(), &queue_name, Some(queue_options), handler)
             .await
             .expect("Failed to create queue"),
     );

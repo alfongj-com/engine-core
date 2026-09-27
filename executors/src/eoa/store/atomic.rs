@@ -4,7 +4,7 @@ use alloy::{
     consensus::{Signed, TypedTransaction},
     primitives::Address,
 };
-use twmq::redis::{AsyncCommands, Pipeline, aio::ConnectionManager};
+use twmq::redis::{AsyncCommands, Pipeline, aio::MultiplexedConnection};
 
 use crate::{
     eoa::{
@@ -43,32 +43,24 @@ pub trait SafeRedisTransaction: Send + Sync {
     ) -> Self::OperationResult;
     fn validation(
         &self,
-        conn: &mut ConnectionManager,
+        conn: &mut MultiplexedConnection,
         store: &EoaExecutorStore,
     ) -> impl Future<Output = Result<Self::ValidationData, TransactionStoreError>> + Send;
     fn watch_keys(&self) -> Vec<String>;
 }
 
-/// Atomic transaction store that owns the base store and provides atomic operations
+/// An EOA store with an owner token and an exclusive transaction connection.
 ///
-/// This store is created by calling `acquire_lock()` on the base store and provides
-/// access to both atomic (lock-protected) and non-atomic operations.
-///
-/// ## Usage:
-/// ```rust
-/// let base_store = EoaExecutorStore::new(redis, namespace, );
-/// let atomic_store = base_store.acquire_lock(worker_id).await?;
-///
-/// // Atomic operations:
-/// atomic_store.move_borrowed_to_submitted(nonce, hash, tx_id).await?;
-///
-/// // Non-atomic operations via deref:
-/// atomic_store.peek_pending_transactions(limit).await?;
-/// ```
+/// Obtain it through `EoaExecutorStore::acquire_eoa_lock_aggressively`. State
+/// transitions validate the owner before committing; reads remain available
+/// through the underlying store. Losing ownership rejects subsequent writes.
 pub struct AtomicEoaExecutorStore {
     pub store: EoaExecutorStore,
     pub worker_id: String,
     pub eoa_metrics: crate::metrics::EoaMetrics,
+    // WATCH state belongs to a physical connection. Never share it with queue workers
+    // or use a reconnecting manager within a transaction.
+    pub(super) transaction_connection: tokio::sync::Mutex<MultiplexedConnection>,
 }
 
 impl std::ops::Deref for AtomicEoaExecutorStore {
@@ -93,6 +85,17 @@ impl AtomicEoaExecutorStore {
     /// Get the worker ID this store is scoped to
     pub fn worker_id(&self) -> &str {
         &self.worker_id
+    }
+
+    /// Read the current owner without mutating the projection or WATCH state.
+    /// This is a boundary check, not a lease: an already-started network call
+    /// can finish after another worker takes ownership.
+    pub(crate) async fn ensure_eoa_lock_owned(&self) -> Result<(), TransactionStoreError> {
+        let owner: Option<String> = self.redis.clone().get(self.eoa_lock_key_name()).await?;
+        if owner.as_deref() != Some(self.worker_id()) {
+            return Err(self.eoa_lock_lost_error());
+        }
+        Ok(())
     }
 
     /// Release EOA lock following the spec's finally pattern
@@ -181,14 +184,16 @@ impl AtomicEoaExecutorStore {
         .await
     }
 
-    /// Wrapper that executes operations with lock validation using WATCH/MULTI/EXEC
+    /// Build Redis writes and commit them only while this worker owns the EOA.
+    /// The closure may run again after a conflict, so it should only build commands.
     pub async fn with_lock_check<F, T, R>(&self, operation: F) -> Result<T, TransactionStoreError>
     where
         F: Fn(&mut Pipeline) -> R,
         T: From<R>,
     {
         let lock_key = self.eoa_lock_key_name();
-        let mut conn = self.redis.clone();
+        let mut connection_guard = self.transaction_connection.lock().await;
+        let conn = &mut *connection_guard;
         let mut retry_count = 0;
 
         loop {
@@ -219,7 +224,7 @@ impl AtomicEoaExecutorStore {
             // WATCH the EOA lock
             let _: () = twmq::redis::cmd("WATCH")
                 .arg(&lock_key)
-                .query_async(&mut conn)
+                .query_async(conn)
                 .await?;
 
             // Check if we still own the lock
@@ -230,7 +235,7 @@ impl AtomicEoaExecutorStore {
                 }
                 _ => {
                     // Lost ownership - immediately fail
-                    let _: () = twmq::redis::cmd("UNWATCH").query_async(&mut conn).await?;
+                    let _: () = twmq::redis::cmd("UNWATCH").query_async(conn).await?;
                     return Err(self.eoa_lock_lost_error());
                 }
             }
@@ -242,11 +247,11 @@ impl AtomicEoaExecutorStore {
 
             // Execute with WATCH protection
             match pipeline
-                .query_async::<Vec<twmq::redis::Value>>(&mut conn)
+                .query_async::<Option<Vec<twmq::redis::Value>>>(conn)
                 .await
             {
-                Ok(_) => return Ok(T::from(result)),
-                Err(_) => {
+                Ok(Some(_)) => return Ok(T::from(result)),
+                Ok(None) => {
                     // WATCH failed, check if it was our lock or someone else's
                     let still_own_lock: Option<String> = conn.get(&lock_key).await?;
                     if still_own_lock.as_deref() != Some(self.worker_id()) {
@@ -256,53 +261,21 @@ impl AtomicEoaExecutorStore {
                     retry_count += 1;
                     continue;
                 }
+                Err(error) => return Err(error.into()),
             }
         }
     }
 
-    /// Helper to execute atomic operations with proper retry logic and watch handling
-    ///
-    /// This helper centralizes all the boilerplate for WATCH/MULTI/EXEC operations:
-    /// - Retry logic with exponential backoff
-    /// - Lock ownership validation
-    /// - WATCH key management
-    /// - Error handling and UNWATCH cleanup
-    ///
-    /// ## Usage:
-    /// Implement the `SafeRedisTransaction` trait for your operation, then call this method.
-    /// The trait separates validation (async) from pipeline operations (sync) for clean patterns.
-    ///
-    /// ## Example:
-    /// ```rust
-    /// let safe_tx = MovePendingToBorrowedWithNewNonce {
-    ///     nonce: expected_nonce,
-    ///     prepared_tx_json,
-    ///     transaction_id,
-    ///     borrowed_key,
-    ///     optimistic_key,
-    ///     pending_key,
-    ///     eoa,
-    ///     chain_id,
-    /// };
-    ///
-    /// self.execute_with_watch_and_retry(, worker_id, &safe_tx).await?;
-    /// ```
-    ///
-    /// ## When to use this helper:
-    /// - Operations that implement `SafeRedisTransaction` trait
-    /// - Need atomic WATCH/MULTI/EXEC with retry logic
-    /// - Want centralized lock checking and error handling
-    ///
-    /// ## When NOT to use this helper:
-    /// - Simple operations that can use `with_lock_check` instead
-    /// - Operations that don't need WATCH on multiple keys
-    /// - Read-only operations that don't modify state
+    /// Watch the owner and operation-specific state on one exclusive connection,
+    /// validate, then commit. A nil EXEC retries validation; a Redis error exits
+    /// without replaying a transaction whose outcome may be uncertain.
     async fn execute_with_watch_and_retry<T: SafeRedisTransaction>(
         &self,
         safe_tx: &T,
     ) -> Result<T::OperationResult, TransactionStoreError> {
         let lock_key = self.eoa_lock_key_name();
-        let mut conn = self.redis.clone();
+        let mut connection_guard = self.transaction_connection.lock().await;
+        let conn = &mut *connection_guard;
         let mut retry_count = 0;
 
         loop {
@@ -338,12 +311,12 @@ impl AtomicEoaExecutorStore {
             for key in safe_tx.watch_keys() {
                 watch_cmd.arg(key);
             }
-            let _: () = watch_cmd.query_async(&mut conn).await?;
+            let _: () = watch_cmd.query_async(conn).await?;
 
             // Check lock ownership
             let current_owner: Option<String> = conn.get(&lock_key).await?;
             if current_owner.as_deref() != Some(self.worker_id()) {
-                let _: () = twmq::redis::cmd("UNWATCH").query_async(&mut conn).await?;
+                let _: () = twmq::redis::cmd("UNWATCH").query_async(conn).await?;
                 return Err(TransactionStoreError::LockLost {
                     eoa: self.eoa,
                     chain_id: self.chain_id,
@@ -352,7 +325,7 @@ impl AtomicEoaExecutorStore {
             }
 
             // Execute validation
-            match safe_tx.validation(&mut conn, &self.store).await {
+            match safe_tx.validation(conn, &self.store).await {
                 Ok(validation_data) => {
                     // Build and execute pipeline
                     let mut pipeline = twmq::redis::pipe();
@@ -360,12 +333,11 @@ impl AtomicEoaExecutorStore {
                     let result = safe_tx.operation(&mut pipeline, validation_data);
 
                     match pipeline
-                        .query_async::<Vec<twmq::redis::Value>>(&mut conn)
+                        .query_async::<Option<Vec<twmq::redis::Value>>>(conn)
                         .await
                     {
-                        Ok(_) => return Ok(result), // Success
-                        Err(e) => {
-                            tracing::error!("WATCH failed: {}", e);
+                        Ok(Some(_)) => return Ok(result),
+                        Ok(None) => {
                             // WATCH failed, check if it was our lock
                             let still_own_lock: Option<String> = conn.get(&lock_key).await?;
                             if still_own_lock.as_deref() != Some(self.worker_id()) {
@@ -379,11 +351,12 @@ impl AtomicEoaExecutorStore {
                             retry_count += 1;
                             continue;
                         }
+                        Err(error) => return Err(error.into()),
                     }
                 }
                 Err(e) => {
                     // Validation failed, unwatch and return error
-                    let _: () = twmq::redis::cmd("UNWATCH").query_async(&mut conn).await?;
+                    let _: () = twmq::redis::cmd("UNWATCH").query_async(conn).await?;
                     return Err(e);
                 }
             }
@@ -574,63 +547,8 @@ impl AtomicEoaExecutorStore {
         error: EoaExecutorWorkerError,
         webhook_queue: Arc<twmq::Queue<WebhookJobHandler>>,
     ) -> Result<(), TransactionStoreError> {
-        let mut pipeline = twmq::redis::pipe();
-        pipeline.atomic();
-
-        let pending_key = self.pending_transactions_zset_name();
-        let tx_data_key = self.transaction_data_key_name(&pending_transaction.transaction_id);
-        let now = chrono::Utc::now().timestamp_millis().max(0) as u64;
-
-        // Remove from pending state
-        pipeline.zrem(&pending_key, &pending_transaction.transaction_id);
-
-        // Update transaction data with failure
-        pipeline.hset(&tx_data_key, "completed_at", now);
-        pipeline.hset(&tx_data_key, "failure_reason", error.to_string());
-        pipeline.hset(&tx_data_key, "status", "failed");
-
-        // Add TTL expiration
-        let ttl_seconds = self.completed_transaction_ttl_seconds as i64;
-        pipeline.expire(&tx_data_key, ttl_seconds);
-        pipeline.expire(
-            self.transaction_attempts_list_name(&pending_transaction.transaction_id),
-            ttl_seconds,
-        );
-
-        let event = EoaExecutorEvent {
-            transaction_id: pending_transaction.transaction_id.clone(),
-            address: pending_transaction.user_request.from,
-        };
-
-        let fail_envelope = event.transaction_failed_envelope(error.clone(), 1);
-
-        if !pending_transaction.user_request.webhook_options.is_empty() {
-            let mut tx_context = webhook_queue.transaction_context_from_pipeline(&mut pipeline);
-            if let Err(e) = queue_webhook_envelopes(
-                fail_envelope,
-                pending_transaction.user_request.webhook_options.clone(),
-                &mut tx_context,
-                webhook_queue.clone(),
-            ) {
-                tracing::error!("Failed to queue webhook for fail: {}", e);
-            }
-        }
-
-        let mut conn = self.redis.clone();
-        pipeline
-            .query_async::<Vec<twmq::redis::Value>>(&mut conn)
-            .await?;
-
-        tracing::info!(
-            transaction_id = %pending_transaction.transaction_id,
-            eoa = ?self.eoa(),
-            chain_id = self.chain_id(),
-            worker_id = %self.worker_id(),
-            error = %error,
-            "JOB_LIFECYCLE - Deleted failed pending transaction from EOA"
-        );
-
-        Ok(())
+        self.fail_pending_transactions_batch(vec![(pending_transaction, error)], webhook_queue)
+            .await
     }
 
     /// Fail multiple transactions that are in the pending state in a single batch operation
@@ -701,11 +619,12 @@ impl AtomicEoaExecutorStore {
             }
         }
 
-        // Execute the pipeline once
-        let mut conn = self.redis.clone();
-        pipeline
-            .query_async::<Vec<twmq::redis::Value>>(&mut conn)
-            .await?;
+        self.execute_with_watch_and_retry(&FailPendingTransactions {
+            keys: &self.keys,
+            transaction_ids,
+            pipeline,
+        })
+        .await?;
 
         tracing::info!(
             count = failures.len(),
@@ -737,7 +656,7 @@ impl AtomicEoaExecutorStore {
     }
 
     /// Process borrowed transactions with given submission results
-    /// This method moves transactions from borrowed state to submitted/pending/failed states
+    /// This method retains uncertain attempts or moves acknowledged/reconciled attempts to submitted
     /// based on the submission results, and queues appropriate webhook events
     pub async fn process_borrowed_transactions(
         &self,
@@ -749,7 +668,6 @@ impl AtomicEoaExecutorStore {
             keys: &self.keys,
             webhook_queue,
             eoa_metrics: &self.eoa_metrics,
-            completed_transaction_ttl_seconds: self.store.completed_transaction_ttl_seconds,
         })
         .await
     }
@@ -810,14 +728,24 @@ impl SafeRedisTransaction for ResetNoncesTransaction<'_> {
             self.keys.last_transaction_count_key_name(),
             self.keys.recycled_nonces_zset_name(),
             self.keys.manual_reset_key_name(),
+            self.keys.submitted_transactions_zset_name(),
+            self.keys.borrowed_transactions_hashmap_name(),
         ]
     }
 
     async fn validation(
         &self,
-        _conn: &mut ConnectionManager,
+        conn: &mut MultiplexedConnection,
         store: &EoaExecutorStore,
     ) -> Result<Self::ValidationData, TransactionStoreError> {
+        let (submitted, borrowed): (u64, u64) = twmq::redis::pipe()
+            .zcard(self.keys.submitted_transactions_zset_name())
+            .hlen(self.keys.borrowed_transactions_hashmap_name())
+            .query_async(conn)
+            .await?;
+        if submitted != 0 || borrowed != 0 {
+            return Err(TransactionStoreError::UnresolvedNonceReservations);
+        }
         let now = chrono::Utc::now().timestamp_millis().max(0) as u64;
 
         // Get current health data to prepare update
@@ -868,3 +796,54 @@ impl SafeRedisTransaction for ResetNoncesTransaction<'_> {
         pipeline.del(&manual_reset_key);
     }
 }
+
+/// Failing a pending request must not overwrite a reservation created while RPC
+/// preparation was in flight. Membership and the owner token are checked together.
+struct FailPendingTransactions<'a> {
+    keys: &'a EoaExecutorStoreKeys,
+    transaction_ids: Vec<&'a str>,
+    pipeline: Pipeline,
+}
+
+impl SafeRedisTransaction for FailPendingTransactions<'_> {
+    type ValidationData = ();
+    type OperationResult = ();
+
+    fn name(&self) -> &str {
+        "fail pending transactions"
+    }
+
+    fn watch_keys(&self) -> Vec<String> {
+        vec![self.keys.pending_transactions_zset_name()]
+    }
+
+    async fn validation(
+        &self,
+        conn: &mut MultiplexedConnection,
+        _store: &EoaExecutorStore,
+    ) -> Result<(), TransactionStoreError> {
+        let mut pipeline = twmq::redis::pipe();
+        for id in &self.transaction_ids {
+            pipeline.zscore(self.keys.pending_transactions_zset_name(), id);
+        }
+        let scores: Vec<Option<u64>> = pipeline.query_async(conn).await?;
+        for (id, score) in self.transaction_ids.iter().zip(scores) {
+            if score.is_none() {
+                return Err(TransactionStoreError::TransactionNotInPendingQueue {
+                    transaction_id: (*id).to_owned(),
+                });
+            }
+        }
+        Ok(())
+    }
+
+    fn operation(&self, pipeline: &mut Pipeline, (): ()) {
+        for command in self.pipeline.cmd_iter() {
+            pipeline.add_command(command.clone());
+        }
+    }
+}
+
+#[cfg(test)]
+#[path = "tests.rs"]
+mod tests;
