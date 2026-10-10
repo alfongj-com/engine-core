@@ -4,6 +4,35 @@ Rust transaction infrastructure forked from [thirdweb-dev/engine-core](https://g
 
 **Status:** active hardening; local verification is not a production readiness or all-chain compatibility certification. Read [the handoff](https://github.com/alfongj-com/engine-core/blob/load-tests/TO_ALFONSO.md) for measured results and remaining release blockers.
 
+## Run and test locally on Alfonso's Mac
+
+The repository is at **`/Users/alfongj/Code/engine-core`**. Start with
+**[LOCAL_TESTING.md](LOCAL_TESTING.md)** for the installed tool paths, isolated
+checkouts, exact test commands, local recovery scenarios and a
+[copyable prompt for another agent](LOCAL_TESTING.md#prompt-for-another-local-agent).
+
+Verified October 10, 2026: all three branches are pushed and stored in the local
+Git repository:
+
+| Branch | Status |
+| --- | --- |
+| `production-hardening` / [PR #1](https://github.com/alfongj-com/engine-core/pull/1) | Existing implementation; test this baseline first. Open, not merged. |
+| `crash-recovery-and-chain-fairness` / [PR #2](https://github.com/alfongj-com/engine-core/pull/2) | Stacked draft. Timing instrumentation and recovery draft are saved; Rust validation, recovery wiring, fairness changes and polling improvements remain unfinished. |
+| `load-tests` | Historical reports and generated evidence, including failed runs. |
+
+The tools and a read-only copy of the evidence are now in
+`/Users/alfongj/.local/share/engine-core/`, outside temporary storage. Load the
+installed tools with:
+
+```sh
+source /Users/alfongj/.local/share/engine-core/tools/env.sh
+```
+
+This only configures the current shell; it starts no services and contains no
+credentials. The local harnesses create disposable keys, Redis state and chain
+nodes. They need no dRPC key, funded wallet or public faucet. Do not reuse the
+retained incident journals or the old Nitro VM for these tests.
+
 ## Start here
 
 - [Chain compatibility design](docs/design/chain-compatibility.md): Ethereum, Arbitrum, OP Stack/Base, finality, fees, sequencing and capabilities.
@@ -22,6 +51,8 @@ Rust transaction infrastructure forked from [thirdweb-dev/engine-core](https://g
 ## Build
 
 Install Rust through rustup; `rust-toolchain.toml` selects the tested toolchain.
+On the saved PR #2 draft, lockfile and compilation fixes are still pending; use
+the separate baseline checkout described in the local guide first.
 
 ```sh
 cargo build --locked --bin thirdweb-engine

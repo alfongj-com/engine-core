@@ -48,9 +48,19 @@ not refreshed. Do not present these models as verification of the unwired Rust d
 
 No new load test or paid RPC call ran in this work period. Prior failed-campaign
 custody remains untouched and Nitro remains paused. The original PR #1 executable
-is preserved privately at `/tmp/engine-stacked-pr2/engine-pr1`; SHA-256
+is preserved privately at `/Users/alfongj/.local/share/engine-core/tools/engine-pr1-b31f43d`; SHA-256
 `35e307e16cafa7cbb17caafcf5ed90a840d58dddd2454542566619266e7a4c07`.
 Historical load reports and generated evidence are preserved on the
 [load-tests branch](https://github.com/alfongj-com/engine-core/tree/load-tests).
 They were removed from PR #1 and are not prerequisites for a normal build.
 The [targeted model WIP evidence](https://github.com/alfongj-com/engine-core/blob/load-tests/formal/evidence/recoverable-projection-wip/README.md) is archived separately.
+
+## Local testing handoff — October 10, 2026
+
+[LOCAL_TESTING.md](LOCAL_TESTING.md) contains the repository location, installed
+tool paths, exact test commands and a copyable prompt for an independent local
+agent. Tools and a browsable evidence archive are now under
+`/Users/alfongj/.local/share/engine-core/`; the old temporary tool paths are gone.
+Tool versions and documentation paths were checked. No new Engine build, full
+test suite or benchmark ran during this documentation handoff. The implementation
+status and remaining work above are unchanged.
