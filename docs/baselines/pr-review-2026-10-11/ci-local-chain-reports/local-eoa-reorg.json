@@ -1,0 +1,172 @@
+{
+  "scenario": "pre-finality reorg and same-nonce recovery",
+  "reverted_execution": false,
+  "policy": {
+    "mode": "depth",
+    "confirmations": 2
+  },
+  "log_directory": "/tmp/engine-eoa-reorg-j6u7queg",
+  "manual_signed_wire_replay": false,
+  "allow_fee_replacement": false,
+  "outcome": "pass",
+  "provisional_result_withheld": true,
+  "orphaned_receipt_disappeared": true,
+  "engine_recovered_original_nonce": true,
+  "attempts": 1,
+  "unique_chain_effects": 1,
+  "duplicate_effects": 0,
+  "terminal_status": "confirmed",
+  "original_transaction_hash": "0x10f78d6f510789aadfa432bec61b1618b8f6557b0dad1bfa9d106230e891fd0e",
+  "final_transaction_hash": "0x10f78d6f510789aadfa432bec61b1618b8f6557b0dad1bfa9d106230e891fd0e",
+  "recovery_mode": "exact_wire",
+  "post_restart_accepted_winning_sends": 1,
+  "winning_wire_digest": "c753cd8f0c439dc323a6ded41e38957e57649dd0844402ea65dffdfdd6c522a1",
+  "elapsed_seconds": 18.846,
+  "engine_rpc": {
+    "calls": {
+      "eth_getCode": 2,
+      "eth_getTransactionCount": 20,
+      "eth_getBalance": 1,
+      "eth_blockNumber": 4,
+      "eth_feeHistory": 1,
+      "eth_estimateGas": 1,
+      "eth_sendRawTransaction": 2,
+      "eth_getTransactionReceipt": 1,
+      "eth_getBlockByNumber": 6
+    },
+    "accepted_unique_wires": 1,
+    "forwarded_sends": 2,
+    "dropped_responses": 0,
+    "lost_http_responses": 0,
+    "accepted_responses_lost": 0,
+    "proxy_overloads": 0,
+    "peak_inflight": 1,
+    "active": 0,
+    "connection_limit": 256,
+    "active_connections": 0,
+    "peak_connections": 1,
+    "http_requests": 38,
+    "incoming_batches": 0,
+    "upstream_http_requests": 38,
+    "proxy_failures": [],
+    "proxy_failure_details": [],
+    "http_transport": {
+      "requests": 38,
+      "active": 0,
+      "peak_active": 1,
+      "connection_attempts": 2,
+      "connections_opened": 2,
+      "responses": 38,
+      "status_200": 38,
+      "connection_reuses": 36,
+      "owned_connections": 0,
+      "failures": []
+    },
+    "audit": {
+      "event_count": 4,
+      "path": "/tmp/engine-eoa-reorg-j6u7queg/engine-rpc.jsonl",
+      "tail": [
+        {
+          "sequence": 1,
+          "utc": "2026-10-11T20:43:04.728679+00:00",
+          "elapsed_seconds": 0.277064,
+          "event": "send_forwarded",
+          "method": "eth_sendRawTransaction",
+          "wire_digest": "c753cd8f0c439dc323a6ded41e38957e57649dd0844402ea65dffdfdd6c522a1"
+        },
+        {
+          "sequence": 2,
+          "utc": "2026-10-11T20:43:04.729251+00:00",
+          "elapsed_seconds": 0.277633,
+          "event": "send_accepted",
+          "method": "eth_sendRawTransaction",
+          "wire_digest": "c753cd8f0c439dc323a6ded41e38957e57649dd0844402ea65dffdfdd6c522a1",
+          "identity": "0x10f78d6f510789aadfa432bec61b1618b8f6557b0dad1bfa9d106230e891fd0e",
+          "response_dropped": false
+        },
+        {
+          "sequence": 3,
+          "utc": "2026-10-11T20:43:12.115958+00:00",
+          "elapsed_seconds": 7.664341,
+          "event": "send_forwarded",
+          "method": "eth_sendRawTransaction",
+          "wire_digest": "c753cd8f0c439dc323a6ded41e38957e57649dd0844402ea65dffdfdd6c522a1"
+        },
+        {
+          "sequence": 4,
+          "utc": "2026-10-11T20:43:12.116414+00:00",
+          "elapsed_seconds": 7.664796,
+          "event": "send_accepted",
+          "method": "eth_sendRawTransaction",
+          "wire_digest": "c753cd8f0c439dc323a6ded41e38957e57649dd0844402ea65dffdfdd6c522a1",
+          "identity": "0x10f78d6f510789aadfa432bec61b1618b8f6557b0dad1bfa9d106230e891fd0e",
+          "response_dropped": false
+        }
+      ],
+      "tail_truncated": false
+    },
+    "methods": {
+      "eth_getCode": {
+        "count": 2,
+        "errors": 0,
+        "total_ms": 1.1909130000731238,
+        "max_ms": 0.6582690000414004
+      },
+      "eth_getTransactionCount": {
+        "count": 20,
+        "errors": 0,
+        "total_ms": 8.351740999955837,
+        "max_ms": 0.6794889999355291
+      },
+      "eth_getBalance": {
+        "count": 1,
+        "errors": 0,
+        "total_ms": 0.3006509999750051,
+        "max_ms": 0.3006509999750051
+      },
+      "eth_blockNumber": {
+        "count": 4,
+        "errors": 0,
+        "total_ms": 1.2561860000914749,
+        "max_ms": 0.33944400001928443
+      },
+      "eth_feeHistory": {
+        "count": 1,
+        "errors": 0,
+        "total_ms": 0.3873240000302758,
+        "max_ms": 0.3873240000302758
+      },
+      "eth_estimateGas": {
+        "count": 1,
+        "errors": 0,
+        "total_ms": 1.340101999971921,
+        "max_ms": 1.340101999971921
+      },
+      "eth_sendRawTransaction": {
+        "count": 2,
+        "errors": 0,
+        "total_ms": 1.162920999945527,
+        "max_ms": 0.64546499993412
+      },
+      "eth_getTransactionReceipt": {
+        "count": 1,
+        "errors": 0,
+        "total_ms": 0.3046179999728338,
+        "max_ms": 0.3046179999728338
+      },
+      "eth_getBlockByNumber": {
+        "count": 6,
+        "errors": 0,
+        "total_ms": 1.7278059999625839,
+        "max_ms": 0.3035670000599566
+      }
+    },
+    "injected_preflight_bypass": 0,
+    "accepted_wires": {
+      "c753cd8f0c439dc323a6ded41e38957e57649dd0844402ea65dffdfdd6c522a1": {
+        "identity": "0x10f78d6f510789aadfa432bec61b1618b8f6557b0dad1bfa9d106230e891fd0e",
+        "accepted_responses": 2
+      }
+    }
+  }
+}

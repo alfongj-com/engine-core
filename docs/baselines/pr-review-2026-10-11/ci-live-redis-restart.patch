@@ -1,0 +1,13 @@
+diff --git a/.github/workflows/ci-hardening.yaml b/.github/workflows/ci-hardening.yaml
+index f4a93f7..2ad4a34 100644
+--- a/.github/workflows/ci-hardening.yaml
++++ b/.github/workflows/ci-hardening.yaml
+@@ -75,6 +75,8 @@ jobs:
+           ANVIL_BIN=/tmp/engine-foundry/anvil python3 scripts/local_eoa_recovery.py --report /tmp/local-eoa-recovery.json
+       - name: Redis AOF crash recovery
+         run: ANVIL_BIN=/tmp/engine-foundry/anvil python3 scripts/local_eoa_recovery.py --redis-crash --report /tmp/local-eoa-redis-crash.json
++      - name: Redis restart while Engine remains alive and SIGTERM shutdown
++        run: ANVIL_BIN=/tmp/engine-foundry/anvil python3 scripts/local_eoa_recovery.py --live-redis-restart --report /tmp/local-eoa-live-redis-restart.json
+       - name: Reverted execution and Redis crash recovery
+         run: ANVIL_BIN=/tmp/engine-foundry/anvil python3 scripts/local_eoa_recovery.py --transactions 8 --redis-crash --revert --report /tmp/local-eoa-reverted-recovery.json
+       - name: Redis data loss and stale-backup quarantine

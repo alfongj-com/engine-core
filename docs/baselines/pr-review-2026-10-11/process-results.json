@@ -1,0 +1,111 @@
+{
+  "reviewed_pr1_head": "8741b881d0e1f5b7290492d8e65a6384ac632cb2",
+  "source_run": "review-oct11-ik9fs2jx",
+  "scope": "Local process regressions; no public RPC or throughput qualification",
+  "cases": [
+    {
+      "name": "eoa",
+      "exit_code": 0,
+      "elapsed_seconds": 10.38,
+      "outcome": "pass",
+      "assertions": {
+        "transactions": 24,
+        "unique_chain_effects": 24,
+        "duplicate_chain_effects": 0,
+        "successful_transfers": 24,
+        "reverted_transactions": 0,
+        "terminal_status": "confirmed"
+      }
+    },
+    {
+      "name": "live-redis",
+      "exit_code": 0,
+      "elapsed_seconds": 8.17,
+      "outcome": "pass",
+      "assertions": {
+        "transactions": 24,
+        "live_engine_fenced": true,
+        "sigterm_exit_code": 0,
+        "reattached_without_quarantine_or_namespace_change": true,
+        "unique_chain_effects": 24,
+        "duplicate_chain_effects": 0,
+        "successful_transfers": 24,
+        "reverted_transactions": 0,
+        "terminal_status": "confirmed"
+      }
+    },
+    {
+      "name": "redis-crash",
+      "exit_code": 0,
+      "elapsed_seconds": 8.92,
+      "outcome": "pass",
+      "assertions": {
+        "transactions": 24,
+        "unique_chain_effects": 24,
+        "duplicate_chain_effects": 0,
+        "successful_transfers": 24,
+        "reverted_transactions": 0,
+        "terminal_status": "confirmed"
+      }
+    },
+    {
+      "name": "revert",
+      "exit_code": 0,
+      "elapsed_seconds": 7.84,
+      "outcome": "pass",
+      "assertions": {
+        "transactions": 8,
+        "unique_chain_effects": 8,
+        "duplicate_chain_effects": 0,
+        "successful_transfers": 0,
+        "reverted_transactions": 8,
+        "terminal_status": "failed"
+      }
+    },
+    {
+      "name": "flush",
+      "exit_code": 0,
+      "elapsed_seconds": 6.69,
+      "outcome": "pass",
+      "assertions": {}
+    },
+    {
+      "name": "rollback",
+      "exit_code": 0,
+      "elapsed_seconds": 7.04,
+      "outcome": "pass",
+      "assertions": {}
+    },
+    {
+      "name": "reorg",
+      "exit_code": 0,
+      "elapsed_seconds": 55.39,
+      "outcome": "pass",
+      "assertions": {
+        "unique_chain_effects": 1,
+        "terminal_status": "confirmed"
+      }
+    },
+    {
+      "name": "reorg-revert",
+      "exit_code": 0,
+      "elapsed_seconds": 54.99,
+      "outcome": "pass",
+      "assertions": {
+        "unique_chain_effects": 1,
+        "terminal_status": "failed"
+      }
+    },
+    {
+      "name": "solana",
+      "exit_code": 0,
+      "elapsed_seconds": 88.03,
+      "outcome": "pass",
+      "assertions": {
+        "transactions": 12,
+        "unique_chain_effects": 12,
+        "duplicate_chain_effects": 0
+      }
+    }
+  ]
+}

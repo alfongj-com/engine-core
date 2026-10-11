@@ -1,0 +1,113 @@
+{
+  "scope": "local Agave validator, one payer, real Engine and durable stores; no public-chain qualification",
+  "offered_tps": 50,
+  "duration_seconds": 20,
+  "workers": 100,
+  "durability": "SQLite WAL synchronous=FULL/fullfsync=ON; Redis AOF appendfsync=everysec",
+  "engine_binary": "/home/runner/work/engine-core/engine-core/target/debug/thirdweb-engine",
+  "engine_binary_sha256": "dc9b0bf6477001efb39043b29d71db56d690e44a453b4bf9e233c01d646c3973",
+  "log_directory": "/tmp/engine-solana-throughput-hxsvatq1",
+  "validator_version": {
+    "feature-set": 565236538,
+    "solana-core": "4.2.2"
+  },
+  "during_load": {
+    "seconds": 19.984,
+    "admitted": 968,
+    "attempted": 786,
+    "terminal": 62,
+    "finalized_transfers": 171
+  },
+  "admission_completion_seconds": 20.453,
+  "observed_rates": {
+    "from_seconds": 5.002,
+    "to_seconds": 19.984,
+    "admitted_tps": 48.391,
+    "attempted_tps": 37.979,
+    "terminal_tps": 4.138,
+    "finalized_transfers_tps": 11.414
+  },
+  "admission_responses": {
+    "202": 1000
+  },
+  "admission_latency_ms": {
+    "p50": 488.97,
+    "p95": 642.66,
+    "p99": 652.854
+  },
+  "final": {
+    "seconds": 45.475,
+    "admitted": 1000,
+    "attempted": 1000,
+    "terminal": 1000,
+    "finalized_transfers": 1000
+  },
+  "samples": [
+    {
+      "seconds": 5.002,
+      "admitted": 243,
+      "attempted": 217,
+      "terminal": 0,
+      "finalized_transfers": 0
+    },
+    {
+      "seconds": 10.004,
+      "admitted": 476,
+      "attempted": 384,
+      "terminal": 0,
+      "finalized_transfers": 0
+    },
+    {
+      "seconds": 15.004,
+      "admitted": 727,
+      "attempted": 583,
+      "terminal": 0,
+      "finalized_transfers": 0
+    },
+    {
+      "seconds": 20.455,
+      "admitted": 1000,
+      "attempted": 786,
+      "terminal": 83,
+      "finalized_transfers": 198
+    },
+    {
+      "seconds": 25.46,
+      "admitted": 1000,
+      "attempted": 1000,
+      "terminal": 325,
+      "finalized_transfers": 335
+    },
+    {
+      "seconds": 30.464,
+      "admitted": 1000,
+      "attempted": 1000,
+      "terminal": 504,
+      "finalized_transfers": 538
+    },
+    {
+      "seconds": 35.467,
+      "admitted": 1000,
+      "attempted": 1000,
+      "terminal": 697,
+      "finalized_transfers": 739
+    },
+    {
+      "seconds": 40.471,
+      "admitted": 1000,
+      "attempted": 1000,
+      "terminal": 985,
+      "finalized_transfers": 1000
+    },
+    {
+      "seconds": 45.475,
+      "admitted": 1000,
+      "attempted": 1000,
+      "terminal": 1000,
+      "finalized_transfers": 1000
+    }
+  ],
+  "recipient_delta_lamports": 1000000,
+  "outcome": "pass",
+  "journal_bytes": 7290528
+}
