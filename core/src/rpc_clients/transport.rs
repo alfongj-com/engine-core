@@ -29,6 +29,21 @@ fn push_url_secret_variants(secrets: &mut Vec<String>, value: &str) {
     );
 }
 
+/// Numeric chain IDs and conventional RPC/version routes are public routing
+/// data. Treating `1`, `10` or `v2` as a credential corrupts unrelated messages
+/// and encoded revert bytes. Explicit header/query/userinfo secrets still win.
+fn is_public_route(value: &str) -> bool {
+    let decoded = percent_encoding::percent_decode_str(value).decode_utf8_lossy();
+    let value = decoded.as_ref();
+    let is_number = |part: &str| !part.is_empty() && part.bytes().all(|c| c.is_ascii_digit());
+    is_number(value)
+        || matches!(
+            value,
+            "rpc" | "bundler" | "paymaster" | "api" | "eth" | "evm" | "mainnet" | "testnet"
+        )
+        || value.strip_prefix('v').is_some_and(is_number)
+}
+
 /// Shared HTTP connection pool with request-scoped headers. Credentials are never
 /// installed as client defaults, so one service cannot inherit another's headers.
 #[derive(Clone)]
@@ -87,13 +102,16 @@ impl HeaderInjectingTransport {
             secrets.extend(
                 labels[..labels.len().saturating_sub(2)]
                     .iter()
+                    .filter(|label| !is_public_route(label))
                     .map(|label| (*label).to_owned()),
             );
         }
         for segment in self.url.path_segments().into_iter().flatten() {
             // URL path segments remain percent-encoded, while providers may
             // echo their decoded routing/key value.
-            push_url_secret_variants(&mut secrets, segment);
+            if !is_public_route(segment) {
+                push_url_secret_variants(&mut secrets, segment);
+            }
         }
         if let Some(query) = self.url.query() {
             for pair in query.split('&') {
@@ -416,5 +434,50 @@ mod tests {
         let original_revert = serde_json::to_string(&reverted).unwrap();
         transport.redact_response(&mut reverted);
         assert_eq!(serde_json::to_string(&reverted).unwrap(), original_revert);
+    }
+
+    #[test]
+    fn public_routes_do_not_corrupt_revert_data_or_numeric_diagnostics() {
+        let revert = "0x4e487b710000000000000000000000000000000000000000000000000000000000000011";
+        for url in [
+            "https://1.rpc.thirdweb.com/v2",
+            "https://1.bundler.thirdweb.com/v2",
+            "https://10.rpc.example/1/10/v2",
+            "https://10.rpc.example/%31/%31%30/%76%32",
+            "https://rpc.example/api/v1",
+        ] {
+            let transport = HeaderInjectingTransport::new(
+                reqwest::Client::new(),
+                url.parse().unwrap(),
+                reqwest::header::HeaderMap::new(),
+            );
+            let mut response: Response = serde_json::from_value(serde_json::json!({
+                "jsonrpc":"2.0", "id":1,
+                "error":{"code":3,"message":"execution reverted: rpc v2 nonce 1 below 10","data":{"data":revert}}
+            }))
+            .unwrap();
+            let before = serde_json::to_string(&response).unwrap();
+            transport.redact_response(&mut response);
+            assert_eq!(serde_json::to_string(&response).unwrap(), before, "{url}");
+            let ResponsePayload::Failure(error) = response.payload else {
+                panic!("expected RPC error");
+            };
+            assert_eq!(error.as_revert_data().unwrap().to_string(), revert, "{url}");
+        }
+    }
+
+    #[test]
+    fn public_route_exemption_never_applies_to_explicit_credentials() {
+        let mut headers = reqwest::header::HeaderMap::new();
+        headers.insert("authorization", "Bearer v2".parse().unwrap());
+        let transport = HeaderInjectingTransport::new(
+            reqwest::Client::new(),
+            "https://rpc.example/1?key=rpc".parse().unwrap(),
+            headers,
+        );
+        assert_eq!(
+            transport.redact("credentials: rpc v2"),
+            "credentials: [redacted] [redacted]"
+        );
     }
 }

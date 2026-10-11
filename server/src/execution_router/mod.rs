@@ -50,6 +50,15 @@ pub struct ExecutionRouter {
 }
 
 impl ExecutionRouter {
+    pub(crate) fn validate_webhooks(&self, options: &[WebhookOptions]) -> Result<(), EngineError> {
+        self.webhook_queue
+            .handler
+            .validate_destinations(options)
+            .map_err(|error| EngineError::ValidationError {
+                message: error.to_string(),
+            })
+    }
+
     pub async fn execute(
         &self,
         execution_request: SendTransactionRequest,
@@ -57,6 +66,7 @@ impl ExecutionRouter {
         signing_credential: engine_core::credentials::SigningCredential,
     ) -> Result<Vec<QueuedTransaction>, EngineError> {
         validate_execution_request(&execution_request)?;
+        self.validate_webhooks(&execution_request.webhook_options)?;
         if self
             .chains
             .is_configured(execution_request.execution_options.base.chain_id)
@@ -449,6 +459,7 @@ impl ExecutionRouter {
             QueuedSolanaTransactionResponse, SolanaTransactionOptions,
         };
 
+        self.validate_webhooks(&request.webhook_options)?;
         if request.execution_options.max_blockhash_retries != 0 {
             return Err(EngineError::ValidationError { message: "Automatic Solana resubmission with a new blockhash is unsupported: maxBlockhashRetries must be 0; ambiguous expired transactions require operator reconciliation".into() });
         }

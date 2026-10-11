@@ -22,7 +22,9 @@ pub fn register(registry: &Registry) -> Result<(), prometheus::Error> {
 }
 
 pub(super) fn timer(operation: &'static str, phase: &'static str) -> HistogramTimer {
-    DURATIONS.with_label_values(&[operation, phase]).start_timer()
+    DURATIONS
+        .with_label_values(&[operation, phase])
+        .start_timer()
 }
 
 pub(super) fn observe(operation: &'static str, phase: &'static str, elapsed: Duration) {

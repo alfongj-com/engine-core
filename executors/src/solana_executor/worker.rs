@@ -101,6 +101,9 @@ pub enum SolanaExecutorError {
     #[serde(rename_all = "camelCase")]
     TransactionBuildFailed { inner_error: String },
 
+    #[error("Serialized transaction blockhash is not yet visible to the RPC node")]
+    BlockhashNotVisible,
+
     #[error("Failed to sign transaction: {inner_error}")]
     #[serde(rename_all = "camelCase")]
     SigningFailed { inner_error: EngineError },
@@ -490,8 +493,16 @@ impl DurableExecution for SolanaExecutorJobHandler {
 
             // Don't send webhook for NotYetConfirmed - silent retry
             SolanaExecutorError::NotYetConfirmed { .. } => {}
-            SolanaExecutorError::RecoveryRequired { .. } => {
-                warn!(transaction_id = %transaction_id, "Solana recovery paused; operator reconciliation required");
+            SolanaExecutorError::RecoveryRequired { signature, reason } => {
+                warn!(transaction_id = %transaction_id, %signature, %reason,
+                    "Solana outcome unresolved; operator reconciliation required");
+                // This is pending operator attention, never evidence of on-chain
+                // failure. Publish through the same fenced NACK transaction. A
+                // still-parked job can notify again after its one-hour delay.
+                if let Err(e) = self.queue_nack_webhook(job, nack_data, tx) {
+                    error!(transaction_id = %transaction_id, error = ?e,
+                        "Failed to queue recovery-required webhook");
+                }
             }
 
             // For all other errors (network errors, RPC errors, etc.), send nack webhook
@@ -624,10 +635,13 @@ impl SolanaExecutorJobHandler {
         let transaction_id = &job_data.transaction_id;
         let chain_id_str = &job_data.transaction.execution_options.chain_id;
         let signer_address = job_data.transaction.execution_options.signer_address;
-        // A request's observation preference cannot lower durable settlement.
-        // This also protects already queued jobs that requested `confirmed`.
-        let commitment_level = CommitmentLevel::Finalized;
-        let commitment = CommitmentConfig::finalized();
+        // Caller-provided hashes can be newer than the finalized bank. Admission
+        // and preflight must see those hashes without lowering durable settlement:
+        // reconcile_status always requires finalized status and a matching receipt.
+        let submission_commitment = match job_data.transaction.input {
+            SolanaTransactionInput::Serialized(_) => CommitmentConfig::processed(),
+            SolanaTransactionInput::Instructions(_) => CommitmentConfig::finalized(),
+        };
         self.verify_lock(lock, transaction_id).await?;
         let stored_attempt = self
             .storage
@@ -682,7 +696,7 @@ impl SolanaExecutorJobHandler {
 
             // History lookup also finds landed transactions after the recent cache rotates.
             if let Some(result) = self
-                .reconcile_status(rpc_client, job_data, &attempt, commitment)
+                .reconcile_status(rpc_client, job_data, &attempt)
                 .await?
             {
                 return result;
@@ -708,15 +722,15 @@ impl SolanaExecutorJobHandler {
                     > last_valid_height
             } else {
                 // Serialized inputs have no trustworthy lastValidBlockHeight. A false
-                // finalized validity result can also mean a newer/noncanonical hash.
+                // validity result can also mean a lagging node/noncanonical hash.
                 // Preserve evidence and stop rather than inventing an expiry bound.
                 let valid = rpc_client
-                    .is_blockhash_valid(&attempt.blockhash, commitment)
+                    .is_blockhash_valid(&attempt.blockhash, submission_commitment)
                     .await
                     .map_err(|e| self.rpc_error(&e, chain_id_str.as_str()))?;
                 if !valid {
                     if let Some(result) = self
-                        .reconcile_status(rpc_client, job_data, &attempt, commitment)
+                        .reconcile_status(rpc_client, job_data, &attempt)
                         .await?
                     {
                         return result;
@@ -730,14 +744,20 @@ impl SolanaExecutorJobHandler {
             };
             if !expired {
                 return self
-                    .broadcast_attempt(rpc_client, job_data, attempt, lock, commitment_level)
+                    .broadcast_attempt(
+                        rpc_client,
+                        job_data,
+                        attempt,
+                        lock,
+                        submission_commitment.commitment,
+                    )
                     .await;
             }
 
             // Ordering matters: a transaction can land between the first status query
             // and the expiry check. Query history again AFTER finalized expiry.
             if let Some(result) = self
-                .reconcile_status(rpc_client, job_data, &attempt, commitment)
+                .reconcile_status(rpc_client, job_data, &attempt)
                 .await?
             {
                 return result;
@@ -763,7 +783,7 @@ impl SolanaExecutorJobHandler {
         let (recent_blockhash, last_valid_height) = match &job_data.transaction.input {
             SolanaTransactionInput::Instructions(_) => {
                 let (hash, height) = rpc_client
-                    .get_latest_blockhash_with_commitment(commitment)
+                    .get_latest_blockhash_with_commitment(submission_commitment)
                     .await
                     .map_err(|e| self.rpc_error(&e, chain_id_str.as_str()))?;
                 (hash, Some(height))
@@ -863,16 +883,15 @@ impl SolanaExecutorJobHandler {
                 .fail());
             }
             if !rpc_client
-                .is_blockhash_valid(&actual_blockhash, commitment)
+                .is_blockhash_valid(&actual_blockhash, submission_commitment)
                 .await
                 .map_err(|e| self.rpc_error(&e, chain_id_str.as_str()))?
             {
-                return Err(SolanaExecutorError::TransactionBuildFailed {
-                    inner_error:
-                        "Serialized transaction blockhash is not valid at the requested commitment"
-                            .into(),
-                }
-                .fail());
+                // A lagging/load-balanced RPC is not evidence of malformed input.
+                // Retry before signing or reserving a wire identity; the existing
+                // unsigned-job retry budget bounds permanently invalid inputs.
+                return Err(SolanaExecutorError::BlockhashNotVisible
+                    .nack(Some(NETWORK_ERROR_RETRY_DELAY), RequeuePosition::Last));
             }
         }
 
@@ -920,8 +939,14 @@ impl SolanaExecutorJobHandler {
             return Err(SolanaExecutorError::LockLost
                 .nack(Some(CONFIRMATION_RETRY_DELAY), RequeuePosition::Last));
         }
-        self.broadcast_attempt(rpc_client, job_data, attempt, lock, commitment_level)
-            .await
+        self.broadcast_attempt(
+            rpc_client,
+            job_data,
+            attempt,
+            lock,
+            submission_commitment.commitment,
+        )
+        .await
     }
 
     fn park(attempt: &SolanaTransactionAttempt, reason: &str) -> JobError<SolanaExecutorError> {
@@ -950,7 +975,6 @@ impl SolanaExecutorJobHandler {
         rpc_client: &RpcClient,
         job_data: &SolanaExecutorJobData,
         attempt: &SolanaTransactionAttempt,
-        _commitment: CommitmentConfig,
     ) -> JobResult<Option<JobResult<SolanaExecutorResult, SolanaExecutorError>>, SolanaExecutorError>
     {
         let statuses = rpc_client
@@ -1126,8 +1150,11 @@ impl SolanaExecutorJobHandler {
                     .into(),
             }
             .nack(Some(NETWORK_ERROR_RETRY_DELAY), RequeuePosition::Last)),
-            // Even AlreadyProcessed/preflight errors can follow an accepted send whose
-            // response was lost. Only status and expiry establish a terminal outcome.
+            // Preflight is not global non-execution evidence, even on send #1:
+            // serialized inputs may already have been submitted by the caller.
+            // A lost response can also precede a later preflight failure. Preserve
+            // the signed identity until finalized status and a matching receipt;
+            // expiry alone parks an unknown outcome instead of making it terminal.
             Err(e) => Err(SolanaExecutorError::SendFailed {
                 inner_error: self.to_engine_solana_error(
                     &e,

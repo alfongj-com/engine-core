@@ -20,9 +20,26 @@ use thirdweb_engine::{
 };
 use tracing_subscriber::{filter::EnvFilter, layer::SubscriberExt, util::SubscriberInitExt};
 
+mod shutdown;
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let config = config::get_config();
+    let subscriber = tracing_subscriber::registry()
+        .with(EnvFilter::try_from_default_env().unwrap_or_else(|_| {
+            // Default to info level if RUST_LOG environment variable is not set
+            // Note: engine_executors::webhook=warn overrides the general engine_executors=debug
+            "thirdweb_engine=debug,tower_http=debug,axum=debug,twmq=info,engine_executors=debug,engine_executors::webhook=warn,thirdweb_core=debug"
+                .into()
+        }));
+
+    match config.server.log_format {
+        config::LogFormat::Json => subscriber
+            .with(tracing_subscriber::fmt::layer().json())
+            .init(),
+        config::LogFormat::Pretty => subscriber.with(tracing_subscriber::fmt::layer()).init(),
+    }
+
     let arguments: Vec<_> = std::env::args().skip(1).collect();
     anyhow::ensure!(
         arguments.len() <= 1,
@@ -86,21 +103,6 @@ async fn main() -> anyhow::Result<()> {
         engine_core::credentials::SigningCredential::environment()?;
     }
 
-    let subscriber = tracing_subscriber::registry()
-        .with(EnvFilter::try_from_default_env().unwrap_or_else(|_| {
-            // Default to info level if RUST_LOG environment variable is not set
-            // Note: engine_executors::webhook=warn overrides the general engine_executors=debug
-            "thirdweb_engine=debug,tower_http=debug,axum=debug,twmq=info,engine_executors=debug,engine_executors::webhook=warn,thirdweb_core=debug"
-                .into()
-        }));
-
-    match config.server.log_format {
-        config::LogFormat::Json => subscriber
-            .with(tracing_subscriber::fmt::layer().json())
-            .init(),
-        config::LogFormat::Pretty => subscriber.with(tracing_subscriber::fmt::layer()).init(),
-    }
-
     let chains = Arc::new(ThirdwebChainService::new(
         &config.thirdweb,
         &config.evm_rpc,
@@ -158,15 +160,18 @@ async fn main() -> anyhow::Result<()> {
         config.queue
     );
 
+    let shutdown_signal = shutdown::ShutdownSignal::listen()?;
+
     // Start queue workers
     tracing::info!("Starting queue workers...");
     let all_workers = queue_manager.start_workers(&config.queue);
 
+    let monitored_recovery = recovery.clone();
     let recovery_monitor = tokio::spawn(async move {
         let mut interval = tokio::time::interval(Duration::from_secs(1));
         loop {
             interval.tick().await;
-            if let Err(error) = recovery.ensure_healthy().await {
+            if let Err(error) = monitored_recovery.ensure_healthy().await {
                 tracing::error!(error = %error, "Recovery journal halted transaction admission and broadcast");
                 break;
             }
@@ -231,9 +236,7 @@ async fn main() -> anyhow::Result<()> {
     server.start(listener)?;
 
     tracing::info!("Servers started, waiting for shutdown signal");
-    if let Err(e) = tokio::signal::ctrl_c().await {
-        tracing::warn!("Failed to listen for Ctrl+C: {}", e);
-    }
+    shutdown_signal.wait().await?;
     tracing::info!("Shutdown signal received");
 
     // Orchestrate shutdown with minimal wrapping since internal methods handle their own instrumentation
@@ -251,6 +254,9 @@ async fn main() -> anyhow::Result<()> {
     } else {
         tracing::info!("All workers shut down successfully");
     }
+
+    recovery.drain_mutations().await;
+    tracing::info!("All owned recovery mutations drained");
 
     Ok(())
 }

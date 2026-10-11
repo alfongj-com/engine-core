@@ -35,6 +35,7 @@ retained incident journals or the old Nitro VM for these tests.
 
 ## Start here
 
+- [Review fixes and remaining production limits](docs/review-followups.md).
 - [Chain compatibility design](docs/design/chain-compatibility.md): Ethereum, Arbitrum, OP Stack/Base, finality, fees, sequencing and capabilities.
 - [Configured RPCs and Solana recovery](docs/design/rpc-and-solana-recovery.md): setup, authentication, retry rules and operational limits.
 - [Finality and reorg handling](docs/design/finality-and-recovery.md): completion policies and chain assumptions.

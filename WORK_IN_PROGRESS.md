@@ -22,8 +22,9 @@ checkpoint behavior. The draft records an exact pending transition, applies Redi
 CAS, then commits a SQLite acknowledgement before returning permission.
 
 Remaining wiring includes schema 2 and safe legacy migration, startup reconciliation,
-transport ambiguity, owner retention through cancelled blocking work, offline
-recovery/reattach rules, status/export, and every mutation's pending record. Add the
+transport ambiguity, offline recovery/reattach rules, status/export, and every
+mutation's pending record. Adapt the inherited cancellation/owner-retention behavior
+to the pending-transition protocol. Add the
 remaining migration, corrupt-marker, ambiguous-response and acknowledgement tests.
 The drafted process-kill/cancellation tests have not been compiled or run.
 
@@ -64,3 +65,21 @@ agent. Tools and a browsable evidence archive are now under
 Tool versions and documentation paths were checked. No new Engine build, full
 test suite or benchmark ran during this documentation handoff. The implementation
 status and remaining work above are unchanged.
+
+## Parent review imported — October 11, 2026
+
+Merged `production-hardening` at `8741b881d0e1f5b7290492d8e65a6384ac632cb2`.
+The parent adds cancellation-safe schema1 journal mutations, blocking-work owner
+retention and SIGTERM/SIGINT shutdown that drains detached journal mutations.
+It also includes the reviewed Redis reattach, fee parsing, pre-sign validation,
+Solana admission, webhook and operability fixes described in
+[review follow-ups](docs/review-followups.md).
+
+Conflict resolution retains the timing instrumentation inside those owned journal
+tasks and keeps the WIP projection model, acknowledgement/return actions and
+unwired Rust draft. Schema2 migration/publication is still not connected;
+shared-chain fairness and Solana polling coalescing remain unimplemented.
+`Cargo.lock` is unchanged, and the added instrumentation dependencies still need
+normal compilation/lockfile review. Only formatting and diff checks were run for
+this merge. The combined model and runtime source map remain unqualified and
+intentionally stale; do not copy the parent's verification status onto this draft.

@@ -179,7 +179,7 @@ mod tests {
     use crate::recovery::tests::{Fixture, admit, request};
     use std::io;
 
-    async fn large_fixture(journal: &RecoveryJournal, count: usize) {
+    async fn large_fixture(journal: &Arc<RecoveryJournal>, count: usize) {
         let old = journal.db(move |conn| {
             let tx = conn.transaction()?;
             for index in 0..count {

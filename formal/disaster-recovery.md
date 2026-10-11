@@ -69,7 +69,7 @@ state change. Recovery publishes its new marker separately; an interrupted
 recovery remains halted. It does not restore automatic execution of quarantined
 work.
 
-## Source correspondence
+## Draft source correspondence (not yet implemented)
 
 | Model boundary | Runtime obligation |
 | --- | --- |
@@ -80,6 +80,7 @@ work.
 | `Migrate` | Healthy schema1 observation, atomic schema bump and recorded migration transition. |
 | `Send`, `Execute` | An already-authorized call or chain effect may occur after a later halt or process crash. |
 | `Enqueue` | Original-ID retry uses the persisted payload/generated identity; terminal/quarantined work is not recreated. |
+| `RedisUnavailable` | Observation failure retains its first cause; reattachment still requires an exact current marker and exclusive ownership. |
 | `Reattach`, `RecoverBegin/Publish/Finish` | Exact completed-checkpoint reattachment or explicit new-epoch quarantine; never silent process adoption. |
 
 The identity model keeps operation metadata beside pending as specification
@@ -134,3 +135,31 @@ post-ack rollback; pending old/new restart; changed Redis process/role;
 malformed pending state; schema1 healthy/mismatched migration; and cancellation
 while blocking work still holds the exclusive owner. Real crash/restart process
 qualification remains separate from these finite models.
+
+## Parent review imported — October 11, 2026
+
+The running schema1 implementation now retains journal mutations in owned tasks
+through FULL SQLite commit, Redis publication and the final health check, even
+when the awaiting request is cancelled. Blocking SQLite work retains the OS
+owner too. SIGTERM/SIGINT stop HTTP and workers, then drain registered mutations
+before the runtime exits; registration precedes spawning so unpolled tasks are
+included. The imported [cancellation regressions](../core/src/recovery/cancellation_tests.rs)
+check those implementation boundaries. This does not wire the schema2 draft or
+make a process crash between commit and mirror automatically recoverable.
+
+The parent also allows explicit exact-checkpoint reattachment after unavailable
+Redis observations or a primary-role change. It still requires the current
+writable primary and exact marker. Checkpoint, mirror, storage, operator and
+terminal-conflict halts remain non-clearable. The identity model carries forward
+the parent's `RedisUnavailable` action alongside the draft `Acknowledge` and
+`ReturnPermission` actions; primary/replica roles are explicit only in the focused
+projection model. This combined model has not been revalidated.
+
+`RepairMarker` remains an arbitrary marker write. If unavailability was the first
+halt cause, manually restoring just the marker can satisfy reattachment even
+when other keys were lost. The marker is not a dataset checksum: do not repair it
+by hand. A previously recorded mismatch or mirror failure stays non-clearable.
+
+Parent verification applies to the parent commit, not this merged instrumentation
+and projection draft. The source map remains intentionally stale. No model run,
+compilation, benchmark or runtime qualification was performed for this stack merge.

@@ -41,7 +41,7 @@
     },
     {
       "path": "core/src/recovery.rs",
-      "sha256": "2c42f792bb092c9b87e4f23a3d7c634601a2f9338dde886861fd4f85e1bdce67",
+      "sha256": "3bfceb535756701830e753c4ee9d37e7da1d709e1d267b7facda9766081baa91",
       "models": [
         "DisasterRecovery",
         "Finality",
@@ -53,7 +53,7 @@
       "models": [
         "DisasterRecovery"
       ],
-      "sha256": "fc8dcd2bc04a2c671c999fa9bd97a05f77796e3c67ae1396631b60e175e7300a"
+      "sha256": "d35d71bb2573faba164a6af10613de16c303d11473425ae07fcb1c70a65cc661"
     },
     {
       "path": "core/src/recovery/history_index_tests.rs",
@@ -66,7 +66,7 @@
     },
     {
       "path": "core/src/recovery/tests.rs",
-      "sha256": "a8f4e858fc48200e86d00b10482f4ffc20b70c5afd1f8e0c2f8c12e9df61904f",
+      "sha256": "02ea8dce2f176992b6ba3782ab0d13f248b8fc4d044111ddfc1ea3d0a05725e8",
       "models": [
         "DisasterRecovery",
         "Finality"
@@ -258,11 +258,11 @@
         "DisasterRecovery",
         "NonceAllocator"
       ],
-      "sha256": "7e1cfae36cb08e8f8578e437d757f4ead5b1be4f09bf646a4e4c2e0d1ce994db"
+      "sha256": "44ec24cd2cb9be1b9fc38b7a57fad6fa023f4964f2a50a62c765dde9c22279b0"
     },
     {
       "path": "executors/src/eoa/worker/transaction.rs",
-      "sha256": "d8747d671d2b15f1e32d544dac51e7ad0161c06c5fd99a3e73938fe4d9bcae88",
+      "sha256": "a7ef5af20fece14d8dd3dd3736617493f63ac14f7196abc7d92a01a66de10d09",
       "models": [
         "DisasterRecovery",
         "Fees"
@@ -301,7 +301,7 @@
     },
     {
       "path": "executors/src/finality_tests.rs",
-      "sha256": "37c59797c9d7b2179bfd0fab92b6e0adfd2e5315a005448b773720347b977620",
+      "sha256": "b12fbfee8e11097d5f94936b4563bc57ec3d4adb549f349df3c1906fd77d4341",
       "models": [
         "DisasterRecovery",
         "Finality",
@@ -332,7 +332,7 @@
     },
     {
       "path": "executors/src/solana_executor/recovery_tests.rs",
-      "sha256": "6cc5108cc2950314d5e839e36f4f4daa30d356da196186dd404e441e9e08a8d7",
+      "sha256": "d8051e599cf3b93a043435ef44ab4481549980c084ce161c940c949e6aeea03b",
       "models": [
         "DisasterRecovery",
         "SolanaRecovery"
@@ -362,7 +362,7 @@
     },
     {
       "path": "executors/src/solana_executor/worker.rs",
-      "sha256": "dae8f3219c0170ce1d39872e7ff59d66f3fb37c5bbb56212345121d9200d5657",
+      "sha256": "27a2d21df716960a4f5e939aa0c1cb1babddcf1d553e44a0bb5f40c8fd0df6d7",
       "models": [
         "DisasterRecovery",
         "SolanaRecovery"
@@ -379,7 +379,7 @@
     },
     {
       "path": "scripts/local_eoa_recovery.py",
-      "sha256": "8490e994b9f71da17da632dc8735fdbb0a4bdcfd66242c397d91d701caa90554",
+      "sha256": "e044c9495ce18375772fca3edac92a7e5d675f95001f876afe48928163e20584",
       "models": [
         "DisasterRecovery",
         "EoaRecovery"
@@ -449,7 +449,7 @@
     },
     {
       "path": "server/src/execution_router/mod.rs",
-      "sha256": "b3af84acfa69df55c41ba962416dea689cc3f04d568060625708e4ced46b71d4",
+      "sha256": "3167105718bfb9d76016d78ee5a00e2b496d441f297af4b0d280a40ad98579d6",
       "models": [
         "Admission",
         "DisasterRecovery",
@@ -472,7 +472,7 @@
     },
     {
       "path": "server/src/http/server.rs",
-      "sha256": "a2c8a49ab399830b2777cebbb7721be71cac387534ae30be90a64bae4f0974e4",
+      "sha256": "c97d02561af4ded02cb55090875ecd8941593662ce2fdcef6dc2ce7992299136",
       "models": [
         "DisasterRecovery"
       ]
@@ -482,7 +482,7 @@
       "models": [
         "DisasterRecovery"
       ],
-      "sha256": "65baae70f84c60c7f2abe73faa5e8f651dbbe6f3b1844181033ff4f215dfda6f"
+      "sha256": "9020ea20679669d7ddd24faf817298c152ccc9d66e7d3e10d04c95a460006952"
     },
     {
       "path": "server/src/lib.rs",
@@ -493,7 +493,7 @@
     },
     {
       "path": "server/src/main.rs",
-      "sha256": "d08c3d3ae7d5f273c9ebda178fa2d0e5763bacdc9f0331628399db396391f7fd",
+      "sha256": "e440c13dee05264961437ece3d8ae668875e5fa25ff98fd8433475e78801db47",
       "models": [
         "DisasterRecovery"
       ]
@@ -528,7 +528,7 @@
     },
     {
       "path": "server/tests/api_safety.rs",
-      "sha256": "1c391a3d7c034e44edb2bdb733abfe04891888a569cc0d7f35f65ab5e251a0dd",
+      "sha256": "89c8e1940d48ce34273ccc06d38e6859c8139c968833588e6e1bd0eba145b89a",
       "models": [
         "Admission",
         "DisasterRecovery",
@@ -586,9 +586,23 @@
     },
     {
       "path": "twmq/src/transaction.rs",
-      "sha256": "a1cf0ab2152a85b9c20589501870179cd462ce0c7e280fed22eead17b1520484",
+      "sha256": "d1586ae39e9d14aa866a256746e31a3d1f87e786eb480791627afda81e9237a0",
       "models": [
         "QueueLease"
+      ]
+    },
+    {
+      "path": "core/src/recovery/cancellation_tests.rs",
+      "sha256": "6c1d94ed0cd8bd35918878a9222bf89a5ce1661033896f970d677f536b1a24c8",
+      "models": [
+        "DisasterRecovery"
+      ]
+    },
+    {
+      "path": "server/src/shutdown.rs",
+      "sha256": "21ebd4b9aac7fd380d612ac80eba9c05b15af9f780613020a8f55f4aca370fd3",
+      "models": [
+        "DisasterRecovery"
       ]
     }
   ],
@@ -729,6 +743,31 @@
       "reason": "Both new/recycled production paths first reserve signed borrowed wires as a batch, then authorize each wire in input order through immutable admission/wire validation and independent journal commit/mirror. Redis worker ownership is read on both sides of awaited authorization. One authorized network wait can overlap the next authorization; ordered bounded results retain ID association. First authorization error stops the producer; shared first-poll failure flag suppresses buffered unstarted sends, while already-started calls drain before returning that error. Entire batch remains borrowed on authorization error/cancellation; RPC errors remain Uncertain rather than terminal/recyclable. EoaRecovery already permits independent retained-identity Broadcast; DisasterRecovery permits authorized Send during later AttemptCommit/Mirror and late execution after halt/crash. Suppressed send is conservative non-delivery, not a new safety transition. Models do not represent whole-batch barriers, first-poll revocation, Tokio buffers/Arc/atomics, worker-owner reads, ordered responses, cancellation/draining mechanics, recycled preparation, concurrency/rate/fairness or throughput; no new theorem/configuration/refinement proof is claimed. Six new real Redis/SQLite/HTTP regressions verify these implementation cuts, including both actual entry points and real higher nonce4 around holes2/3. Four runtime mutations (whole-batch barrier, missing producer stop, missing post-owner fence, missing first-poll suppression) fail intended assertions/deadlines; compilation succeeds. A prior fixture with recycled nonces above highest submitted1 was correctly rejected by cleanup and repaired, not accepted as a runtime bug.",
       "evidence": "https://github.com/alfongj-com/engine-core/blob/load-tests/formal/evidence/capacity-dispatch-review/README.md",
       "implementation_evidence": "https://github.com/alfongj-com/engine-core/blob/load-tests/docs/baselines/capacity-2026-09-26/dispatch-validation/README.md"
+    },
+    "pr_review_oct11": {
+      "date": "2026-10-11",
+      "base_commit": "24417ef29782a12adce37292b0fa8be4dd9f659b",
+      "status": "Source transitions reviewed; executable checks recorded separately. This fingerprint is a review guard, not a proof of Rust refinement.",
+      "paths": [
+        "core/src/recovery.rs",
+        "core/src/recovery/export.rs",
+        "core/src/recovery/tests.rs",
+        "executors/src/eoa/worker/send_tests.rs",
+        "executors/src/eoa/worker/transaction.rs",
+        "executors/src/finality_tests.rs",
+        "executors/src/solana_executor/recovery_tests.rs",
+        "executors/src/solana_executor/worker.rs",
+        "scripts/local_eoa_recovery.py",
+        "server/src/execution_router/mod.rs",
+        "server/src/http/server.rs",
+        "server/src/http/server_tests.rs",
+        "server/src/main.rs",
+        "server/tests/api_safety.rs",
+        "twmq/src/transaction.rs",
+        "core/src/recovery/cancellation_tests.rs",
+        "server/src/shutdown.rs"
+      ],
+      "reason": "Journal mutations retain their owned task, serial lock and admission slot from health check through SQLite commit, Redis CAS and postcheck. Blocking DB closures separately retain the file owner. Caller cancellation grants no permission and performs no chain send; OS/runtime crash still exposes the old fail-closed checkpoint gap. DisasterRecovery now models unavailable observation as a distinct halt that offline reattach may clear only with the exact authority token; primary role remains a runtime obligation. Other halt causes and chain/terminal conflicts stay non-clearable. Solana serialized admission/preflight uses processed while status/receipt evidence remains finalized; a missing pre-sign hash retries with unchanged serialized input, and simulation errors never imply global non-execution. Existing identity models abstract this admission filter and same-wire retries; parked attempts issue nonterminal NACK notifications through the owner-fenced completion pipeline without releasing identity. Supplied-gas EVM estimation filters invalid envelopes before signing without altering gas; intentional execution reverts remain valid. Redis pool reconnect only precedes WATCH and never retries EXEC. SIGTERM enters existing shutdown; webhook admission policy/read-only route exceptions do not authorize mutation. Concrete task lifetimes, signals, webhooks, node fee/gas/capability policies, JSON numeric precision, redaction, connection timings, and throughput remain implementation tests/review obligations, not model theorems. Final shutdown review adds a read-guard registration before spawning each mutation and an explicit write-barrier drain after all HTTP/workers finish; a regression covers unpolled registration and canceled commit-to-mirror work. This prevents orderly runtime shutdown from aborting detached publication, without changing forced-crash model transitions."
     }
   }
 }

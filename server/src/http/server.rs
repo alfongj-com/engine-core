@@ -195,8 +195,21 @@ impl EngineServer {
 
 const MAX_CONCURRENT_MUTATIONS: usize = 64;
 
-fn is_mutation(method: &Method) -> bool {
-    !matches!(*method, Method::GET | Method::HEAD | Method::OPTIONS)
+fn is_mutation(request: &Request) -> bool {
+    if matches!(
+        *request.method(),
+        Method::GET | Method::HEAD | Method::OPTIONS
+    ) {
+        return false;
+    }
+    // These POST routes only read contract state or encode calldata. Keep the
+    // exception exact: signing, admission and administrative mutations still
+    // share the same pressure limit and independent recovery fence.
+    !(request.method() == Method::POST
+        && matches!(
+            request.uri().path(),
+            "/v1/read/contract" | "/v1/encode/contract"
+        ))
 }
 
 async fn mutation_limit(
@@ -204,7 +217,7 @@ async fn mutation_limit(
     request: Request,
     next: Next,
 ) -> Response {
-    if !is_mutation(request.method()) {
+    if !is_mutation(&request) {
         return next.run(request).await;
     }
     let Ok(permit) = slots.try_acquire_owned() else {
@@ -232,7 +245,7 @@ async fn mutation_limit(
 }
 
 async fn recovery_gate(request: Request, next: Next) -> Response {
-    if is_mutation(request.method()) {
+    if is_mutation(&request) {
         if engine_core::recovery::ensure_healthy().await.is_err() {
             return (StatusCode::SERVICE_UNAVAILABLE, Json(json!({
                 "error": "RECOVERY_REQUIRED", "message": "Transaction writes and signing are paused; inspect the recovery journal"

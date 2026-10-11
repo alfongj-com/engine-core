@@ -166,6 +166,7 @@ Run sequentially after the build succeeds:
 ```sh
 "$PYTHON_BIN" scripts/local_eoa_recovery.py --report "$ENGINE_TEST_REPORTS/eoa.json"
 "$PYTHON_BIN" scripts/local_eoa_recovery.py --redis-crash --report "$ENGINE_TEST_REPORTS/eoa-redis.json"
+"$PYTHON_BIN" scripts/local_eoa_recovery.py --live-redis-restart --report "$ENGINE_TEST_REPORTS/eoa-live-redis.json"
 "$PYTHON_BIN" scripts/local_eoa_recovery.py --transactions 8 --redis-crash --revert --report "$ENGINE_TEST_REPORTS/eoa-revert.json"
 "$PYTHON_BIN" scripts/local_redis_disaster.py --loss flush --report "$ENGINE_TEST_REPORTS/redis-flush.json"
 "$PYTHON_BIN" scripts/local_redis_disaster.py --loss rollback --report "$ENGINE_TEST_REPORTS/redis-rollback.json"

@@ -925,7 +925,7 @@ async fn active_poll_detects_checkpoint_rollback_without_new_receipt() {
 }
 
 async fn seed_userop_journal(
-    journal: &recovery::RecoveryJournal,
+    journal: &std::sync::Arc<recovery::RecoveryJournal>,
     confirmation: &mut UserOpConfirmationJobData,
 ) -> crate::external_bundler::send::ExternalBundlerSendJobData {
     use crate::external_bundler::send::ExternalBundlerSendJobData;

@@ -100,6 +100,24 @@ fn bump_transaction_fees(
 #[path = "fee_tests.rs"]
 mod fee_tests;
 
+/// These errors are useful only before the first signature/dispatch. A send
+/// error with the same text remains uncertain and never frees its nonce.
+fn is_invalid_preflight_envelope(message: &str) -> bool {
+    let message = message.to_ascii_lowercase();
+    [
+        "intrinsic gas too low",
+        "intrinsic gas exceeds",
+        "exceeds block gas limit",
+        "transaction gas limit too high",
+        "unsupported transaction type",
+        "transaction type not supported",
+        "oversized",
+        "max initcode size exceeded",
+    ]
+    .iter()
+    .any(|reason| message.contains(reason))
+}
+
 impl<C: Chain> EoaExecutorWorker<C> {
     pub async fn build_and_sign_single_transaction_with_retries(
         &self,
@@ -198,7 +216,13 @@ impl<C: Chain> EoaExecutorWorker<C> {
             .provider()
             .estimate_gas(tx_request.clone())
             .await
-            .unwrap_or(21000);
+            .map_err(|e| EoaExecutorWorkerError::RpcError {
+                message: format!(
+                    "NOOP gas estimation failed: {}",
+                    engine_core::error::rpc_error_diagnostic(&e)
+                ),
+                inner_error: e.to_engine_error(&self.chain),
+            })?;
         tx_request = tx_request.with_gas_limit(gas_limit);
 
         let tx_request = self.estimate_gas_fees(tx_request).await?;
@@ -443,12 +467,10 @@ impl<C: Chain> EoaExecutorWorker<C> {
                                 ),
                                 inner_error: e.to_engine_error(&self.chain),
                             });
-                        } else if error_payload.message.to_lowercase().contains("oversized") {
-                            // This is an oversized transaction - the transaction is fundamentally broken
-                            // This should fail the individual transaction, not the worker
+                        } else if is_invalid_preflight_envelope(&error_payload.message) {
                             return Err(EoaExecutorWorkerError::TransactionSimulationFailed {
                                 message: format!(
-                                    "Transaction data is oversized during gas estimation: {}",
+                                    "Transaction rejected before signing during gas estimation: {}",
                                     error_payload.message
                                 ),
                                 inner_error: e.to_engine_error(&self.chain),
@@ -468,7 +490,7 @@ impl<C: Chain> EoaExecutorWorker<C> {
 
         // Etherlink (42793) requires extra gas per authorization list item
         // because their node's gas estimation doesn't account for it.
-        if request.chain_id == ETHERLINK_CHAIN_ID {
+        if request.chain_id == ETHERLINK_CHAIN_ID && request.gas_limit.is_none() {
             if let Some(auth_list) = &tx_request.authorization_list {
                 let extra = auth_list.len() as u64 * ETHERLINK_GAS_PER_AUTHORIZATION;
                 let current_gas = tx_request.gas.unwrap_or(0);
@@ -479,6 +501,17 @@ impl<C: Chain> EoaExecutorWorker<C> {
                     "Adding Etherlink authorization list gas overhead"
                 );
                 tx_request = tx_request.with_gas_limit(current_gas + extra);
+            }
+        }
+
+        if let (Some(max_fee), Some(priority)) = (
+            tx_request.max_fee_per_gas,
+            tx_request.max_priority_fee_per_gas,
+        ) {
+            if priority > max_fee {
+                return Err(EoaExecutorWorkerError::TransactionBuildFailed {
+                    message: "Estimated maxPriorityFeePerGas exceeds maxFeePerGas; refusing an invalid fee pair".into(),
+                });
             }
         }
 
@@ -530,6 +563,7 @@ impl<C: Chain> EoaExecutorWorker<C> {
             .await
             .map_err(crate::recovery::eoa_error)?;
         let typed_tx = self.build_typed_transaction(request, nonce).await?;
+        self.validate_supplied_gas(request, &typed_tx).await?;
 
         // Inject KMS cache into the signing credential (after deserialization from Redis)
         let credential_with_cache = request
@@ -539,6 +573,64 @@ impl<C: Chain> EoaExecutorWorker<C> {
 
         self.sign_transaction(typed_tx, &credential_with_cache)
             .await
+    }
+
+    /// Supplied gas used to bypass all node validation, allowing a permanently
+    /// invalid envelope to reserve a nonce at its first dispatch. Ask the node
+    /// about its current rules before signing, retaining the caller's gas limit.
+    /// This is not a mempool-acceptance promise: rules/state can change, RPCs do
+    /// not expose every admission cap, and L2 gas accounting is chain-specific.
+    async fn validate_supplied_gas(
+        &self,
+        request: &EoaTransactionRequest,
+        typed_tx: &TypedTransaction,
+    ) -> Result<(), EoaExecutorWorkerError> {
+        let Some(gas_limit) = request.gas_limit else {
+            return Ok(()); // Already estimated while building.
+        };
+        let rpc_request: AlloyTransactionRequest = typed_tx.clone().into();
+        let rpc_request = rpc_request.with_from(request.from);
+        match self.chain.provider().estimate_gas(rpc_request).await {
+            Ok(estimate) if estimate > gas_limit => {
+                Err(EoaExecutorWorkerError::TransactionBuildFailed {
+                    message: format!(
+                        "Supplied gasLimit {gas_limit} is below the node estimate {estimate}"
+                    ),
+                })
+            }
+            Ok(_) => Ok(()),
+            Err(error) => {
+                if let RpcError::ErrorResp(payload) = &error {
+                    if is_invalid_preflight_envelope(&payload.message) {
+                        return Err(EoaExecutorWorkerError::TransactionSimulationFailed {
+                            message: format!(
+                                "Transaction rejected before signing: {}",
+                                payload.message
+                            ),
+                            inner_error: error.to_engine_error(&self.chain),
+                        });
+                    }
+                    // An intentionally reverting execution is still a valid
+                    // transaction that consumes its nonce. Explicit gas keeps
+                    // that behavior; intrinsic/type/size failures above do not.
+                    if payload.as_revert_data().is_some()
+                        || payload
+                            .message
+                            .to_ascii_lowercase()
+                            .contains("execution reverted")
+                    {
+                        return Ok(());
+                    }
+                }
+                Err(EoaExecutorWorkerError::RpcError {
+                    message: format!(
+                        "Pre-sign gas validation failed: {}",
+                        engine_core::error::rpc_error_diagnostic(&error)
+                    ),
+                    inner_error: error.to_engine_error(&self.chain),
+                })
+            }
+        }
     }
 
     pub fn apply_gas_bump_to_typed_transaction(

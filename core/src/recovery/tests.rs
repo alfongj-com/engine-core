@@ -42,7 +42,7 @@ pub(super) fn request(id: &str) -> Value {
     json!({"transactionId":id,"chainId":31337,"from":"0x1111111111111111111111111111111111111111","value":"1","credential":"test-secret"})
 }
 pub(super) async fn admit(
-    j: &RecoveryJournal,
+    j: &Arc<RecoveryJournal>,
     kind: &str,
     id: &str,
     payload: Value,
@@ -926,7 +926,7 @@ async fn admission_overload_is_bounded_retryable_and_does_not_halt_reconciliatio
         MAX_CONCURRENT_ADMISSIONS as u64
     );
     assert!(j.admission("eoa", "overflow").await.unwrap().is_none());
-    // Capacity is returned even if an awaiting request is cancelled.
+    // Cancellation retains capacity until the owned mutation finishes mirroring.
     let guard = j.serial.lock().await;
     let journal = j.clone();
     let pending =
@@ -942,7 +942,20 @@ async fn admission_overload_is_bounded_retryable_and_does_not_halt_reconciliatio
     .unwrap();
     pending.abort();
     assert!(matches!(pending.await, Err(error) if error.is_cancelled()));
+    assert_eq!(
+        j.admission_slots.available_permits(),
+        MAX_CONCURRENT_ADMISSIONS - 1
+    );
     drop(guard);
+    tokio::time::timeout(Duration::from_secs(5), async {
+        while j.admission_slots.available_permits() != MAX_CONCURRENT_ADMISSIONS {
+            tokio::task::yield_now().await;
+        }
+    })
+    .await
+    .unwrap();
+    j.ensure_healthy().await.unwrap();
+    assert!(j.admission("eoa", "cancelled").await.unwrap().is_some());
     assert_eq!(
         j.admission_slots.available_permits(),
         MAX_CONCURRENT_ADMISSIONS
@@ -1138,4 +1151,86 @@ async fn userop_terminal_hash_is_derived_from_signed_attempt_and_custom_entrypoi
     );
     drop(j);
     f.cleanup(&[]).await;
+}
+
+#[tokio::test]
+#[ignore = "requires disposable Redis in TEST_REDIS_URL"]
+async fn reattach_continuity_causes_require_exact_primary_and_preserve_attempts() {
+    for reason in [
+        "Redis continuity unavailable",
+        "Redis primary role changed",
+        "Redis process changed",
+    ] {
+        let f = Fixture::fresh();
+        f.initialize().await;
+        let j = f.open().await;
+        admit(&j, "eoa", "a", request("a")).await;
+        j.before_broadcast("eoa", "a", &key(0), json!({"wire":"must-retain"}))
+            .await
+            .unwrap();
+        let before = RecoveryJournal::status(&f.path).unwrap();
+        j.halt(reason).await;
+        let mut redis = j.redis.clone();
+        drop(j);
+        let checkpoint_key = marker_key(&before.namespace);
+        let exact: String = redis.get(&checkpoint_key).await.unwrap();
+        for bad_marker in [Some("stale-checkpoint"), None] {
+            if let Some(bad) = bad_marker {
+                let _: () = redis.set(&checkpoint_key, bad).await.unwrap();
+            } else {
+                let _: () = redis.del(&checkpoint_key).await.unwrap();
+            }
+            assert!(
+                RecoveryJournal::reattach(&f.path, &f.url, before.namespace.clone())
+                    .await
+                    .is_err()
+            );
+            assert!(RecoveryJournal::status(&f.path).unwrap().halted);
+        }
+        let _: () = redis.set(&checkpoint_key, exact).await.unwrap();
+        let after = RecoveryJournal::reattach(&f.path, &f.url, before.namespace.clone())
+            .await
+            .unwrap();
+        assert!(!after.halted);
+        assert_eq!(after.epoch, before.epoch);
+        assert_eq!(after.checkpoint, before.checkpoint);
+        assert_eq!(after.attempts, 1);
+        assert_eq!(after.quarantined, 0);
+        let j = f.open().await;
+        assert_eq!(
+            j.admission("eoa", "a")
+                .await
+                .unwrap()
+                .unwrap()
+                .replay_key
+                .as_deref(),
+            Some(key(0).as_str())
+        );
+        drop(j);
+        f.cleanup(&[]).await;
+    }
+    // Even an exact marker must not clear a substantive safety failure.
+    for reason in [
+        "Redis checkpoint mismatch",
+        "Redis checkpoint mirror failed",
+        "ledger unavailable",
+        "terminal evidence conflict",
+        "operator quarantine",
+    ] {
+        let f = Fixture::fresh();
+        f.initialize().await;
+        let j = f.open().await;
+        j.halt(reason).await;
+        drop(j);
+        assert!(
+            RecoveryJournal::reattach(
+                &f.path,
+                &f.url,
+                RecoveryJournal::status(&f.path).unwrap().namespace
+            )
+            .await
+            .is_err()
+        );
+        f.cleanup(&[]).await;
+    }
 }

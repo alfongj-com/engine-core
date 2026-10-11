@@ -200,6 +200,10 @@ async fn public_routes_reject_unauthorized_mutations_and_invalid_execution() {
             ])
             .env(CHILD, "1")
             .env("ENGINE_ACCESS_TOKEN", TOKEN)
+            .env(
+                "ENGINE_WEBHOOK_ALLOWED_ORIGINS",
+                "https://hooks.example.com",
+            )
             .output()
             .unwrap();
         assert!(
@@ -388,6 +392,38 @@ async fn public_routes_reject_unauthorized_mutations_and_invalid_execution() {
     }
     assert_eq!(queue.count(JobStatus::Pending).await.unwrap(), 1);
 
+    // A webhook typo must reject the whole request before an ID is reserved or
+    // queued, rather than accepting a transaction with undeliverable events.
+    let mut invalid_webhook = body.clone();
+    invalid_webhook["executionOptions"]["idempotencyKey"] = json!("invalid-webhook");
+    invalid_webhook["webhookOptions"] = json!([
+        {"url": "https://hooks.example.com/event"},
+        {"url": "https://other.example.com/event?token=private"}
+    ]);
+    let response = http
+        .post(format!("{base_url}/v1/write/transaction"))
+        .header("x-thirdweb-client-id", "test")
+        .header("x-thirdweb-service-key", "test")
+        .header("x-wallet-access-token", "test")
+        .header("x-engine-access-token", TOKEN)
+        .json(&invalid_webhook)
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(response.status(), reqwest::StatusCode::BAD_REQUEST);
+    let error = response.text().await.unwrap();
+    assert!(error.contains("ENGINE_WEBHOOK_ALLOWED_ORIGINS"));
+    assert!(!error.contains("token=private"));
+    assert!(queue.get_job("invalid-webhook").await.unwrap().is_none());
+    assert!(
+        registry
+            .get_transaction_queue("invalid-webhook")
+            .await
+            .unwrap()
+            .is_none()
+    );
+    assert_eq!(queue.count(JobStatus::Pending).await.unwrap(), 1);
+
     let eip_queue = state.queue_manager.eip7702_send_queue.clone();
     let eip_body = json!({
         "executionOptions": {"type":"EIP7702", "chainId":31337,
@@ -457,6 +493,10 @@ fn configured_signer_routes_authenticate_and_queue_only_public_identity() {
         let output = Command::new(std::env::current_exe().unwrap())
             .args(["--exact", TEST, "--ignored", "--nocapture"])
             .env(CHILD, "1")
+            .env(
+                "ENGINE_WEBHOOK_ALLOWED_ORIGINS",
+                "https://hooks.example.com",
+            )
             .env("ENGINE_SOLANA_KEYPAIR_FILE", &path)
             .env("ENGINE_PRIVATE_KEY", format!("{:#x}", evm_key.to_bytes()))
             .env(
@@ -511,6 +551,16 @@ fn configured_signer_routes_authenticate_and_queue_only_public_identity() {
         assert!(signed.signatures[0].verify(payer.as_ref(), &signed.message.serialize()));
         assert_eq!(signed.signatures[0].to_string(), response["result"]["signature"]);
         let mut queued = body.clone(); queued["idempotencyKey"] = json!("solana-authenticated");
+        let mut invalid_webhook = queued.clone();
+        invalid_webhook["idempotencyKey"] = json!("solana-invalid-webhook");
+        invalid_webhook["webhookOptions"] = json!([{"url":"https://other.example.com/event"}]);
+        let response = http.post(format!("{url}/v1/solana/transaction"))
+            .header("x-engine-signing-token", "isolated-test-operator-token-with-32-bytes")
+            .json(&invalid_webhook).send().await.unwrap();
+        assert_eq!(response.status(), reqwest::StatusCode::BAD_REQUEST);
+        assert!(response.text().await.unwrap().contains("ENGINE_WEBHOOK_ALLOWED_ORIGINS"));
+        assert_eq!(state.queue_manager.solana_executor_queue.count(JobStatus::Pending).await.unwrap(), 0);
+        assert!(state.queue_manager.solana_executor_queue.get_job("solana-invalid-webhook").await.unwrap().is_none());
         let response = http.post(format!("{url}/v1/solana/transaction"))
             .header("x-engine-signing-token", "isolated-test-operator-token-with-32-bytes").json(&queued).send().await.unwrap();
         assert_eq!(response.status(), reqwest::StatusCode::ACCEPTED);
