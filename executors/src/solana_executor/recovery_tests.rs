@@ -32,12 +32,15 @@ struct Fixture {
 
 impl Fixture {
     async fn new() -> Self {
+        Self::with_key(Keypair::new()).await
+    }
+
+    async fn with_key(key: Keypair) -> Self {
         let client =
             redis::Client::open(std::env::var("TEST_REDIS_URL").expect("select disposable Redis"))
                 .unwrap();
         let redis = client.get_connection_manager().await.unwrap();
         let namespace = format!("solana-recovery:{}", uuid::Uuid::new_v4());
-        let key = Keypair::new();
         let hash = Hash::new_unique();
         let message =
             VersionedMessage::V0(v0::Message::try_compile(&key.pubkey(), &[], &[], hash).unwrap());
@@ -147,12 +150,19 @@ impl Fixture {
         )
     }
     async fn cleanup(&self) {
-        let keys: Vec<String> = self
+        let mut keys: Vec<String> = self
             .redis
             .clone()
             .keys(format!("{}:*", self.namespace))
             .await
             .unwrap();
+        let queue_keys: Vec<String> = self
+            .redis
+            .clone()
+            .keys(format!("twmq:{}:*", self.namespace))
+            .await
+            .unwrap();
+        keys.extend(queue_keys);
         if !keys.is_empty() {
             let _: () = self.redis.clone().del(keys).await.unwrap();
         }
@@ -360,6 +370,393 @@ async fn persisted_before_send_crash_recovers_identical_bytes_without_signing() 
     assert_eq!(stored.signature, f.attempt.signature);
     assert_eq!(stored.broadcast_attempts, 1);
     assert_eq!(stored.signed_transaction, f.attempt.signed_transaction);
+    lock.release().await.unwrap();
+    f.cleanup().await;
+}
+
+#[tokio::test]
+#[ignore = "requires disposable Redis in TEST_REDIS_URL; generated signer isolated in subprocess"]
+async fn serialized_hash_admission_and_rebroadcast_are_independent_of_finality() {
+    const CHILD: &str = "ENGINE_TEST_SOLANA_ADMISSION_CHILD";
+    if std::env::var_os(CHILD).is_none() {
+        // Never change the running test process's environment or use an operator key.
+        let directory =
+            std::env::temp_dir().join(format!("solana-admission-test-{}", uuid::Uuid::new_v4()));
+        std::fs::create_dir(&directory).unwrap();
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            std::fs::set_permissions(&directory, std::fs::Permissions::from_mode(0o700)).unwrap();
+        }
+        let path = directory.join("keypair.json");
+        std::fs::write(
+            &path,
+            serde_json::to_vec(&Keypair::new().to_bytes().to_vec()).unwrap(),
+        )
+        .unwrap();
+        let output = std::process::Command::new(std::env::current_exe().unwrap())
+            .args(["--exact", "solana_executor::worker::recovery_tests::serialized_hash_admission_and_rebroadcast_are_independent_of_finality", "--ignored", "--nocapture"])
+            .env(CHILD, "1")
+            .env("ENGINE_SOLANA_KEYPAIR_FILE", &path)
+            .output().unwrap();
+        std::fs::remove_dir_all(directory).unwrap();
+        assert!(
+            output.status.success(),
+            "child failed: {} {}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+        return;
+    }
+    let credential = SigningCredential::solana_environment().unwrap();
+    let mut f = Fixture::with_key(credential.solana_keypair().unwrap()).await;
+    f.data.signing_credential = credential;
+    f.data.transaction.input =
+        SolanaTransactionInput::new_with_serialized(f.attempt.signed_transaction.clone().unwrap());
+    let lock = f.handler.storage.try_acquire_lock("intent").await.unwrap();
+    let mut confirmed = finalized();
+    confirmed["confirmationStatus"] = json!("confirmed");
+    confirmed["confirmations"] = json!(1);
+    let (rpc, seen, server) = rpc(vec![
+        reply(
+            "isBlockhashValid",
+            json!({"context":{"slot":150},"value":true}),
+        ),
+        reply("sendTransaction", json!(f.attempt.signature.to_string())),
+        status(confirmed),
+        status(Value::Null),
+        reply(
+            "isBlockhashValid",
+            json!({"context":{"slot":150},"value":true}),
+        ),
+        reply("sendTransaction", json!(f.attempt.signature.to_string())),
+        status(finalized()),
+        details(&f.attempt),
+    ])
+    .await;
+    assert!(matches!(
+        assert_nack(f.handler.execute_transaction(&rpc, &f.data, &lock, 1).await),
+        SolanaExecutorError::TransactionSent { .. }
+    ));
+    assert!(matches!(
+        assert_nack(f.handler.execute_transaction(&rpc, &f.data, &lock, 2).await),
+        SolanaExecutorError::NotYetConfirmed { .. }
+    ));
+    let mut stored = f.stored(&lock).await;
+    assert_eq!(stored.blockhash, f.attempt.blockhash);
+    assert_eq!(stored.blockhash_last_valid_height, None);
+    stored.last_broadcast_at = 0;
+    f.handler
+        .storage
+        .update_attempt("intent", &stored, &lock)
+        .await
+        .unwrap();
+    assert!(matches!(
+        assert_nack(f.handler.execute_transaction(&rpc, &f.data, &lock, 3).await),
+        SolanaExecutorError::TransactionSent { .. }
+    ));
+    let result = f.handler.execute_transaction(&rpc, &f.data, &lock, 4).await;
+    assert_eq!(
+        result.ok().unwrap().signature,
+        f.attempt.signature.to_string()
+    );
+    finish(server).await;
+    let requests = seen.lock().unwrap();
+    for index in [0, 4] {
+        assert_eq!(
+            requests[index]["params"][0],
+            f.attempt.blockhash.to_string()
+        );
+        assert_eq!(requests[index]["params"][1]["commitment"], "processed");
+    }
+    for index in [1, 5] {
+        assert_eq!(
+            requests[index]["params"][0],
+            f.attempt.signed_transaction.as_ref().unwrap().as_str()
+        );
+        assert_eq!(
+            requests[index]["params"][1]["preflightCommitment"],
+            "processed"
+        );
+    }
+    assert_eq!(requests[7]["params"][1]["commitment"], "finalized");
+    drop(requests);
+    let stored = f.stored(&lock).await;
+    assert_eq!(stored.broadcast_attempts, 2);
+    assert_eq!(stored.signed_transaction, f.attempt.signed_transaction);
+    lock.release().await.unwrap();
+    f.cleanup().await;
+}
+
+#[tokio::test]
+#[ignore = "requires disposable Redis in TEST_REDIS_URL"]
+async fn serialized_hash_not_visible_is_retried_before_signing() {
+    let mut f = Fixture::new().await;
+    f.data.transaction.input =
+        SolanaTransactionInput::new_with_serialized(f.attempt.signed_transaction.clone().unwrap());
+    let lock = f.handler.storage.try_acquire_lock("intent").await.unwrap();
+    let (rpc, seen, server) = rpc(vec![reply(
+        "isBlockhashValid",
+        json!({"context":{"slot":1},"value":false}),
+    )])
+    .await;
+    assert!(matches!(
+        assert_nack(f.handler.execute_transaction(&rpc, &f.data, &lock, 1).await),
+        SolanaExecutorError::BlockhashNotVisible
+    ));
+    assert!(!f.handler.storage.has_attempt("intent").await.unwrap());
+    // The same input eventually exhausts only the unsigned-job retry budget.
+    assert!(matches!(
+        f.handler
+            .execute_transaction(
+                &rpc,
+                &f.data,
+                &lock,
+                MAX_SEND_ATTEMPTS_WITHOUT_TRANSACTION + 1
+            )
+            .await,
+        Err(JobError::Fail(
+            SolanaExecutorError::MaxRetriesExceeded { .. }
+        ))
+    ));
+    finish(server).await;
+    let requests = seen.lock().unwrap();
+    assert_eq!(requests.len(), 1);
+    assert_eq!(requests[0]["params"][1]["commitment"], "processed");
+    drop(requests);
+    lock.release().await.unwrap();
+    f.cleanup().await;
+}
+
+#[tokio::test]
+#[ignore = "requires disposable Redis in TEST_REDIS_URL"]
+async fn first_broadcast_preflight_failure_can_reconcile_without_resigning() {
+    let mut f = Fixture::new().await;
+    // The caller can submit a fully signed serialized input before Engine's first
+    // send. This RPC error therefore cannot authorize a terminal failure/cleanup.
+    f.data.transaction.input =
+        SolanaTransactionInput::new_with_serialized(f.attempt.signed_transaction.clone().unwrap());
+    f.attempt.blockhash_last_valid_height = None;
+    let lock = f.seed().await;
+    let (rpc, seen, server) = rpc(vec![
+        Reply {
+            method: "sendTransaction",
+            body: Some(json!({"error":{
+                "code":-32002,"message":"Transaction simulation failed: RPC_SECRET_SENTINEL",
+                "data":{"err":{"InstructionError":[0,"InvalidArgument"]},"logs":null}
+            }})),
+        },
+        status(finalized()),
+        details(&f.attempt),
+    ])
+    .await;
+    let error = assert_nack(
+        f.handler
+            .broadcast_attempt(
+                &rpc,
+                &f.data,
+                f.attempt.clone(),
+                &lock,
+                CommitmentLevel::Processed,
+            )
+            .await,
+    );
+    assert!(matches!(error, SolanaExecutorError::SendFailed { .. }));
+    assert!(
+        !serde_json::to_string(&error)
+            .unwrap()
+            .contains("RPC_SECRET_SENTINEL")
+    );
+    let stored = f.stored(&lock).await;
+    assert_eq!(stored.broadcast_attempts, 1);
+    assert_eq!(stored.signed_transaction, f.attempt.signed_transaction);
+    let result = f.handler.execute_transaction(&rpc, &f.data, &lock, 2).await;
+    assert_eq!(
+        result.ok().unwrap().signature,
+        f.attempt.signature.to_string()
+    );
+    finish(server).await;
+    assert_eq!(seen.lock().unwrap().len(), 3);
+    assert!(
+        f.handler.storage.has_attempt("intent").await.unwrap(),
+        "cleanup must wait for the finalized queue commit"
+    );
+    lock.release().await.unwrap();
+    f.cleanup().await;
+}
+
+#[tokio::test]
+#[ignore = "requires disposable Redis in TEST_REDIS_URL"]
+async fn recovery_required_webhook_commits_atomically_and_retains_unresolved_identity() {
+    let mut f = Fixture::new().await;
+    f.data
+        .webhook_options
+        .push(engine_core::execution_options::WebhookOptions {
+            url: "https://recovery-notification.invalid/events".into(),
+            secret: None,
+            user_metadata: None,
+        });
+    f.attempt.reconciliation_checks = MAX_RECONCILIATION_CHECKS;
+    let lock = f.seed().await;
+    let admission = f.handler.storage.admission_key("intent");
+    let fingerprint =
+        crate::solana_executor::storage::solana_admission_fingerprint(&f.data).unwrap();
+    let _: () = f
+        .redis
+        .clone()
+        .hset_multiple(
+            &admission,
+            &[("fingerprint", fingerprint.as_str()), ("state", "active")],
+        )
+        .await
+        .unwrap();
+    f.handler
+        .transaction_registry
+        .set_transaction_queue("intent", "solana-test")
+        .await
+        .unwrap();
+    let (rpc, seen, server) = rpc(vec![]).await;
+    let (error, delay, position) =
+        match f.handler.execute_transaction(&rpc, &f.data, &lock, 1).await {
+            Err(JobError::Nack {
+                error,
+                delay,
+                position,
+            }) => (error, delay, position),
+            _ => panic!("exhausted reconciliation budget must park without a terminal outcome"),
+        };
+    let reason = match &error {
+        SolanaExecutorError::RecoveryRequired { signature, reason } => {
+            assert_eq!(signature, &f.attempt.signature.to_string());
+            reason.clone()
+        }
+        _ => panic!("expected explicit operator-recovery requirement"),
+    };
+    assert_eq!(delay, Some(RECOVERY_PARK_DELAY));
+    let job_data_key = f.handler.webhook_queue.job_data_hash_name();
+    let mut aborted = redis::pipe();
+    aborted.atomic();
+    f.handler
+        .on_nack(
+            &f.job(),
+            NackHookData {
+                error: &error,
+                delay,
+                position,
+            },
+            &mut TransactionContext::new(&mut aborted, "solana-test".into()),
+        )
+        .await;
+    assert_eq!(
+        f.redis
+            .clone()
+            .hlen::<_, usize>(&job_data_key)
+            .await
+            .unwrap(),
+        0,
+        "hook enqueue must not escape the queue's atomic completion transaction"
+    );
+    // Exercise the same WATCH-abort boundary that prevents a stale queue lease
+    // from committing its NACK and hooks. No webhook is published on abort.
+    let client = redis::Client::open(std::env::var("TEST_REDIS_URL").unwrap()).unwrap();
+    let mut connection = client.get_multiplexed_async_connection().await.unwrap();
+    let guard = format!("{}:completion-guard", f.namespace);
+    let _: () = redis::cmd("WATCH")
+        .arg(&guard)
+        .query_async(&mut connection)
+        .await
+        .unwrap();
+    let _: () = f.redis.clone().set(&guard, "new-owner").await.unwrap();
+    let committed: Option<Vec<redis::Value>> = aborted.query_async(&mut connection).await.unwrap();
+    assert!(committed.is_none());
+    assert_eq!(
+        f.redis
+            .clone()
+            .hlen::<_, usize>(&job_data_key)
+            .await
+            .unwrap(),
+        0
+    );
+
+    // Two successful park hooks can yield two notifications; this deliberately
+    // does not promise a new deduplication policy for repeated hourly wakeups.
+    for expected_notifications in 1..=2 {
+        let mut pipeline = redis::pipe();
+        pipeline.atomic();
+        f.handler
+            .on_nack(
+                &f.job(),
+                NackHookData {
+                    error: &error,
+                    delay,
+                    position,
+                },
+                &mut TransactionContext::new(&mut pipeline, "solana-test".into()),
+            )
+            .await;
+        let _: () = pipeline.query_async(&mut f.redis.clone()).await.unwrap();
+        assert_eq!(
+            f.redis
+                .clone()
+                .hlen::<_, usize>(&job_data_key)
+                .await
+                .unwrap(),
+            expected_notifications
+        );
+        assert_eq!(
+            f.redis
+                .clone()
+                .hget::<_, _, String>(&admission, "state")
+                .await
+                .unwrap(),
+            "active"
+        );
+        assert_eq!(f.redis.clone().ttl::<_, i64>(&admission).await.unwrap(), -1);
+        assert_eq!(
+            f.stored(&lock).await.signed_transaction,
+            f.attempt.signed_transaction
+        );
+        assert_eq!(
+            f.redis
+                .clone()
+                .ttl::<_, i64>(f.handler.storage.attempt_key("intent"))
+                .await
+                .unwrap(),
+            -1
+        );
+        assert_eq!(
+            f.handler
+                .transaction_registry
+                .get_transaction_queue("intent")
+                .await
+                .unwrap()
+                .as_deref(),
+            Some("solana-test")
+        );
+    }
+    let notifications: Vec<String> = f.redis.clone().hvals(&job_data_key).await.unwrap();
+    for notification in notifications {
+        let payload: crate::webhook::WebhookJobPayload =
+            serde_json::from_str(&notification).unwrap();
+        let envelope: Value = serde_json::from_str(&payload.body).unwrap();
+        assert_eq!(envelope["eventType"], "NACK");
+        assert_eq!(envelope["transactionId"], "intent");
+        assert_eq!(
+            envelope["payload"]["error"]["errorCode"],
+            "RECOVERY_REQUIRED"
+        );
+        assert_eq!(
+            envelope["payload"]["error"]["signature"],
+            f.attempt.signature.to_string()
+        );
+        assert_eq!(envelope["payload"]["error"]["reason"], reason);
+        assert_eq!(envelope["payload"]["delayMs"], 3_600_000);
+    }
+    finish(server).await;
+    assert!(
+        seen.lock().unwrap().is_empty(),
+        "parked budget must not consume RPC calls"
+    );
     lock.release().await.unwrap();
     f.cleanup().await;
 }

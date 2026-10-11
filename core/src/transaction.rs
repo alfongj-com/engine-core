@@ -74,7 +74,8 @@ where
         authorization_list: Option<Vec<SignedAuthorization>>,
     }
     // Serde's flattened ContentDeserializer does not implement deserialize_u128.
-    // Parse JSON numbers through deserialize_any, preserving integer validation.
+    // Parse through Number with serde_json's arbitrary_precision feature: the
+    // flattened buffer must preserve values above u64::MAX without using f64.
     fn deserialize_fee<'de, D: Deserializer<'de>>(d: D) -> Result<Option<u128>, D::Error> {
         Option::<serde_json::Number>::deserialize(d)?
             .map(|number| {
@@ -232,6 +233,59 @@ mod fee_parsing_tests {
                 serde_json::from_value::<InnerTransaction>(invalid.clone()).is_err(),
                 "accepted {invalid}"
             );
+        }
+    }
+
+    #[test]
+    fn raw_json_fees_preserve_the_entire_u128_range_through_storage() {
+        for value in [u64::MAX as u128, u64::MAX as u128 + 1, u128::MAX] {
+            for field in ["gasPrice", "maxFeePerGas", "maxPriorityFeePerGas"] {
+                let input = format!(r#"{{"to":null,"{field}":{value}}}"#);
+                let tx: InnerTransaction = serde_json::from_str(&input).unwrap();
+                let stored = serde_json::to_string(&tx).unwrap();
+                let restored: InnerTransaction = serde_json::from_str(&stored).unwrap();
+                let output = serde_json::to_value(restored).unwrap();
+                assert_eq!(
+                    output[field]
+                        .as_number()
+                        .and_then(serde_json::Number::as_u128),
+                    Some(value),
+                    "{input}"
+                );
+                let standalone: TransactionTypeData = serde_json::from_str(&input).unwrap();
+                assert_eq!(
+                    serde_json::to_value(standalone).unwrap()[field]
+                        .as_number()
+                        .and_then(serde_json::Number::as_u128),
+                    Some(value)
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn raw_json_fees_reject_overflow_negative_and_noninteger_notation() {
+        for value in [
+            "340282366920938463463374607431768211456", // u128::MAX + 1
+            "-1",
+            "-18446744073709551616",
+            "1.0",
+            "1.5",
+            "1e0",
+            "1e38",
+            "1e-1",
+        ] {
+            for field in ["gasPrice", "maxFeePerGas", "maxPriorityFeePerGas"] {
+                let input = format!(r#"{{"to":null,"{field}":{value}}}"#);
+                assert!(
+                    serde_json::from_str::<InnerTransaction>(&input).is_err(),
+                    "{input}"
+                );
+                assert!(
+                    serde_json::from_str::<TransactionTypeData>(&input).is_err(),
+                    "{input}"
+                );
+            }
         }
     }
 

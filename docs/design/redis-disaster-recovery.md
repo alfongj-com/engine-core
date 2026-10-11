@@ -73,7 +73,13 @@ Critical ledger writes are serialized in-process:
 
 SQLite uses WAL with `synchronous=FULL`; initialization and private output files
 are synced, including containing directory entries. Database writes run on a
-blocking worker thread. A write or mirror failure latches the process gate and
+blocking worker thread. Each serialized mutation runs in an owned task through
+the Redis update and continuity recheck. Canceling an HTTP request or worker wait
+does not abandon the update or release its admission slot early. The canceled
+request may still be recorded; retry the original ID and intent. Blocking database
+work retains the file lock even if its async waiter or runtime is shutting down.
+Graceful shutdown stops HTTP and workers, then drains registered journal mutations
+before allowing the runtime to exit. Forced termination can still leave a mismatch. A write or mirror failure latches the process gate and
 attempts to persist a durable halt. If storage cannot even persist the halt, the
 process still rejects subsequent execution; no failed ledger operation authorizes
 a send. An acknowledged committed attempt is conservatively possibly broadcast,
@@ -101,6 +107,11 @@ sync. [SQLite WAL](https://www.sqlite.org/wal.html),
 [SQLite synchronous](https://www.sqlite.org/pragma.html#pragma_synchronous)
 
 ## Operator commands
+
+For an existing deployment without a journal, first follow the
+[legacy upgrade procedure](../upgrade-from-legacy.md). It drains and reconciles
+old work before a cutover to a new empty namespace; initialization does not
+migrate retained queue state or historical idempotency keys.
 
 Build with `cargo build -p thirdweb-engine --bin engine-recovery`. The CLI uses
 `REDIS_URL` for operations that contact Redis; status/export need only the ledger.
@@ -143,8 +154,10 @@ engine-recovery reattach --path data/recovery.sqlite --namespace engine_v1
 ```
 
 Reattach only updates Redis process identity. It requires the same deployment,
-epoch, checkpoint, namespace and primary role; it clears only a process-change
-halt. It cannot override a checkpoint mismatch, storage failure, manual quarantine
+epoch, checkpoint, namespace and primary role. It may clear only Redis process
+change, unavailable-continuity or primary-role-change halts. A network outage
+while Engine is running still latches execution; stop Engine before reattaching.
+It cannot override a checkpoint mismatch, storage failure, manual quarantine
 or terminal-evidence conflict. Unknown attempts remain bound to their original
 identity and must still follow the normal confirmation/replay rules.
 
@@ -200,7 +213,13 @@ recorded finality conflict. See [finality design](finality-and-recovery.md).
 reopen, explicit/private initialization, live read-only export, exclusive mutation
 locking, stale/deleted checkpoints, SQL-commit-before-mirror crash cuts, exact
 reattach, recovery quarantine, terminal contradictions, checkpoint races and
-storage-write failure. A child process is SIGKILLed both before network emission
+storage-write failure. Cancellation tests stop every mutation after its SQLite
+commit and before Redis publication, abort its caller, then require exact marker
+continuity without recovery; a separate test cancels blocking database work and
+checks ownership remains held. `scripts/local_eoa_recovery.py --live-redis-restart`
+kills Redis while Engine remains running, checks admission is fenced, stops Engine
+with SIGTERM, and requires intact reattach without quarantine or a new namespace.
+A child process is SIGKILLed both before network emission
 and after a loopback HTTP server accepts a request and drops its response. Exact
 attempt bytes survive, and new-identity replay is rejected. The HTTP stub measures
 delivery ambiguity, not blockchain consensus. Full Engine/local-chain disaster

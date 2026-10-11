@@ -74,6 +74,16 @@ pub struct WebhookJobHandler {
 }
 
 impl WebhookJobHandler {
+    /// Reject configuration errors before transaction admission. Delivery still
+    /// checks the policy and resolved addresses because queued jobs and DNS can
+    /// outlive this request. Validation does not make an outbound connection.
+    pub fn validate_destinations(&self, options: &[WebhookOptions]) -> Result<(), WebhookError> {
+        for option in options {
+            self.destination_policy.validate(&option.url)?;
+        }
+        Ok(())
+    }
+
     pub fn new(
         destination_policy: WebhookDestinationPolicy,
         retry_config: Arc<WebhookRetryConfig>,
@@ -500,6 +510,50 @@ impl DurableExecution for WebhookJobHandler {
 mod tests {
     use super::*;
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
+
+    #[test]
+    fn admission_checks_every_destination_without_network_requests() {
+        let option = |url: &str| WebhookOptions {
+            url: url.into(),
+            secret: None,
+            user_metadata: None,
+        };
+        let denied = WebhookJobHandler::new(
+            WebhookDestinationPolicy::default(),
+            Arc::new(WebhookRetryConfig::default()),
+        )
+        .unwrap();
+        assert!(denied.validate_destinations(&[]).is_ok());
+        assert!(
+            denied
+                .validate_destinations(&[option("https://hooks.example.com/event")])
+                .is_err()
+        );
+        let handler = WebhookJobHandler::new(
+            WebhookDestinationPolicy::from_csv("https://hooks.example.com").unwrap(),
+            Arc::new(WebhookRetryConfig::default()),
+        )
+        .unwrap();
+        assert!(
+            handler
+                .validate_destinations(&[option("https://hooks.example.com/event?token=private")])
+                .is_ok()
+        );
+        for url in [
+            "https://other.example.com/event?token=private",
+            "http://hooks.example.com/event",
+            "https://hooks.example.com:8443/event",
+            "https://127.0.0.1/event",
+        ] {
+            let error = handler
+                .validate_destinations(&[option("https://hooks.example.com/event"), option(url)])
+                .unwrap_err();
+            assert!(
+                !error.to_string().contains("private"),
+                "validation exposed query credentials"
+            );
+        }
+    }
 
     fn job(url: &str) -> BorrowedJob<WebhookJobPayload> {
         BorrowedJob::new(

@@ -32,6 +32,8 @@ struct RpcState {
     wires: Vec<String>,
     included_hash: Option<String>,
     acknowledge: bool,
+    preparation_error: Option<String>,
+    estimated_gas: Option<u64>,
 }
 
 async fn request(stream: &mut tokio::net::TcpStream) -> Value {
@@ -165,7 +167,12 @@ async fn rpc_rejection_keeps_original_nonce_wire_and_unknown_webhook_state() {
                             }
                         }
                         "eth_estimateGas" => {
-                            response["result"] = json!("0x5208");
+                            if let Some(error) = &state.preparation_error {
+                                response["error"] = json!({"code":-32000,"message":error});
+                            } else {
+                                response["result"] =
+                                    json!(format!("0x{:x}", state.estimated_gas.unwrap_or(21000)));
+                            }
                         }
                         "eth_feeHistory" => {
                             response["error"] = json!({"code":-32601,"message":"method not found"});
@@ -242,26 +249,83 @@ async fn rpc_rejection_keeps_original_nonce_wire_and_unknown_webhook_state() {
         })
         .await
         .unwrap();
+    let make_request = |id: &str| EoaTransactionRequest {
+        transaction_id: id.into(),
+        chain_id: 31337,
+        from: eoa,
+        to: Some(Address::repeat_byte(7)),
+        value: U256::from(1),
+        data: Bytes::new(),
+        gas_limit: Some(21000),
+        webhook_options: vec![WebhookOptions {
+            url: "https://example.com/test".into(),
+            secret: None,
+            user_metadata: None,
+        }],
+        signing_credential: SigningCredential::Environment { address: eoa },
+        rpc_credentials: RpcCredentials::Configured,
+        transaction_type_data: Some(TransactionTypeData::Legacy(TransactionLegacyData {
+            gas_price: Some(1),
+        })),
+    };
+    // Invalid envelopes fail while still unsigned; they cannot consume nonce 0
+    // or block the valid requests below. These errors remain uncertain if they
+    // are returned by eth_sendRawTransaction instead, as checked later.
+    for (index, reason) in [
+        "intrinsic gas too low",
+        "exceeds block gas limit",
+        "unsupported transaction type",
+        "oversized transaction",
+        "max initcode size exceeded",
+        "estimate exceeds supplied gas",
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let id = format!("invalid-{index}");
+        let mut tx = make_request(&id);
+        tx.webhook_options.clear();
+        let payload = serde_json::to_value(&tx).unwrap();
+        journal
+            .reserve_admission(
+                "eoa",
+                &id,
+                &recovery::admission_fingerprint("eoa", &payload).unwrap(),
+                payload,
+            )
+            .await
+            .unwrap();
+        worker.store.add_transaction(tx).await.unwrap();
+        {
+            let mut rpc = state.lock().unwrap();
+            rpc.preparation_error = (index != 5).then(|| reason.to_owned());
+            rpc.estimated_gas = Some(21001);
+        }
+        assert_eq!(worker.process_new_transactions(1).await.unwrap(), 0);
+        assert_eq!(
+            worker.store.get_pending_transactions_count().await.unwrap(),
+            0
+        );
+        assert!(
+            worker
+                .store
+                .peek_borrowed_transactions()
+                .await
+                .unwrap()
+                .is_empty()
+        );
+        assert!(state.lock().unwrap().wires.is_empty());
+        assert_eq!(RecoveryJournal::status(&ledger).unwrap().attempts, 0);
+        let status: String = conn
+            .hget(worker.store.transaction_data_key_name(&id), "status")
+            .await
+            .unwrap();
+        assert_eq!(status, "failed", "{reason}");
+    }
+    state.lock().unwrap().estimated_gas = None;
+    state.lock().unwrap().preparation_error = None;
     for id in ["first", "second"] {
-        let tx = EoaTransactionRequest {
-            transaction_id: id.into(),
-            chain_id: 31337,
-            from: eoa,
-            to: Some(Address::repeat_byte(7)),
-            value: U256::from(1),
-            data: Bytes::new(),
-            gas_limit: Some(21000),
-            webhook_options: vec![WebhookOptions {
-                url: "https://example.com/test".into(),
-                secret: None,
-                user_metadata: None,
-            }],
-            signing_credential: SigningCredential::Environment { address: eoa },
-            rpc_credentials: RpcCredentials::Configured,
-            transaction_type_data: Some(TransactionTypeData::Legacy(TransactionLegacyData {
-                gas_price: Some(1),
-            })),
-        };
+        let tx = make_request(id);
         let payload = serde_json::to_value(&tx).unwrap();
         journal
             .reserve_admission(
@@ -273,13 +337,45 @@ async fn rpc_rejection_keeps_original_nonce_wire_and_unknown_webhook_state() {
             .await
             .unwrap();
         worker.store.add_transaction(tx).await.unwrap();
+        if id == "first" {
+            state.lock().unwrap().preparation_error = Some("temporary provider unavailable".into());
+            let pending = worker
+                .store
+                .peek_pending_transactions(1)
+                .await
+                .unwrap()
+                .remove(0);
+            let error = worker
+                .build_and_sign_single_transaction(&pending, 0)
+                .await
+                .unwrap_err();
+            assert!(is_retryable_preparation_error(&error));
+            assert_eq!(
+                worker.store.get_pending_transactions_count().await.unwrap(),
+                1
+            );
+            assert!(state.lock().unwrap().wires.is_empty());
+            assert_eq!(RecoveryJournal::status(&ledger).unwrap().attempts, 0);
+            state.lock().unwrap().preparation_error = None;
+        } else {
+            // Caller-supplied gas intentionally allows a valid transaction whose
+            // program reverts; it must still retain its nonce after dispatch.
+            state.lock().unwrap().preparation_error = Some("execution reverted".into());
+        }
         // Use the actual preparation/reservation/dispatch pipeline. Each uncertain
         // reservation debits its budget, so the next intent must get a new nonce.
         assert_eq!(worker.process_new_transactions(1).await.unwrap(), 0);
     }
+    state.lock().unwrap().preparation_error = None;
     let mut before = worker.store.peek_borrowed_transactions().await.unwrap();
     before.sort_by_key(|tx| tx.transaction_id.clone());
     assert_eq!(before.len(), 2);
+    assert!(
+        before
+            .iter()
+            .all(|tx| tx.signed_transaction.gas_limit() == 21000),
+        "preflight must preserve caller gas"
+    );
     assert_eq!(
         before
             .iter()

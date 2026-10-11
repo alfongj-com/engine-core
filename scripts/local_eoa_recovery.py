@@ -11,6 +11,7 @@ import json
 import os
 from pathlib import Path
 import signal
+import sqlite3
 import socket
 import subprocess
 import tempfile
@@ -74,9 +75,11 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--transactions", type=int, default=24)
     parser.add_argument("--redis-crash", action="store_true", help="Also SIGKILL Redis and replay its appendfsync=always AOF before restarting Engine")
+    parser.add_argument("--live-redis-restart", action="store_true", help="Kill Redis while Engine stays running; require a durable halt, SIGTERM shutdown, and exact-checkpoint reattach")
     parser.add_argument("--revert", action="store_true", help="Use a reverting local contract; prove terminal failure and no duplicate retry")
     parser.add_argument("--report", type=Path)
     args = parser.parse_args()
+    args.redis_crash = args.redis_crash or args.live_redis_restart
     assert 1 <= args.transactions <= 40
     redis_port, server_port, anvil_port = ports(3)
     rpc_url = f"http://127.0.0.1:{anvil_port}"
@@ -118,7 +121,7 @@ def main():
             "--dir", str(redis_dir), "--save", "", "--appendonly", "yes" if args.redis_crash else "no",
             "--appendfsync", "always"], name)
     report = {"scenario": "local EOA HTTP admission, crash with pending transactions, restart, mine, duplicate admission", "transactions": args.transactions, "log_directory": str(logs),
-              "configured_rpc": True, "redis_crash": args.redis_crash, "reverted_execution": args.revert}
+              "configured_rpc": True, "redis_crash": args.redis_crash, "live_redis_restart": args.live_redis_restart, "reverted_execution": args.revert}
     started = time.monotonic()
     try:
         redis_process = start_redis("redis-before.log")
@@ -155,14 +158,38 @@ def main():
             list(pool.map(send, payloads))
         until(lambda: int(rpc(rpc_url, "eth_getTransactionCount", [FROM, "pending"]), 16) == args.transactions)
         assert int(rpc(rpc_url, "eth_getTransactionCount", [FROM, "latest"]), 16) == 0
-        stop(process, crash=True)
-        if args.redis_crash:
+        if args.live_redis_restart:
             stop(redis_process, crash=True)
+            def live_halted():
+                assert process.poll() is None, "Engine must remain alive during Redis failure"
+                with sqlite3.connect(f"file:{logs / 'recovery.sqlite'}?mode=ro", uri=True) as db:
+                    return db.execute("SELECT halted,reason FROM control").fetchone() == (1, "Redis continuity unavailable")
+            until(live_halted, timeout=30)
+            try:
+                request(base + "/v1/write/transaction", payloads[0], headers)
+                raise AssertionError("Live Redis outage did not fence admission")
+            except urllib.error.HTTPError as error:
+                assert error.code == 503, error.code
+            process.send_signal(signal.SIGTERM)
+            process.wait(timeout=15)
+            assert process.returncode == 0, "Engine must handle SIGTERM cleanly"
+            report["live_engine_fenced"] = True
+            report["sigterm_exit_code"] = process.returncode
+        else:
+            stop(process, crash=True)
+        if args.redis_crash:
+            if not args.live_redis_restart:
+                stop(redis_process, crash=True)
             redis_process = start_redis("redis-after.log")
             until(lambda: subprocess.run([os.environ.get("REDIS_CLI_BIN", "redis-cli"), "-p", str(redis_port), "PING"], capture_output=True, text=True).stdout.strip() == "PONG")
             subprocess.run([str(ROOT / "target/debug/thirdweb-engine"), "--reattach-recovery"],
                 cwd=ROOT / "server", env=env, check=True, capture_output=True)
         process = engine("engine-after.log")
+        if args.live_redis_restart:
+            with sqlite3.connect(f"file:{logs / 'recovery.sqlite'}?mode=ro", uri=True) as db:
+                assert db.execute("SELECT count(*) FROM admissions WHERE state='quarantined'").fetchone() == (0,)
+                assert db.execute("SELECT namespace FROM control").fetchone() == (run_id,)
+            report["reattached_without_quarantine_or_namespace_change"] = True
         rpc(rpc_url, "evm_mine", [])
         expected_transfer = 0 if args.revert else args.transactions
         until(lambda: int(rpc(rpc_url, "eth_getTransactionCount", [FROM, "latest"]), 16) == args.transactions)

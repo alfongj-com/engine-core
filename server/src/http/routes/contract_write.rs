@@ -103,6 +103,9 @@ pub async fn write_contract(
     SigningCredentialsExtractor(signing_credential): SigningCredentialsExtractor,
     Json(request): Json<WriteContractRequest>,
 ) -> Result<impl IntoResponse, ApiEngineError> {
+    state
+        .execution_router
+        .validate_webhooks(&request.webhook_options)?;
     let auth: Option<ThirdwebAuth> = match &rpc_credentials {
         engine_core::chain::RpcCredentials::Thirdweb(auth) => Some(auth.clone()),
         engine_core::chain::RpcCredentials::Configured => None,

@@ -63,14 +63,18 @@ The first admission initializes schema marker `twmq:{queue_name}:solana_admissio
 | --- | --- |
 | New request | Sign once; persist exact bytes, signature, actual blockhash and its known last-valid height before any send. |
 | Timeout, disconnect, `AlreadyProcessed`, unexpected send result | Retain the attempt. Query signature history and resend identical bytes while valid. |
-| Signature visible below requested commitment | Wait; do not rebuild. |
-| Successful status at requested commitment | Fetch details; require matching signature, slot and successful metadata before completing. |
-| Failed status at requested commitment | Record the on-chain failure. |
+| Signature visible below finalized commitment | Wait; do not rebuild. |
+| Finalized successful status | Fetch finalized details; require matching signature, slot and successful metadata before completing. |
+| Finalized failed status | Require matching finalized receipt before recording the on-chain failure. |
 | Signature absent and finalized height exceeds the recorded last-valid height | Query history again, then park if still absent. Provider absence is insufficient proof to create a new signature. |
 | Serialized hash becomes invalid without a trustworthy expiry height | Park for reconciliation. Never invent a height or rewrite the message. |
 | Legacy attempt lacks signed bytes | Reconcile its signature; otherwise park. |
 
 Each attempt permits at most 20 broadcasts, spaced by at least two seconds. A processing call has a 90-second deadline, shorter than the storage lock. After 500 reconciliation checks the job parks with `RECOVERY_REQUIRED`; periodic wakeups perform no RPC or signing. The lock-protected storage resume method resets the check budget while preserving the signature and broadcast count. An authenticated operator HTTP resume endpoint is **not yet implemented**.
+
+Serialized admission and preflight use `processed` so a caller-provided recent hash need not already exist in the finalized bank. A hash absent from the RPC node retries before Engine signs or stores an attempt, within the existing unsigned-job retry budget. This does not lower settlement: terminal results still require finalized status and a matching receipt. A preflight error, including the first Engine send, does not prove global non-execution; the caller may already have broadcast a fully signed input.
+
+For configured webhooks, a parked job emits `eventType: NACK` with `payload.error.errorCode: RECOVERY_REQUIRED`, the retained `signature`, a `reason`, and the one-hour retry delay. This requests operator attention to an unresolved outcome; it is not an on-chain failure or permission to submit a new transaction. Enqueueing the notification shares the lease-fenced NACK transaction, so an aborted completion publishes nothing. A still-parked job can notify again on hourly wakeups, and webhook delivery can retry; this adds no exactly-once notification guarantee. Worker warnings also include the signature and reason.
 
 Attempt records have no expiry TTL. Successful completion and known on-chain failure delete the attempt inside the same Redis transaction as queue completion. Cancellation and infrastructure failure retain it because neither establishes the chain outcome. An aborted completion leaves the admission active and retains the attempt. Review retained evidence before deletion.
 

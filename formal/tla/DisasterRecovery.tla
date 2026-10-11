@@ -126,7 +126,12 @@ RedisLoss == s' = [s EXCEPT !.marker = None, !.projection = {}]
 RedisRollback == s.checkpoint > 0 /\
     s' = [s EXCEPT !.marker = Token(s.epoch, 0), !.projection = {}]
 RedisRestart == s.run = 0 /\ s' = [s EXCEPT !.run = 1]
-RepairMarker == s.halt \in {"continuity", "restart"} /\
+\* An observation can fail before the owner learns whether Redis lost data.
+\* Preserve that first cause; offline reattach must still verify the exact token.
+RedisUnavailable ==
+    /\ s.owners # {} /\ s.pending = None /\ s.halt = None
+    /\ s' = [s EXCEPT !.halt = "unavailable"]
+RepairMarker == s.halt \in {"continuity", "restart", "unavailable"} /\
     s' = [s EXCEPT !.marker = Current]
 
 DetectMismatch ==
@@ -135,7 +140,7 @@ DetectMismatch ==
 
 Reattach ==
     /\ s.owners = {} /\ ~s.offlineAlive /\ s.pending = None
-    /\ s.halt \in {None, "restart"} /\ s.marker = Current
+    /\ s.halt \in {None, "restart", "unavailable"} /\ s.marker = Current
     /\ s' = [s EXCEPT !.expectedRun = s.run, !.halt = None]
 
 RecoverBegin ==
@@ -174,7 +179,7 @@ Next == (\E w \in Workers : Start(w) \/ Crash(w))
         \/ (\E w \in Workers, id \in IDs, key \in Keys : AttemptCommit(w,id,key) \/ UnjournaledSend(w,id,key))
         \/ (\E w \in Workers, id \in IDs : TerminalCommit(w,id))
         \/ (\E a \in s.permits : Send(a)) \/ (\E a \in s.messages : Execute(a))
-        \/ Mirror \/ RedisLoss \/ RedisRollback \/ RedisRestart \/ RepairMarker
+        \/ Mirror \/ RedisLoss \/ RedisRollback \/ RedisRestart \/ RedisUnavailable \/ RepairMarker
         \/ DetectMismatch \/ Reattach \/ RecoverBegin \/ RecoverPublish
         \/ RecoverFinish \/ RecoveryCrash \/ AuthorityRollback
 Spec == Init /\ [][Next]_vars
@@ -189,7 +194,7 @@ TypeOK ==
     /\ s.epoch \in 0..1 /\ s.checkpoint \in 0..MaxWrites /\ s.writes \in 0..MaxWrites
     /\ s.marker \in [epoch : 0..1, checkpoint : 0..MaxWrites] \cup {None}
     /\ s.run \in 0..1 /\ s.expectedRun \in 0..1
-    /\ s.halt \in {None, "continuity", "restart", "recovery"}
+    /\ s.halt \in {None, "continuity", "restart", "unavailable", "recovery"}
     /\ s.owners \subseteq Workers /\ s.ownerEpoch \in [Workers -> 0..1]
     /\ s.offline \in {"none", "sql", "redis"} /\ s.offlineAlive \in BOOLEAN
     /\ s.permits \subseteq Auths /\ s.messages \subseteq Attempts /\ s.effects \subseteq Attempts

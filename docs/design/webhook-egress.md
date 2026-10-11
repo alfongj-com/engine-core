@@ -12,7 +12,9 @@ ENGINE_WEBHOOK_ALLOWED_ORIGINS=https://hooks.example.com,https://events.example.
 
 Configuration accepts scheme/host/port only; no path, query, credentials, wildcard, or fragment. Requests may use paths and queries on those origins. Default HTTPS port and hostname casing normalize before comparison. Other ports and subdomains need separate entries. Invalid configuration fails server startup. Missing/empty configuration permits no destination. This variable is read when the webhook handler is constructed; restart after changes.
 
-The worker validates every delivery, including previously queued jobs. Disallowed jobs fail with `DESTINATION_REJECTED`; their associated blockchain transaction may already have completed. Configure destinations before enabling workloads that require notification delivery. The local HTTP webhook listener in the upstream benchmark script no longer qualifies.
+New EVM and Solana admissions validate every supplied destination against the same policy instance used by the worker. An unapproved origin or malformed URL rejects the whole request with HTTP 400 before reserving the request ID or queuing execution. Contract writes also validate before fetching an ABI. No DNS lookup or outbound request occurs during admission.
+
+The worker validates every delivery again, including previously queued jobs. Disallowed jobs fail with `DESTINATION_REJECTED`; their associated blockchain transaction may already have completed. DNS failures and later policy changes can still prevent delivery after admission. Configure destinations before enabling workloads that require notification delivery. The local HTTP webhook listener in the upstream benchmark script no longer qualifies.
 
 ## Enforcement
 

@@ -45,7 +45,8 @@ durable; this fact is checked afterward, not used to prevent the fault action.
 | `Enqueue` | A matching unsent retry uses the original payload returned by the authority, not a freshly generated candidate UID. Terminal and quarantined admissions cannot enter this action. |
 | `TerminalCommit` | `record_terminal`: persist a reconciled terminal outcome before updating Redis. The attempt must belong to the same admitted ID. Finality and contradictory-proof validation are delegated to runtime tests and the separate finality model. |
 | `RedisLoss`, `RedisRollback`, `RedisRestart` | Missing/old marker or a changed Redis process. `DetectMismatch`/`Mirror` durably latch a halt; `RepairMarker` does not clear it. |
-| `Reattach` | Offline, same-namespace, exact-checkpoint reattachment; only an absent halt or the Redis-process-change cause can be cleared. |
+| `RedisUnavailable` | An observation fails before data continuity can be established. The first cause is retained until an offline recovery decision. |
+| `Reattach` | Offline, same-namespace, exact-checkpoint reattachment; only an absent halt, process change or unavailable observation can be cleared. Runtime additionally allows a primary-role-change cause and checks the current role is primary. |
 | `RecoverBegin`, `RecoverPublish`, `RecoverFinish` | Offline fresh-namespace recovery: commit a new epoch and quarantine every attempted nonterminal admission; separately publish/verify Redis; clear the recovery halt only after success. |
 | `RecoveryCrash` | An interrupted recovery retains its halt and cannot authorize writes. |
 
@@ -103,6 +104,10 @@ whole-service correctness claim.
 - Redis marker continuity is a generation check, not a checksum of every queue
   key. Arbitrary individual-key corruption with an unchanged marker, credential
   compromise and malicious operators are outside this model.
+- Redis primary/replica roles are not explicit model state. Runtime reattachment
+  also requires a current primary and permits only the three named Redis
+  continuity causes. A previously recorded checkpoint mismatch, mirror failure,
+  storage failure or operator quarantine cannot be cleared by reattachment.
 - Payload equality is an atom comparison. Canonical JSON, request fingerprints,
   key derivation, signer correctness and call-site coverage require source review
   and executable tests. The chain-side once-per-replay-key assumption is explicit;
@@ -131,6 +136,35 @@ the abstraction: it does not derive signed-wire validation from payload atoms or
 prove that every runtime call site refines a transition. Existing EOA, Solana,
 admission, finality and queue models remain separate. Their composition is not
 mechanically proved; source hashes are review tripwires, not a refinement relation.
+
+## October 11 review: cancellation and unavailable observations
+
+Caller cancellation now detaches journal mutations from the awaiting request.
+The owned task retains the journal owner, serial mutex and admission permit
+through the FULL SQLite commit, Redis compare-and-set and final health check.
+Blocking SQLite work also retains the file owner if its async task is dropped.
+Cancellation while waiting for serialization may therefore still leave a committed
+admission or attempt. The caller receives no authorization and cannot continue
+to send through that canceled call; the detached task only updates the stores.
+
+These remain the same `Admit` / `AttemptCommit` / `TerminalCommit` and `Mirror`
+actions. Caller cancellation does not mean the process-level `Crash` action:
+the detached operation still has an owner. A real process crash between commit
+and mirror still fails closed. Tokio task scheduling, permit ownership and
+blocking-thread lifetime are checked by implementation tests in
+[`cancellation_tests.rs`](../core/src/recovery/cancellation_tests.rs), not proved
+by this model. Already-started external sends remain outside cancellation's reach.
+
+`RedisUnavailable` adds an observation failure without assuming that the dataset
+was intact. Redis loss or rollback may happen before or after that failure.
+Offline `Reattach` requires the exact current marker and exclusive ownership;
+it does not accept a missing or predecessor token. `RepairMarker` remains a
+separate arbitrary marker write. If unavailability was the first halt cause,
+manually restoring only the marker can satisfy the reattachment guard even when
+other keys were lost. This is the runtime's existing marker-integrity trust
+boundary, not proof that a Redis dataset is complete. Do not repair a marker by
+hand. A recorded mismatch or mirror failure remains non-clearable even after
+the marker is repaired. Earlier state counts above predate this model change.
 
 ## Throughput/security revision correspondence
 

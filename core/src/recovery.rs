@@ -14,7 +14,7 @@ use std::{
     },
     time::Duration,
 };
-use tokio::sync::{Mutex as AsyncMutex, Semaphore};
+use tokio::sync::{Mutex as AsyncMutex, RwLock, Semaphore};
 use twmq::redis::{self, aio::ConnectionManager};
 
 static GLOBAL: OnceLock<Arc<RecoveryJournal>> = OnceLock::new();
@@ -49,17 +49,20 @@ pub enum RecoveryError {
     Invalid(&'static str),
 }
 impl From<rusqlite::Error> for RecoveryError {
-    fn from(_: rusqlite::Error) -> Self {
+    fn from(error: rusqlite::Error) -> Self {
+        tracing::error!(code = ?error.sqlite_error_code(), "Recovery SQLite operation failed");
         Self::Storage
     }
 }
 impl From<std::io::Error> for RecoveryError {
-    fn from(_: std::io::Error) -> Self {
+    fn from(error: std::io::Error) -> Self {
+        tracing::error!(kind = ?error.kind(), "Recovery filesystem operation failed");
         Self::Storage
     }
 }
 impl From<redis::RedisError> for RecoveryError {
-    fn from(_: redis::RedisError) -> Self {
+    fn from(error: redis::RedisError) -> Self {
+        tracing::error!(kind = ?error.kind(), "Recovery Redis operation failed");
         Self::Storage
     }
 }
@@ -136,11 +139,19 @@ impl Control {
 /// SQLite and its WAL must live on one durable local filesystem, never NFS.
 pub struct RecoveryJournal {
     db: Arc<Mutex<Connection>>,
-    _owner: File,
+    _owner: Arc<File>,
     redis: ConnectionManager,
     serial: AsyncMutex<()>,
-    admission_slots: Semaphore,
+    admission_slots: Arc<Semaphore>,
+    owned_operations: Arc<RwLock<()>>,
     failed: AtomicBool,
+    #[cfg(test)]
+    before_mirror: Mutex<
+        Option<(
+            tokio::sync::oneshot::Sender<()>,
+            tokio::sync::oneshot::Receiver<()>,
+        )>,
+    >,
 }
 
 pub fn global() -> Option<Arc<RecoveryJournal>> {
@@ -545,11 +556,14 @@ impl RecoveryJournal {
         }
         let this = Arc::new(Self {
             db: Arc::new(Mutex::new(conn)),
-            _owner: owner,
+            _owner: Arc::new(owner),
             redis: redis_connection(redis_url).await?,
             serial: AsyncMutex::new(()),
-            admission_slots: Semaphore::new(MAX_CONCURRENT_ADMISSIONS),
+            admission_slots: Arc::new(Semaphore::new(MAX_CONCURRENT_ADMISSIONS)),
+            owned_operations: Arc::new(RwLock::new(())),
             failed: AtomicBool::new(false),
+            #[cfg(test)]
+            before_mirror: Mutex::new(None),
         });
         Self::prepare_owned_startup(this.clone(), || {})
             .await
@@ -578,12 +592,39 @@ impl RecoveryJournal {
             preparing.healthy_locked().await
         })
     }
+    /// Once a mutation begins, caller cancellation must not split its FULL
+    /// commit from the Redis mirror. The owned task retains serialization and
+    /// admission capacity through completion; a process crash still fails closed.
+    async fn run_owned<T, F, Fut>(self: &Arc<Self>, operation: F) -> Result<T>
+    where
+        T: Send + 'static,
+        F: FnOnce(Arc<Self>) -> Fut + Send + 'static,
+        Fut: std::future::Future<Output = Result<T>> + Send + 'static,
+    {
+        // Register before spawn, so shutdown also sees tasks not yet polled.
+        let registered = self.owned_operations.clone().read_owned().await;
+        let journal = self.clone();
+        tokio::spawn(async move {
+            let _registered = registered;
+            operation(journal).await
+        })
+        .await
+        .map_err(|_| RecoveryError::Storage)?
+    }
+    /// Stop HTTP/workers first, then wait for mutations whose callers were
+    /// cancelled. Returning from the async runtime before this barrier could
+    /// abort a detached task between its SQL commit and Redis publication.
+    pub async fn drain_mutations(&self) {
+        let _drained = self.owned_operations.write().await;
+    }
     async fn db<T: Send + 'static>(
         &self,
         f: impl FnOnce(&mut Connection) -> Result<T> + Send + 'static,
     ) -> Result<T> {
         let db = self.db.clone();
+        let owner = self._owner.clone();
         tokio::task::spawn_blocking(move || {
+            let _owner = owner;
             f(&mut *db.lock().map_err(|_| RecoveryError::Storage)?)
         })
         .await
@@ -591,7 +632,8 @@ impl RecoveryJournal {
     }
     async fn halt(&self, reason: &'static str) -> RecoveryError {
         self.failed.store(true, Ordering::SeqCst);
-        // Never overwrite an earlier cause: reattach may clear only run_id change.
+        tracing::error!(reason, "Recovery safety gate latched");
+        // Never overwrite an earlier cause: reattach may clear only continuity loss.
         let _ = self
             .db(move |c| {
                 c.execute(
@@ -614,6 +656,7 @@ impl RecoveryJournal {
             Err(_) => return Err(self.halt("ledger unavailable").await),
         };
         if c.halted {
+            tracing::error!(reason = ?c.reason, "Recovery ledger is durably halted");
             self.failed.store(true, Ordering::SeqCst);
             return Err(RecoveryError::RecoveryRequired(
                 "durable safety gate is halted",
@@ -640,6 +683,14 @@ impl RecoveryJournal {
         self.healthy_locked().await.map(|_| ())
     }
     async fn mirror(&self, old: Control) -> Result<()> {
+        #[cfg(test)]
+        {
+            let pause = self.before_mirror.lock().unwrap().take();
+            if let Some((entered, resume)) = pause {
+                let _ = entered.send(());
+                let _ = resume.await;
+            }
+        }
         let mut new = old.clone();
         new.checkpoint += 1;
         const MIRROR_CHECKPOINT: &str = r#"
@@ -660,7 +711,7 @@ impl RecoveryJournal {
         self.healthy_locked().await.map(|_| ())
     }
     pub async fn reserve_admission(
-        &self,
+        self: &Arc<Self>,
         kind: &str,
         id: &str,
         fingerprint: &str,
@@ -668,7 +719,8 @@ impl RecoveryJournal {
     ) -> Result<AdmissionReservation> {
         let _permit = self
             .admission_slots
-            .try_acquire()
+            .clone()
+            .try_acquire_owned()
             .map_err(|_| RecoveryError::Busy)?;
         identity(kind, id)?;
         if admission_fingerprint(kind, &payload)? != fingerprint {
@@ -676,35 +728,38 @@ impl RecoveryJournal {
         }
         let encoded = canonical(&payload)?;
         let (kind, id, fingerprint) = (kind.to_owned(), id.to_owned(), fingerprint.to_owned());
-        let _guard = self.serial.lock().await;
-        self.healthy_locked().await?;
-        let result = self.db(move |conn| {
-            let tx = conn.transaction()?;
-            if let Some(old) = lookup(&tx, &id)? {
-                if old.kind != kind || old.fingerprint != fingerprint {
-                    return Err(RecoveryError::Conflict);
+        self.run_owned(move |journal| async move {
+            let _permit = _permit;
+            let _guard = journal.serial.lock().await;
+            journal.healthy_locked().await?;
+            let result = journal.db(move |conn| {
+                let tx = conn.transaction()?;
+                if let Some(old) = lookup(&tx, &id)? {
+                    if old.kind != kind || old.fingerprint != fingerprint {
+                        return Err(RecoveryError::Conflict);
+                    }
+                    if old.state == AdmissionState::Quarantined {
+                        return Err(RecoveryError::RecoveryRequired("transaction is quarantined"));
+                    }
+                    return Ok((AdmissionReservation {
+                        payload: old.payload,
+                        terminal: old.state == AdmissionState::Terminal,
+                    }, None));
                 }
-                if old.state == AdmissionState::Quarantined {
-                    return Err(RecoveryError::RecoveryRequired("transaction is quarantined"));
-                }
-                return Ok((AdmissionReservation {
-                    payload: old.payload,
-                    terminal: old.state == AdmissionState::Terminal,
-                }, None));
-            }
-            tx.execute(
-                "INSERT INTO admissions(id,kind,fingerprint,payload,state) VALUES(?,?,?,?,'admitted')",
-                params![id, kind, fingerprint, encoded],
-            )?;
-            let old = advance(&tx)?;
-            tx.commit()?;
-            Ok((AdmissionReservation { payload, terminal: false }, Some(old)))
+                tx.execute(
+                    "INSERT INTO admissions(id,kind,fingerprint,payload,state) VALUES(?,?,?,?,'admitted')",
+                    params![id, kind, fingerprint, encoded],
+                )?;
+                let old = advance(&tx)?;
+                tx.commit()?;
+                Ok((AdmissionReservation { payload, terminal: false }, Some(old)))
         }).await;
-        let (reservation, old) = self.storage_result(result).await?;
+        let (reservation, old) = journal.storage_result(result).await?;
         if let Some(old) = old {
-            self.mirror(old).await?;
+            journal.mirror(old).await?;
         }
         Ok(reservation)
+        }).await
     }
     async fn storage_result<T>(&self, result: Result<T>) -> Result<T> {
         match result {
@@ -836,7 +891,7 @@ impl RecoveryJournal {
     /// Commit exact attempted wire/request BEFORE network I/O. A committed record
     /// is conservatively possibly broadcast even if the process dies before send.
     pub async fn before_broadcast(
-        &self,
+        self: &Arc<Self>,
         kind: &str,
         id: &str,
         replay_key: &str,
@@ -847,91 +902,94 @@ impl RecoveryJournal {
         let encoded = canonical(&attempt)?;
         let digest = format!("{:x}", Sha256::digest(encoded.as_bytes()));
         let (kind, id, replay_key) = (kind.to_owned(), id.to_owned(), replay_key.to_owned());
-        let _guard = self.serial.lock().await;
-        self.healthy_locked().await?;
-        let result = self
-            .db(move |conn| {
-                let tx = conn.transaction()?;
-                let record = lookup(&tx, &id)?
-                    .ok_or(RecoveryError::RecoveryRequired("untracked broadcast"))?;
-                if record.kind != kind {
-                    return Err(RecoveryError::Conflict);
-                }
-                if record.state != AdmissionState::Admitted {
-                    return Err(RecoveryError::RecoveryRequired(
-                        "transaction is terminal or quarantined",
-                    ));
-                }
-                if kind != "solana" {
-                    let chain = replay_key
-                        .split(':')
-                        .nth(1)
-                        .ok_or(RecoveryError::Invalid("replay key has no chain identity"))?;
-                    let halted: bool = tx.query_row(
-                        "SELECT EXISTS(SELECT 1 FROM chain_halts WHERE chain_id=?)",
-                        [chain],
-                        |r| r.get(0),
-                    )?;
-                    if halted {
+        self.run_owned(move |journal| async move {
+            let _guard = journal.serial.lock().await;
+            journal.healthy_locked().await?;
+            let result = journal
+                .db(move |conn| {
+                    let tx = conn.transaction()?;
+                    let record = lookup(&tx, &id)?
+                        .ok_or(RecoveryError::RecoveryRequired("untracked broadcast"))?;
+                    if record.kind != kind {
+                        return Err(RecoveryError::Conflict);
+                    }
+                    if record.state != AdmissionState::Admitted {
                         return Err(RecoveryError::RecoveryRequired(
-                            "chain finality conflict requires reconciliation",
+                            "transaction is terminal or quarantined",
                         ));
                     }
-                }
-                if record
-                    .replay_key
-                    .as_ref()
-                    .is_some_and(|key| key != &replay_key)
-                {
-                    return Err(RecoveryError::Conflict);
-                }
-                let owner: Option<String> = tx
-                    .query_row(
-                        "SELECT id FROM admissions WHERE replay_key=?",
-                        [&replay_key],
-                        |r| r.get(0),
-                    )
-                    .optional()?;
-                if owner.as_ref().is_some_and(|owner| owner != &id) {
-                    return Err(RecoveryError::Conflict);
-                }
-                // An exact retry already has FULL-committed evidence. Check its
-                // current owner/state/chain above, but do not fsync the same wire
-                // again or advance the checkpoint merely for a retransmission.
-                let existing: Option<(String, String)> = tx
-                    .query_row(
-                        "SELECT replay_key,payload FROM attempts WHERE id=? AND digest=?",
-                        params![id, digest],
-                        |row| Ok((row.get(0)?, row.get(1)?)),
-                    )
-                    .optional()?;
-                if let Some((stored_key, stored_payload)) = existing {
-                    if stored_key != replay_key
-                        || stored_payload != encoded
-                        || record.replay_key.as_deref() != Some(replay_key.as_str())
-                    {
-                        return Err(RecoveryError::Storage);
+                    if kind != "solana" {
+                        let chain = replay_key
+                            .split(':')
+                            .nth(1)
+                            .ok_or(RecoveryError::Invalid("replay key has no chain identity"))?;
+                        let halted: bool = tx.query_row(
+                            "SELECT EXISTS(SELECT 1 FROM chain_halts WHERE chain_id=?)",
+                            [chain],
+                            |r| r.get(0),
+                        )?;
+                        if halted {
+                            return Err(RecoveryError::RecoveryRequired(
+                                "chain finality conflict requires reconciliation",
+                            ));
+                        }
                     }
-                    return Ok(None);
-                }
-                tx.execute(
-                    "UPDATE admissions SET replay_key=? WHERE id=?",
-                    params![replay_key, id],
-                )?;
-                tx.execute(
-                    "INSERT INTO attempts(id,replay_key,digest,payload) VALUES(?,?,?,?)",
-                    params![id, replay_key, digest, encoded],
-                )?;
-                let old = advance(&tx)?;
-                tx.commit()?;
-                Ok(Some(old))
-            })
-            .await;
-        let old = self.storage_result(result).await?;
-        if let Some(old) = old {
-            self.mirror(old).await?;
-        }
-        Ok(())
+                    if record
+                        .replay_key
+                        .as_ref()
+                        .is_some_and(|key| key != &replay_key)
+                    {
+                        return Err(RecoveryError::Conflict);
+                    }
+                    let owner: Option<String> = tx
+                        .query_row(
+                            "SELECT id FROM admissions WHERE replay_key=?",
+                            [&replay_key],
+                            |r| r.get(0),
+                        )
+                        .optional()?;
+                    if owner.as_ref().is_some_and(|owner| owner != &id) {
+                        return Err(RecoveryError::Conflict);
+                    }
+                    // An exact retry already has FULL-committed evidence. Check its
+                    // current owner/state/chain above, but do not fsync the same wire
+                    // again or advance the checkpoint merely for a retransmission.
+                    let existing: Option<(String, String)> = tx
+                        .query_row(
+                            "SELECT replay_key,payload FROM attempts WHERE id=? AND digest=?",
+                            params![id, digest],
+                            |row| Ok((row.get(0)?, row.get(1)?)),
+                        )
+                        .optional()?;
+                    if let Some((stored_key, stored_payload)) = existing {
+                        if stored_key != replay_key
+                            || stored_payload != encoded
+                            || record.replay_key.as_deref() != Some(replay_key.as_str())
+                        {
+                            return Err(RecoveryError::Storage);
+                        }
+                        return Ok(None);
+                    }
+                    tx.execute(
+                        "UPDATE admissions SET replay_key=? WHERE id=?",
+                        params![replay_key, id],
+                    )?;
+                    tx.execute(
+                        "INSERT INTO attempts(id,replay_key,digest,payload) VALUES(?,?,?,?)",
+                        params![id, replay_key, digest, encoded],
+                    )?;
+                    let old = advance(&tx)?;
+                    tx.commit()?;
+                    Ok(Some(old))
+                })
+                .await;
+            let old = journal.storage_result(result).await?;
+            if let Some(old) = old {
+                journal.mirror(old).await?;
+            }
+            Ok(())
+        })
+        .await
     }
     /// Read one already persisted attempt for exact-wire gap recovery. This is
     /// not broadcast authorization: callers must decode/validate the wire and
@@ -998,48 +1056,55 @@ impl RecoveryJournal {
     }
     /// Only a trusted chain reconciliation path may supply terminal evidence.
     /// A null receipt or nonce progress cannot supply a terminal outcome.
-    pub async fn record_terminal(&self, kind: &str, id: &str, evidence: Value) -> Result<()> {
+    pub async fn record_terminal(
+        self: &Arc<Self>,
+        kind: &str,
+        id: &str,
+        evidence: Value,
+    ) -> Result<()> {
         identity(kind, id)?;
         let normalized = terminal_identity(&evidence)?;
         let encoded = canonical(&evidence)?;
         let (kind, id) = (kind.to_owned(), id.to_owned());
-        let _guard = self.serial.lock().await;
-        self.healthy_locked().await?;
-        let result = self.db(move |conn| {
-            let tx = conn.transaction()?;
-            let record = lookup(&tx, &id)?
-                .ok_or(RecoveryError::RecoveryRequired("untracked terminal observation"))?;
-            if record.kind != kind { return Err(RecoveryError::Conflict); }
-            validate_attempt_identity_in_db(&tx, &record, &evidence)?;
-            if record.state == AdmissionState::Terminal {
-                let previous: String = tx.query_row(
-                    "SELECT evidence FROM terminal_evidence WHERE id=? ORDER BY sequence LIMIT 1",
-                    [&id], |row| row.get(0),
-                )?;
-                let previous: Value = serde_json::from_str(&previous).map_err(|_| RecoveryError::Storage)?;
-                if terminal_identity(&previous)? == normalized { return Ok((None, false)); }
+        self.run_owned(move |journal| async move {
+            let _guard = journal.serial.lock().await;
+            journal.healthy_locked().await?;
+            let result = journal.db(move |conn| {
+                let tx = conn.transaction()?;
+                let record = lookup(&tx, &id)?
+                    .ok_or(RecoveryError::RecoveryRequired("untracked terminal observation"))?;
+                if record.kind != kind { return Err(RecoveryError::Conflict); }
+                validate_attempt_identity_in_db(&tx, &record, &evidence)?;
+                if record.state == AdmissionState::Terminal {
+                    let previous: String = tx.query_row(
+                        "SELECT evidence FROM terminal_evidence WHERE id=? ORDER BY sequence LIMIT 1",
+                        [&id], |row| row.get(0),
+                    )?;
+                    let previous: Value = serde_json::from_str(&previous).map_err(|_| RecoveryError::Storage)?;
+                    if terminal_identity(&previous)? == normalized { return Ok((None, false)); }
+                    tx.execute("INSERT INTO terminal_evidence(id,evidence) VALUES(?,?)", params![id, encoded])?;
+                    tx.execute("UPDATE control SET halted=1,reason='terminal evidence conflict' WHERE singleton=1", [])?;
+                    tx.commit()?;
+                    return Ok((None, true));
+                }
                 tx.execute("INSERT INTO terminal_evidence(id,evidence) VALUES(?,?)", params![id, encoded])?;
-                tx.execute("UPDATE control SET halted=1,reason='terminal evidence conflict' WHERE singleton=1", [])?;
+                tx.execute("UPDATE admissions SET state='terminal' WHERE id=?", [id])?;
+                let old = advance(&tx)?;
                 tx.commit()?;
-                return Ok((None, true));
-            }
-            tx.execute("INSERT INTO terminal_evidence(id,evidence) VALUES(?,?)", params![id, encoded])?;
-            tx.execute("UPDATE admissions SET state='terminal' WHERE id=?", [id])?;
-            let old = advance(&tx)?;
-            tx.commit()?;
-            Ok((Some(old), false))
+                Ok((Some(old), false))
         }).await;
-        let (old, conflict) = self.storage_result(result).await?;
+        let (old, conflict) = journal.storage_result(result).await?;
         if conflict {
-            self.failed.store(true, Ordering::SeqCst);
+            journal.failed.store(true, Ordering::SeqCst);
             return Err(RecoveryError::RecoveryRequired(
                 "terminal evidence conflict",
             ));
         }
         if let Some(old) = old {
-            self.mirror(old).await?;
+            journal.mirror(old).await?;
         }
         Ok(())
+        }).await
     }
 
     pub async fn check_chain_healthy(&self, chain_id: u64) -> Result<()> {
@@ -1070,53 +1135,54 @@ impl RecoveryJournal {
     /// Compare-and-swap the prior evidence whose canonicality the caller checked.
     /// A concurrent advancement requires another chain check, never a blind overwrite.
     pub async fn commit_checkpoint(
-        &self,
+        self: &Arc<Self>,
         chain_id: u64,
         expected: Option<crate::finality::FinalityEvidence>,
         evidence: crate::finality::FinalityEvidence,
     ) -> Result<bool> {
-        let _guard = self.serial.lock().await;
-        self.healthy_locked().await?;
-        let result = self.db(move |conn| {
-            let tx = conn.transaction()?;
-            ensure_chain_not_halted(&tx, &chain_id.to_string())?;
-            let current = load_chain_checkpoint(&tx, chain_id)?;
-            if current != expected {
-                return Ok((false, None, false));
-            }
-            if let Some(previous) = current {
-                if previous.policy != evidence.policy
-                    || (previous.checkpoint_number == evidence.checkpoint_number
-                        && previous.checkpoint_hash != evidence.checkpoint_hash) {
-                    tx.execute(
-                        "INSERT OR IGNORE INTO chain_halts VALUES(?,'finality checkpoint conflict')",
-                        [chain_id.to_string()],
-                    )?;
-                    let old = advance(&tx)?;
-                    tx.commit()?;
-                    return Ok((false, Some(old), true));
-                }
-                if evidence.checkpoint_number < previous.checkpoint_number {
+        self.run_owned(move |journal| async move {
+            let _guard = journal.serial.lock().await;
+            journal.healthy_locked().await?;
+            let result = journal.db(move |conn| {
+                let tx = conn.transaction()?;
+                ensure_chain_not_halted(&tx, &chain_id.to_string())?;
+                let current = load_chain_checkpoint(&tx, chain_id)?;
+                if current != expected {
                     return Ok((false, None, false));
                 }
-                if evidence.checkpoint_number == previous.checkpoint_number {
-                    // Receipt block identity belongs to each terminal witness.
-                    // The chain fence is unchanged when policy/head/hash match.
-                    return Ok((true, None, false));
+                if let Some(previous) = current {
+                    if previous.policy != evidence.policy
+                        || (previous.checkpoint_number == evidence.checkpoint_number
+                            && previous.checkpoint_hash != evidence.checkpoint_hash) {
+                        tx.execute(
+                            "INSERT OR IGNORE INTO chain_halts VALUES(?,'finality checkpoint conflict')",
+                            [chain_id.to_string()],
+                        )?;
+                        let old = advance(&tx)?;
+                        tx.commit()?;
+                        return Ok((false, Some(old), true));
+                    }
+                    if evidence.checkpoint_number < previous.checkpoint_number {
+                        return Ok((false, None, false));
+                    }
+                    if evidence.checkpoint_number == previous.checkpoint_number {
+                        // Receipt block identity belongs to each terminal witness.
+                        // The chain fence is unchanged when policy/head/hash match.
+                        return Ok((true, None, false));
+                    }
                 }
-            }
-            let encoded = serde_json::to_string(&evidence).map_err(|_| RecoveryError::Storage)?;
-            tx.execute(
-                "INSERT INTO chain_checkpoints(chain_id,evidence) VALUES(?,?) ON CONFLICT(chain_id) DO UPDATE SET evidence=excluded.evidence",
-                params![chain_id.to_string(), encoded],
-            )?;
-            let old = advance(&tx)?;
-            tx.commit()?;
-            Ok((true, Some(old), false))
+                let encoded = serde_json::to_string(&evidence).map_err(|_| RecoveryError::Storage)?;
+                tx.execute(
+                    "INSERT INTO chain_checkpoints(chain_id,evidence) VALUES(?,?) ON CONFLICT(chain_id) DO UPDATE SET evidence=excluded.evidence",
+                    params![chain_id.to_string(), encoded],
+                )?;
+                let old = advance(&tx)?;
+                tx.commit()?;
+                Ok((true, Some(old), false))
         }).await;
-        let (accepted, old, conflict) = self.storage_result(result).await?;
+        let (accepted, old, conflict) = journal.storage_result(result).await?;
         if let Some(old) = old {
-            self.mirror(old).await?;
+            journal.mirror(old).await?;
         }
         if conflict {
             return Err(RecoveryError::RecoveryRequired(
@@ -1124,24 +1190,28 @@ impl RecoveryJournal {
             ));
         }
         Ok(accepted)
+        }).await
     }
-    pub async fn halt_chain(&self, chain_id: u64, _reason: &str) -> Result<()> {
-        let _guard = self.serial.lock().await;
-        self.healthy_locked().await?;
-        let result = self
-            .db(move |conn| {
-                let tx = conn.transaction()?;
-                tx.execute(
+    pub async fn halt_chain(self: &Arc<Self>, chain_id: u64, _reason: &str) -> Result<()> {
+        self.run_owned(move |journal| async move {
+            let _guard = journal.serial.lock().await;
+            journal.healthy_locked().await?;
+            let result = journal
+                .db(move |conn| {
+                    let tx = conn.transaction()?;
+                    tx.execute(
                     "INSERT OR IGNORE INTO chain_halts VALUES(?,'finality checkpoint conflict')",
                     [chain_id.to_string()],
                 )?;
-                let old = advance(&tx)?;
-                tx.commit()?;
-                Ok(old)
-            })
-            .await;
-        let old = self.storage_result(result).await?;
-        self.mirror(old).await
+                    let old = advance(&tx)?;
+                    tx.commit()?;
+                    Ok(old)
+                })
+                .await;
+            let old = journal.storage_result(result).await?;
+            journal.mirror(old).await
+        })
+        .await
     }
 
     /// Read-only inventory remains available while the server holds the owner lock.
@@ -1185,7 +1255,16 @@ impl RecoveryJournal {
                 "configured namespace does not match ledger",
             ));
         }
-        if c.halted && c.reason.as_deref() != Some("Redis process changed") {
+        if c.halted
+            && !matches!(
+                c.reason.as_deref(),
+                Some(
+                    "Redis process changed"
+                        | "Redis continuity unavailable"
+                        | "Redis primary role changed"
+                )
+            )
+        {
             return Err(RecoveryError::RecoveryRequired(
                 "halt cannot be cleared by reattach",
             ));
@@ -1504,3 +1583,6 @@ mod export;
 #[cfg(test)]
 #[path = "recovery/history_index_tests.rs"]
 mod history_index_tests;
+
+#[cfg(test)]
+mod cancellation_tests;

@@ -28,6 +28,59 @@ fn protect(router: Router, slots: Arc<Semaphore>, gate_calls: Arc<AtomicUsize>) 
 }
 
 #[tokio::test]
+async fn contract_reads_and_encoding_do_not_compete_with_transaction_mutations() {
+    let calls = Arc::new(AtomicUsize::new(0));
+    let router = protect(
+        Router::new().fallback(|| async { StatusCode::OK }),
+        Arc::new(Semaphore::new(0)),
+        calls.clone(),
+    );
+    for path in ["/v1/read/contract", "/v1/encode/contract?format=hex"] {
+        let request = Request::builder()
+            .method(Method::POST)
+            .uri(path)
+            .body(Body::empty())
+            .unwrap();
+        assert!(!is_mutation(&request));
+        assert_eq!(
+            router.clone().oneshot(request).await.unwrap().status(),
+            StatusCode::OK
+        );
+    }
+    assert_eq!(calls.load(Ordering::SeqCst), 2);
+    for (method, path) in [
+        (Method::POST, "/v1/write/contract"),
+        (Method::POST, "/v1/write/transaction"),
+        (Method::POST, "/v1/solana/transaction"),
+        (Method::POST, "/v1/solana/sign/transaction"),
+        (Method::POST, "/v1/sign/message"),
+        (Method::POST, "/v1/transactions/id/cancel"),
+        (Method::POST, "/v1/admin/queue/name/empty-idempotency-set"),
+        (Method::POST, "/v1/read/contract/extra"),
+        (Method::DELETE, "/v1/read/contract"),
+    ] {
+        let request = Request::builder()
+            .method(method)
+            .uri(path)
+            .body(Body::empty())
+            .unwrap();
+        assert!(
+            is_mutation(&request),
+            "unintended recovery exemption for {path}"
+        );
+        assert_eq!(
+            router.clone().oneshot(request).await.unwrap().status(),
+            StatusCode::TOO_MANY_REQUESTS
+        );
+    }
+    assert_eq!(
+        calls.load(Ordering::SeqCst),
+        2,
+        "saturated mutations reached the recovery gate"
+    );
+}
+
+#[tokio::test]
 async fn saturation_fails_before_journal_and_handler_while_get_bypasses_limit() {
     let slots = Arc::new(Semaphore::new(MAX_CONCURRENT_MUTATIONS));
     let gate_calls = Arc::new(AtomicUsize::new(0));
