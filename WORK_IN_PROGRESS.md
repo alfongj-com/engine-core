@@ -32,6 +32,8 @@ Unscoped HTTP/health checks have separate bounded scheduling capacity; 4337 and
 7702 workers now carry their chain scope. Idle EVM lanes can be reclaimed without
 splitting live overflow work across lanes. Registration fails promptly when a
 shutdown drain is waiting, avoiding the health/mutation lock-order deadlock.
+The final shutdown barrier permanently closes registration, including delayed
+health probes that outlive their HTTP requests.
 Queue and executor metrics initialize before any startup work.
 
 The [restart and rollback runbook](docs/design/redis-disaster-recovery.md#redis-restart-with-intact-data)
@@ -50,7 +52,7 @@ are kept on `load-tests`, outside this implementation PR. They include binary/so
 provenance, baseline comparisons, latency/backlog, exact effect reconciliation,
 model outcomes and CI links. The PR checks qualify their own source commit.
 
-The local checks cover the workspace suite, 47 journal regressions, 73 executor
+The local checks cover the workspace suite, 49 journal regressions, 73 executor
 regressions, 36 queue regressions, HTTP/admission tests, real HTTP batching, process
 crashes, Redis data loss, reorgs and the live-outage shutdown regression. The formal
 suite has 73 bounded configurations, including deliberate faults that must produce

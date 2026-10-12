@@ -164,7 +164,8 @@ pub struct RecoveryJournal {
     fairness: fairness::JournalFairness,
     admission_slots: Arc<Semaphore>,
     health_slots: Arc<Semaphore>,
-    owned_operations: Arc<RwLock<()>>,
+    // Read guards register owned work; true permanently closes registration.
+    owned_operations: Arc<RwLock<bool>>,
     failed: AtomicBool,
     #[cfg(test)]
     before_ack: Mutex<
@@ -601,7 +602,7 @@ impl RecoveryJournal {
             fairness: fairness::JournalFairness::new(),
             admission_slots: Arc::new(Semaphore::new(MAX_CONCURRENT_ADMISSIONS)),
             health_slots: Arc::new(Semaphore::new(MAX_CONCURRENT_HEALTH_CHECKS)),
-            owned_operations: Arc::new(RwLock::new(())),
+            owned_operations: Arc::new(RwLock::new(false)),
             failed: AtomicBool::new(false),
             #[cfg(test)]
             before_ack: Mutex::new(None),
@@ -686,6 +687,11 @@ impl RecoveryJournal {
             .clone()
             .try_read_owned()
             .map_err(|_| RecoveryError::Busy)?;
+        // Check under the registration guard: either shutdown observes this
+        // reader and waits for it, or its completed close excludes the task.
+        if *registered {
+            return Err(RecoveryError::Busy);
+        }
         let journal = self.clone();
         let chain = fairness::current();
         tokio::spawn(fairness::scope(chain, async move {
@@ -695,11 +701,18 @@ impl RecoveryJournal {
         .await
         .map_err(|_| RecoveryError::Storage)?
     }
-    /// Stop HTTP/workers first, then wait for mutations whose callers were
-    /// cancelled. Returning from the async runtime before this barrier could
-    /// abort a detached task between its SQL commit and Redis publication.
+    /// Wait for currently registered operations. This reusable barrier does not
+    /// exclude callers that register after it returns; use close_and_drain when
+    /// shutting down the runtime.
     pub async fn drain_mutations(&self) {
         let _drained = self.owned_operations.write().await;
+    }
+    /// Stop HTTP/workers first, then permanently close registration and wait for
+    /// all owned work. Late probes still waiting for a lane or capacity cannot
+    /// begin a repair after this returns. Already registered work finishes fully.
+    pub async fn close_and_drain(&self) {
+        let mut closed = self.owned_operations.write().await;
+        *closed = true;
     }
     async fn db<T: Send + 'static>(
         &self,

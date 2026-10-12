@@ -270,7 +270,7 @@ async fn main() -> anyhow::Result<()> {
         tracing::info!("All workers shut down successfully");
     }
 
-    recovery.drain_mutations().await;
+    recovery.close_and_drain().await;
     tracing::info!("All owned recovery mutations drained");
 
     Ok(())

@@ -123,6 +123,9 @@ and participates in shutdown drain. Registration fails immediately with `Busy`
 if a drain writer is queued or active. Waiting there while holding a lane would
 deadlock with an already registered mutation that needs the same lane to finish.
 HTTP reports this as retryable busy state, not a durable recovery incident.
+Shutdown permanently closes owned-work registration under the same lock after
+registered operations finish. A detached health probe that wakes later therefore
+cannot begin a repair after the shutdown barrier has returned.
 
 Interpret `lane_wait`, `serial_wait` and health-capacity wait together. Moving wait
 ahead of the global lock is not itself an improvement; compare each chain's actual

@@ -84,7 +84,9 @@ are synced, including containing directory entries. Owned tasks retain the
 serialization lock and admission permit through publication and acknowledgement.
 Cancelling a caller does not abandon its update; retry the original ID and intent.
 Blocking database work retains the OS owner lock. Graceful shutdown stops HTTP
-and workers, then drains registered work. Health repair has a separate 32-operation
+and workers, then permanently closes registration and drains registered work.
+Delayed detached health probes cannot start a repair after that barrier returns.
+Health repair has a separate 32-operation
 bound, and callers cancelled while waiting for that capacity spawn no detached task.
 
 Positive marker, process or role contradictions still halt execution, as do storage

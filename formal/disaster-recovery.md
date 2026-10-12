@@ -153,6 +153,9 @@ registration fails fast when shutdown has queued its exclusive drain, releasing
 any lane/health permits rather than waiting on an inverted lock order. These
 are runtime scheduling obligations covered by deterministic concurrency tests,
 not properties of the checkpoint model.
+The server's final drain also permanently closes registration, so a detached
+probe that wakes after the barrier cannot begin new authority work. Rejected
+registrations perform no modeled authority transition.
 
 `RepairMarker` remains an arbitrary marker write in the identity model. If
 unavailability was the first halt cause, manually restoring just the marker can

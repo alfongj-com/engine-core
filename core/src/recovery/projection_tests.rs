@@ -530,6 +530,114 @@ async fn cancelled_health_acknowledgement_is_owned_and_drained() {
 
 #[tokio::test]
 #[ignore = "requires disposable Redis in TEST_REDIS_URL"]
+async fn close_waits_for_owned_repair_and_permanently_rejects_new_registration() {
+    let f = Fixture::fresh();
+    f.initialize().await;
+    let j = f.open().await;
+    stage_pending(&j).await;
+    let (entered, entering) = tokio::sync::oneshot::channel();
+    let (resume, resuming) = tokio::sync::oneshot::channel();
+    *j.before_ack.lock().unwrap() = Some((entered, resuming));
+    let health_journal = j.clone();
+    let health = tokio::spawn(async move { health_journal.ensure_healthy().await });
+    tokio::time::timeout(Duration::from_secs(5), entering)
+        .await
+        .unwrap()
+        .unwrap();
+    health.abort();
+    assert!(health.await.unwrap_err().is_cancelled());
+    let mut closing = Box::pin(j.close_and_drain());
+    poll_pending_once(closing.as_mut()).await;
+    assert!(RecoveryJournal::status(&f.path).unwrap().projection_pending);
+    resume.send(()).unwrap();
+    tokio::time::timeout(Duration::from_secs(5), closing)
+        .await
+        .expect("close must wait for the canceled caller's owned acknowledgement");
+    let status = RecoveryJournal::status(&f.path).unwrap();
+    assert!(!status.projection_pending);
+    assert!(!status.halted);
+    assert!(matches!(j.ensure_healthy().await, Err(RecoveryError::Busy)));
+    // Neither a subsequent reusable barrier nor another close reopens it.
+    j.drain_mutations().await;
+    j.close_and_drain().await;
+    let payload = request("after-close");
+    let fingerprint = admission_fingerprint("eoa", &payload).unwrap();
+    assert!(matches!(
+        j.reserve_admission("eoa", "after-close", &fingerprint, payload)
+            .await,
+        Err(RecoveryError::Busy)
+    ));
+    assert_eq!(RecoveryJournal::status(&f.path).unwrap().admissions, 0);
+    assert!(matches!(j.ensure_healthy().await, Err(RecoveryError::Busy)));
+    drop(j);
+    let reopened = f.open().await;
+    reopened.ensure_healthy().await.unwrap();
+    drop(reopened);
+    f.cleanup(&[]).await;
+}
+
+#[tokio::test]
+#[ignore = "requires disposable Redis in TEST_REDIS_URL"]
+async fn detached_probe_released_after_close_cannot_repair_or_change_checkpoint() {
+    for wait_on_lane in [false, true] {
+        let f = Fixture::fresh();
+        f.initialize().await;
+        let j = f.open().await;
+        let old = stage_pending(&j).await;
+        let before = serde_json::to_value(RecoveryJournal::status(&f.path).unwrap()).unwrap();
+        let chain = fairness::ChainScope::Evm(1);
+        let gate = if wait_on_lane {
+            fairness::scope(chain, j.fairness.acquire()).await
+        } else {
+            j.health_slots
+                .clone()
+                .acquire_many_owned(MAX_CONCURRENT_HEALTH_CHECKS as u32)
+                .await
+                .unwrap()
+        };
+        let (finished, result) = tokio::sync::oneshot::channel();
+        let probe_journal = j.clone();
+        let mut probe = Box::pin(fairness::scope(chain, async move {
+            let _ = finished.send(probe_journal.ensure_healthy().await);
+        }));
+        poll_pending_once(probe.as_mut()).await;
+        assert!(j.owned_operations.try_write().is_ok());
+        // Match the HTTP timeout: the outer probe stays alive without a join
+        // handle, but it has not registered journal-owned work yet.
+        drop(tokio::spawn(probe));
+        j.close_and_drain().await;
+        assert!(*j.owned_operations.try_read().unwrap());
+        // Release it only after the close writer has been dropped, exercising
+        // the gap that a transient write barrier alone cannot exclude.
+        drop(gate);
+        assert!(matches!(
+            tokio::time::timeout(Duration::from_secs(2), result)
+                .await
+                .unwrap()
+                .unwrap(),
+            Err(RecoveryError::Busy)
+        ));
+        assert_eq!(
+            serde_json::to_value(RecoveryJournal::status(&f.path).unwrap()).unwrap(),
+            before
+        );
+        assert_eq!(
+            j.redis.clone().get::<_, String>(old.key()).await.unwrap(),
+            old.token(),
+            "the late probe must not publish the pending checkpoint"
+        );
+        assert_eq!(
+            j.health_slots.available_permits(),
+            MAX_CONCURRENT_HEALTH_CHECKS
+        );
+        assert!(matches!(j.ensure_healthy().await, Err(RecoveryError::Busy)));
+        drop(j);
+        f.cleanup(&[]).await;
+    }
+}
+
+#[tokio::test]
+#[ignore = "requires disposable Redis in TEST_REDIS_URL"]
 async fn legacy_inventory_is_read_only_and_incomplete_or_unknown_schemas_are_rejected() {
     let f = Fixture::fresh();
     f.initialize().await;
