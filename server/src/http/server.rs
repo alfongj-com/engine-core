@@ -253,7 +253,7 @@ async fn recovery_gate(request: Request, next: Next) -> Response {
     next.run(request).await
 }
 
-fn pending_recovery_response(body: serde_json::Value) -> Response {
+fn retryable_recovery_response(body: serde_json::Value) -> Response {
     let mut response = (StatusCode::SERVICE_UNAVAILABLE, Json(body)).into_response();
     response.headers_mut().insert(
         axum::http::header::RETRY_AFTER,
@@ -263,11 +263,17 @@ fn pending_recovery_response(body: serde_json::Value) -> Response {
 }
 
 fn recovery_gate_failure(error: engine_core::recovery::RecoveryError) -> Response {
+    if matches!(error, engine_core::recovery::RecoveryError::Busy) {
+        return retryable_recovery_response(json!({
+            "error": "RECOVERY_BUSY", "retryable": true,
+            "message": "Recovery operations are draining; retry the same transaction ID"
+        }));
+    }
     if matches!(
         error,
         engine_core::recovery::RecoveryError::PublicationPending
     ) {
-        return pending_recovery_response(json!({
+        return retryable_recovery_response(json!({
             "error": "RECOVERY_PENDING", "retryable": true,
             "message": "Checkpoint publication is pending; retry the same transaction ID"
         }));
@@ -322,7 +328,10 @@ async fn bounded_recovery_health(
     match tokio::time::timeout(timeout, &mut task).await {
         Ok(Ok(Ok(()))) => Json(json!({"status": "ok"})).into_response(),
         Ok(Ok(Err(engine_core::recovery::RecoveryError::PublicationPending))) => {
-            pending_recovery_response(json!({"status": "recovery_pending", "retryable": true}))
+            retryable_recovery_response(json!({"status": "recovery_pending", "retryable": true}))
+        }
+        Ok(Ok(Err(engine_core::recovery::RecoveryError::Busy))) => {
+            retryable_recovery_response(json!({"status": "busy", "retryable": true}))
         }
         Ok(Ok(Err(_))) => (
             StatusCode::SERVICE_UNAVAILABLE,

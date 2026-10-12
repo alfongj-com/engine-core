@@ -145,6 +145,15 @@ progress are executable test obligations. A global admission bound can still be
 filled by one chain. Health repairs are owned operations with a separate bounded
 admission semaphore. No Tokio fairness or elapsed-time theorem is claimed.
 
+The review fixes leave the authority transitions unchanged. Unscoped health
+checks use separate bounded capacity, and 4337/7702 workers carry their chain
+scope. Idle scheduling lanes may be reused only after all references are gone;
+live overflow work must not acquire a second lane for the same chain. Ownership
+registration fails fast when shutdown has queued its exclusive drain, releasing
+any lane/health permits rather than waiting on an inverted lock order. These
+are runtime scheduling obligations covered by deterministic concurrency tests,
+not properties of the checkpoint model.
+
 `RepairMarker` remains an arbitrary marker write in the identity model. If
 unavailability was the first halt cause, manually restoring just the marker can
 satisfy reattachment even when other keys were lost. The marker is not a dataset
@@ -160,6 +169,14 @@ each position, history policy and subsequent finalized receipt check. Typed
 identity and before-send checks run again. Their tests cover classification,
 retained signed identity and rejected permanent faults; no new liveness theorem
 is inferred from a shorter delay.
+
+Solana status entries are decoded and checked independently after validating the
+shared context and exact array length. A malformed entry fails only its own
+observation; malformed envelopes still fail the batch. Reducing batch size or
+disabling coalescing changes transport grouping, never the signed identity,
+history policy, retry budget or terminal-proof requirements. Real HTTP tests
+cover these boundaries; no transport refinement or provider-latency proof is
+claimed.
 
 The chain-context wrapper boxes its inner future before installing task-local
 state. This limits stack growth when wrapping the large execution-router future;

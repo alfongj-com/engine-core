@@ -199,10 +199,10 @@ async fn positional_mapping_retains_duplicates_nulls_and_provisional_statuses() 
 }
 
 #[tokio::test]
-async fn exact_256_limit_bounds_queued_and_inflight_polls_and_releases_capacity() {
+async fn exact_256_limit_splits_into_32_signature_batches_and_retains_inflight_capacity() {
     let mut http = Http::new().await;
     let sender = http.sender();
-    let mut waiting: Vec<_> = (0..256)
+    let mut waiting: Vec<_> = (0..MAX_OUTSTANDING)
         .map(|i| enqueue(&sender, signature(i as u8)))
         .collect();
     let error = sender
@@ -210,11 +210,22 @@ async fn exact_256_limit_bounds_queued_and_inflight_polls_and_releases_capacity(
         .await
         .unwrap_err();
     assert!(error.to_string().contains("full"));
-    let request = http.next().await;
-    assert_eq!(request.request["params"][0].as_array().unwrap().len(), 256);
-    // After dispatch, cancelled consumers still occupy the bounded HTTP batch
-    // until it completes; cancellation cannot start an unlimited replacement set.
-    drop(waiting.drain(..128));
+    let mut exchanges = Vec::new();
+    for _ in 0..MAX_IN_FLIGHT {
+        exchanges.push(http.next().await);
+    }
+    assert!(
+        http.requests.try_recv().is_err(),
+        "fifth HTTP batch escaped the bound"
+    );
+    assert!(
+        exchanges
+            .iter()
+            .all(|exchange| exchange.request["params"][0].as_array().unwrap().len() == 32)
+    );
+    // All four initial cohorts are in flight. Cancelling one cohort's consumers
+    // cannot free capacity while its HTTP request still occupies the sender.
+    drop(waiting.drain(..MAX_SIGNATURES));
     assert_eq!(sender.capacity.available_permits(), 0);
     assert!(
         sender
@@ -222,15 +233,44 @@ async fn exact_256_limit_bounds_queued_and_inflight_polls_and_releases_capacity(
             .await
             .is_err()
     );
-    request.reply(statuses(vec![Value::Null; 256]));
+    let mut observed = Vec::new();
+    for exchange in exchanges {
+        observed.extend(
+            exchange.request["params"][0]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|signature| signature.as_str().unwrap().to_owned()),
+        );
+        exchange.reply(statuses(vec![Value::Null; MAX_SIGNATURES]));
+    }
+    for _ in MAX_IN_FLIGHT..MAX_OUTSTANDING / MAX_SIGNATURES {
+        let exchange = http.next().await;
+        assert_eq!(exchange.request["params"][0].as_array().unwrap().len(), 32);
+        observed.extend(
+            exchange.request["params"][0]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|signature| signature.as_str().unwrap().to_owned()),
+        );
+        exchange.reply(statuses(vec![Value::Null; MAX_SIGNATURES]));
+    }
     for receiver in waiting {
         assert_eq!(receiver.await.unwrap().unwrap()["value"], json!([null]));
     }
+    observed.sort();
+    let mut expected: Vec<_> = (0..MAX_OUTSTANDING).map(|i| signature(i as u8)).collect();
+    expected.sort();
+    assert_eq!(
+        observed, expected,
+        "no admitted poll may be lost or duplicated during splitting"
+    );
     assert_eq!(sender.capacity.available_permits(), MAX_OUTSTANDING);
     let followup = spawn_polls(sender.clone(), vec![signature(9)]);
     http.next().await.reply(statuses(vec![Value::Null]));
     assert!(finish(followup).await.remove(0).is_ok());
-    assert_eq!(sender.get_transport_stats().request_count, 2);
+    assert_eq!(sender.get_transport_stats().request_count, 9);
 }
 
 #[tokio::test]
@@ -283,21 +323,19 @@ async fn only_four_http_batches_run_while_later_polls_wait() {
 }
 
 #[tokio::test]
-async fn malformed_length_context_or_status_fails_every_member_without_inventing_nulls() {
+async fn malformed_envelope_or_length_fails_every_member_without_inventing_nulls() {
     let mut http = Http::new().await;
     let sender = http.sender();
-    let mut bad_error = status(80, "finalized");
-    bad_error["err"] = json!("AccountNotFound");
-    for response in [
+    let malformed = [
         statuses(vec![Value::Null]),
         statuses(vec![Value::Null; 3]),
         json!({"value":[null,null]}),
         json!({"context":{"slot":-1},"value":[null,null]}),
         json!({"context":{"slot":150,"apiVersion":"a".repeat(129)},"value":[null,null]}),
-        statuses(vec![status(151, "finalized"), Value::Null]),
-        statuses(vec![bad_error, Value::Null]),
-        statuses(vec![json!({"slot":1,"garbage":SECRET}), Value::Null]),
-    ] {
+        json!({"context":{"slot":150},"value":{"providerSecret":SECRET}}),
+    ];
+    let expected_requests = malformed.len();
+    for response in malformed {
         let pending = spawn_polls(sender.clone(), vec![signature(1), signature(2)]);
         http.next().await.reply(response);
         for result in finish(pending).await {
@@ -306,7 +344,10 @@ async fn malformed_length_context_or_status_fails_every_member_without_inventing
             assert!(!format!("{error:?}").contains("127.0.0.1"));
         }
     }
-    assert_eq!(sender.get_transport_stats().request_count, 8);
+    assert_eq!(
+        sender.get_transport_stats().request_count,
+        expected_requests
+    );
     let pending = spawn_polls(sender.clone(), vec![signature(1), signature(2)]);
     http.next().await.reject();
     for result in finish(pending).await {
@@ -319,8 +360,80 @@ async fn malformed_length_context_or_status_fails_every_member_without_inventing
     }
     assert_eq!(
         sender.get_transport_stats().request_count,
-        9,
+        expected_requests + 1,
         "no hidden retry"
+    );
+}
+
+#[tokio::test]
+async fn invalid_statuses_fail_only_their_positions_among_healthy_null_and_duplicate_polls() {
+    let mut http = Http::new().await;
+    let sender = http.sender();
+    let mut unknown_error = status(80, "finalized");
+    unknown_error["err"] = json!({"FutureTransactionError":SECRET});
+    unknown_error["status"] = json!({"Err":{"FutureTransactionError":SECRET}});
+    let mut negative_slot = status(80, "confirmed");
+    negative_slot["slot"] = json!(-1);
+    let mut mismatched_error = status(80, "finalized");
+    mismatched_error["err"] = json!("AccountNotFound");
+    let malformed = [
+        unknown_error,
+        negative_slot,
+        status(151, "finalized"),
+        mismatched_error,
+        json!({"slot":1,"garbage":SECRET}),
+    ];
+    let expected_requests = malformed.len();
+    for poisoned in malformed {
+        // The poisoned entry and both healthy duplicate entries deliberately
+        // share a signature: each caller owns its original array position.
+        let signatures = vec![
+            signature(1),
+            signature(1),
+            signature(1),
+            signature(2),
+            signature(3),
+        ];
+        let pending = spawn_polls(sender.clone(), signatures.clone());
+        let exchange = http.next().await;
+        assert_eq!(exchange.request["params"][0], json!(signatures));
+        let values = vec![
+            status(90, "finalized"),
+            poisoned,
+            Value::Null,
+            status(91, "confirmed"),
+            status(92, "processed"),
+        ];
+        exchange.reply(statuses(values.clone()));
+        for (position, (result, expected)) in
+            finish(pending).await.into_iter().zip(values).enumerate()
+        {
+            if position == 1 {
+                let error = result.unwrap_err();
+                let rendered = format!("{error:?} {error}");
+                assert!(!rendered.contains(SECRET));
+                assert!(!rendered.contains("127.0.0.1"));
+            } else {
+                let response = result.unwrap();
+                assert_eq!(
+                    response["value"],
+                    json!([expected]),
+                    "wrong positional result at {position}"
+                );
+                assert_eq!(
+                    response["context"],
+                    json!({"slot":150,"apiVersion":"3.1.8"})
+                );
+            }
+        }
+    }
+    assert_eq!(
+        sender.get_transport_stats().request_count,
+        expected_requests
+    );
+    assert!(
+        http.requests.try_recv().is_err(),
+        "entry errors must not add hidden retries"
     );
 }
 
@@ -420,6 +533,81 @@ async fn endpoint_cluster_and_history_configuration_never_share_batches() {
     assert!(seen.contains(&json!({"searchTransactionHistory":true,"futureOption":1})));
     let (a, b, c) = finish(pending).await;
     assert!(a.is_ok() && b.is_ok() && c.is_ok());
+}
+
+#[tokio::test]
+async fn disabled_coalescing_keeps_singleton_history_requests_and_provisional_status() {
+    let mut http = Http::new().await;
+    let cache = SolanaRpcCache::new_with_status_batching(
+        SolanaRpcUrls {
+            devnet: http.url.clone(),
+            mainnet: http.url.clone(),
+            local: http.url.clone(),
+        },
+        false,
+    );
+    let client = cache.get_or_create(SolanaChainId::SolanaLocal).await;
+    let polling = client.clone();
+    let pending = tokio::spawn(async move {
+        let first = [Signature::from([1; 64])];
+        let second = [Signature::from([2; 64])];
+        tokio::join!(
+            polling.get_signature_statuses_with_history(&first),
+            polling.get_signature_statuses_with_history(&second),
+        )
+    });
+    // Both requests must reach HTTP independently before either is answered.
+    // Re-enabling the coordinator by mistake would produce one two-entry request.
+    let exchanges = [http.next().await, http.next().await];
+    for exchange in exchanges {
+        assert_eq!(exchange.request["method"], "getSignatureStatuses");
+        assert_eq!(exchange.request["params"][0].as_array().unwrap().len(), 1);
+        assert_eq!(
+            exchange.request["params"][1],
+            json!({"searchTransactionHistory":true})
+        );
+        let value = if exchange.request["params"][0][0] == signature(1) {
+            status(90, "confirmed")
+        } else {
+            Value::Null
+        };
+        exchange.reply(statuses(vec![value]));
+    }
+    let (first, second) = finish(pending).await;
+    assert_eq!(
+        serde_json::to_value(first.unwrap().value[0].as_ref().unwrap()).unwrap(),
+        status(90, "confirmed")
+    );
+    assert!(second.unwrap().value[0].is_none());
+    assert_eq!(client.get_transport_stats().request_count, 2);
+    assert!(http.requests.try_recv().is_err());
+}
+
+#[tokio::test]
+async fn disabled_coalescing_retains_transport_timeout_redaction_and_no_hidden_retry() {
+    let mut http = Http::new().await;
+    let client = Arc::new(crate::solana_executor::rpc_cache::client_with_transport(
+        BoundedRpcSender::new_with_timeout(http.url.clone(), Duration::from_millis(30)),
+        SolanaChainId::SolanaLocal,
+        false,
+    ));
+    let polling = client.clone();
+    let pending = tokio::spawn(async move {
+        let signatures = [Signature::from([1; 64])];
+        polling
+            .get_signature_statuses_with_history(&signatures)
+            .await
+    });
+    let unanswered = http.next().await;
+    assert_eq!(unanswered.request["params"], params(&signature(1)));
+    let error = finish(pending).await.unwrap_err();
+    let rendered = format!("{error:?} {error}");
+    assert!(rendered.contains("timed out"));
+    assert!(!rendered.contains(SECRET));
+    assert!(!rendered.contains("127.0.0.1"));
+    assert_eq!(client.get_transport_stats().request_count, 1);
+    assert!(http.requests.try_recv().is_err());
+    drop(unanswered);
 }
 
 #[tokio::test]

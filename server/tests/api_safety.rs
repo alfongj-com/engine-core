@@ -129,6 +129,7 @@ async fn state_with_rpc(
         ws_url: "ws://127.0.0.1:1".into(),
     };
     let solana_config = SolanaConfig {
+        status_batching_enabled: true,
         local: solana_rpc.clone(),
         devnet: solana_rpc.clone(),
         mainnet: solana_rpc,

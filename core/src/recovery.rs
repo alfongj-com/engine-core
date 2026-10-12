@@ -679,7 +679,13 @@ impl RecoveryJournal {
         Fut: std::future::Future<Output = Result<T>> + Send + 'static,
     {
         // Register before spawn, so shutdown also sees tasks not yet polled.
-        let registered = self.owned_operations.clone().read_owned().await;
+        // Never wait behind a drain writer while holding a lane/health slot:
+        // an already registered mutation may need that same lane to drain.
+        let registered = self
+            .owned_operations
+            .clone()
+            .try_read_owned()
+            .map_err(|_| RecoveryError::Busy)?;
         let journal = self.clone();
         let chain = fairness::current();
         tokio::spawn(fairness::scope(chain, async move {
@@ -791,7 +797,9 @@ impl RecoveryJournal {
         // Wait cancellably in this chain's lane before reserving global health
         // capacity. A hot chain must not fill all slots with its lane waiters.
         // Both permits transfer to the owned task before any repair can begin.
-        let lane = self.lane_permit("health").await;
+        let lane_wait = metrics::timer("health", "lane_wait");
+        let lane = self.fairness.acquire_health().await;
+        drop(lane_wait);
         let capacity_wait = metrics::timer("health", "health_capacity_wait");
         let permit = self
             .health_slots

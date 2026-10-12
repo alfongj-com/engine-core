@@ -40,6 +40,8 @@ Schema 2 prevents old binaries from bypassing acknowledgement. A schema-1 journa
 migrates only after exact healthy continuity is observed; the schema/token change
 itself has a durable pending transition. A pre-existing schema-1 mismatch remains
 stopped. Blocking SQLite tasks retain the OS ownership lock through cancellation.
+Migration is automatic and one-way; see the [maintenance and rollback procedure](redis-disaster-recovery.md#schema-upgrade-and-rollback)
+before opening a production schema-1 journal.
 
 The marker does not hash every Redis key. Retrying an unacknowledged transition
 does not prove preservation of every queue mutation; that projection limitation
@@ -61,6 +63,12 @@ send gates run again. Repairing the marker does not reconstruct executor data:
   publication response requeues without cleanup. After checkpoint repair, the worker
   can verify the same signature and finalized receipt again, then complete through
   the existing queue ownership fence. It creates no new signature.
+
+EOA confirmation now nacks continuity failures instead of permanently failing the
+job. The same request retries through the health and identity gates; a durable
+halt still prevents progress until operator recovery. Only `PublicationPending`
+uses the shorter two-second retry; other continuity failures retain the existing
+ten-second recovery delay.
 
 ## Measurements and acceptance
 
@@ -93,22 +101,28 @@ SQLite write and Redis write one transaction.
 ## Shared-chain scheduling
 
 The journal keeps its single writer. Before contending for that lock, an operation
-acquires its chain's one-slot lane. HTTP execution and EOA/Solana workers supply
+acquires its chain's one-slot lane. HTTP execution and EOA, Solana, 4337 and 7702 workers supply
 an explicit task-local chain context; detached journal operations retain it.
 There are at most 32 EVM lanes, three Solana lanes and one shared unscoped/overflow
-lane. Lanes are never evicted while work could still hold them.
+mutation lane. Idle EVM lanes can be reclaimed once no holder or waiter retains
+them. While overflow work remains, a new chain stays in overflow to avoid assigning
+two lanes to the same chain. Unscoped HTTP gates, public health checks and the
+monitor use a separate two-slot health lane, so they do not wait behind unscoped
+or overflow mutations before reaching the journal mutex.
 
 This prevents a busy chain from filling the global lock's FIFO queue. It allocates
 journal operations, not equal TPS. Admission still has one global 64-request bound;
 a flood can fill it before another chain reaches its lane. Overflow chains and
-unscoped work share a lane. Neither per-chain ingress quotas nor a wall-clock
+unscoped mutations share a lane. Neither per-chain ingress quotas nor a wall-clock
 fairness guarantee is claimed.
 
 Health checks acquire their chain lane before a global health slot. Waiting polls
 from one chain therefore cannot occupy all 32 slots. Both waits are cancellable;
 after registration, the owned repair retains both permits through acknowledgement
-and participates in shutdown drain. This order was corrected after the first
-matched load run exposed contention before the chain lanes.
+and participates in shutdown drain. Registration fails immediately with `Busy`
+if a drain writer is queued or active. Waiting there while holding a lane would
+deadlock with an already registered mutation that needs the same lane to finish.
+HTTP reports this as retryable busy state, not a durable recovery incident.
 
 Interpret `lane_wait`, `serial_wait` and health-capacity wait together. Moving wait
 ahead of the global lock is not itself an improvement; compare each chain's actual

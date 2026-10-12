@@ -635,10 +635,10 @@ async fn cancelled_health_callers_cannot_create_unbounded_owned_tasks() {
     }
     assert_eq!(Arc::strong_count(&j), retained);
     assert_eq!(j.health_slots.available_permits(), 0);
-    let fallback = tokio::time::timeout(Duration::from_secs(1), j.fairness.acquire())
+    let health_lane = tokio::time::timeout(Duration::from_secs(1), j.fairness.acquire_health())
         .await
-        .expect("cancelled capacity waiters must release their chain lane");
-    drop(fallback);
+        .expect("cancelled capacity waiters must release their health lane");
+    drop(health_lane);
     let mut drained = Box::pin(j.drain_mutations());
     poll_pending_once(drained.as_mut()).await;
     drop(held);
@@ -652,6 +652,98 @@ async fn cancelled_health_callers_cannot_create_unbounded_owned_tasks() {
     j.ensure_healthy().await.unwrap();
     drop(j);
     f.cleanup(&[]).await;
+}
+
+#[tokio::test]
+#[ignore = "requires disposable Redis in TEST_REDIS_URL"]
+async fn unscoped_health_progresses_while_the_mutation_fallback_is_occupied() {
+    let f = Fixture::fresh();
+    f.initialize().await;
+    let j = f.open().await;
+    let mutation_lane = j.fairness.acquire().await;
+    tokio::time::timeout(Duration::from_secs(2), j.ensure_healthy())
+        .await
+        .expect("unscoped health must not queue behind the mutation fallback")
+        .unwrap();
+    assert_eq!(
+        j.health_slots.available_permits(),
+        MAX_CONCURRENT_HEALTH_CHECKS
+    );
+    drop(mutation_lane);
+    drop(j);
+    f.cleanup(&[]).await;
+}
+
+#[tokio::test]
+#[ignore = "requires disposable Redis in TEST_REDIS_URL"]
+async fn draining_rejects_health_registration_and_releases_a_lane_needed_by_owned_mutation() {
+    for use_overflow in [false, true] {
+        let f = Fixture::fresh();
+        f.initialize().await;
+        let j = f.open().await;
+        // Exercise both a dedicated EVM lane and the shared overflow lane.
+        let mut occupied = Vec::new();
+        if use_overflow {
+            for id in 1..=32 {
+                occupied.push(
+                    fairness::scope(fairness::ChainScope::Evm(id), j.fairness.acquire()).await,
+                );
+            }
+        }
+        let chain = fairness::ChainScope::Evm(100);
+        let slots = j
+            .health_slots
+            .clone()
+            .acquire_many_owned(MAX_CONCURRENT_HEALTH_CHECKS as u32)
+            .await
+            .unwrap();
+        let mut health = Box::pin(fairness::scope(chain, j.ensure_healthy()));
+        poll_pending_once(health.as_mut()).await;
+        assert!(j.owned_operations.try_write().is_ok());
+
+        // Health owns the lane but cannot register until capacity is released.
+        // This mutation registers now, then waits for that same lane. Cancel its
+        // caller to require the shutdown barrier to retain and finish the work.
+        let payload = request("drain-race");
+        let fingerprint = admission_fingerprint("eoa", &payload).unwrap();
+        let mut mutation = Box::pin(fairness::scope(
+            chain,
+            j.reserve_admission("eoa", "drain-race", &fingerprint, payload),
+        ));
+        poll_pending_once(mutation.as_mut()).await;
+        drop(mutation);
+        assert!(j.owned_operations.try_write().is_err());
+        let mut drained = Box::pin(j.drain_mutations());
+        poll_pending_once(drained.as_mut()).await;
+
+        // A waiting read registration would deadlock: health holds the lane,
+        // mutation holds a read guard, and the writer waits for the mutation.
+        drop(slots);
+        let result = tokio::time::timeout(Duration::from_secs(2), health.as_mut())
+            .await
+            .expect("health registration must fail promptly behind a drain writer");
+        assert!(matches!(result, Err(RecoveryError::Busy)));
+        drop(health);
+        tokio::time::timeout(Duration::from_secs(5), drained)
+            .await
+            .expect("the already owned mutation must complete before drain returns");
+        let status = RecoveryJournal::status(&f.path).unwrap();
+        assert_eq!(status.admissions, 1);
+        assert!(!status.projection_pending);
+        assert!(!status.halted);
+        assert_eq!(
+            j.health_slots.available_permits(),
+            MAX_CONCURRENT_HEALTH_CHECKS
+        );
+        assert_eq!(
+            j.admission_slots.available_permits(),
+            MAX_CONCURRENT_ADMISSIONS
+        );
+        drop(occupied);
+        j.ensure_healthy().await.unwrap();
+        drop(j);
+        f.cleanup(&[]).await;
+    }
 }
 
 #[tokio::test]

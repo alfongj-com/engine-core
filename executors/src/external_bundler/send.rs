@@ -253,35 +253,36 @@ where
         &self,
         job: &BorrowedJob<Self::JobData>,
     ) -> JobResult<Self::Output, Self::ErrorData> {
-        let job_data = &job.job.data;
-        crate::recovery::validate("erc4337", &job_data.transaction_id, job_data)
-            .await
-            .map_err(|error| {
-                crate::recovery::nack(error, Duration::from_secs(10), |error| {
-                    ExternalBundlerSendError::InternalError {
-                        message: error.to_string(),
-                    }
-                })
-            })?;
-        // A prior broadcast reservation is durable evidence of an unknown
-        // outcome. Later build/provider errors cannot turn it into failure.
-        let previously_broadcast = if let Some(journal) = engine_core::recovery::global() {
-            journal
-                .admission("erc4337", &job_data.transaction_id)
+        let operation = async {
+            let job_data = &job.job.data;
+            crate::recovery::validate("erc4337", &job_data.transaction_id, job_data)
                 .await
-                .map_err(crate::recovery::from_journal_error)
                 .map_err(|error| {
                     crate::recovery::nack(error, Duration::from_secs(10), |error| {
                         ExternalBundlerSendError::InternalError {
                             message: error.to_string(),
                         }
                     })
-                })?
-                .is_some_and(|admission| admission.replay_key.is_some())
-        } else {
-            false
-        };
-        let result = async {
+                })?;
+            // A prior broadcast reservation is durable evidence of an unknown
+            // outcome. Later build/provider errors cannot turn it into failure.
+            let previously_broadcast = if let Some(journal) = engine_core::recovery::global() {
+                journal
+                    .admission("erc4337", &job_data.transaction_id)
+                    .await
+                    .map_err(crate::recovery::from_journal_error)
+                    .map_err(|error| {
+                        crate::recovery::nack(error, Duration::from_secs(10), |error| {
+                            ExternalBundlerSendError::InternalError {
+                                message: error.to_string(),
+                            }
+                        })
+                    })?
+                    .is_some_and(|admission| admission.replay_key.is_some())
+            } else {
+                false
+            };
+            let result = async {
         let nonce = job_data.pregenerated_nonce.ok_or_else(|| ExternalBundlerSendError::InternalError {
             message: "Job has no persisted UserOperation nonce. Reconcile its on-chain outcome before resubmitting; legacy jobs cannot be retried safely.".to_string(),
         }).map_err_fail()?;
@@ -563,7 +564,13 @@ where
             deployment_lock_id,
         })
         }.await;
-        result.map_err(|error| preserve_unknown_outcome(error, previously_broadcast))
+            result.map_err(|error| preserve_unknown_outcome(error, previously_broadcast))
+        };
+        engine_core::recovery::fairness::scope(
+            engine_core::recovery::fairness::ChainScope::Evm(job.job.data.chain_id),
+            operation,
+        )
+        .await
     }
 
     async fn on_success(

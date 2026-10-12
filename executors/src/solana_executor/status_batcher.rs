@@ -20,7 +20,9 @@ use tokio::{
     time::Instant,
 };
 
-const MAX_SIGNATURES: usize = 256;
+// Stay below the protocol's 256-signature maximum: one archival lookup can
+// delay its entire HTTP request. This limits that cohort without longer timeouts.
+const MAX_SIGNATURES: usize = 32;
 const MAX_OUTSTANDING: usize = 256;
 const MAX_IN_FLIGHT: usize = 4;
 const COLLECTION_DELAY: Duration = Duration::from_millis(5);
@@ -198,10 +200,7 @@ fn copy_batch_error(source: &ClientError) -> ClientError {
     error("Solana status batch failed; retry reconciliation")
 }
 
-fn validate_response(
-    value: Value,
-    count: usize,
-) -> ClientResult<Response<Vec<Option<TransactionStatus>>>> {
+fn validate_response(value: Value, count: usize) -> ClientResult<Response<Vec<Value>>> {
     // Context is copied to each caller. Keep untrusted context metadata bounded
     // rather than multiplying a provider-controlled large string by batch size.
     if value
@@ -212,18 +211,27 @@ fn validate_response(
     {
         return Err(error("Solana status batch returned invalid context"));
     }
-    let response: Response<Vec<Option<TransactionStatus>>> = serde_json::from_value(value)
-        .map_err(|_| error("Solana status batch returned malformed statuses or context"))?;
-    if response.value.len() != count
-        || response.value.iter().flatten().any(|status| {
-            status.slot > response.context.slot || status.err != status.status.clone().err()
-        })
-    {
-        return Err(error(
-            "Solana status batch returned inconsistent statuses or context",
-        ));
+    let response: Response<Vec<Value>> = serde_json::from_value(value)
+        .map_err(|_| error("Solana status batch returned malformed values or context"))?;
+    if response.value.len() != count {
+        return Err(error("Solana status batch returned an invalid value count"));
     }
     Ok(response)
+}
+
+fn validate_status(value: Value, context_slot: u64) -> ClientResult<Option<TransactionStatus>> {
+    // A new/unknown transaction error or malformed status belongs to this one
+    // position. Never poison healthy peers or substitute an invented null.
+    let status: Option<TransactionStatus> = serde_json::from_value(value)
+        .map_err(|_| error("Solana status entry is malformed; retry reconciliation"))?;
+    if status.as_ref().is_some_and(|status| {
+        status.slot > context_slot || status.err != status.status.clone().err()
+    }) {
+        return Err(error(
+            "Solana status entry is inconsistent; retry reconciliation",
+        ));
+    }
+    Ok(status)
 }
 
 async fn dispatch(transport: Arc<BoundedRpcSender>, mut batch: Vec<Poll>) {
@@ -249,9 +257,9 @@ async fn dispatch(transport: Arc<BoundedRpcSender>, mut batch: Vec<Poll>) {
     match result {
         Ok(response) => {
             for (poll, status) in batch.into_iter().zip(response.value) {
-                let _ = poll
-                    .reply
-                    .send(Ok(json!({"context": response.context, "value": [status]})));
+                let result = validate_status(status, response.context.slot)
+                    .map(|status| json!({"context": response.context, "value": [status]}));
+                let _ = poll.reply.send(result);
             }
         }
         Err(source) => {

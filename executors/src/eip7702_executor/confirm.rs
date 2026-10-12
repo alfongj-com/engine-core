@@ -202,205 +202,214 @@ where
         &self,
         job: &BorrowedJob<Self::JobData>,
     ) -> JobResult<Self::Output, Self::ErrorData> {
-        super::require_bundled_execution_qualification()
-            .map_err(|error| Eip7702ConfirmationError::InternalError {
-                message: error.to_string(),
-            })
-            .map_err_nack(
-                Some(Duration::from_secs(3600)),
-                twmq::job::RequeuePosition::Last,
-            )?;
-        let job_data = &job.job.data;
-        let transaction_hash_delay = transaction_hash_retry_delay(job.attempts());
-
-        // Age only reduces polling. It cannot turn an unknown broadcast into failure.
-        let transaction_hash_delay = if job_age_seconds(job) > MAX_CONFIRMATION_JOB_AGE_SECONDS {
-            Duration::from_secs(3600)
-        } else {
-            transaction_hash_delay
-        };
-
-        // 1. Get Chain
-        let chain = self
-            .chain_service
-            .get_chain(job_data.chain_id)
-            .map_err(|e| Eip7702ConfirmationError::ChainServiceError {
-                chain_id: job_data.chain_id,
-                message: format!("Failed to get chain instance: {e}"),
-            })
-            .map_err_nack(Some(transaction_hash_delay), RequeuePosition::Last)?;
-
-        let chain_auth_headers = job_data
-            .rpc_credentials
-            .to_header_map()
-            .map_err(|e| Eip7702ConfirmationError::InvalidRpcCredentials {
-                message: e.to_string(),
-            })
-            .map_err_nack(Some(transaction_hash_delay), RequeuePosition::Last)?;
-
-        let chain = chain.with_new_default_headers(chain_auth_headers);
-
-        crate::finality::check_continuity(&chain)
-            .await
-            .map_err(|error| {
-                crate::recovery::nack(error, transaction_hash_delay, |error| {
-                    Eip7702ConfirmationError::ConfirmationError {
-                        message: "Finality checkpoint continuity unavailable".into(),
-                        inner_error: Some(error),
-                    }
+        let operation = async {
+            super::require_bundled_execution_qualification()
+                .map_err(|error| Eip7702ConfirmationError::InternalError {
+                    message: error.to_string(),
                 })
-            })?;
+                .map_err_nack(
+                    Some(Duration::from_secs(3600)),
+                    twmq::job::RequeuePosition::Last,
+                )?;
+            let job_data = &job.job.data;
+            let transaction_hash_delay = transaction_hash_retry_delay(job.attempts());
 
-        // 2. Get transaction hash from bundler
-        let transaction_hash_res = chain
-            .bundler_client()
-            .tw_get_transaction_hash(&job_data.bundler_transaction_id)
-            .await
-            .map_err(|e| {
-                tracing::error!(
-                    bundler_transaction_id = job_data.bundler_transaction_id,
-                    sender_details = ?job_data.sender_details,
-                    error = %engine_core::error::rpc_error_diagnostic(&e),
-                    "Failed to get transaction hash from bundler"
-                );
+            // Age only reduces polling. It cannot turn an unknown broadcast into failure.
+            let transaction_hash_delay = if job_age_seconds(job) > MAX_CONFIRMATION_JOB_AGE_SECONDS
+            {
+                Duration::from_secs(3600)
+            } else {
+                transaction_hash_delay
+            };
 
-                Eip7702ConfirmationError::TransactionHashError {
-                    message: engine_core::error::rpc_error_diagnostic(&e),
-                }
-                .nack(Some(transaction_hash_delay), RequeuePosition::Last)
-            })?;
+            // 1. Get Chain
+            let chain = self
+                .chain_service
+                .get_chain(job_data.chain_id)
+                .map_err(|e| Eip7702ConfirmationError::ChainServiceError {
+                    chain_id: job_data.chain_id,
+                    message: format!("Failed to get chain instance: {e}"),
+                })
+                .map_err_nack(Some(transaction_hash_delay), RequeuePosition::Last)?;
 
-        let transaction_hash = match transaction_hash_res {
-            TwGetTransactionHashResponse::Success { transaction_hash } => {
-                transaction_hash.parse::<TxHash>().map_err(|e| {
+            let chain_auth_headers = job_data
+                .rpc_credentials
+                .to_header_map()
+                .map_err(|e| Eip7702ConfirmationError::InvalidRpcCredentials {
+                    message: e.to_string(),
+                })
+                .map_err_nack(Some(transaction_hash_delay), RequeuePosition::Last)?;
+
+            let chain = chain.with_new_default_headers(chain_auth_headers);
+
+            crate::finality::check_continuity(&chain)
+                .await
+                .map_err(|error| {
+                    crate::recovery::nack(error, transaction_hash_delay, |error| {
+                        Eip7702ConfirmationError::ConfirmationError {
+                            message: "Finality checkpoint continuity unavailable".into(),
+                            inner_error: Some(error),
+                        }
+                    })
+                })?;
+
+            // 2. Get transaction hash from bundler
+            let transaction_hash_res = chain
+                .bundler_client()
+                .tw_get_transaction_hash(&job_data.bundler_transaction_id)
+                .await
+                .map_err(|e| {
+                    tracing::error!(
+                        bundler_transaction_id = job_data.bundler_transaction_id,
+                        sender_details = ?job_data.sender_details,
+                        error = %engine_core::error::rpc_error_diagnostic(&e),
+                        "Failed to get transaction hash from bundler"
+                    );
+
                     Eip7702ConfirmationError::TransactionHashError {
-                        message: format!("Invalid transaction hash format: {e}"),
+                        message: engine_core::error::rpc_error_diagnostic(&e),
                     }
                     .nack(Some(transaction_hash_delay), RequeuePosition::Last)
-                })?
-            }
+                })?;
 
-            TwGetTransactionHashResponse::Pending => {
-                tracing::debug!(
-                    bundler_transaction_id = job_data.bundler_transaction_id,
-                    attempt = job.attempts(),
-                    retry_delay_seconds = transaction_hash_delay.as_secs(),
-                    "Transaction hash still pending, scheduling retry"
-                );
-                return Err(Eip7702ConfirmationError::TransactionHashPending {
-                    message: "Transaction hash not yet available".to_string(),
-                })
-                .map_err_nack(Some(transaction_hash_delay), RequeuePosition::Last);
-            }
-        };
-
-        tracing::debug!(
-            transaction_hash = ?transaction_hash,
-            bundler_transaction_id = job_data.bundler_transaction_id,
-            "Got transaction hash from bundler"
-        );
-
-        // 3. Wait for transaction confirmation
-        let receipt = chain
-            .provider()
-            .get_transaction_receipt(transaction_hash)
-            .await
-            .map_err(|e| {
-                // If transaction not found, nack and retry
-                Eip7702ConfirmationError::ConfirmationError {
-                    message: format!(
-                        "Failed to get transaction receipt: {}",
-                        engine_core::error::rpc_error_diagnostic(&e)
-                    ),
-                    inner_error: Some(e.to_engine_error(&chain)),
+            let transaction_hash = match transaction_hash_res {
+                TwGetTransactionHashResponse::Success { transaction_hash } => {
+                    transaction_hash.parse::<TxHash>().map_err(|e| {
+                        Eip7702ConfirmationError::TransactionHashError {
+                            message: format!("Invalid transaction hash format: {e}"),
+                        }
+                        .nack(Some(transaction_hash_delay), RequeuePosition::Last)
+                    })?
                 }
-                .nack(Some(transaction_hash_delay), RequeuePosition::Last)
-            })?;
 
-        let receipt = match receipt {
-            Some(receipt) => receipt,
-            None => {
-                // Transaction not mined yet, nack and retry
-                return Err(Eip7702ConfirmationError::ReceiptNotAvailable {
-                    message: "Transaction not mined yet".to_string(),
-                    transaction_hash,
+                TwGetTransactionHashResponse::Pending => {
+                    tracing::debug!(
+                        bundler_transaction_id = job_data.bundler_transaction_id,
+                        attempt = job.attempts(),
+                        retry_delay_seconds = transaction_hash_delay.as_secs(),
+                        "Transaction hash still pending, scheduling retry"
+                    );
+                    return Err(Eip7702ConfirmationError::TransactionHashPending {
+                        message: "Transaction hash not yet available".to_string(),
+                    })
+                    .map_err_nack(Some(transaction_hash_delay), RequeuePosition::Last);
+                }
+            };
+
+            tracing::debug!(
+                transaction_hash = ?transaction_hash,
+                bundler_transaction_id = job_data.bundler_transaction_id,
+                "Got transaction hash from bundler"
+            );
+
+            // 3. Wait for transaction confirmation
+            let receipt = chain
+                .provider()
+                .get_transaction_receipt(transaction_hash)
+                .await
+                .map_err(|e| {
+                    // If transaction not found, nack and retry
+                    Eip7702ConfirmationError::ConfirmationError {
+                        message: format!(
+                            "Failed to get transaction receipt: {}",
+                            engine_core::error::rpc_error_diagnostic(&e)
+                        ),
+                        inner_error: Some(e.to_engine_error(&chain)),
+                    }
+                    .nack(Some(transaction_hash_delay), RequeuePosition::Last)
+                })?;
+
+            let receipt = match receipt {
+                Some(receipt) => receipt,
+                None => {
+                    // Transaction not mined yet, nack and retry
+                    return Err(Eip7702ConfirmationError::ReceiptNotAvailable {
+                        message: "Transaction not mined yet".to_string(),
+                        transaction_hash,
+                    })
+                    .map_err_nack(Some(transaction_hash_delay), RequeuePosition::Last);
+                }
+            };
+
+            let finality = crate::finality::assess(&chain, transaction_hash, &receipt)
+                .await
+                .map_err(|error| {
+                    crate::recovery::nack(error, transaction_hash_delay, |error| {
+                        Eip7702ConfirmationError::ConfirmationError {
+                            message: "Finality verification unavailable".into(),
+                            inner_error: Some(error),
+                        }
+                    })
+                })?;
+            let FinalityAssessment::Finalized(finality) = finality else {
+                return Err(Eip7702ConfirmationError::FinalityPending {
+                    message: "Receipt is not canonically settled under the configured policy"
+                        .into(),
                 })
                 .map_err_nack(Some(transaction_hash_delay), RequeuePosition::Last);
-            }
-        };
+            };
 
-        let finality = crate::finality::assess(&chain, transaction_hash, &receipt)
+            crate::finality::record_evm_terminal(
+                "eip7702",
+                &job_data.transaction_id,
+                job_data.chain_id,
+                transaction_hash,
+                receipt.status(),
+                &finality,
+            )
             .await
             .map_err(|error| {
                 crate::recovery::nack(error, transaction_hash_delay, |error| {
                     Eip7702ConfirmationError::ConfirmationError {
-                        message: "Finality verification unavailable".into(),
+                        message: "Cannot persist final settlement".into(),
                         inner_error: Some(error),
                     }
                 })
             })?;
-        let FinalityAssessment::Finalized(finality) = finality else {
-            return Err(Eip7702ConfirmationError::FinalityPending {
-                message: "Receipt is not canonically settled under the configured policy".into(),
-            })
-            .map_err_nack(Some(transaction_hash_delay), RequeuePosition::Last);
-        };
 
-        crate::finality::record_evm_terminal(
-            "eip7702",
-            &job_data.transaction_id,
-            job_data.chain_id,
-            transaction_hash,
-            receipt.status(),
-            &finality,
+            // 4. Both success and revert require the same final settlement evidence.
+            let success = receipt.status();
+            if !success {
+                return Err(Eip7702ConfirmationError::TransactionFailed {
+                    message: "Transaction reverted".to_string(),
+                    receipt: Box::new(receipt),
+                    finality: Some(finality),
+                })
+                .map_err_fail();
+            }
+
+            tracing::debug!(
+                transaction_hash = ?transaction_hash,
+                block_number = receipt.block_number,
+                gas_used = ?receipt.gas_used,
+                "Transaction confirmed successfully"
+            );
+
+            // Record metrics if original timestamp is available
+            if let Some(original_timestamp) = job_data.original_queued_timestamp {
+                let confirmed_timestamp = current_timestamp_ms();
+                let queued_to_confirmed_duration =
+                    calculate_duration_seconds_from_twmq(original_timestamp, confirmed_timestamp);
+                record_transaction_queued_to_confirmed(
+                    "eip7702",
+                    job_data.chain_id,
+                    queued_to_confirmed_duration,
+                );
+            }
+
+            Ok(Eip7702ConfirmationResult {
+                transaction_id: job_data.transaction_id.clone(),
+                transaction_hash,
+                receipt,
+                finality: Some(finality),
+                sender_details: job_data.sender_details.clone(),
+            })
+        };
+        engine_core::recovery::fairness::scope(
+            engine_core::recovery::fairness::ChainScope::Evm(job.job.data.chain_id),
+            operation,
         )
         .await
-        .map_err(|error| {
-            crate::recovery::nack(error, transaction_hash_delay, |error| {
-                Eip7702ConfirmationError::ConfirmationError {
-                    message: "Cannot persist final settlement".into(),
-                    inner_error: Some(error),
-                }
-            })
-        })?;
-
-        // 4. Both success and revert require the same final settlement evidence.
-        let success = receipt.status();
-        if !success {
-            return Err(Eip7702ConfirmationError::TransactionFailed {
-                message: "Transaction reverted".to_string(),
-                receipt: Box::new(receipt),
-                finality: Some(finality),
-            })
-            .map_err_fail();
-        }
-
-        tracing::debug!(
-            transaction_hash = ?transaction_hash,
-            block_number = receipt.block_number,
-            gas_used = ?receipt.gas_used,
-            "Transaction confirmed successfully"
-        );
-
-        // Record metrics if original timestamp is available
-        if let Some(original_timestamp) = job_data.original_queued_timestamp {
-            let confirmed_timestamp = current_timestamp_ms();
-            let queued_to_confirmed_duration =
-                calculate_duration_seconds_from_twmq(original_timestamp, confirmed_timestamp);
-            record_transaction_queued_to_confirmed(
-                "eip7702",
-                job_data.chain_id,
-                queued_to_confirmed_duration,
-            );
-        }
-
-        Ok(Eip7702ConfirmationResult {
-            transaction_id: job_data.transaction_id.clone(),
-            transaction_hash,
-            receipt,
-            finality: Some(finality),
-            sender_details: job_data.sender_details.clone(),
-        })
     }
 
     async fn on_success(

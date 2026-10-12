@@ -152,7 +152,15 @@ each container start or scale this image to multiple active replicas.
 
 ### Redis restart with intact data
 
-Stop Engine. If the persisted Redis checkpoint exactly matches the independent
+For a planned Redis restart, stop admission and gracefully stop Engine **before
+restarting Redis**. Wait for Engine to exit and its owned journal operations to
+drain; inspect `engine-recovery status` and confirm `projection_pending=false`.
+If publication is still pending, restore connectivity to the same Redis process
+and, if no durable halt exists, let the current Engine version finish repair
+before continuing maintenance. Connectivity alone cannot clear a durable halt.
+Do not edit the marker or pending record by hand.
+
+After restarting Redis, keep Engine stopped. If the persisted Redis checkpoint exactly matches the independent
 ledger, explicitly reattach:
 
 ```sh
@@ -166,6 +174,40 @@ without a pending transition still latches execution; stop Engine before reattac
 It cannot override a checkpoint mismatch, storage failure, manual quarantine
 or terminal-evidence conflict. Unknown attempts remain bound to their original
 identity and must still follow the normal confirmation/replay rules.
+
+An **unplanned restart during load** can interrupt an unacknowledged transition.
+Reattach refuses it even when Redis retained the exact target token. This version
+requires `recover` into a fresh namespace, which quarantines attempted nonterminal
+requests. Automatic checkpoint repair requires the original Redis process; it does
+not provide automatic recovery across Redis restarts. The live-restart test below
+covers intact, idle reattachment, not this pending-under-load case.
+
+### Schema upgrade and rollback
+
+Opening a healthy schema-1 journal with this version automatically migrates it to
+schema 2. This is a one-way maintenance-window upgrade; the old binary rejects
+the upgraded journal. Qualify the additional FULL commit cost on disposable state
+before upgrading production. `status` and `export` do not migrate the journal.
+
+Before cutover, stop admission and drain/reconcile existing work, stop Engine,
+and preserve the stopped binary, configuration and consistent journal/Redis
+backups. Keep the original authority intact. After migration, a binary rollback
+requires a schema-2-compatible build with the same checkpoint protocol. There is
+no supported in-place downgrade to schema 1.
+
+Only if migration was the sole post-snapshot authority change, with no newer
+admission, signature, execution, finality evidence or safety halt, may an operator
+abandon the new deployment and restore the stopped, matching schema-1 journal
+and Redis snapshot together. Keep all newer processes stopped. A restored Redis
+has a new process ID: perform exact-checkpoint `reattach` with a schema-1-capable
+CLI before starting the preserved old binary. The current standalone
+`engine-recovery reattach` accepts schema 1 without migrating it.
+
+This is a deployment rollback, never an automatic journal restore. If any newer
+effect, request or safety evidence is possible, retain the latest schema-2 authority and fix forward;
+restoring the old snapshot can discard replay ownership and allow duplicate effects.
+Unknown outcomes block rollback. Do not lower the schema number or remove the
+pending table to make an old binary start.
 
 ### Redis loss or stale snapshot
 
@@ -224,7 +266,7 @@ storage-write failure. Cancellation tests stop every mutation after its SQLite
 commit and before Redis publication, abort its caller, then require exact marker
 continuity without recovery; a separate test cancels blocking database work and
 checks ownership remains held. `scripts/local_eoa_recovery.py --live-redis-restart`
-kills Redis while Engine remains running, checks admission is fenced, stops Engine
+kills Redis after work is idle while Engine remains running, checks admission is fenced, stops Engine
 with SIGTERM, and requires intact reattach without quarantine or a new namespace.
 A child process is SIGKILLed both before network emission
 and after a loopback HTTP server accepts a request and drops its response. Exact

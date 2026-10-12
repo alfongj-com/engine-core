@@ -37,13 +37,16 @@ pub(super) fn current() -> ChainScope {
 }
 
 const MAX_EVM_LANES: usize = 32;
+const UNSCOPED_HEALTH_CONCURRENCY: usize = 2;
 
 pub(super) struct JournalFairness {
     evm: Mutex<HashMap<u64, Arc<Semaphore>>>,
     solana: [Arc<Semaphore>; 3],
-    // Unscoped work and additional EVM chains share a bounded fallback. Never
-    // evict live lanes: that could create two permits for the same chain.
+    // Unscoped mutations and overflow chains share one bounded fallback.
     fallback: Arc<Semaphore>,
+    // HTTP gates and the monitor have no chain context. Keep their health checks
+    // independent of the mutation fallback, without unbounded global contenders.
+    unscoped_health: Arc<Semaphore>,
 }
 
 impl JournalFairness {
@@ -52,6 +55,7 @@ impl JournalFairness {
             evm: Mutex::new(HashMap::new()),
             solana: std::array::from_fn(|_| Arc::new(Semaphore::new(1))),
             fallback: Arc::new(Semaphore::new(1)),
+            unscoped_health: Arc::new(Semaphore::new(UNSCOPED_HEALTH_CONCURRENCY)),
         }
     }
 
@@ -62,8 +66,20 @@ impl JournalFairness {
                 if let Some(lane) = lanes.get(&id) {
                     return lane.clone();
                 }
-                if lanes.len() == MAX_EVM_LANES {
+                // An overflow operation may belong to this ID. Until every
+                // overflow holder/waiter leaves, assigning a dedicated lane
+                // could let that chain have two simultaneous contenders.
+                if Arc::strong_count(&self.fallback) > 1 {
                     return self.fallback.clone();
+                }
+                if lanes.len() == MAX_EVM_LANES {
+                    // Lookup and reclamation share this lock. The map's sole
+                    // reference proves there is no holder, waiter or pending
+                    // acquire that could still use the removed semaphore.
+                    lanes.retain(|_, lane| Arc::strong_count(lane) > 1);
+                    if lanes.len() == MAX_EVM_LANES {
+                        return self.fallback.clone();
+                    }
                 }
                 let lane = Arc::new(Semaphore::new(1));
                 lanes.insert(id, lane.clone());
@@ -82,6 +98,16 @@ impl JournalFairness {
     pub(super) async fn acquire(&self) -> OwnedSemaphorePermit {
         self.lane(current())
             .acquire_owned()
+            .await
+            .expect("journal fairness lanes are never closed")
+    }
+
+    pub(super) async fn acquire_health(&self) -> OwnedSemaphorePermit {
+        let lane = match current() {
+            ChainScope::Unknown => self.unscoped_health.clone(),
+            chain => self.lane(chain),
+        };
+        lane.acquire_owned()
             .await
             .expect("journal fairness lanes are never closed")
     }
@@ -184,12 +210,11 @@ mod tests {
     #[test]
     fn overflow_chains_share_one_lane_without_evicting_existing_or_solana_lanes() {
         let fairness = JournalFairness::new();
-        let first = fairness.lane(ChainScope::Evm(0));
-        for id in 0..MAX_EVM_LANES as u64 {
-            assert!(!Arc::ptr_eq(
-                &fairness.lane(ChainScope::Evm(id)),
-                &fairness.fallback
-            ));
+        let active: Vec<_> = (0..MAX_EVM_LANES as u64)
+            .map(|id| fairness.lane(ChainScope::Evm(id)))
+            .collect();
+        for lane in &active {
+            assert!(!Arc::ptr_eq(lane, &fairness.fallback));
         }
         for id in MAX_EVM_LANES as u64..10_000 {
             assert!(Arc::ptr_eq(
@@ -198,11 +223,95 @@ mod tests {
             ));
         }
         assert_eq!(fairness.evm.lock().unwrap().len(), MAX_EVM_LANES);
-        assert!(Arc::ptr_eq(&fairness.lane(ChainScope::Evm(0)), &first));
+        assert!(Arc::ptr_eq(&fairness.lane(ChainScope::Evm(0)), &active[0]));
         assert!(!Arc::ptr_eq(
             &fairness.lane(ChainScope::Solana(SolanaChainId::SolanaLocal)),
             &fairness.fallback
         ));
+    }
+
+    #[test]
+    fn idle_evm_lanes_are_reclaimed_without_evicting_a_live_lane() {
+        let fairness = JournalFairness::new();
+        let live = fairness.lane(ChainScope::Evm(0));
+        // Historical IDs must not permanently exclude subsequently active chains.
+        for id in 1..10_000 {
+            let lane = fairness.lane(ChainScope::Evm(id));
+            assert!(!Arc::ptr_eq(&lane, &fairness.fallback));
+            assert!(fairness.evm.lock().unwrap().len() <= MAX_EVM_LANES);
+        }
+        assert!(Arc::ptr_eq(&fairness.lane(ChainScope::Evm(0)), &live));
+    }
+
+    #[tokio::test]
+    async fn queued_evm_acquire_prevents_its_lane_from_being_reclaimed() {
+        let fairness = JournalFairness::new();
+        let chain = ChainScope::Evm(0);
+        let held = scope(chain, fairness.acquire()).await;
+        let original = Arc::downgrade(&fairness.lane(chain));
+        let mut queued = Box::pin(scope(chain, fairness.acquire()));
+        let mut context = Context::from_waker(Waker::noop());
+        assert!(queued.as_mut().poll(&mut context).is_pending());
+        for id in 1..MAX_EVM_LANES as u64 {
+            drop(fairness.lane(ChainScope::Evm(id)));
+        }
+        drop(held);
+        // The queued future is not polled again yet. Its reference alone must
+        // prevent reclamation after the prior permit holder has disappeared.
+        drop(fairness.lane(ChainScope::Evm(MAX_EVM_LANES as u64)));
+        assert!(Arc::ptr_eq(
+            &original.upgrade().expect("queued lane must remain alive"),
+            &fairness.lane(chain)
+        ));
+        drop(queued.await);
+    }
+
+    #[tokio::test]
+    async fn overflow_holder_and_waiter_cannot_split_into_a_new_dedicated_lane() {
+        let fairness = JournalFairness::new();
+        let mut active = Vec::new();
+        for id in 0..MAX_EVM_LANES as u64 {
+            active.push(scope(ChainScope::Evm(id), fairness.acquire()).await);
+        }
+        let overflow = ChainScope::Evm(100);
+        let held = scope(overflow, fairness.acquire()).await;
+        let mut queued = Box::pin(scope(overflow, fairness.acquire()));
+        let mut context = Context::from_waker(Waker::noop());
+        assert!(queued.as_mut().poll(&mut context).is_pending());
+        drop(active);
+        assert!(Arc::ptr_eq(&fairness.lane(overflow), &fairness.fallback));
+        // Free dedicated entries exist, but the unpolled overflow waiter still
+        // refers to the fallback after its preceding holder releases the permit.
+        drop(held);
+        assert!(Arc::ptr_eq(&fairness.lane(overflow), &fairness.fallback));
+        let waiter = queued.await;
+        assert!(Arc::ptr_eq(&fairness.lane(overflow), &fairness.fallback));
+        drop(waiter);
+        assert!(!Arc::ptr_eq(&fairness.lane(overflow), &fairness.fallback));
+        assert_eq!(fairness.evm.lock().unwrap().len(), 1);
+    }
+
+    #[tokio::test]
+    async fn unscoped_health_is_bounded_and_independent_of_mutations() {
+        let fairness = JournalFairness::new();
+        let mutation = fairness.acquire().await;
+        let first = fairness.acquire_health().await;
+        let second = fairness.acquire_health().await;
+        let mut queued = Box::pin(fairness.acquire_health());
+        let mut context = Context::from_waker(Waker::noop());
+        assert!(queued.as_mut().poll(&mut context).is_pending());
+        drop(first);
+        drop(queued.await);
+        drop(second);
+        drop(mutation);
+
+        // A scoped health check must still share the ordinary chain lane.
+        let chain = ChainScope::Evm(1);
+        let mutation = scope(chain, fairness.acquire()).await;
+        let mut health = Box::pin(scope(chain, fairness.acquire_health()));
+        assert!(health.as_mut().poll(&mut context).is_pending());
+        drop(mutation);
+        drop(health.await);
     }
 
     #[tokio::test]

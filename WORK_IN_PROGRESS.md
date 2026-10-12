@@ -19,10 +19,29 @@ implements the follow-up against `main`.
   busy chain's waiting polls from reserving all 32 slots. Metrics separate lane,
   capacity, mutex, SQLite and Redis waits.
 - **Bounded Solana polling.** Eligible history lookups coalesce per cached
-  cluster/endpoint, with at most 256 outstanding polls, four HTTP batches and a
-  5 ms collection window. Finalized receipt and signed-identity checks remain.
+  cluster/endpoint, with at most 256 outstanding polls, 32 signatures per batch,
+  four HTTP batches and a 5 ms collection window. Invalid entries fail only their
+  matching callers; a config switch disables coalescing. Finalized receipt and
+  signed-identity checks remain.
 - **Shutdown under Redis outage.** Stalled queue acquisition is cancellable.
   Already-running handlers and owned journal repairs still drain before exit.
+
+## Review follow-up
+
+Unscoped HTTP/health checks have separate bounded scheduling capacity; 4337 and
+7702 workers now carry their chain scope. Idle EVM lanes can be reclaimed without
+splitting live overflow work across lanes. Registration fails promptly when a
+shutdown drain is waiting, avoiding the health/mutation lock-order deadlock.
+Queue and executor metrics initialize before any startup work.
+
+The [restart and rollback runbook](docs/design/redis-disaster-recovery.md#redis-restart-with-intact-data)
+now covers pending transitions after Redis restart and one-way schema migration.
+Exact-target pending reattachment remains refused; this is a documented recovery
+limit, not a relaxed fence. Earlier measurements below predate these review fixes;
+their source hashes identify what was measured.
+
+The [review validation record](https://github.com/alfongj-com/engine-core/blob/load-tests/docs/baselines/pr2-review-2026-10-12/README.md)
+keeps new tests, load and crash results separate from the original PR measurements.
 
 ## Validation and measurements
 
@@ -31,7 +50,7 @@ are kept on `load-tests`, outside this implementation PR. They include binary/so
 provenance, baseline comparisons, latency/backlog, exact effect reconciliation,
 model outcomes and CI links. The PR checks qualify their own source commit.
 
-The local checks cover the workspace suite, 45 journal regressions, 73 executor
+The local checks cover the workspace suite, 47 journal regressions, 73 executor
 regressions, 36 queue regressions, HTTP/admission tests, real HTTP batching, process
 crashes, Redis data loss, reorgs and the live-outage shutdown regression. The formal
 suite has 73 bounded configurations, including deliberate faults that must produce

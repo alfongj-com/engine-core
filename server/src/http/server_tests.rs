@@ -278,6 +278,11 @@ async fn public_health_deadline_is_unknown_until_the_independent_fence_completes
     for (result, expected_status, expected_state) in [
         (Ok(()), StatusCode::OK, "ok"),
         (
+            Err(engine_core::recovery::RecoveryError::Busy),
+            StatusCode::SERVICE_UNAVAILABLE,
+            "busy",
+        ),
+        (
             Err(engine_core::recovery::RecoveryError::PublicationPending),
             StatusCode::SERVICE_UNAVAILABLE,
             "recovery_pending",
@@ -292,7 +297,7 @@ async fn public_health_deadline_is_unknown_until_the_independent_fence_completes
             bounded_recovery_health(slots.clone(), Duration::from_secs(1), async move { result })
                 .await;
         assert_eq!(response.status(), expected_status);
-        if expected_state == "recovery_pending" {
+        if matches!(expected_state, "recovery_pending" | "busy") {
             assert_eq!(response.headers()["retry-after"], "1");
         }
         let body: serde_json::Value =
@@ -303,8 +308,13 @@ async fn public_health_deadline_is_unknown_until_the_independent_fence_completes
 }
 
 #[tokio::test]
-async fn mutation_gate_distinguishes_retryable_publication_from_permanent_halts() {
+async fn mutation_gate_distinguishes_retryable_states_from_permanent_halts() {
     for (error, expected, retryable) in [
+        (
+            engine_core::recovery::RecoveryError::Busy,
+            "RECOVERY_BUSY",
+            true,
+        ),
         (
             engine_core::recovery::RecoveryError::PublicationPending,
             "RECOVERY_PENDING",

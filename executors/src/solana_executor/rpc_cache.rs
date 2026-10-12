@@ -217,6 +217,7 @@ pub struct SolanaRpcCache {
     cache: Cache<RpcCacheKey, Arc<RpcClient>>,
     verified_clusters: Cache<RpcCacheKey, ()>,
     urls: SolanaRpcUrls,
+    status_batching_enabled: bool,
 }
 
 #[derive(Clone)]
@@ -229,11 +230,18 @@ pub struct SolanaRpcUrls {
 impl SolanaRpcCache {
     /// Cache one HTTP client per configured cluster.
     pub fn new(urls: SolanaRpcUrls) -> Self {
+        Self::new_with_status_batching(urls, true)
+    }
+
+    /// Configure status coalescing before creating any cached clients. Disabling
+    /// it retains the same bounded transport, history requests and finality gates.
+    pub fn new_with_status_batching(urls: SolanaRpcUrls, enabled: bool) -> Self {
         let cache = Cache::new(3);
 
         Self {
             cache,
             urls,
+            status_batching_enabled: enabled,
             verified_clusters: Cache::builder()
                 .max_capacity(3)
                 .time_to_live(Duration::from_secs(300))
@@ -261,13 +269,10 @@ impl SolanaRpcCache {
                     "Creating new Solana RPC client with connection cache"
                 );
 
-                // Create RPC client
-                Arc::new(RpcClient::new_sender(
-                    super::status_batcher::CoalescingRpcSender::new(
-                        BoundedRpcSender::new(rpc_url).with_chain_id(chain_id),
-                        MetricChain::Solana(chain_id),
-                    ),
-                    RpcClientConfig::default(),
+                Arc::new(client_with_transport(
+                    BoundedRpcSender::new(rpc_url).with_chain_id(chain_id),
+                    chain_id,
+                    self.status_batching_enabled,
                 ))
             })
             .await
@@ -310,6 +315,26 @@ impl SolanaRpcCache {
     /// Check if the cache is empty
     pub fn is_empty(&self) -> bool {
         self.len() == 0
+    }
+}
+
+// One transport construction path keeps timeouts, body bounds, redaction and
+// hidden-retry policy identical when the operator disables coalescing.
+pub(super) fn client_with_transport(
+    transport: BoundedRpcSender,
+    chain_id: SolanaChainId,
+    batching_enabled: bool,
+) -> RpcClient {
+    if batching_enabled {
+        RpcClient::new_sender(
+            super::status_batcher::CoalescingRpcSender::new(
+                transport,
+                MetricChain::Solana(chain_id),
+            ),
+            RpcClientConfig::default(),
+        )
+    } else {
+        RpcClient::new_sender(transport, RpcClientConfig::default())
     }
 }
 

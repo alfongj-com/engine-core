@@ -88,6 +88,23 @@ async fn main() -> anyhow::Result<()> {
         arguments.is_empty(),
         "Unknown command; expected --initialize-recovery, --reattach-recovery or --recover-redis"
     );
+    // Install the exported collectors before journal, queue, or executor work
+    // can start. Timers retain the collector active when they are created.
+    let metrics_registry = Arc::new(prometheus::Registry::new());
+    engine_core::recovery::metrics::register(&metrics_registry)
+        .expect("Failed to register journal metrics");
+    twmq::metrics::initialize_metrics(
+        twmq::metrics::QueueMetrics::new(&metrics_registry)
+            .expect("Failed to create queue timing metrics"),
+    );
+    let executor_metrics =
+        ExecutorMetrics::new(&metrics_registry).expect("Failed to create executor metrics");
+
+    // Initialize the executor metrics globally
+    initialize_metrics(executor_metrics);
+
+    tracing::info!("Executor metrics initialized");
+
     let recovery = engine_core::recovery::RecoveryJournal::open(
         &config.recovery.journal_path,
         &config.redis.url,
@@ -140,7 +157,10 @@ async fn main() -> anyhow::Result<()> {
         mainnet: config.solana.mainnet.http_url.clone(),
         local: config.solana.local.http_url.clone(),
     };
-    let solana_rpc_cache = Arc::new(SolanaRpcCache::new(solana_rpc_urls));
+    let solana_rpc_cache = Arc::new(SolanaRpcCache::new_with_status_batching(
+        solana_rpc_urls,
+        config.solana.status_batching_enabled,
+    ));
     tracing::info!("Solana RPC cache initialized");
 
     let queue_manager = QueueManager::new(
@@ -178,6 +198,9 @@ async fn main() -> anyhow::Result<()> {
                         "Recovery checkpoint publication is pending; execution remains blocked until retry succeeds"
                     );
                 }
+                Err(engine_core::recovery::RecoveryError::Busy) => {
+                    tracing::warn!("Recovery journal is busy; health monitoring will retry");
+                }
                 Err(error) => {
                     tracing::error!(error = %error, "Recovery journal halted transaction admission and broadcast");
                     break;
@@ -206,22 +229,6 @@ async fn main() -> anyhow::Result<()> {
         transaction_registry: queue_manager.transaction_registry.clone(),
         chains: chains.clone(),
     };
-
-    // Initialize metrics registry and executor metrics
-    let metrics_registry = Arc::new(prometheus::Registry::new());
-    engine_core::recovery::metrics::register(&metrics_registry)
-        .expect("Failed to register journal metrics");
-    twmq::metrics::initialize_metrics(
-        twmq::metrics::QueueMetrics::new(&metrics_registry)
-            .expect("Failed to create queue timing metrics"),
-    );
-    let executor_metrics =
-        ExecutorMetrics::new(&metrics_registry).expect("Failed to create executor metrics");
-
-    // Initialize the executor metrics globally
-    initialize_metrics(executor_metrics);
-
-    tracing::info!("Executor metrics initialized");
 
     let mut server = EngineServer::new(EngineServerState {
         userop_signer: signer.clone(),
