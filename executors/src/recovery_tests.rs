@@ -321,3 +321,73 @@ fn deserialized_cached_hash_cannot_redefine_eoa_or_noop_identity() {
     assert!(validate_noop_wire(31337, signer.address(), &tampered).is_err());
     assert!(validate_eoa_wire(&request(signer.address()), &valid).is_ok());
 }
+
+#[test]
+fn pending_publication_requeues_eoa_without_releasing_the_attempt() {
+    use crate::eoa::worker::error::is_retryable_preparation_error;
+    use twmq::job::{JobError, RequeuePosition};
+
+    // This is the same typed path used by the signing and broadcast gates.
+    // Preparation must retain pending work; completion must NACK rather than
+    // converting an unfinished publication into a terminal transaction failure.
+    let error = eoa_journal_error(recovery::RecoveryError::PublicationPending);
+    assert!(is_retryable_preparation_error(&error));
+    let encoded = serde_json::to_value(&error).unwrap();
+    assert_eq!(encoded["errorCode"], "RECOVERY_PENDING");
+    let retained: EoaExecutorWorkerError = serde_json::from_value(encoded).unwrap();
+    assert!(matches!(
+        retained.handle(),
+        JobError::Nack {
+            error: EoaExecutorWorkerError::RecoveryPending { .. },
+            delay: Some(delay),
+            position: RequeuePosition::Last,
+        } if delay == Duration::from_secs(2)
+    ));
+}
+
+#[test]
+fn publication_retry_bypasses_slow_polling_only_for_the_typed_state() {
+    use twmq::job::{JobError, RequeuePosition};
+
+    // An aged AA confirmation normally polls once an hour. Its journal
+    // publication still retries promptly, retaining the same confirmation job.
+    let pending = from_journal_error(recovery::RecoveryError::PublicationPending);
+    assert!(matches!(
+        nack(pending, Duration::from_secs(3600), |error| error),
+        JobError::Nack {
+            error: EngineError::RecoveryPending { .. },
+            delay: Some(delay),
+            position: RequeuePosition::Last,
+        } if delay == Duration::from_secs(2)
+    ));
+    for error in [
+        recovery::RecoveryError::Storage,
+        recovery::RecoveryError::Conflict,
+        recovery::RecoveryError::RecoveryRequired("Redis rollback"),
+        recovery::RecoveryError::Missing,
+        recovery::RecoveryError::Locked,
+        recovery::RecoveryError::Busy,
+        recovery::RecoveryError::Invalid("configuration"),
+    ] {
+        let bridged = from_journal_error(error);
+        assert!(!matches!(bridged, EngineError::RecoveryPending { .. }));
+        assert!(matches!(
+            nack(bridged, Duration::from_secs(3600), |error| error),
+            JobError::Nack { delay: Some(delay), .. }
+                if delay == Duration::from_secs(3600)
+        ));
+    }
+    // Provider text cannot opt into the publication recovery path.
+    let fake = EngineError::InternalError {
+        message: recovery::RecoveryError::PublicationPending.to_string(),
+    };
+    assert!(matches!(
+        nack(fake.clone(), Duration::from_secs(3600), |error| error),
+        JobError::Nack { delay: Some(delay), .. }
+            if delay == Duration::from_secs(3600)
+    ));
+    assert!(matches!(
+        eoa_error(fake),
+        EoaExecutorWorkerError::RecoveryRequired { .. }
+    ));
+}

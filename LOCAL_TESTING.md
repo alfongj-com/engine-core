@@ -1,6 +1,6 @@
 # Local testing on Alfonso's Mac
 
-Last prepared: **October 10, 2026**. These instructions run disposable local
+Last updated: **October 12, 2026**. These instructions run disposable local
 fixtures. They do not qualify public RPC capacity, rollup settlement or production
 readiness.
 
@@ -9,19 +9,18 @@ readiness.
 | Item | Location |
 | --- | --- |
 | Main checkout | `/Users/alfongj/Code/engine-core` |
-| PR #1 baseline | Local and remote branch `production-hardening`; implementation previously verified at `b31f43d`, followed by artifact/documentation cleanup |
-| Unfinished PR #2 | Local and remote branch `crash-recovery-and-chain-fairness` |
+| PR #1 baseline | Merged into `main` at `154b0ac`; preserved branch `production-hardening` at `8741b88` |
+| PR #2 | Local and remote branch `crash-recovery-and-chain-fairness`; active implementation checkout `/Users/alfongj/Code/engine-core-review-stack` |
 | PR #2 resume notes | `git show crash-recovery-and-chain-fairness:WORK_IN_PROGRESS.md` |
-| Full historical evidence in Git | Local and remote branch `load-tests`, archive commit `603c228` |
+| Full historical evidence in Git | Local and remote branch `load-tests`; use its current head for new evidence |
 | Browsable local evidence | `/Users/alfongj/.local/share/engine-core/evidence/load-tests-603c228/LOAD_TESTS.md` |
 | Installed test tools and checksum manifest | `/Users/alfongj/.local/share/engine-core/tools/` |
 | Private retained incident data; leave untouched | `/Users/alfongj/.local/share/engine-core-custody/` |
 
-PR #1 is open. PR #2 is a stacked draft: its pending-checkpoint Rust module and
-tests are **not wired in**, Cargo.lock needs updating for added dependencies, and
-the new runtime has not been compiled or benchmarked. Its model/source-map
-correspondence is intentionally unfinished. Passing baseline tests does not
-validate that draft. The existing automatic crash-recovery limitation remains.
+PR #1 is merged. PR #2 targets `main`; its schema2 recovery, fairness and polling
+changes are wired into production. Read [WORK_IN_PROGRESS.md](WORK_IN_PROGRESS.md)
+for exact validation and remaining limits. Historical reports apply to their
+recorded source hashes, not automatically to the current checkout.
 
 The tools formerly under `/tmp/engine-*` were removed by temporary-file cleanup.
 Use the persistent paths below. The old release binary is preserved as
@@ -101,10 +100,10 @@ node --test scripts/rpc/budget-gateway.test.mjs scripts/rpc/load-probe.test.mjs
   capacity_pool_test capacity_assess_test capacity_fence_test \
   capacity_resource_guard_test capacity_resource_phase_test \
   capacity_resource_projection_test capacity_anvil_custody_test \
-  capacity_infrastructure_test capacity_journal_reader_test test_local_eoa_reorg -v
+  capacity_infrastructure_test capacity_journal_reader_test capacity_metrics_test test_local_eoa_reorg -v
 ```
 
-The final command is the historical 163-test suite; require zero skipped tests
+The final command exercises the capacity and fault oracles; require zero skipped tests
 with Anvil and Cast available. Some cases start disposable Anvil nodes. The
 archived supervisor needed by one regression is retained in
 `scripts/fixtures/capacity_supervisor.py`; do not run that historical supervisor
@@ -144,10 +143,9 @@ cargo test --locked -p twmq --lib -- --ignored --test-threads=1
 cargo build --locked --bin thirdweb-engine
 ```
 
-Record failures before making any change. On PR #2, an out-of-date lockfile,
-uncompiled instrumentation and stale formal source guards are known unfinished
-work. Do not update proof hashes merely to turn a check green, and do not claim
-the unwired projection tests ran because `cargo test` succeeded.
+Record failures before making any change. Review model/source correspondence
+before updating proof hashes. Include the ignored recovery and executor suites:
+a normal `cargo test` alone does not run real Redis/SIGKILL regressions.
 
 After the Rust suites, stop only the child started above:
 
@@ -199,10 +197,9 @@ Historical maximum-rate experiments remain in the separate evidence archive.
 
 ## 5. Formal checks and report
 
-On the baseline, run `"$PYTHON_BIN" formal/check.py` with the sourced Java/TLC paths.
+Run `"$PYTHON_BIN" formal/check.py` with the sourced Java/TLC paths.
 The runner verifies source hashes and requires the named counterexamples from
-fault models. PR #2 intentionally fails correspondence until its runtime/model
-changes are reviewed. Kani fee proofs use a separate verifier setup described in
+fault models. Hashes are a review guard, not a Rust refinement proof. Kani fee proofs use a separate verifier setup described in
 [formal/fees.md](formal/fees.md); this local setup does not install Kani.
 
 Write a concise `SUMMARY.md` inside `$ENGINE_TEST_REPORTS`: source commit and
@@ -224,8 +221,8 @@ Load tools with:
   source /Users/alfongj/.local/share/engine-core/tools/env.sh
 
 Use isolated test checkouts as documented; do not switch or reset the main
-checkout. Test production-hardening (PR #1) first, then assess the separate
-crash-recovery-and-chain-fairness draft (PR #2). Inspect existing test directories
+checkout. Test main (merged PR #1) and crash-recovery-and-chain-fairness (PR #2)
+in separate checkouts when comparing behavior. Inspect existing test directories
 before reusing them. Build each checkout's own target/debug/thirdweb-engine.
 
 Run the fast harness checks, compile, Rust/Redis regressions and local EVM/Solana

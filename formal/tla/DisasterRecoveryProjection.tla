@@ -18,10 +18,10 @@ ValidPending == IF s.pending = None THEN FALSE ELSE
     /\ s.schema = 2 /\ s.pending.target = Current
     /\ s.pending.key = MarkerKey /\ s.pending.run = s.expectedRun
     /\ s.pending.old.epoch = s.epoch
-    /\ (s.pending.old.version = 2 /\
-        s.pending.old.checkpoint + 1 = s.checkpoint)
-       \/ (s.pending.old.version = 1 /\
-           s.pending.old.checkpoint = s.checkpoint)
+    /\ ((s.pending.old.version = 2 /\
+         s.pending.old.checkpoint + 1 = s.checkpoint)
+        \/ (s.pending.old.version = 1 /\
+            s.pending.old.checkpoint = s.checkpoint))
 ExactRun == s.run = s.expectedRun /\ s.primary
 Stable == s.marker = Current /\ ExactRun
 ObservedTarget == IF s.observed = None \/ s.pending = None THEN FALSE ELSE
@@ -136,7 +136,7 @@ Acknowledge ==
         !.pending = None, !.observed = None, !.ready = FALSE]
 
 ReturnPermission ==
-    /\ s.owner /\ s.returning # None
+    /\ s.owner /\ s.returning # None /\ s.ready /\ s.halt = None
     /\ s' = [s EXCEPT !.returned = @ \cup {s.returning},
         !.resurrectedCaller = @ \/ s.caller # s.returning,
         !.returning = None, !.caller = None]

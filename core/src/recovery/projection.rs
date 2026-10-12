@@ -13,7 +13,7 @@ pub(super) const TABLE_SQL: &str = "
     );
 ";
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, serde::Serialize)]
 pub(super) struct PendingUpdate {
     pub previous_token: String,
     pub target_token: String,
@@ -82,7 +82,12 @@ pub(super) fn record(conn: &Connection, previous: &Control, target: &Control) ->
     pending.validate(target)?;
     conn.execute(
         "INSERT INTO projection_pending VALUES(1,?,?,?,?)",
-        params![pending.previous_token, pending.target_token, pending.redis_key, pending.run_id],
+        params![
+            pending.previous_token,
+            pending.target_token,
+            pending.redis_key,
+            pending.run_id
+        ],
     )?;
     Ok(())
 }
@@ -95,11 +100,16 @@ pub(super) fn migrate(conn: &mut Connection) -> Result<()> {
         return Ok(());
     }
     if old.schema != 1 || old.halted {
-        return Err(RecoveryError::RecoveryRequired("legacy journal is not healthy"));
+        return Err(RecoveryError::RecoveryRequired(
+            "legacy journal is not healthy",
+        ));
     }
     let tx = conn.transaction()?;
     tx.execute_batch(TABLE_SQL)?;
-    tx.execute("UPDATE control SET schema_version=? WHERE singleton=1", [SCHEMA])?;
+    tx.execute(
+        "UPDATE control SET schema_version=? WHERE singleton=1",
+        [SCHEMA],
+    )?;
     let new = control(&tx)?;
     record(&tx, &old, &new)?;
     commit_transaction(tx)
@@ -108,11 +118,14 @@ pub(super) fn migrate(conn: &mut Connection) -> Result<()> {
 /// The final FULL commit is the permission boundary. A canceled caller never
 /// reconstructs its permission; subsequent health checks may finish this write.
 pub(super) fn acknowledge(conn: &mut Connection, expected: &PendingUpdate) -> Result<()> {
+    let _timer = super::metrics::timer("checkpoint", "sql_ack");
     let tx = conn.transaction()?;
     let current = control(&tx)?;
     expected.validate(&current)?;
     if current.halted || load(&tx, &current)?.as_ref() != Some(expected) {
-        return Err(RecoveryError::RecoveryRequired("pending checkpoint changed before acknowledgement"));
+        return Err(RecoveryError::RecoveryRequired(
+            "pending checkpoint changed before acknowledgement",
+        ));
     }
     let changed = tx.execute(
         "DELETE FROM projection_pending WHERE singleton=1 AND previous_token=? AND target_token=? AND redis_key=? AND run_id=?",

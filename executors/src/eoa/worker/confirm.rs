@@ -286,10 +286,7 @@ impl<C: Chain> EoaExecutorWorker<C> {
         // receipt candidates (for example latest nonce fell after a deep reorg).
         crate::finality::check_continuity(&self.chain)
             .await
-            .map_err(|inner_error| EoaExecutorWorkerError::RpcError {
-                message: "Finality checkpoint continuity unavailable".into(),
-                inner_error,
-            })?;
+            .map_err(crate::recovery::eoa_error)?;
         let candidate_count =
             receipt_candidate_count(&self.chain, self.eoa, transaction_counts.latest)
                 .await

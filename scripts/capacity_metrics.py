@@ -12,6 +12,7 @@ from pathlib import Path
 import re
 import threading
 import time
+import sys
 
 from capacity_campaign import Campaign, LOCAL_HTTP, arguments
 
@@ -56,6 +57,58 @@ def parse_metrics(raw):
     return values
 
 
+def summarize_timing_window(report):
+    """Average histogram observations within one uninterrupted load window.
+
+    These are accumulated waits/service times, often nested or concurrent. They
+    cannot be summed into a wall-clock utilization or latency percentage.
+    """
+    samples = [row for row in report.get("timing_observations", [])
+               if row["phase"] == "load" and row["seconds"] >= report["warmup_seconds"]]
+    if len(samples) < 2:
+        raise ValueError("at least two post-warmup load samples are required")
+    if any(row.get("http_status") != 200 or "values" not in row for row in samples):
+        raise ValueError("load window contains a missing metrics observation")
+    pids = {row.get("engine_pid") for row in samples}
+    if None in pids or len(pids) != 1:
+        raise ValueError("cannot subtract counters across Engine processes")
+    times = [row["seconds"] for row in samples]
+    if any(not math.isfinite(t) for t in times) or any(a >= b for a, b in zip(times, times[1:])):
+        raise ValueError("sample times must be finite and strictly increasing")
+    first, last = samples[0], samples[-1]
+    scrapes = [row["scrape_seconds"] for row in samples]
+    if any(not math.isfinite(value) or value < 0 for value in scrapes):
+        raise ValueError("scrape durations must be finite and non-negative")
+    histogram_keys = {key for row in samples for key in row["values"] if "_sum{" in key}
+    if any(key not in last["values"] for key in histogram_keys):
+        raise ValueError("histogram disappeared during the load window")
+    metrics = []
+    for key, total in sorted(last["values"].items()):
+        name, separator, labels = key.partition("{")
+        if not separator or not name.endswith("_sum"):
+            continue
+        count_key = name[:-4] + "_count{" + labels
+        if count_key not in last["values"]:
+            raise ValueError("histogram sum has no count")
+        previous_count = previous_sum = 0
+        for row in samples:
+            values = row["values"]
+            count, amount = values.get(count_key, 0), values.get(key, 0)
+            if (not math.isfinite(count) or not math.isfinite(amount)
+                    or count < previous_count or amount < previous_sum):
+                raise ValueError("histogram counters decreased or became non-finite")
+            previous_count, previous_sum = count, amount
+        count = last["values"][count_key] - first["values"].get(count_key, 0)
+        amount = total - first["values"].get(key, 0)
+        if count:
+            metrics.append({"metric": name[:-4], "labels": json.loads("{" + labels),
+                            "observations": count, "sum": amount, "mean": amount / count})
+    return {"scope": "One Engine process, post-warmup load only; overlapping durations are not additive",
+            "from_seconds": times[0], "to_seconds": times[-1],
+            "scrape_mean_seconds": sum(scrapes) / len(samples),
+            "metrics": metrics}
+
+
 class InstrumentedCampaign(Campaign):
     def __init__(self, args, profiles):
         super().__init__(args, profiles)
@@ -96,4 +149,7 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    if len(sys.argv) == 3 and sys.argv[1] == "--summarize":
+        print(json.dumps(summarize_timing_window(json.loads(Path(sys.argv[2]).read_text())), indent=2))
+    else:
+        main()

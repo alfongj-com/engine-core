@@ -1,6 +1,6 @@
 # Recoverable journal checkpoints and measured scheduling
 
-**Status: saved draft; recovery wiring and runtime validation remain unfinished.**
+**Status: implemented in PR #2. Validation and measured results are recorded in the PR handoff.**
 
 ## Scope
 
@@ -27,7 +27,7 @@ Accepting an arbitrary one-checkpoint lag would weaken rollback detection.
    leaves the pending record intact. Only the exact predecessor or target from
    that record is admissible; an absent or different token stops execution.
 4. Verify the target, unchanged Redis process and primary role. Commit a
-   compare-and-delete of the pending record in SQLite, then return permission.
+   compare-and-delete of the pending record in SQLite, then check continuity again before returning permission.
 
 Startup or the next health check may finish a pending transition. It does not
 recreate the crashed caller's send permission or enqueue a request. Normal
@@ -73,3 +73,21 @@ and [FULL durability settings](https://www.sqlite.org/pragma.html#pragma_synchro
 Redis [Lua execution](https://redis.io/docs/latest/develop/programmability/eval-intro/)
 makes the checkpoint comparison/update atomic within Redis; it cannot make a
 SQLite write and Redis write one transaction.
+
+## Shared-chain scheduling
+
+The journal keeps its single writer. Before contending for that lock, an operation
+acquires its chain's one-slot lane. HTTP execution and EOA/Solana workers supply
+an explicit task-local chain context; detached journal operations retain it.
+There are at most 32 EVM lanes, three Solana lanes and one shared unscoped/overflow
+lane. Lanes are never evicted while work could still hold them.
+
+This prevents a busy chain from filling the global lock's FIFO queue. It allocates
+journal operations, not equal TPS. Admission still has one global 64-request bound;
+a flood can fill it before another chain reaches its lane. Overflow chains and
+unscoped work share a lane. Neither per-chain ingress quotas nor a wall-clock
+fairness guarantee is claimed.
+
+Interpret `lane_wait`, `serial_wait` and health-capacity wait together. Moving wait
+ahead of the global lock is not itself an improvement; compare each chain's actual
+attempt/terminal progress and backlog under the same offered load.

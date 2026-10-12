@@ -360,6 +360,10 @@ pub enum EngineError {
     #[schema(title = "Recovery Required")]
     #[error("Recovery required: {message}")]
     RecoveryRequired { message: String },
+
+    #[schema(title = "Recovery Publication Pending")]
+    #[error("Recovery publication pending: {message}")]
+    RecoveryPending { message: String },
 }
 
 #[derive(thiserror::Error, Debug, Serialize, Clone, Deserialize, utoipa::ToSchema)]

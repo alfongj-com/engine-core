@@ -193,13 +193,13 @@ where
         let job_data = &job.job.data;
         crate::recovery::validate("eip7702", &job_data.transaction_id, job_data)
             .await
-            .map_err(|error| Eip7702SendError::InternalError {
-                message: error.to_string(),
-            })
-            .map_err_nack(
-                Some(Duration::from_secs(10)),
-                twmq::job::RequeuePosition::Last,
-            )?;
+            .map_err(|error| {
+                crate::recovery::nack(error, Duration::from_secs(10), |error| {
+                    Eip7702SendError::InternalError {
+                        message: error.to_string(),
+                    }
+                })
+            })?;
         let call_uid = job_data.nonce.ok_or_else(|| Eip7702SendError::InternalError {
             message: "Job has no persisted replay UID. Reconcile its on-chain outcome before resubmitting; legacy jobs cannot be retried safely.".to_string(),
         }).map_err_fail()?;
@@ -352,13 +352,14 @@ where
                     "authorization":transactions.authorization()}),
                 )
                 .await
-                .map_err(|error| Eip7702SendError::InternalError {
-                    message: error.to_string(),
-                })
-                .map_err_nack(
-                    Some(Duration::from_secs(10)),
-                    twmq::job::RequeuePosition::Last,
-                )?;
+                .map_err(crate::recovery::from_journal_error)
+                .map_err(|error| {
+                    crate::recovery::nack(error, Duration::from_secs(10), |error| {
+                        Eip7702SendError::InternalError {
+                            message: error.to_string(),
+                        }
+                    })
+                })?;
         }
         let transaction_id = transactions
             .account()

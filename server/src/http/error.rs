@@ -84,7 +84,9 @@ impl ApiEngineError {
             EngineError::PaymasterError { .. } => StatusCode::BAD_REQUEST,
             EngineError::ValidationError { .. } => StatusCode::BAD_REQUEST,
             EngineError::InternalError { .. } => StatusCode::INTERNAL_SERVER_ERROR,
-            EngineError::RecoveryRequired { .. } => StatusCode::SERVICE_UNAVAILABLE,
+            EngineError::RecoveryRequired { .. } | EngineError::RecoveryPending { .. } => {
+                StatusCode::SERVICE_UNAVAILABLE
+            }
             EngineError::Overloaded { .. } => StatusCode::TOO_MANY_REQUESTS,
             EngineError::ThirdwebError { .. } => StatusCode::INTERNAL_SERVER_ERROR,
             EngineError::AwsKmsSignerError { .. } => StatusCode::BAD_GATEWAY,

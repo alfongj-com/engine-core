@@ -32,7 +32,7 @@ use twmq::{
     DurableExecution, FailHookData, NackHookData, Queue, SuccessHookData, UserCancellable,
     error::TwmqError,
     hooks::TransactionContext,
-    job::{BorrowedJob, JobError, JobResult, RequeuePosition, ToJobError, ToJobResult},
+    job::{BorrowedJob, JobError, JobResult, RequeuePosition, ToJobError},
 };
 
 use crate::{
@@ -258,35 +258,36 @@ impl DurableExecution for SolanaExecutorJobHandler {
         // Keep early journal/lock errors inside the measured result. Ordinary
         // provisional-status polls are requeues, not terminal errors. Dropping
         // the entire handler future records cancellation through the timer.
-        let result = async {
-            // let queued_at_ms = job.job.created_at * 1000;
-            let data = &job.job.data;
-            let transaction_id = &data.transaction_id;
+        let result = engine_core::recovery::fairness::scope(
+            engine_core::recovery::fairness::ChainScope::Solana(
+                job.job.data.transaction.execution_options.chain_id,
+            ),
+            async {
+                // let queued_at_ms = job.job.created_at * 1000;
+                let data = &job.job.data;
+                let transaction_id = &data.transaction_id;
 
-            if let Some(journal) = engine_core::recovery::global() {
-                let payload = serde_json::to_value(data).map_err(|_| {
-                    SolanaExecutorError::InternalError {
-                        message: "Cannot encode reconciliation payload".into(),
-                    }
-                    .nack(Some(RECOVERY_PARK_DELAY), RequeuePosition::Last)
-                })?;
-                crate::finality::validate_reconciliation_payload(
-                    &journal,
-                    "solana",
-                    transaction_id,
-                    &payload,
-                )
-                .await
-                .map_err(|inner_error| {
-                    SolanaExecutorError::RpcError { inner_error }
+                if let Some(journal) = engine_core::recovery::global() {
+                    let payload = serde_json::to_value(data).map_err(|_| {
+                        SolanaExecutorError::InternalError {
+                            message: "Cannot encode reconciliation payload".into(),
+                        }
                         .nack(Some(RECOVERY_PARK_DELAY), RequeuePosition::Last)
-                })?;
-            }
+                    })?;
+                    crate::finality::validate_reconciliation_payload(
+                        &journal,
+                        "solana",
+                        transaction_id,
+                        &payload,
+                    )
+                    .await
+                    .map_err(Self::recovery_nack)?;
+                }
 
-            info!("Starting to process Solana transaction");
+                info!("Starting to process Solana transaction");
 
-            // Try to acquire lock - NACK if another worker has it
-            let lock = self
+                // Try to acquire lock - NACK if another worker has it
+                let lock = self
             .storage
             .try_acquire_lock(transaction_id)
             .await
@@ -304,36 +305,37 @@ impl DurableExecution for SolanaExecutorJobHandler {
                 }
             })?;
 
-            info!(transaction_id = %transaction_id, "Acquired lock");
+                info!(transaction_id = %transaction_id, "Acquired lock");
 
-            let result = tokio::time::timeout(PROCESS_TIMEOUT, async {
-                let rpc_client = self
-                    .rpc_cache
-                    .get_verified(data.transaction.execution_options.chain_id)
-                    .await
-                    .map_err(|inner_error| {
-                        SolanaExecutorError::RpcError { inner_error }
-                            .nack(Some(NETWORK_ERROR_RETRY_DELAY), RequeuePosition::Last)
-                    })?;
-                self.execute_transaction(&rpc_client, data, &lock, job.job.attempts)
-                    .await
-            })
-            .await
-            .unwrap_or_else(|_| {
-                Err(SolanaExecutorError::InternalError {
+                let result = tokio::time::timeout(PROCESS_TIMEOUT, async {
+                    let rpc_client = self
+                        .rpc_cache
+                        .get_verified(data.transaction.execution_options.chain_id)
+                        .await
+                        .map_err(|inner_error| {
+                            SolanaExecutorError::RpcError { inner_error }
+                                .nack(Some(NETWORK_ERROR_RETRY_DELAY), RequeuePosition::Last)
+                        })?;
+                    self.execute_transaction(&rpc_client, data, &lock, job.job.attempts)
+                        .await
+                })
+                .await
+                .unwrap_or_else(|_| {
+                    Err(SolanaExecutorError::InternalError {
                 message:
                     "Solana processing deadline exceeded; any persisted attempt will be reconciled"
                         .into(),
             }
             .nack(Some(NETWORK_ERROR_RETRY_DELAY), RequeuePosition::Last))
-            });
+                });
 
-            if let Err(e) = lock.release().await {
-                warn!(transaction_id = %transaction_id, error = ?e, "Failed to release lock");
-            }
+                if let Err(e) = lock.release().await {
+                    warn!(transaction_id = %transaction_id, error = ?e, "Failed to release lock");
+                }
 
-            result
-        }
+                result
+            },
+        )
         .await;
         timer.finish(match &result {
             Ok(_) => OperationOutcome::Success,
@@ -654,12 +656,8 @@ impl SolanaExecutorJobHandler {
             let admission = journal
                 .admission("solana", transaction_id)
                 .await
-                .map_err(|error| {
-                    SolanaExecutorError::InternalError {
-                        message: error.to_string(),
-                    }
-                    .nack(Some(RECOVERY_PARK_DELAY), RequeuePosition::Last)
-                })?;
+                .map_err(crate::recovery::from_journal_error)
+                .map_err(Self::recovery_nack)?;
             if let Some(admission) = admission {
                 journal_terminal =
                     admission.state == engine_core::recovery::AdmissionState::Terminal;
@@ -1050,10 +1048,7 @@ impl SolanaExecutorJobHandler {
             status.err.is_none(),
         )
         .await
-        .map_err(|inner_error| {
-            SolanaExecutorError::RpcError { inner_error }
-                .nack(Some(RECOVERY_PARK_DELAY), RequeuePosition::Last)
-        })?;
+        .map_err(Self::recovery_nack)?;
         if let Some(error) = &status.err {
             return Ok(Some(Err(SolanaExecutorError::TransactionFailed {
                 reason: format!("{error:?}"),
@@ -1165,6 +1160,14 @@ impl SolanaExecutorJobHandler {
         }
     }
 
+    // Publication may finish during the next health check. Retrying must rerun
+    // the same journal/identity gates; every permanent halt keeps the long park.
+    fn recovery_nack(inner_error: EngineError) -> JobError<SolanaExecutorError> {
+        crate::recovery::nack(inner_error, RECOVERY_PARK_DELAY, |inner_error| {
+            SolanaExecutorError::RpcError { inner_error }
+        })
+    }
+
     async fn authorize_attempt(
         &self,
         job_data: &SolanaExecutorJobData,
@@ -1173,10 +1176,7 @@ impl SolanaExecutorJobHandler {
         if let Some(journal) = engine_core::recovery::global() {
             crate::recovery::validate("solana", &job_data.transaction_id, job_data)
                 .await
-                .map_err(|error| SolanaExecutorError::InternalError {
-                    message: error.to_string(),
-                })
-                .map_err_nack(Some(RECOVERY_PARK_DELAY), RequeuePosition::Last)?;
+                .map_err(Self::recovery_nack)?;
             let replay_key = format!(
                 "solana:{}:{}",
                 job_data.transaction.execution_options.chain_id.as_str(),
@@ -1197,10 +1197,8 @@ impl SolanaExecutorJobHandler {
                 "signature":attempt.signature.to_string(), "attempt":durable_attempt}),
                 )
                 .await
-                .map_err(|error| SolanaExecutorError::InternalError {
-                    message: error.to_string(),
-                })
-                .map_err_nack(Some(RECOVERY_PARK_DELAY), RequeuePosition::Last)?;
+                .map_err(crate::recovery::from_journal_error)
+                .map_err(Self::recovery_nack)?;
         }
         Ok(())
     }

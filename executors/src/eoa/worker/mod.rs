@@ -177,7 +177,7 @@ where
             MetricChain::Evm(job.job.data.chain_id),
             ExecutorOperation::Handler,
         );
-        let result = async {
+        let operation = async {
             let data = &job.job.data;
 
             // 1. GET CHAIN
@@ -283,7 +283,11 @@ where
             );
 
             result.into_job_result(delegation)
-        }
+        };
+        let result = engine_core::recovery::fairness::scope(
+            engine_core::recovery::fairness::ChainScope::Evm(job.job.data.chain_id),
+            operation,
+        )
         .await;
         timer.finish(match &result {
             Ok(_) => OperationOutcome::Success,

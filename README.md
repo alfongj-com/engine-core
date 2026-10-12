@@ -11,13 +11,12 @@ The repository is at **`/Users/alfongj/Code/engine-core`**. Start with
 checkouts, exact test commands, local recovery scenarios and a
 [copyable prompt for another agent](LOCAL_TESTING.md#prompt-for-another-local-agent).
 
-Verified October 10, 2026: all three branches are pushed and stored in the local
-Git repository:
+Branch layout after PR #1 merged on October 12, 2026:
 
 | Branch | Status |
 | --- | --- |
-| `production-hardening` / [PR #1](https://github.com/alfongj-com/engine-core/pull/1) | Existing implementation; test this baseline first. Open, not merged. |
-| `crash-recovery-and-chain-fairness` / [PR #2](https://github.com/alfongj-com/engine-core/pull/2) | Stacked draft. Timing instrumentation and recovery draft are saved; Rust validation, recovery wiring, fairness changes and polling improvements remain unfinished. |
+| `production-hardening` / [PR #1](https://github.com/alfongj-com/engine-core/pull/1) | Merged into `main` at `154b0ac`; preserved baseline. |
+| `crash-recovery-and-chain-fairness` / [PR #2](https://github.com/alfongj-com/engine-core/pull/2) | Follow-up against `main`: recoverable checkpoint publication, journal fairness and bounded Solana polling. See [implementation and validation status](WORK_IN_PROGRESS.md). |
 | `load-tests` | Historical reports and generated evidence, including failed runs. |
 
 The tools and a read-only copy of the evidence are now in
@@ -52,8 +51,6 @@ retained incident journals or the old Nitro VM for these tests.
 ## Build
 
 Install Rust through rustup; `rust-toolchain.toml` selects the tested toolchain.
-On the saved PR #2 draft, lockfile and compilation fixes are still pending; use
-the separate baseline checkout described in the local guide first.
 
 ```sh
 cargo build --locked --bin thirdweb-engine

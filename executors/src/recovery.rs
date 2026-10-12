@@ -8,6 +8,8 @@ use alloy::{
 use engine_core::{error::EngineError, recovery};
 use serde::Serialize;
 use serde_json::json;
+use std::time::Duration;
+use twmq::job::{JobError, RequeuePosition};
 
 pub(crate) async fn validate<T: Serialize>(
     kind: &str,
@@ -20,7 +22,7 @@ pub(crate) async fn validate<T: Serialize>(
         journal
             .validate_payload(kind, id, &value)
             .await
-            .map_err(|e| error(&e.to_string()))?;
+            .map_err(from_journal_error)?;
     }
     Ok(())
 }
@@ -31,7 +33,50 @@ pub(crate) fn error(message: &str) -> EngineError {
     }
 }
 
-pub(crate) fn eoa_error(error: impl std::fmt::Display) -> EoaExecutorWorkerError {
+/// Preserve the one recoverable journal error through executor adapters. A
+/// pending publication is not broadcast permission: retry all original gates.
+pub(crate) fn from_journal_error(error: recovery::RecoveryError) -> EngineError {
+    match error {
+        recovery::RecoveryError::PublicationPending => EngineError::RecoveryPending {
+            message: error.to_string(),
+        },
+        _ => self::error(&error.to_string()),
+    }
+}
+
+/// Keep the executor's existing delay for every other error. Only the typed
+/// publication state may bypass a long reconciliation polling delay.
+pub(crate) fn nack<T>(
+    error: EngineError,
+    fallback_delay: Duration,
+    wrap: impl FnOnce(EngineError) -> T,
+) -> JobError<T> {
+    let delay = if matches!(error, EngineError::RecoveryPending { .. }) {
+        Duration::from_secs(2)
+    } else {
+        fallback_delay
+    };
+    JobError::Nack {
+        error: wrap(error),
+        delay: Some(delay),
+        position: RequeuePosition::Last,
+    }
+}
+
+pub(crate) fn eoa_error(error: EngineError) -> EoaExecutorWorkerError {
+    match error {
+        EngineError::RecoveryPending { message } => {
+            EoaExecutorWorkerError::RecoveryPending { message }
+        }
+        _ => eoa_required(error),
+    }
+}
+
+pub(crate) fn eoa_journal_error(error: recovery::RecoveryError) -> EoaExecutorWorkerError {
+    eoa_error(from_journal_error(error))
+}
+
+pub(crate) fn eoa_required(error: impl std::fmt::Display) -> EoaExecutorWorkerError {
     EoaExecutorWorkerError::RecoveryRequired {
         message: error.to_string(),
     }
@@ -49,7 +94,7 @@ pub(crate) async fn validate_eoa_nonce(
         journal
             .validate_replay_binding("eoa", &request.transaction_id, &key)
             .await
-            .map_err(eoa_error)?;
+            .map_err(eoa_journal_error)?;
     }
     Ok(())
 }
@@ -85,7 +130,7 @@ pub(crate) async fn before_eoa(
             }),
         )
         .await
-        .map_err(eoa_error)
+        .map_err(eoa_journal_error)
 }
 
 fn validate_eoa_wire(
@@ -111,7 +156,7 @@ fn validate_eoa_wire(
             .ok()
             != Some(request.from)
     {
-        return Err(eoa_error(
+        return Err(eoa_required(
             "Signed transaction does not match its durable admission",
         ));
     }
@@ -127,13 +172,13 @@ pub(crate) async fn reserve_noop(
     if let Some(journal) = recovery::global() {
         let payload = json!({"chainId":chain_id, "sender":sender, "nonce":nonce});
         let fingerprint =
-            recovery::admission_fingerprint("eoa_noop", &payload).map_err(eoa_error)?;
+            recovery::admission_fingerprint("eoa_noop", &payload).map_err(eoa_journal_error)?;
         let reserved = journal
             .reserve_admission("eoa_noop", &id, &fingerprint, payload)
             .await
-            .map_err(eoa_error)?;
+            .map_err(eoa_journal_error)?;
         if reserved.terminal {
-            return Err(eoa_error("Finalized NOOP cannot be broadcast again"));
+            return Err(eoa_required("Finalized NOOP cannot be broadcast again"));
         }
         journal
             .validate_replay_binding(
@@ -142,7 +187,7 @@ pub(crate) async fn reserve_noop(
                 &format!("evm:{chain_id}:{sender:#x}:{nonce}"),
             )
             .await
-            .map_err(eoa_error)?;
+            .map_err(eoa_journal_error)?;
     }
     Ok(id)
 }
@@ -159,7 +204,7 @@ pub(crate) async fn before_noop(
     validate_noop_wire(chain_id, sender, tx)?;
     let expected_id = format!("__engine_noop:{chain_id}:{sender:#x}:{}", tx.tx().nonce());
     if id != expected_id {
-        return Err(eoa_error("NOOP ID does not match its nonce reservation"));
+        return Err(eoa_required("NOOP ID does not match its nonce reservation"));
     }
     journal
         .validate_payload(
@@ -168,7 +213,7 @@ pub(crate) async fn before_noop(
             &json!({"chainId":chain_id,"sender":sender,"nonce":tx.tx().nonce()}),
         )
         .await
-        .map_err(eoa_error)?;
+        .map_err(eoa_journal_error)?;
     let envelope: TxEnvelope = tx.clone().into();
     let replay_key = format!("evm:{chain_id}:{sender:#x}:{}", tx.tx().nonce());
     journal
@@ -183,7 +228,7 @@ pub(crate) async fn before_noop(
             }),
         )
         .await
-        .map_err(eoa_error)
+        .map_err(eoa_journal_error)
 }
 
 fn validate_noop_wire(
@@ -207,7 +252,7 @@ fn validate_noop_wire(
             .ok()
             != Some(sender)
     {
-        return Err(eoa_error(
+        return Err(eoa_required(
             "Signed NOOP does not match its durable reservation",
         ));
     }
@@ -219,7 +264,7 @@ fn validate_noop_wire(
 fn validate_signed_hash(tx: &Signed<TypedTransaction>) -> Result<(), EoaExecutorWorkerError> {
     let envelope: TxEnvelope = tx.clone().into();
     if alloy::primitives::keccak256(envelope.encoded_2718()) != *tx.hash() {
-        return Err(eoa_error(
+        return Err(eoa_required(
             "Cached transaction hash does not match signed wire bytes",
         ));
     }

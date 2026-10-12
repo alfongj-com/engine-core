@@ -79,6 +79,9 @@ pub enum EoaExecutorWorkerError {
     #[error("Internal error: {message}")]
     InternalError { message: String },
 
+    #[error("Recovery publication pending: {message}")]
+    RecoveryPending { message: String },
+
     #[error("Recovery required: {message}")]
     RecoveryRequired { message: String },
 
@@ -89,6 +92,11 @@ pub enum EoaExecutorWorkerError {
 impl EoaExecutorWorkerError {
     pub fn handle(self) -> JobError<EoaExecutorWorkerError> {
         match &self {
+            EoaExecutorWorkerError::RecoveryPending { .. } => JobError::Nack {
+                error: self,
+                delay: Some(Duration::from_secs(2)),
+                position: RequeuePosition::Last,
+            },
             EoaExecutorWorkerError::EoaOutOfFunds { .. } => JobError::Nack {
                 error: self,
                 delay: Some(Duration::from_secs(60)),
@@ -207,12 +215,13 @@ pub fn is_retryable_preparation_error(error: &EoaExecutorWorkerError) -> bool {
         },
         EoaExecutorWorkerError::TransactionNotFound { .. } => false, // Deterministic
         EoaExecutorWorkerError::InternalError { .. } => false,       // Deterministic
-        EoaExecutorWorkerError::RecoveryRequired { .. } => true, // Never classify uncertainty as chain failure.
-        EoaExecutorWorkerError::UserCancelled => false,          // Deterministic
+        EoaExecutorWorkerError::RecoveryPending { .. }
+        | EoaExecutorWorkerError::RecoveryRequired { .. } => true, // Never classify uncertainty as chain failure.
+        EoaExecutorWorkerError::UserCancelled => false, // Deterministic
         EoaExecutorWorkerError::TransactionSendError { .. } => false, // Different context
         EoaExecutorWorkerError::SignatureParsingFailed { .. } => false, // Deterministic
-        EoaExecutorWorkerError::WorkRemaining { .. } => false,   // Different context
-        EoaExecutorWorkerError::EoaOutOfFunds { .. } => false,   // Deterministic
+        EoaExecutorWorkerError::WorkRemaining { .. } => false, // Different context
+        EoaExecutorWorkerError::EoaOutOfFunds { .. } => false, // Deterministic
     }
 }
 

@@ -242,11 +242,14 @@ where
 
         crate::finality::check_continuity(&chain)
             .await
-            .map_err(|e| Eip7702ConfirmationError::ConfirmationError {
-                message: "Finality checkpoint continuity unavailable".into(),
-                inner_error: Some(e),
-            })
-            .map_err_nack(Some(transaction_hash_delay), RequeuePosition::Last)?;
+            .map_err(|error| {
+                crate::recovery::nack(error, transaction_hash_delay, |error| {
+                    Eip7702ConfirmationError::ConfirmationError {
+                        message: "Finality checkpoint continuity unavailable".into(),
+                        inner_error: Some(error),
+                    }
+                })
+            })?;
 
         // 2. Get transaction hash from bundler
         let transaction_hash_res = chain
@@ -328,11 +331,14 @@ where
 
         let finality = crate::finality::assess(&chain, transaction_hash, &receipt)
             .await
-            .map_err(|e| Eip7702ConfirmationError::ConfirmationError {
-                message: "Finality verification unavailable".into(),
-                inner_error: Some(e),
-            })
-            .map_err_nack(Some(transaction_hash_delay), RequeuePosition::Last)?;
+            .map_err(|error| {
+                crate::recovery::nack(error, transaction_hash_delay, |error| {
+                    Eip7702ConfirmationError::ConfirmationError {
+                        message: "Finality verification unavailable".into(),
+                        inner_error: Some(error),
+                    }
+                })
+            })?;
         let FinalityAssessment::Finalized(finality) = finality else {
             return Err(Eip7702ConfirmationError::FinalityPending {
                 message: "Receipt is not canonically settled under the configured policy".into(),
@@ -349,11 +355,14 @@ where
             &finality,
         )
         .await
-        .map_err(|e| Eip7702ConfirmationError::ConfirmationError {
-            message: "Cannot persist final settlement".into(),
-            inner_error: Some(e),
-        })
-        .map_err_nack(Some(transaction_hash_delay), RequeuePosition::Last)?;
+        .map_err(|error| {
+            crate::recovery::nack(error, transaction_hash_delay, |error| {
+                Eip7702ConfirmationError::ConfirmationError {
+                    message: "Cannot persist final settlement".into(),
+                    inner_error: Some(error),
+                }
+            })
+        })?;
 
         // 4. Both success and revert require the same final settlement evidence.
         let success = receipt.status();

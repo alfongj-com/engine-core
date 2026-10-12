@@ -1,6 +1,6 @@
 # Recovery authority and restartable Redis publication
 
-**Status: draft model revision. The matching Rust protocol is not wired or runtime-validated; see [saved work](../WORK_IN_PROGRESS.md).**
+**Scope: schema2 runtime and finite models. See the [PR handoff](../WORK_IN_PROGRESS.md) for validation results.**
 
 ## Claim and limits
 
@@ -69,7 +69,7 @@ state change. Recovery publishes its new marker separately; an interrupted
 recovery remains halted. It does not restore automatic execution of quarantined
 work.
 
-## Draft source correspondence (not yet implemented)
+## Reviewed source correspondence
 
 | Model boundary | Runtime obligation |
 | --- | --- |
@@ -122,44 +122,47 @@ Witness counterexamples show a path exists; they are **not universal liveness
 proofs**. Named fault counterexamples must fail their specified invariant;
 parser errors, timeouts and resource failures do not count as successful tests.
 
-## Validation status
+## Implementation evidence and boundaries
 
-The previous schema1 evidence remains archived unchanged. This revision's
-model-only checks are reported separately while runtime implementation and
-source correspondence are under review. Do not reuse an old source-map digest
-as evidence for schema2. The final runner must pass the refreshed source map and
-all registered configurations before this version is described as qualified.
+`core/src/recovery/projection_tests.rs` kills real child processes after the
+production FULL commit, Redis CAS, before acknowledgement and after acknowledgement.
+It checks schema1 migration at the same cuts, unchanged history, post-ack rollback,
+wrong tokens/process/role, malformed pending records, failed acknowledgement,
+read-only inventory, explicit quarantine and cancellation/owner/drain behavior.
+`projection_transport_tests.rs` drops a successful Redis CAS reply through a real
+TCP proxy and checks that no permission returns until a later repair succeeds.
+A separate race rolls Redis back between observation and acknowledgement: the
+post-ack check rejects permission and retains a durable halt.
 
-Implementation tests must cover real FULL commit/CAS/ack cuts; lost CAS replies;
-post-ack rollback; pending old/new restart; changed Redis process/role;
-malformed pending state; schema1 healthy/mismatched migration; and cancellation
-while blocking work still holds the exclusive owner. Real crash/restart process
-qualification remains separate from these finite models.
+The runtime and focused model require another continuity observation after
+acknowledgement, before returning permission. This is not an atomic
+Redis/SQLite/network boundary. A fault can still occur after the final check and
+before network emission.
 
-## Parent review imported — October 11, 2026
+Per-chain lanes change scheduling before the existing serialization lock. They
+add no authority transition; cancellation, bounded lane cardinality and peer
+progress are executable test obligations. A global admission bound can still be
+filled by one chain. Health repairs are owned operations with a separate bounded
+admission semaphore. No Tokio fairness or elapsed-time theorem is claimed.
 
-The running schema1 implementation now retains journal mutations in owned tasks
-through FULL SQLite commit, Redis publication and the final health check, even
-when the awaiting request is cancelled. Blocking SQLite work retains the OS
-owner too. SIGTERM/SIGINT stop HTTP and workers, then drain registered mutations
-before the runtime exits; registration precedes spawning so unpolled tasks are
-included. The imported [cancellation regressions](../core/src/recovery/cancellation_tests.rs)
-check those implementation boundaries. This does not wire the schema2 draft or
-make a process crash between commit and mirror automatically recoverable.
+`RepairMarker` remains an arbitrary marker write in the identity model. If
+unavailability was the first halt cause, manually restoring just the marker can
+satisfy reattachment even when other keys were lost. The marker is not a dataset
+checksum: do not repair it by hand. A previously recorded mismatch or mirror
+failure stays non-clearable. Storage durability, coherent authority rollback,
+consensus and the composition of models remain outside these finite checks.
 
-The parent also allows explicit exact-checkpoint reattachment after unavailable
-Redis observations or a primary-role change. It still requires the current
-writable primary and exact marker. Checkpoint, mirror, storage, operator and
-terminal-conflict halts remain non-clearable. The identity model carries forward
-the parent's `RedisUnavailable` action alongside the draft `Acknowledge` and
-`ReturnPermission` actions; primary/replica roles are explicit only in the focused
-projection model. This combined model has not been revalidated.
+Timing-only edits in the queue, EOA store and send wrappers preserve their
+existing operations and error paths; recording a metric is a model stutter.
+Solana coalescing shares transport for independent `Observe` actions and preserves
+each position, history policy and subsequent finalized receipt check. Typed
+`PublicationPending` adapters change retry delay only: all original admission,
+identity and before-send checks run again. Their tests cover classification,
+retained signed identity and rejected permanent faults; no new liveness theorem
+is inferred from a shorter delay.
 
-`RepairMarker` remains an arbitrary marker write. If unavailability was the first
-halt cause, manually restoring just the marker can satisfy reattachment even
-when other keys were lost. The marker is not a dataset checksum: do not repair it
-by hand. A previously recorded mismatch or mirror failure stays non-clearable.
-
-Parent verification applies to the parent commit, not this merged instrumentation
-and projection draft. The source map remains intentionally stale. No model run,
-compilation, benchmark or runtime qualification was performed for this stack merge.
+The chain-context wrapper boxes its inner future before installing task-local
+state. This limits stack growth when wrapping the large execution-router future;
+it does not change polling order, chain scope, ownership or any model action.
+A bounded-size regression and actual EVM admission/process test cover this
+runtime boundary; the finite models do not represent stack allocation.

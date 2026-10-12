@@ -256,20 +256,27 @@ where
         let job_data = &job.job.data;
         crate::recovery::validate("erc4337", &job_data.transaction_id, job_data)
             .await
-            .map_err(|error| ExternalBundlerSendError::InternalError {
-                message: error.to_string(),
-            })
-            .map_err_nack(Some(Duration::from_secs(10)), RequeuePosition::Last)?;
+            .map_err(|error| {
+                crate::recovery::nack(error, Duration::from_secs(10), |error| {
+                    ExternalBundlerSendError::InternalError {
+                        message: error.to_string(),
+                    }
+                })
+            })?;
         // A prior broadcast reservation is durable evidence of an unknown
         // outcome. Later build/provider errors cannot turn it into failure.
         let previously_broadcast = if let Some(journal) = engine_core::recovery::global() {
             journal
                 .admission("erc4337", &job_data.transaction_id)
                 .await
-                .map_err(|error| ExternalBundlerSendError::InternalError {
-                    message: error.to_string(),
-                })
-                .map_err_nack(Some(Duration::from_secs(10)), RequeuePosition::Last)?
+                .map_err(crate::recovery::from_journal_error)
+                .map_err(|error| {
+                    crate::recovery::nack(error, Duration::from_secs(10), |error| {
+                        ExternalBundlerSendError::InternalError {
+                            message: error.to_string(),
+                        }
+                    })
+                })?
                 .is_some_and(|admission| admission.replay_key.is_some())
         } else {
             false
@@ -520,10 +527,14 @@ where
                     "nonce":nonce, "userOperation":signed_user_op}),
                 )
                 .await
-                .map_err(|error| ExternalBundlerSendError::InternalError {
-                    message: error.to_string(),
-                })
-                .map_err_nack(Some(Duration::from_secs(10)), RequeuePosition::Last)?;
+                .map_err(crate::recovery::from_journal_error)
+                .map_err(|error| {
+                    crate::recovery::nack(error, Duration::from_secs(10), |error| {
+                        ExternalBundlerSendError::InternalError {
+                            message: error.to_string(),
+                        }
+                    })
+                })?;
         }
         let user_op_hash = send_built_userop(
             &chain, &smart_account, nonce, &signed_user_op,

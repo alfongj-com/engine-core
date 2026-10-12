@@ -1,85 +1,51 @@
-# Saved work: recovery and chain fairness
+# PR #2 status
 
-Saved September 27, 2026 at Alfonso's request to conserve the weekly compute budget.
-Branch: `crash-recovery-and-chain-fairness`, stacked on `production-hardening` (PR #1).
-This is unfinished work, not a release or a qualified performance improvement.
+Updated October 12, 2026. PR #1 merged into `main` at `154b0ac`.
+[PR #2](https://github.com/alfongj-com/engine-core/pull/2) now targets `main`.
+Implementation is complete; final qualification and matched measurements are running.
 
-## Implemented but not compiled
+## Changes
 
-- Journal serial-lock wait/hold, blocking-pool wait, SQLite mutex/execution/commit,
-  and Redis timing instrumentation; server metrics registration.
-- Queue and EOA phase/outcome timing, bounded chain labels, backlog/transition
-  measurements, and Solana RPC/handler timing. Existing scheduling/polling behavior
-  is unchanged. Regression tests are authored but have not been executed.
-- `scripts/capacity_metrics.py` runs the existing local campaign with bounded
-  Prometheus snapshots. Its three parsing tests pass.
+- Schema2 records the exact journal-to-Redis transition in the authority commit.
+  Startup or health repair can finish it after a crash or lost reply. A second
+  FULL SQLite commit acknowledges publication before permission returns.
+- Arbitrary rollback, wrong Redis process/role, corrupt records and durable halts
+  still block execution. Healthy schema1 journals migrate under exclusive ownership;
+  old binaries reject schema2. Status/export remain read-only.
+- Journal operations get one contender per chain ahead of the shared mutex.
+  Separate metrics expose lane, global-lock, health-capacity, storage and Redis waits.
+- Solana history lookups batch within one cached cluster/endpoint: at most 256
+  outstanding polls and four HTTP requests, with a 5 ms collection window.
+- Typed publication uncertainty retries the original work after 2 seconds. It does not
+  generate a replacement identity or clear a permanent fence.
 
-## Recovery draft: not connected to production yet
+## Validation in progress
 
-`core/src/recovery/projection.rs` and `projection_tests.rs` are deliberately not
-included by `recovery.rs`. Production still uses schema 1 and the old fail-closed
-checkpoint behavior. The draft records an exact pending transition, applies Redis
-CAS, then commits a SQLite acknowledgement before returning permission.
+The instrumented baseline is commit `01d5048`; its unchanged binary is preserved
+privately. The full Rust suite, all 44 ignored journal regressions, 73 executor regressions,
+33 queue regressions, HTTP tests and eight real HTTP batching tests passed. All
+73 model configurations produced their expected outcomes. A later allocation-only
+fix bounds the task-local wrapper size and passes real EVM process recovery; CI
+will recheck the final source map. Remaining local gates are the other process
+scenarios and matched throughput comparisons.
 
-Remaining wiring includes schema 2 and safe legacy migration, startup reconciliation,
-transport ambiguity, offline recovery/reattach rules, status/export, and every
-mutation's pending record. Adapt the inherited cancellation/owner-retention behavior
-to the pending-transition protocol. Add the
-remaining migration, corrupt-marker, ambiguous-response and acknowledgement tests.
-The drafted process-kill/cancellation tests have not been compiled or run.
+All new experiments use disposable local Redis, Anvil and Agave fixtures. No paid
+RPC calls are needed. Raw reports and fixture data stay private under
+`/Users/alfongj/.local/share/engine-core/runs/pr2-oct12/`; sanitized reports and model
+logs belong on the separate [load-tests branch](https://github.com/alfongj-com/engine-core/tree/load-tests).
 
-The revised disaster-recovery models and new projection model are drafts. The
-standalone agent run reports 22 expected outcomes; full-suite validation and reviewed
-runtime source correspondence are still pending. The source map is intentionally
-not refreshed. Do not present these models as verification of the unwired Rust draft.
+## Limits that remain
 
-## Resume order
+One Unix host and one retained authoritative journal are required. This does not
+recover a lost/rolled-back authority, prove filesystem durability, rebuild every
+missing Redis queue, or resolve quarantined unknown transactions automatically.
 
-1. Resolve any compile errors and update Cargo.lock for the added Prometheus
-   dependencies. Run the new timing tests. Save an instrumentation-only binary
-   before changing recovery or scheduling semantics.
-2. Measure an unchanged local workload, including storage/Redis wait breakdowns.
-3. Wire and review the recovery protocol; run adversarial crash, rollback,
-   migration and cancellation regressions before throughput measurements.
-4. Use the baseline to choose a fairness change. Implement bounded Solana status
-   coalescing only after reviewing `docs/design/solana-status-batching.md` and
-   validating positional mapping, history/endpoint isolation and cancellation.
-5. Repeat matched measurements, review all changes, refresh formal correspondence
-   only after review, then run the required checks.
+Fairness covers journal operation opportunities. Global admission/health capacity
+and the shared overflow lane can still delay a peer. Solana batching reduces
+transport calls without changing finality or retry budgets; it does not qualify
+public RPC quotas or actual rollup consensus. Local throughput is not a mainnet
+capacity guarantee. Models remain finite abstractions, not whole-service proofs.
 
-No new load test or paid RPC call ran in this work period. Prior failed-campaign
-custody remains untouched and Nitro remains paused. The original PR #1 executable
-is preserved privately at `/Users/alfongj/.local/share/engine-core/tools/engine-pr1-b31f43d`; SHA-256
-`35e307e16cafa7cbb17caafcf5ed90a840d58dddd2454542566619266e7a4c07`.
-Historical load reports and generated evidence are preserved on the
-[load-tests branch](https://github.com/alfongj-com/engine-core/tree/load-tests).
-They were removed from PR #1 and are not prerequisites for a normal build.
-The [targeted model WIP evidence](https://github.com/alfongj-com/engine-core/blob/load-tests/formal/evidence/recoverable-projection-wip/README.md) is archived separately.
-
-## Local testing handoff — October 10, 2026
-
-[LOCAL_TESTING.md](LOCAL_TESTING.md) contains the repository location, installed
-tool paths, exact test commands and a copyable prompt for an independent local
-agent. Tools and a browsable evidence archive are now under
-`/Users/alfongj/.local/share/engine-core/`; the old temporary tool paths are gone.
-Tool versions and documentation paths were checked. No new Engine build, full
-test suite or benchmark ran during this documentation handoff. The implementation
-status and remaining work above are unchanged.
-
-## Parent review imported — October 11, 2026
-
-Merged `production-hardening` at `8741b881d0e1f5b7290492d8e65a6384ac632cb2`.
-The parent adds cancellation-safe schema1 journal mutations, blocking-work owner
-retention and SIGTERM/SIGINT shutdown that drains detached journal mutations.
-It also includes the reviewed Redis reattach, fee parsing, pre-sign validation,
-Solana admission, webhook and operability fixes described in
-[review follow-ups](docs/review-followups.md).
-
-Conflict resolution retains the timing instrumentation inside those owned journal
-tasks and keeps the WIP projection model, acknowledgement/return actions and
-unwired Rust draft. Schema2 migration/publication is still not connected;
-shared-chain fairness and Solana polling coalescing remain unimplemented.
-`Cargo.lock` is unchanged, and the added instrumentation dependencies still need
-normal compilation/lockfile review. Only formatting and diff checks were run for
-this merge. The combined model and runtime source map remain unqualified and
-intentionally stale; do not copy the parent's verification status onto this draft.
+See [LOCAL_TESTING.md](LOCAL_TESTING.md), the [protocol design](docs/design/recoverable-projection.md),
+[Solana polling design](docs/design/solana-status-batching.md), and
+[formal correspondence](formal/disaster-recovery.md).

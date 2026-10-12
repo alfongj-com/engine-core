@@ -27,7 +27,7 @@ decision, not a claim that Lean cannot verify systems code.
 | Redis admission projection | Immutable request per retained Redis ID; atomic identity/queue admission; active identity survives cancellation; finite Redis retention boundary | [Admission model](admission.md); the server's independent journal adds longer-lived identity protection |
 | Finality | Provisional inclusion, orphaning and re-inclusion; both success and revert wait for canonical finality evidence | [Finality model](finality.md); honest RPC/stable consensus assumptions, explicit depth and catastrophic boundaries |
 | Depth checkpoint continuity | A shallow tip reorg above the qualified boundary must not halt; a qualified-boundary contradiction must halt | [Depth checkpoint model](depth-checkpoint.md); one checkpoint, explicit rollback boundary |
-| Redis disaster recovery | Durable attempt before authorization; immutable global replay binding; separate SQLite/Redis commits; restart/rollback halt; offline quarantine and original-payload retries | [Recovery authority model](disaster-recovery.md); one host/owner, retained local authority, not SQLite/filesystem refinement |
+| Redis disaster recovery | Durable attempt before authorization; immutable global replay binding; durable pending transitions and acknowledgement; exact restart repair/rollback halt; offline quarantine and original-payload retries | [Recovery authority model](disaster-recovery.md); one host/owner, retained local authority, not SQLite/filesystem refinement |
 | Fee arithmetic | Supplied caps, priority/total ordering, nondecrease when permitted, overflow-safe computation | [Production Rust proofs](fees.md) |
 
 Every model has negative checks. Fault configurations must fail the **named
@@ -42,44 +42,13 @@ authoritative local ledger is retained**. Rolling back/copying that authority
 remains an explicit failure boundary. These separate models are not a
 machine-checked proof of their composition.
 
-The [recorded run and raw evidence](https://github.com/alfongj-com/engine-core/blob/load-tests/formal/evidence/README.md) identify the exact source,
-state counts, counterexamples and implementation regressions for that run. The
-manifest now contains **61 configurations**: the prior 56 plus five depth-checkpoint
-regressions. The new family distinguishes observed tip from qualified history,
-a gap not represented by the older height-collapsing Finality model. The
-[dispatch-pipeline record](https://github.com/alfongj-com/engine-core/blob/load-tests/formal/evidence/capacity-dispatch-review/README.md)
-passes the same 61 outcomes and 76 reviewed source hashes, with three checker
-safeguards and unchanged positive state counts. Durable per-attempt authorization
-still precedes every dispatch; overlap with later authorization was already
-permitted by the models. First-poll suppression, owner-read races, ordered futures
-and cancellation are implementation-test obligations, not new proved scheduling
-or performance properties. The preceding
-[diagnostic-retention record](https://github.com/alfongj-com/engine-core/blob/load-tests/formal/evidence/capacity-diagnostic-review/README.md)
-passes the same 61 expected outcomes and 75 reviewed source hashes, with three
-checker safeguards. Its 3,164,944 summed positive states are unchanged: capped
-inspection history adds no ownership/retry transition or model case. JSON byte
-bounds, omission-envelope compatibility and Redis command-error behavior remain
-implementation checks and explicit assumptions. The
-[index/broadcast candidate record](https://github.com/alfongj-com/engine-core/blob/load-tests/formal/evidence/capacity-index-broadcast-review/README.md)
-passes all 61 expected outcomes and 72 reviewed source hashes, with 3,164,944
-summed positive states. Three runner safeguard tests also pass. Physical indexes
-preserve logical authority; broadcast tuning changes scheduling of existing
-identities. Neither supplies a new model theorem about SQLite/Tokio behavior,
-concurrency limits or throughput. The [preceding gap-recovery record](https://github.com/alfongj-com/engine-core/blob/load-tests/formal/evidence/capacity-gap-review/README.md) passes all
-61 expected outcomes and 69 reviewed source hashes, with 3,164,944 summed
-positive states. Repeated original-wire dispatch preserves the modeled identity;
-fixed-window pacing and mempool-eviction recovery are implementation-test
-obligations, not new liveness proofs. The [preceding capacity record](https://github.com/alfongj-com/engine-core/blob/load-tests/formal/evidence/capacity-review/README.md)
-retains its pre-gap source scope. The [intervening CI source-guard failure](https://github.com/alfongj-com/engine-core/blob/load-tests/formal/evidence/capacity-oracle-review/README.md)
-is preserved separately; it stopped before TLC because the oracle review hash
-was stale. Measured capacity remains separate evidence.
-The [previous runtime check](https://github.com/alfongj-com/engine-core/blob/load-tests/formal/evidence/progress-scheduling/README.md)
-passes all 56 expected outcomes at `f309177`, with 66 reviewed source hashes
-and 3,164,046 summed positive states. It also tests real Redis scheduling after
-useful EOA progress. The [preceding report](https://github.com/alfongj-com/engine-core/blob/load-tests/formal/evidence/throughput-review/report.json)
-retains its `9537ac6` scope. Those runs do not qualify the new candidate. These
-finite models do not prove a TPS target or compose automatically into a
-whole-system proof.
+The manifest contains **73 configurations**, including 12 focused checkpoint
+publication cases. Each positive configuration exhausts its declared finite
+bounds; each fault or reachability case must produce its named counterexample.
+[Historical evidence](https://github.com/alfongj-com/engine-core/blob/load-tests/formal/evidence/README.md)
+retains earlier source scopes. The [PR handoff](../WORK_IN_PROGRESS.md) identifies
+the current validation and measured results. No model proves a TPS target or
+composes automatically into a whole-service proof.
 
 ## Run locally
 

@@ -17,15 +17,20 @@ use std::{
 use tokio::sync::{Mutex as AsyncMutex, RwLock, Semaphore};
 use twmq::redis::{self, aio::ConnectionManager};
 
+pub mod fairness;
 pub mod metrics;
 
 struct SerialGuard<'a> {
     _guard: tokio::sync::MutexGuard<'a, ()>,
     _timer: prometheus::HistogramTimer,
+    // Drop after the global mutex so a chain never has two global contenders.
+    _lane: tokio::sync::OwnedSemaphorePermit,
 }
 
 static GLOBAL: OnceLock<Arc<RecoveryJournal>> = OnceLock::new();
-const SCHEMA: i64 = 1;
+const SCHEMA: i64 = 2;
+#[path = "recovery/projection.rs"]
+mod projection;
 // Additive physical indexes: no journal-schema/token or evidence changes.
 const HISTORY_INDEX_SQL: &str = "
     CREATE INDEX IF NOT EXISTS terminal_evidence_id_sequence ON terminal_evidence(id,sequence);
@@ -35,9 +40,14 @@ const MAX_RECORD_BYTES: usize = 16 * 1024 * 1024;
 // Admission waits are bounded; reconciliation and existing broadcasts do not
 // consume these permits and can drain work while intake is overloaded.
 const MAX_CONCURRENT_ADMISSIONS: usize = 64;
+// Health checks may acknowledge pending publication and therefore outlive a
+// cancelled caller. Bound those retained tasks; waiting for a slot is cancellable.
+const MAX_CONCURRENT_HEALTH_CHECKS: usize = 32;
 
 #[derive(Debug, thiserror::Error)]
 pub enum RecoveryError {
+    #[error("Redis checkpoint publication is pending; retry the same transaction ID")]
+    PublicationPending,
     #[error(
         "Recovery admission is busy; retry the same transaction ID after capacity is available"
     )]
@@ -112,6 +122,7 @@ pub struct RecoveryStatus {
     pub deployment: String,
     pub epoch: i64,
     pub checkpoint: i64,
+    pub projection_pending: bool,
     pub namespace: Option<String>,
     pub halted: bool,
     pub halt_reason: Option<String>,
@@ -122,6 +133,7 @@ pub struct RecoveryStatus {
 }
 #[derive(Clone)]
 struct Control {
+    schema: i64,
     deployment: String,
     epoch: i64,
     checkpoint: i64,
@@ -133,8 +145,8 @@ struct Control {
 impl Control {
     fn token(&self) -> String {
         format!(
-            "v{SCHEMA}:{}:{}:{}",
-            self.deployment, self.epoch, self.checkpoint
+            "v{}:{}:{}:{}",
+            self.schema, self.deployment, self.epoch, self.checkpoint
         )
     }
     fn key(&self) -> String {
@@ -149,9 +161,18 @@ pub struct RecoveryJournal {
     _owner: Arc<File>,
     redis: ConnectionManager,
     serial: AsyncMutex<()>,
+    fairness: fairness::JournalFairness,
     admission_slots: Arc<Semaphore>,
+    health_slots: Arc<Semaphore>,
     owned_operations: Arc<RwLock<()>>,
     failed: AtomicBool,
+    #[cfg(test)]
+    before_ack: Mutex<
+        Option<(
+            tokio::sync::oneshot::Sender<()>,
+            tokio::sync::oneshot::Receiver<()>,
+        )>,
+    >,
     #[cfg(test)]
     before_mirror: Mutex<
         Option<(
@@ -371,13 +392,14 @@ fn control(conn: &Connection) -> Result<Control> {
         [],
         |r| r.get(0),
     )?;
-    if schema != SCHEMA {
+    if !matches!(schema, 1 | SCHEMA) {
         return Err(RecoveryError::Invalid("unknown ledger schema"));
     }
     Ok(conn.query_row(
         "SELECT deployment,epoch,checkpoint,namespace,run_id,halted,reason FROM control WHERE singleton=1",
         [],
         |row| Ok(Control {
+            schema,
             deployment: row.get(0)?,
             epoch: row.get(1)?,
             checkpoint: row.get(2)?,
@@ -426,6 +448,8 @@ fn advance(conn: &Connection) -> Result<Control> {
         "UPDATE control SET checkpoint=checkpoint+1 WHERE singleton=1",
         [],
     )?;
+    let target = control(conn)?;
+    projection::record(conn, &old, &target)?;
     Ok(old)
 }
 async fn redis_connection(url: &str) -> Result<ConnectionManager> {
@@ -525,6 +549,7 @@ impl RecoveryJournal {
             CREATE TABLE chain_halts(chain_id TEXT PRIMARY KEY,reason TEXT NOT NULL);
             CREATE TABLE recovery_events(sequence INTEGER PRIMARY KEY AUTOINCREMENT,event TEXT NOT NULL);")?;
         conn.execute_batch(HISTORY_INDEX_SQL)?;
+        conn.execute_batch(projection::TABLE_SQL)?;
         conn.execute(
             "INSERT INTO control VALUES(1,?, ?,1,0,?,?,1,'initializing')",
             params![SCHEMA, uuid::Uuid::new_v4().to_string(), namespace, run_id],
@@ -573,9 +598,13 @@ impl RecoveryJournal {
             _owner: Arc::new(owner),
             redis: redis_connection(redis_url).await?,
             serial: AsyncMutex::new(()),
+            fairness: fairness::JournalFairness::new(),
             admission_slots: Arc::new(Semaphore::new(MAX_CONCURRENT_ADMISSIONS)),
+            health_slots: Arc::new(Semaphore::new(MAX_CONCURRENT_HEALTH_CHECKS)),
             owned_operations: Arc::new(RwLock::new(())),
             failed: AtomicBool::new(false),
+            #[cfg(test)]
+            before_ack: Mutex::new(None),
             #[cfg(test)]
             before_mirror: Mutex::new(None),
         });
@@ -603,21 +632,35 @@ impl RecoveryJournal {
                     ensure_history_indexes(conn)
                 })
                 .await?;
-            preparing.healthy_locked().await
+            let current = preparing.healthy_locked().await?;
+            if current.schema == 1 {
+                let result = preparing.db(projection::migrate).await;
+                preparing.storage_result(result).await?;
+                #[cfg(test)]
+                projection_tests::crash_cut("after_migration_commit").await;
+                preparing.healthy_locked().await
+            } else {
+                Ok(current)
+            }
         })
     }
     async fn serial_guard(&self, operation: &'static str) -> SerialGuard<'_> {
+        let lane_wait = metrics::timer(operation, "lane_wait");
+        let lane = self.fairness.acquire().await;
+        drop(lane_wait);
         let wait = metrics::timer(operation, "serial_wait");
         let guard = self.serial.lock().await;
         drop(wait);
         SerialGuard {
             _guard: guard,
             _timer: metrics::timer(operation, "serial_hold"),
+            _lane: lane,
         }
     }
     /// Once a mutation begins, caller cancellation must not split its FULL
     /// commit from the Redis mirror. The owned task retains serialization and
-    /// admission capacity through completion; a process crash still fails closed.
+    /// admission capacity through completion. After a process crash, a recorded
+    /// pending transition can be repaired without recreating the caller's permit.
     async fn run_owned<T, F, Fut>(self: &Arc<Self>, operation: F) -> Result<T>
     where
         T: Send + 'static,
@@ -627,10 +670,11 @@ impl RecoveryJournal {
         // Register before spawn, so shutdown also sees tasks not yet polled.
         let registered = self.owned_operations.clone().read_owned().await;
         let journal = self.clone();
-        tokio::spawn(async move {
+        let chain = fairness::current();
+        tokio::spawn(fairness::scope(chain, async move {
             let _registered = registered;
             operation(journal).await
-        })
+        }))
         .await
         .map_err(|_| RecoveryError::Storage)?
     }
@@ -680,66 +724,159 @@ impl RecoveryJournal {
                 "process safety gate is latched",
             ));
         }
-        let c = match self.db(|db| control(db)).await {
-            Ok(c) => c,
+        let state = self
+            .db(|db| {
+                let current = control(db)?;
+                let pending = projection::load(db, &current)?;
+                Ok((current, pending))
+            })
+            .await;
+        let (current, pending) = match state {
+            Ok(state) => state,
             Err(_) => return Err(self.halt("ledger unavailable").await),
         };
-        if c.halted {
-            tracing::error!(reason = ?c.reason, "Recovery ledger is durably halted");
+        if current.halted {
+            tracing::error!(reason = ?current.reason, "Recovery ledger is durably halted");
             self.failed.store(true, Ordering::SeqCst);
             return Err(RecoveryError::RecoveryRequired(
                 "durable safety gate is halted",
             ));
         }
-        let (run, role, marker) = match observation(&self.redis, &c.key()).await {
-            Ok(x) => x,
+        self.observe_checkpoint(&current, pending.as_ref()).await?;
+        if let Some(pending) = pending {
+            self.complete_pending(&current, pending).await?;
+        }
+        Ok(current)
+    }
+
+    /// Only a recorded, unacknowledged transition permits its predecessor.
+    /// Transport uncertainty is retryable only while that exact record exists.
+    async fn observe_checkpoint(
+        &self,
+        current: &Control,
+        pending: Option<&projection::PendingUpdate>,
+    ) -> Result<()> {
+        let (run, role, marker) = match observation(&self.redis, &current.key()).await {
+            Ok(observed) => observed,
+            Err(_) if pending.is_some() => return Err(RecoveryError::PublicationPending),
             Err(_) => return Err(self.halt("Redis continuity unavailable").await),
         };
-        // Check data continuity first so reattach can never excuse a rollback.
-        if marker.as_deref() != Some(c.token().as_str()) {
+        let matches_target = marker.as_deref() == Some(current.token().as_str());
+        let matches_previous =
+            pending.is_some_and(|p| marker.as_deref() == Some(p.previous_token.as_str()));
+        if !matches_target && !matches_previous {
             return Err(self.halt("Redis checkpoint mismatch").await);
         }
         if role != "master" {
             return Err(self.halt("Redis primary role changed").await);
         }
-        if run != c.run_id {
+        if run != current.run_id {
             return Err(self.halt("Redis process changed").await);
         }
-        Ok(c)
+        Ok(())
     }
-    pub async fn ensure_healthy(&self) -> Result<()> {
-        let _guard = self.serial_guard("health").await;
-        self.healthy_locked().await.map(|_| ())
+
+    pub async fn ensure_healthy(self: &Arc<Self>) -> Result<()> {
+        let capacity_wait = metrics::timer("health", "health_capacity_wait");
+        let permit = self
+            .health_slots
+            .clone()
+            .acquire_owned()
+            .await
+            .map_err(|_| RecoveryError::Storage)?;
+        drop(capacity_wait);
+        self.run_owned(move |journal| async move {
+            let _permit = permit;
+            let _guard = journal.serial_guard("health").await;
+            journal.healthy_locked().await.map(|_| ())
+        })
+        .await
     }
+
+    async fn complete_pending(
+        &self,
+        current: &Control,
+        pending: projection::PendingUpdate,
+    ) -> Result<()> {
+        const PUBLISH_CHECKPOINT: &str = r#"
+            local current = redis.call('GET', KEYS[1])
+            if current == ARGV[2] then return 1 end
+            if current ~= ARGV[1] then return 0 end
+            redis.call('SET', KEYS[1], ARGV[2])
+            return 1
+        "#;
+        let mirror_timer = metrics::timer("checkpoint", "redis_mirror");
+        let result: redis::RedisResult<i32> = redis::Script::new(PUBLISH_CHECKPOINT)
+            .key(&pending.redis_key)
+            .arg(&pending.previous_token)
+            .arg(&pending.target_token)
+            .invoke_async(&mut self.redis.clone())
+            .await;
+        drop(mirror_timer);
+        match result {
+            Ok(1) => {}
+            Ok(_) => return Err(self.halt("Redis checkpoint mismatch").await),
+            Err(_) => return Err(RecoveryError::PublicationPending),
+        }
+        #[cfg(test)]
+        projection_tests::crash_cut("after_redis_apply").await;
+        // The CAS response alone cannot authorize a send: bind the applied
+        // marker to the same Redis process acting as writable primary.
+        let (run, role, marker) = observation(&self.redis, &current.key())
+            .await
+            .map_err(|_| RecoveryError::PublicationPending)?;
+        if marker.as_deref() != Some(pending.target_token.as_str()) {
+            return Err(self.halt("Redis checkpoint mismatch").await);
+        }
+        if role != "master" {
+            return Err(self.halt("Redis primary role changed").await);
+        }
+        if run != pending.run_id {
+            return Err(self.halt("Redis process changed").await);
+        }
+        #[cfg(test)]
+        {
+            projection_tests::crash_cut("before_ack").await;
+            let pause = self.before_ack.lock().unwrap().take();
+            if let Some((entered, resume)) = pause {
+                let _ = entered.send(());
+                let _ = resume.await;
+            }
+        }
+        let result = self
+            .db(move |conn| projection::acknowledge(conn, &pending))
+            .await;
+        self.storage_result(result).await?;
+        #[cfg(test)]
+        projection_tests::crash_cut("after_ack").await;
+        // No pending exception remains after acknowledgement. A subsequent
+        // rollback or unavailable observation follows the ordinary hard fence.
+        self.observe_checkpoint(current, None).await
+    }
+
     async fn mirror(&self, old: Control) -> Result<()> {
         #[cfg(test)]
         {
+            projection_tests::crash_cut("after_authority_commit").await;
             let pause = self.before_mirror.lock().unwrap().take();
             if let Some((entered, resume)) = pause {
                 let _ = entered.send(());
                 let _ = resume.await;
             }
         }
-        let mut new = old.clone();
-        new.checkpoint += 1;
-        const MIRROR_CHECKPOINT: &str = r#"
-            if redis.call('GET', KEYS[1]) ~= ARGV[1] then return 0 end
-            redis.call('SET', KEYS[1], ARGV[2])
-            return 1
-        "#;
-        let mirror_timer = metrics::timer("checkpoint", "redis_mirror");
-        let result: redis::RedisResult<i32> = redis::Script::new(MIRROR_CHECKPOINT)
-            .key(old.key())
-            .arg(old.token())
-            .arg(new.token())
-            .invoke_async(&mut self.redis.clone())
+        let state = self
+            .db(move |conn| {
+                let current = control(conn)?;
+                let pending = projection::load(conn, &current)?.ok_or(RecoveryError::Storage)?;
+                if pending.previous_token != old.token() {
+                    return Err(RecoveryError::Storage);
+                }
+                Ok((current, pending))
+            })
             .await;
-        drop(mirror_timer);
-        if !matches!(result, Ok(1)) {
-            return Err(self.halt("Redis checkpoint mirror failed").await);
-        }
-        // A promotion/restart between the precheck and CAS must not pass.
-        self.healthy_locked().await.map(|_| ())
+        let (current, pending) = self.storage_result(state).await?;
+        self.observe_checkpoint(&current, Some(&pending)).await?;
+        self.complete_pending(&current, pending).await
     }
     pub async fn reserve_admission(
         self: &Arc<Self>,
@@ -837,7 +974,12 @@ impl RecoveryJournal {
         })
         .await
     }
-    pub async fn validate_admission(&self, kind: &str, id: &str, fingerprint: &str) -> Result<()> {
+    pub async fn validate_admission(
+        self: &Arc<Self>,
+        kind: &str,
+        id: &str,
+        fingerprint: &str,
+    ) -> Result<()> {
         self.ensure_healthy().await?;
         let record = self
             .admission(kind, id)
@@ -853,7 +995,12 @@ impl RecoveryJournal {
         }
         Ok(())
     }
-    pub async fn validate_payload(&self, kind: &str, id: &str, payload: &Value) -> Result<()> {
+    pub async fn validate_payload(
+        self: &Arc<Self>,
+        kind: &str,
+        id: &str,
+        payload: &Value,
+    ) -> Result<()> {
         let fingerprint = admission_fingerprint(kind, payload)?;
         self.validate_admission(kind, id, &fingerprint).await?;
         let record = self
@@ -868,7 +1015,7 @@ impl RecoveryJournal {
     /// Read-only pre-sign check. Network emission still requires before_broadcast,
     /// which atomically binds the identity and commits the exact attempted wire.
     pub async fn validate_replay_binding(
-        &self,
+        self: &Arc<Self>,
         kind: &str,
         id: &str,
         replay_key: &str,
@@ -876,46 +1023,51 @@ impl RecoveryJournal {
         identity(kind, id)?;
         validate_replay_key(kind, replay_key)?;
         let (kind, id, key) = (kind.to_owned(), id.to_owned(), replay_key.to_owned());
-        let _guard = self.serial_guard("replay_validation").await;
-        self.healthy_locked().await?;
-        self.db(move |c| {
-            let record = lookup(c, &id)?
-                .ok_or(RecoveryError::RecoveryRequired("untracked signing intent"))?;
-            if record.kind != kind || record.replay_key.as_ref().is_some_and(|k| k != &key) {
-                return Err(RecoveryError::Conflict);
-            }
-            if record.state != AdmissionState::Admitted {
-                return Err(RecoveryError::RecoveryRequired(
-                    "transaction is terminal or quarantined",
-                ));
-            }
-            let owner: Option<String> = c
-                .query_row(
-                    "SELECT id FROM admissions WHERE replay_key=?",
-                    [&key],
-                    |r| r.get(0),
-                )
-                .optional()?;
-            if owner.as_ref().is_some_and(|owner| owner != &id) {
-                return Err(RecoveryError::Conflict);
-            }
-            if kind != "solana" {
-                let chain = key
-                    .split(':')
-                    .nth(1)
-                    .ok_or(RecoveryError::Invalid("missing replay chain"))?;
-                let halted: bool = c.query_row(
-                    "SELECT EXISTS(SELECT 1 FROM chain_halts WHERE chain_id=?)",
-                    [chain],
-                    |r| r.get(0),
-                )?;
-                if halted {
-                    return Err(RecoveryError::RecoveryRequired(
-                        "chain finality conflict requires reconciliation",
-                    ));
-                }
-            }
-            Ok(())
+        self.run_owned(move |journal| async move {
+            let _guard = journal.serial_guard("replay_validation").await;
+            journal.healthy_locked().await?;
+            journal
+                .db(move |c| {
+                    let record = lookup(c, &id)?
+                        .ok_or(RecoveryError::RecoveryRequired("untracked signing intent"))?;
+                    if record.kind != kind || record.replay_key.as_ref().is_some_and(|k| k != &key)
+                    {
+                        return Err(RecoveryError::Conflict);
+                    }
+                    if record.state != AdmissionState::Admitted {
+                        return Err(RecoveryError::RecoveryRequired(
+                            "transaction is terminal or quarantined",
+                        ));
+                    }
+                    let owner: Option<String> = c
+                        .query_row(
+                            "SELECT id FROM admissions WHERE replay_key=?",
+                            [&key],
+                            |r| r.get(0),
+                        )
+                        .optional()?;
+                    if owner.as_ref().is_some_and(|owner| owner != &id) {
+                        return Err(RecoveryError::Conflict);
+                    }
+                    if kind != "solana" {
+                        let chain = key
+                            .split(':')
+                            .nth(1)
+                            .ok_or(RecoveryError::Invalid("missing replay chain"))?;
+                        let halted: bool = c.query_row(
+                            "SELECT EXISTS(SELECT 1 FROM chain_halts WHERE chain_id=?)",
+                            [chain],
+                            |r| r.get(0),
+                        )?;
+                        if halted {
+                            return Err(RecoveryError::RecoveryRequired(
+                                "chain finality conflict requires reconciliation",
+                            ));
+                        }
+                    }
+                    Ok(())
+                })
+                .await
         })
         .await
     }
@@ -1026,7 +1178,7 @@ impl RecoveryJournal {
     /// not broadcast authorization: callers must decode/validate the wire and
     /// pass before_broadcast again immediately before dispatch.
     pub async fn latest_eoa_attempt(
-        &self,
+        self: &Arc<Self>,
         id: &str,
         expected_replay_key: &str,
     ) -> Result<Option<Value>> {
@@ -1068,7 +1220,7 @@ impl RecoveryJournal {
     /// attempt history. This can run before network queries, and is repeated in
     /// the terminal transaction so no earlier validation can bypass a halt.
     pub async fn validate_attempt_identity(
-        &self,
+        self: &Arc<Self>,
         kind: &str,
         id: &str,
         identity: &Value,
@@ -1138,7 +1290,7 @@ impl RecoveryJournal {
         }).await
     }
 
-    pub async fn check_chain_healthy(&self, chain_id: u64) -> Result<()> {
+    pub async fn check_chain_healthy(self: &Arc<Self>, chain_id: u64) -> Result<()> {
         self.ensure_healthy().await?;
         self.db(move |c| {
             let halted: bool = c.query_row(
@@ -1157,7 +1309,7 @@ impl RecoveryJournal {
         .await
     }
     pub async fn load_checkpoint(
-        &self,
+        self: &Arc<Self>,
         chain_id: u64,
     ) -> Result<Option<crate::finality::FinalityEvidence>> {
         self.check_chain_healthy(chain_id).await?;
@@ -1281,6 +1433,11 @@ impl RecoveryJournal {
         let _owner = owner_lock(path, false)?;
         let conn = connection(path, false)?;
         let c = control(&conn)?;
+        if projection::load(&conn, &c)?.is_some() {
+            return Err(RecoveryError::RecoveryRequired(
+                "pending checkpoint requires recovery, not reattach",
+            ));
+        }
         if c.namespace != namespace {
             return Err(RecoveryError::Invalid(
                 "configured namespace does not match ledger",
@@ -1337,6 +1494,7 @@ impl RecoveryJournal {
         let _owner = owner_lock(path, false)?;
         let conn = connection(path, false)?;
         let old = control(&conn)?;
+        let discarded_pending = projection::load(&conn, &old)?;
         // Repeated equivalent evidence is a no-op. A second retained witness
         // therefore means an unresolved contradiction, not a Redis-only disaster.
         let terminal_conflict: bool = conn.query_row(
@@ -1364,6 +1522,14 @@ impl RecoveryJournal {
             return Err(RecoveryError::Invalid("Redis must be a writable primary"));
         }
         conn.execute_batch("BEGIN IMMEDIATE")?;
+        if old.schema == 1 {
+            conn.execute_batch(projection::TABLE_SQL)?;
+        }
+        conn.execute("DELETE FROM projection_pending", [])?;
+        conn.execute(
+            "UPDATE control SET schema_version=? WHERE singleton=1",
+            [SCHEMA],
+        )?;
         conn.execute(
             "UPDATE admissions SET state='quarantined' WHERE state!='terminal' AND EXISTS(SELECT 1 FROM attempts WHERE attempts.id=admissions.id)",
             [],
@@ -1377,6 +1543,7 @@ impl RecoveryJournal {
             "previous_namespace": old.namespace,
             "new_namespace": new_namespace,
             "previous_epoch": old.epoch,
+            "discarded_pending": discarded_pending,
         });
         conn.execute(
             "INSERT INTO recovery_events(event) VALUES(?)",
@@ -1545,8 +1712,10 @@ fn status(conn: &Connection) -> Result<RecoveryStatus> {
         let n: i64 = c.query_row(sql, [], |r| r.get(0))?;
         n.try_into().map_err(|_| RecoveryError::Storage)
     }
+    let projection_pending = projection::load(conn, &c)?.is_some();
     Ok(RecoveryStatus {
-        schema: SCHEMA,
+        schema: c.schema,
+        projection_pending,
         deployment: c.deployment,
         epoch: c.epoch,
         checkpoint: c.checkpoint,
@@ -1617,3 +1786,7 @@ mod history_index_tests;
 
 #[cfg(test)]
 mod cancellation_tests;
+
+#[cfg(test)]
+#[path = "recovery/projection_tests.rs"]
+mod projection_tests;

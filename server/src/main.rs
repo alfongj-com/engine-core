@@ -171,9 +171,17 @@ async fn main() -> anyhow::Result<()> {
         let mut interval = tokio::time::interval(Duration::from_secs(1));
         loop {
             interval.tick().await;
-            if let Err(error) = monitored_recovery.ensure_healthy().await {
-                tracing::error!(error = %error, "Recovery journal halted transaction admission and broadcast");
-                break;
+            match monitored_recovery.ensure_healthy().await {
+                Ok(()) => {}
+                Err(engine_core::recovery::RecoveryError::PublicationPending) => {
+                    tracing::warn!(
+                        "Recovery checkpoint publication is pending; execution remains blocked until retry succeeds"
+                    );
+                }
+                Err(error) => {
+                    tracing::error!(error = %error, "Recovery journal halted transaction admission and broadcast");
+                    break;
+                }
             }
         }
     });

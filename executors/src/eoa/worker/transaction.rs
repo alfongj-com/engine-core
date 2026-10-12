@@ -530,7 +530,7 @@ impl<C: Chain> EoaExecutorWorker<C> {
     ) -> Result<Signed<TypedTransaction>, EoaExecutorWorkerError> {
         engine_core::recovery::ensure_healthy()
             .await
-            .map_err(crate::recovery::eoa_error)?;
+            .map_err(crate::recovery::eoa_journal_error)?;
         let signing_options = EoaSigningOptions {
             from: self.eoa,
             chain_id: Some(self.chain_id),

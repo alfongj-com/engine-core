@@ -160,7 +160,7 @@ async fn validate_durable_confirmation(job: &UserOpConfirmationJobData) -> Resul
     let admission = journal
         .admission("erc4337", &job.transaction_id)
         .await
-        .map_err(|_| invalid())?
+        .map_err(crate::recovery::from_journal_error)?
         .ok_or_else(invalid)?;
     let admitted: super::send::ExternalBundlerSendJobData =
         serde_json::from_value(admission.payload).map_err(|_| invalid())?;
@@ -189,7 +189,7 @@ async fn validate_durable_confirmation(job: &UserOpConfirmationJobData) -> Resul
             &durable_userop_identity(job),
         )
         .await
-        .map_err(|_| invalid())
+        .map_err(crate::recovery::from_journal_error)
 }
 
 fn userop_identity_matches(
@@ -309,10 +309,13 @@ where
         }
         validate_durable_confirmation(job_data)
             .await
-            .map_err(|error| UserOpConfirmationError::InternalError {
-                message: error.to_string(),
-            })
-            .map_err_nack(Some(retry_delay), RequeuePosition::Last)?;
+            .map_err(|error| {
+                crate::recovery::nack(error, retry_delay, |error| {
+                    UserOpConfirmationError::InternalError {
+                        message: error.to_string(),
+                    }
+                })
+            })?;
 
         // 1. Get Chain
         let chain = self
@@ -337,12 +340,15 @@ where
 
         crate::finality::check_continuity(&chain)
             .await
-            .map_err(|e| UserOpConfirmationError::ReceiptQueryFailed {
-                user_op_hash: job_data.user_op_hash.clone(),
-                message: "Finality checkpoint continuity unavailable".into(),
-                inner_error: Some(e),
-            })
-            .map_err_nack(Some(retry_delay), RequeuePosition::Last)?;
+            .map_err(|error| {
+                crate::recovery::nack(error, retry_delay, |error| {
+                    UserOpConfirmationError::ReceiptQueryFailed {
+                        user_op_hash: job_data.user_op_hash.clone(),
+                        message: "Finality checkpoint continuity unavailable".into(),
+                        inner_error: Some(error),
+                    }
+                })
+            })?;
 
         // 2. Query for User Operation Receipt
         let receipt_option = chain
@@ -405,12 +411,15 @@ where
         let finality =
             crate::finality::assess(&chain, receipt.receipt.transaction_hash, &canonical)
                 .await
-                .map_err(|e| UserOpConfirmationError::ReceiptQueryFailed {
-                    user_op_hash: job_data.user_op_hash.clone(),
-                    message: "Finality query failed".into(),
-                    inner_error: Some(e),
-                })
-                .map_err_nack(Some(retry_delay), RequeuePosition::Last)?;
+                .map_err(|error| {
+                    crate::recovery::nack(error, retry_delay, |error| {
+                        UserOpConfirmationError::ReceiptQueryFailed {
+                            user_op_hash: job_data.user_op_hash.clone(),
+                            message: "Finality query failed".into(),
+                            inner_error: Some(error),
+                        }
+                    })
+                })?;
         let FinalityAssessment::Finalized(finality) = finality else {
             return Err(UserOpConfirmationError::FinalityPending {
                 message: "Operation is not canonically settled under the configured policy".into(),
@@ -429,10 +438,14 @@ where
             journal
                 .record_terminal("erc4337", &job_data.transaction_id, proof)
                 .await
-                .map_err(|_| UserOpConfirmationError::InternalError {
-                    message: "Cannot persist verified operation settlement".into(),
-                })
-                .map_err_nack(Some(retry_delay), RequeuePosition::Last)?;
+                .map_err(crate::recovery::from_journal_error)
+                .map_err(|error| {
+                    crate::recovery::nack(error, retry_delay, |error| {
+                        UserOpConfirmationError::InternalError {
+                            message: error.to_string(),
+                        }
+                    })
+                })?;
         }
         if !receipt.success {
             return Err(UserOpConfirmationError::TransactionFailed {

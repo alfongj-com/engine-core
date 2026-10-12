@@ -246,13 +246,35 @@ async fn mutation_limit(
 
 async fn recovery_gate(request: Request, next: Next) -> Response {
     if is_mutation(&request) {
-        if engine_core::recovery::ensure_healthy().await.is_err() {
-            return (StatusCode::SERVICE_UNAVAILABLE, Json(json!({
-                "error": "RECOVERY_REQUIRED", "message": "Transaction writes and signing are paused; inspect the recovery journal"
-            }))).into_response();
+        if let Err(error) = engine_core::recovery::ensure_healthy().await {
+            return recovery_gate_failure(error);
         }
     }
     next.run(request).await
+}
+
+fn pending_recovery_response(body: serde_json::Value) -> Response {
+    let mut response = (StatusCode::SERVICE_UNAVAILABLE, Json(body)).into_response();
+    response.headers_mut().insert(
+        axum::http::header::RETRY_AFTER,
+        axum::http::HeaderValue::from_static("1"),
+    );
+    response
+}
+
+fn recovery_gate_failure(error: engine_core::recovery::RecoveryError) -> Response {
+    if matches!(
+        error,
+        engine_core::recovery::RecoveryError::PublicationPending
+    ) {
+        return pending_recovery_response(json!({
+            "error": "RECOVERY_PENDING", "retryable": true,
+            "message": "Checkpoint publication is pending; retry the same transaction ID"
+        }));
+    }
+    (StatusCode::SERVICE_UNAVAILABLE, Json(json!({
+        "error": "RECOVERY_REQUIRED", "message": "Transaction writes and signing are paused; inspect the recovery journal"
+    }))).into_response()
 }
 
 const MAX_CONCURRENT_HEALTH_CHECKS: usize = 4;
@@ -299,6 +321,9 @@ async fn bounded_recovery_health(
     });
     match tokio::time::timeout(timeout, &mut task).await {
         Ok(Ok(Ok(()))) => Json(json!({"status": "ok"})).into_response(),
+        Ok(Ok(Err(engine_core::recovery::RecoveryError::PublicationPending))) => {
+            pending_recovery_response(json!({"status": "recovery_pending", "retryable": true}))
+        }
         Ok(Ok(Err(_))) => (
             StatusCode::SERVICE_UNAVAILABLE,
             Json(json!({"status": "recovery_required"})),

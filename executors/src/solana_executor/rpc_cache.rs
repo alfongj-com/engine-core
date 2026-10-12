@@ -263,7 +263,10 @@ impl SolanaRpcCache {
 
                 // Create RPC client
                 Arc::new(RpcClient::new_sender(
-                    BoundedRpcSender::new(rpc_url).with_chain_id(chain_id),
+                    super::status_batcher::CoalescingRpcSender::new(
+                        BoundedRpcSender::new(rpc_url).with_chain_id(chain_id),
+                        MetricChain::Solana(chain_id),
+                    ),
                     RpcClientConfig::default(),
                 ))
             })
