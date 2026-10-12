@@ -17,7 +17,7 @@ Branch layout on October 12, 2026:
 | --- | --- |
 | `production-hardening` / [PR #1](https://github.com/alfongj-com/engine-core/pull/1) | Merged into `main` at `154b0ac`; preserved baseline. |
 | `crash-recovery-and-chain-fairness` / [PR #2](https://github.com/alfongj-com/engine-core/pull/2) | Merged into `main` at `918d7d9`: recoverable checkpoint publication, journal fairness and bounded Solana polling. |
-| `recover-retained-transactions` | Follow-up: exact signed Solana projection restoration and offline reattachment of pending checkpoint targets. See [implementation and validation status](WORK_IN_PROGRESS.md). |
+| `recover-retained-transactions` / [PR #3](https://github.com/alfongj-com/engine-core/pull/3) | Follow-up: exact signed Solana projection restoration and offline reattachment of pending checkpoint targets. See [implementation and validation status](WORK_IN_PROGRESS.md). |
 | `load-tests` | Historical reports and generated evidence, including failed runs. |
 
 The tools and a read-only copy of the evidence are now in

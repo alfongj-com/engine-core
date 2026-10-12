@@ -11,7 +11,7 @@ readiness.
 | Main checkout | `/Users/alfongj/Code/engine-core` |
 | PR #1 baseline | Merged into `main` at `154b0ac`; preserved branch `production-hardening` at `8741b88` |
 | PR #2 baseline | Merged into `main` at `918d7d9`; preserved branch `crash-recovery-and-chain-fairness` |
-| Current recovery follow-up | Branch `recover-retained-transactions`; implementation checkout `/Users/alfongj/Code/engine-core-review-stack` |
+| [PR #3](https://github.com/alfongj-com/engine-core/pull/3) | Branch `recover-retained-transactions`; implementation checkout `/Users/alfongj/Code/engine-core-review-stack` |
 | Full historical evidence in Git | Local and remote branch `load-tests`; use its current head for new evidence |
 | Browsable local evidence | `/Users/alfongj/.local/share/engine-core/evidence/load-tests-603c228/LOAD_TESTS.md` |
 | Installed test tools and checksum manifest | `/Users/alfongj/.local/share/engine-core/tools/` |
@@ -171,10 +171,13 @@ Run sequentially after the build succeeds:
 "$PYTHON_BIN" scripts/local_eoa_reorg.py --report "$ENGINE_TEST_REPORTS/reorg.json"
 "$PYTHON_BIN" scripts/local_eoa_reorg.py --revert --report "$ENGINE_TEST_REPORTS/reorg-revert.json"
 "$PYTHON_BIN" scripts/local_solana_recovery.py --solana-bin-dir "$SOLANA_BIN_DIR" \
-  --rust-log debug --report "$ENGINE_TEST_REPORTS/solana.json"
+  --keep-attempts-on-restart --rust-log debug --report "$ENGINE_TEST_REPORTS/solana.json"
 "$PYTHON_BIN" scripts/local_solana_recovery.py --solana-bin-dir "$SOLANA_BIN_DIR" \
   --drop-attempts-on-restart --rust-log debug --report "$ENGINE_TEST_REPORTS/solana-projection-loss.json"
 ```
+
+The Solana harness runs both variants by default; the commands above select
+each explicitly and keep separate reports.
 
 These check actual signed identities, duplicate admission, reverted execution,
 provisional reorgs, ambiguous responses and quarantine. A refusal to restart or
