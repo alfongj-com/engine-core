@@ -11,12 +11,13 @@ The repository is at **`/Users/alfongj/Code/engine-core`**. Start with
 checkouts, exact test commands, local recovery scenarios and a
 [copyable prompt for another agent](LOCAL_TESTING.md#prompt-for-another-local-agent).
 
-Branch layout after PR #1 merged on October 12, 2026:
+Branch layout on October 12, 2026:
 
 | Branch | Status |
 | --- | --- |
 | `production-hardening` / [PR #1](https://github.com/alfongj-com/engine-core/pull/1) | Merged into `main` at `154b0ac`; preserved baseline. |
-| `crash-recovery-and-chain-fairness` / [PR #2](https://github.com/alfongj-com/engine-core/pull/2) | Follow-up against `main`: recoverable checkpoint publication, journal fairness and bounded Solana polling. See [implementation and validation status](WORK_IN_PROGRESS.md). |
+| `crash-recovery-and-chain-fairness` / [PR #2](https://github.com/alfongj-com/engine-core/pull/2) | Merged into `main` at `918d7d9`: recoverable checkpoint publication, journal fairness and bounded Solana polling. |
+| `recover-retained-transactions` | Follow-up: exact signed Solana projection restoration and offline reattachment of pending checkpoint targets. See [implementation and validation status](WORK_IN_PROGRESS.md). |
 | `load-tests` | Historical reports and generated evidence, including failed runs. |
 
 The tools and a read-only copy of the evidence are now in
@@ -39,6 +40,7 @@ retained incident journals or the old Nitro VM for these tests.
 - [Configured RPCs and Solana recovery](docs/design/rpc-and-solana-recovery.md): setup, authentication, retry rules and operational limits.
 - [Finality and reorg handling](docs/design/finality-and-recovery.md): completion policies and chain assumptions.
 - [Redis disaster recovery](docs/design/redis-disaster-recovery.md): required independent journal, initialization, restart and quarantine procedures.
+- [Retained Solana recovery](docs/design/retained-solana-recovery.md): exact-wire restoration, durable retry budgets and schema upgrade.
 - [50 TPS review](docs/design/throughput-50tps.md): chain constraints, bounded queues, RPC costs and measurement scope.
 - [Confirmation identity and authentication](docs/design/confirmation-identity.md): durable attempt binding, legacy access tokens and disabled bundled EIP-7702.
 - [RPC test plan and prices](docs/design/rpc-test-plan.md): EVM testnets, Solana Devnet, request estimates, provider limits and first-round budget.

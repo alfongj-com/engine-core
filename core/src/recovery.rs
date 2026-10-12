@@ -28,9 +28,14 @@ struct SerialGuard<'a> {
 }
 
 static GLOBAL: OnceLock<Arc<RecoveryJournal>> = OnceLock::new();
-const SCHEMA: i64 = 2;
+const SCHEMA: i64 = 3;
 #[path = "recovery/projection.rs"]
 mod projection;
+#[path = "recovery/solana_projection.rs"]
+mod solana_projection;
+pub use solana_projection::{
+    MAX_SOLANA_RECOVERY_BROADCASTS, RetainedSolanaAttempt, SolanaRecoveryBroadcast,
+};
 // Additive physical indexes: no journal-schema/token or evidence changes.
 const HISTORY_INDEX_SQL: &str = "
     CREATE INDEX IF NOT EXISTS terminal_evidence_id_sequence ON terminal_evidence(id,sequence);
@@ -130,8 +135,10 @@ pub struct RecoveryStatus {
     pub attempts: u64,
     pub terminal: u64,
     pub quarantined: u64,
+    pub solana_recovery_intents: u64,
+    pub solana_recovery_broadcasts: u64,
 }
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq)]
 struct Control {
     schema: i64,
     deployment: String,
@@ -393,7 +400,7 @@ fn control(conn: &Connection) -> Result<Control> {
         [],
         |r| r.get(0),
     )?;
-    if !matches!(schema, 1 | SCHEMA) {
+    if !matches!(schema, 1 | 2 | SCHEMA) {
         return Err(RecoveryError::Invalid("unknown ledger schema"));
     }
     Ok(conn.query_row(
@@ -551,6 +558,7 @@ impl RecoveryJournal {
             CREATE TABLE recovery_events(sequence INTEGER PRIMARY KEY AUTOINCREMENT,event TEXT NOT NULL);")?;
         conn.execute_batch(HISTORY_INDEX_SQL)?;
         conn.execute_batch(projection::TABLE_SQL)?;
+        conn.execute_batch(solana_projection::TABLE_SQL)?;
         conn.execute(
             "INSERT INTO control VALUES(1,?, ?,1,0,?,?,1,'initializing')",
             params![SCHEMA, uuid::Uuid::new_v4().to_string(), namespace, run_id],
@@ -623,6 +631,10 @@ impl RecoveryJournal {
         // Retain ownership even if the caller cancels while SQLite is working.
         tokio::spawn(async move {
             let _guard = preparing.serial_guard("startup").await;
+            let schema_check = preparing
+                .db(|conn| solana_projection::validate_schema(conn))
+                .await;
+            preparing.storage_result(schema_check).await?;
             preparing.healthy_locked().await?;
             // Blocking work may outlive its async task during runtime shutdown.
             let ddl_owner = preparing.clone();
@@ -634,7 +646,7 @@ impl RecoveryJournal {
                 })
                 .await?;
             let current = preparing.healthy_locked().await?;
-            if current.schema == 1 {
+            if current.schema < SCHEMA {
                 let result = preparing.db(projection::migrate).await;
                 preparing.storage_result(result).await?;
                 #[cfg(test)]
@@ -1137,6 +1149,11 @@ impl RecoveryJournal {
                             "transaction is terminal or quarantined",
                         ));
                     }
+                    if kind == "solana" && solana_projection::recovery_mode(&tx, &id)? {
+                        return Err(RecoveryError::RecoveryRequired(
+                            "restored Solana intent requires a durable recovery broadcast claim",
+                        ));
+                    }
                     if kind != "solana" {
                         let chain = replay_key
                             .split(':')
@@ -1467,13 +1484,10 @@ impl RecoveryJournal {
     ) -> Result<RecoveryStatus> {
         let path = path.as_ref();
         let _owner = owner_lock(path, false)?;
-        let conn = connection(path, false)?;
+        let mut conn = connection(path, false)?;
         let c = control(&conn)?;
-        if projection::load(&conn, &c)?.is_some() {
-            return Err(RecoveryError::RecoveryRequired(
-                "pending checkpoint requires recovery, not reattach",
-            ));
-        }
+        solana_projection::validate_schema(&conn)?;
+        let pending = projection::load(&conn, &c)?;
         if c.namespace != namespace {
             return Err(RecoveryError::Invalid(
                 "configured namespace does not match ledger",
@@ -1500,16 +1514,52 @@ impl RecoveryJournal {
                 "reattach requires exact Redis checkpoint and primary role",
             ));
         }
-        conn.execute_batch("BEGIN IMMEDIATE")?;
-        conn.execute(
+        #[cfg(test)]
+        projection_tests::crash_cut("before_reattach_commit").await;
+        let tx = conn.transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)?;
+        if control(&tx)? != c || projection::load(&tx, &c)? != pending {
+            return Err(RecoveryError::RecoveryRequired(
+                "journal changed during reattach",
+            ));
+        }
+        if let Some(pending) = &pending {
+            // Only the exact target was observed above. Removing the witness and
+            // adopting its new Redis process are one FULL authority commit.
+            projection::remove_exact(&tx, pending)?;
+        }
+        tx.execute(
             "UPDATE control SET run_id=?,halted=0,reason=NULL WHERE singleton=1",
-            [run],
+            [&run],
         )?;
-        conn.execute(
-            "INSERT INTO recovery_events(event) VALUES('reattached exact persisted checkpoint')",
-            [],
+        tx.execute(
+            "INSERT INTO recovery_events(event) VALUES(?)",
+            [serde_json::json!({
+                "action": "reattach", "previous_run_id": c.run_id,
+                "run_id": run, "acknowledged_pending": pending,
+            })
+            .to_string()],
         )?;
-        conn.execute_batch("COMMIT")?;
+        commit_transaction(tx)?;
+        #[cfg(test)]
+        projection_tests::crash_cut("after_reattach_commit").await;
+        let failure = match observation(&redis, &c.key()).await {
+            Err(_) => Some("Redis continuity unavailable"),
+            Ok((_, _, marker)) if marker.as_deref() != Some(c.token().as_str()) => {
+                Some("Redis checkpoint mismatch")
+            }
+            Ok((_, role, _)) if role != "master" => Some("Redis primary role changed"),
+            Ok((observed_run, _, _)) if observed_run != run => Some("Redis process changed"),
+            Ok(_) => None,
+        };
+        if let Some(reason) = failure {
+            // Preserve any prior cause; post-commit uncertainty never reports a
+            // healthy reattach. Startup/send still perform fresh normal gates.
+            conn.execute(
+                "UPDATE control SET halted=1,reason=COALESCE(reason,?) WHERE singleton=1",
+                [reason],
+            )?;
+            return Err(RecoveryError::RecoveryRequired(reason));
+        }
         status(&conn)
     }
     /// Restore availability into an EMPTY NEW namespace. All possibly broadcast
@@ -1560,6 +1610,11 @@ impl RecoveryJournal {
         conn.execute_batch("BEGIN IMMEDIATE")?;
         if old.schema == 1 {
             conn.execute_batch(projection::TABLE_SQL)?;
+        }
+        if old.schema < SCHEMA {
+            conn.execute_batch(solana_projection::TABLE_SQL)?;
+        } else {
+            solana_projection::validate_schema(&conn)?;
         }
         conn.execute("DELETE FROM projection_pending", [])?;
         conn.execute(
@@ -1749,6 +1804,8 @@ fn status(conn: &Connection) -> Result<RecoveryStatus> {
         n.try_into().map_err(|_| RecoveryError::Storage)
     }
     let projection_pending = projection::load(conn, &c)?.is_some();
+    let (solana_recovery_intents, solana_recovery_broadcasts) =
+        solana_projection::counts(conn, c.schema)?;
     Ok(RecoveryStatus {
         schema: c.schema,
         projection_pending,
@@ -1768,6 +1825,8 @@ fn status(conn: &Connection) -> Result<RecoveryStatus> {
             conn,
             "SELECT count(*) FROM admissions WHERE state='quarantined'",
         )?,
+        solana_recovery_intents,
+        solana_recovery_broadcasts,
     })
 }
 /// Canonical keys prevent textual aliases from evading wallet+nonce uniqueness.

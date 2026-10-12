@@ -49,7 +49,7 @@ impl Serialize for Snapshot<'_> {
         &self,
         serializer: S,
     ) -> std::result::Result<S::Ok, S::Error> {
-        let mut map = serializer.serialize_map(Some(8))?;
+        let mut map = serializer.serialize_map(Some(9))?;
         map.serialize_entry("format", "engine-recovery-export-v1")?;
         map.serialize_entry("status", &status(self.0).map_err(S::Error::custom)?)?;
         let current = control(self.0).map_err(S::Error::custom)?;
@@ -92,6 +92,17 @@ impl Serialize for Snapshot<'_> {
                 kind: RowKind::HaltedChains,
             },
         )?;
+        if current.schema >= 3 {
+            map.serialize_entry(
+                "solana_recovery",
+                &Rows {
+                    conn: self.0,
+                    kind: RowKind::SolanaRecovery,
+                },
+            )?;
+        } else {
+            map.serialize_entry("solana_recovery", &Vec::<Value>::new())?;
+        }
         map.end()
     }
 }
@@ -103,6 +114,7 @@ enum RowKind {
     Terminal,
     Checkpoints,
     HaltedChains,
+    SolanaRecovery,
 }
 struct Rows<'a> {
     conn: &'a Connection,
@@ -126,6 +138,9 @@ impl Serialize for Rows<'_> {
                 "SELECT chain_id,evidence FROM chain_checkpoints ORDER BY chain_id"
             }
             RowKind::HaltedChains => "SELECT chain_id FROM chain_halts ORDER BY chain_id",
+            RowKind::SolanaRecovery => {
+                "SELECT id,attempt_digest,broadcasts,last_broadcast_at FROM solana_recovery ORDER BY id"
+            }
         };
         let mut statement = self
             .conn
@@ -175,6 +190,10 @@ fn export_row(row: &rusqlite::Row<'_>, kind: RowKind) -> Result<Value> {
             serde_json::json!([row.get::<_, String>(0)?, row.get::<_, String>(1)?])
         }
         RowKind::HaltedChains => serde_json::json!(row.get::<_, String>(0)?),
+        RowKind::SolanaRecovery => serde_json::json!({
+            "id": row.get::<_, String>(0)?, "attempt_digest": row.get::<_, String>(1)?,
+            "broadcasts": row.get::<_, u32>(2)?, "last_broadcast_at": u64::try_from(row.get::<_, i64>(3)?).map_err(|_| RecoveryError::Storage)?,
+        }),
     })
 }
 

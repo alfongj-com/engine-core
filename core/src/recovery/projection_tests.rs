@@ -37,6 +37,23 @@ async fn projection_crash_child() {
         return;
     };
     let path = PathBuf::from(path);
+    let action =
+        std::env::var("ENGINE_TEST_PROJECTION_ACTION").unwrap_or_else(|_| "broadcast".into());
+    if action == "reattach" {
+        RecoveryJournal::reattach(
+            &path,
+            &std::env::var("TEST_REDIS_URL").unwrap(),
+            RecoveryJournal::status(&path).unwrap().namespace,
+        )
+        .await
+        .unwrap();
+        fs::write(
+            path.with_file_name("caller-received-permission"),
+            b"admin-returned",
+        )
+        .unwrap();
+        return;
+    }
     let journal = RecoveryJournal::open(
         &path,
         &std::env::var("TEST_REDIS_URL").unwrap(),
@@ -44,10 +61,26 @@ async fn projection_crash_child() {
     )
     .await
     .unwrap();
-    journal
-        .before_broadcast("eoa", "crash-attempt", replay(), attempt())
-        .await
-        .unwrap();
+    if action == "solana_recovery" {
+        let payload: Value =
+            serde_json::from_slice(&fs::read(path.with_file_name("solana-job.json")).unwrap())
+                .unwrap();
+        let attempt: Value =
+            serde_json::from_slice(&fs::read(path.with_file_name("solana-attempt.json")).unwrap())
+                .unwrap();
+        assert!(matches!(
+            journal
+                .before_solana_recovery_broadcast("solana-recovery-cut", &payload, &attempt)
+                .await
+                .unwrap(),
+            SolanaRecoveryBroadcast::Granted { .. }
+        ));
+    } else {
+        journal
+            .before_broadcast("eoa", "crash-attempt", replay(), attempt())
+            .await
+            .unwrap();
+    }
     // This file stands for permission returned to the actual caller. None of
     // the requested cuts may reach it before the parent kills the process.
     fs::write(
@@ -58,6 +91,10 @@ async fn projection_crash_child() {
 }
 
 async fn kill_at(f: &Fixture, point: &str) {
+    kill_action_at(f, point, "broadcast").await;
+}
+
+pub(super) async fn kill_action_at(f: &Fixture, point: &str, action: &str) {
     let marker = f.path.with_file_name("phase-reached");
     let mut child = Command::new(std::env::current_exe().unwrap())
         .args([
@@ -68,6 +105,7 @@ async fn kill_at(f: &Fixture, point: &str) {
         ])
         .env("ENGINE_TEST_PROJECTION_PATH", &f.path)
         .env("ENGINE_TEST_PROJECTION_CUT", point)
+        .env("ENGINE_TEST_PROJECTION_ACTION", action)
         .env("ENGINE_TEST_PROJECTION_MARKER", &marker)
         .env("TEST_REDIS_URL", &f.url)
         .stdout(Stdio::null())
@@ -224,11 +262,10 @@ async fn canceled_blocking_mutation_keeps_exclusive_process_ownership() {
     f.cleanup(&[]).await;
 }
 
-// The fixture has the exact schema1 layout used by the previous binary. Only
-// the schema2 table/token are removed; authority, bindings and history remain.
+// Restore the schema1 layout; authority, bindings and history remain.
 async fn make_legacy(f: &Fixture) {
     let conn = connection(&f.path, false).unwrap();
-    conn.execute_batch("BEGIN IMMEDIATE; DROP TABLE projection_pending; UPDATE control SET schema_version=1; COMMIT;").unwrap();
+    conn.execute_batch("BEGIN IMMEDIATE; DROP TABLE solana_recovery; DROP TABLE projection_pending; UPDATE control SET schema_version=1; COMMIT;").unwrap();
     let current = control(&conn).unwrap();
     let mut redis = redis_connection(&f.url).await.unwrap();
     let _: () = redis.set(current.key(), current.token()).await.unwrap();
@@ -272,7 +309,7 @@ async fn legacy_migration_crash_cuts_preserve_history_and_complete_exact_transit
         assert_eq!(legacy["projection_pending"], Value::Null);
         kill_at(&f, point).await;
         let after = RecoveryJournal::status(&f.path).unwrap();
-        assert_eq!(after.schema, 2);
+        assert_eq!(after.schema, SCHEMA);
         assert_eq!(after.checkpoint, before.checkpoint);
         assert_eq!(after.projection_pending, point != "after_ack");
         let j = reopen(&f).await.unwrap();
@@ -436,8 +473,8 @@ async fn malformed_pending_and_ack_storage_failure_never_grant_permission() {
 
 #[tokio::test]
 #[ignore = "requires disposable Redis in TEST_REDIS_URL"]
-async fn pending_reattach_is_refused_and_explicit_recovery_quarantines_attempts() {
-    for applied in [false, true] {
+async fn pending_predecessor_requires_explicit_recovery_and_quarantines_attempts() {
+    {
         let f = Fixture::fresh();
         f.initialize().await;
         let j = f.open().await;
@@ -448,14 +485,6 @@ async fn pending_reattach_is_refused_and_explicit_recovery_quarantines_attempts(
         let old = stage_pending(&j).await;
         let mut target = old.clone();
         target.checkpoint += 1;
-        if applied {
-            let _: () = j
-                .redis
-                .clone()
-                .set(target.key(), target.token())
-                .await
-                .unwrap();
-        }
         drop(j);
         assert!(
             RecoveryJournal::reattach(&f.path, &f.url, old.namespace.clone())
@@ -474,7 +503,7 @@ async fn pending_reattach_is_refused_and_explicit_recovery_quarantines_attempts(
         let recovered = RecoveryJournal::recover(&f.path, &f.url, Some(namespace.clone()))
             .await
             .unwrap();
-        assert_eq!(recovered.schema, 2);
+        assert_eq!(recovered.schema, SCHEMA);
         assert_eq!(recovered.epoch, old.epoch + 1);
         assert!(!recovered.projection_pending);
         assert_eq!(recovered.quarantined, 1);
@@ -491,6 +520,9 @@ async fn pending_reattach_is_refused_and_explicit_recovery_quarantines_attempts(
 
 #[path = "projection_transport_tests.rs"]
 mod transport;
+
+#[path = "projection_reattach_tests.rs"]
+mod reattach;
 
 #[tokio::test]
 #[ignore = "requires disposable Redis in TEST_REDIS_URL"]

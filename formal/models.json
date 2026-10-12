@@ -436,5 +436,167 @@
     "config": "DisasterRecoveryProjection_uncertain_witness.cfg",
     "expected": "invariant:UncertainRecoveryNotReached",
     "kind": "witness"
+  },
+  {
+    "module": "DisasterRecoveryProjection",
+    "config": "DisasterRecoveryProjection_reattach_predecessor.cfg",
+    "expected": "invariant:ReattachRequiresExactTarget",
+    "kind": "fault"
+  },
+  {
+    "module": "DisasterRecoveryProjection",
+    "config": "DisasterRecoveryProjection_reattach_missing.cfg",
+    "expected": "invariant:ReattachRequiresExactTarget",
+    "kind": "fault"
+  },
+  {
+    "module": "DisasterRecoveryProjection",
+    "config": "DisasterRecoveryProjection_reattach_foreign.cfg",
+    "expected": "invariant:ReattachRequiresExactTarget",
+    "kind": "fault"
+  },
+  {
+    "module": "DisasterRecoveryProjection",
+    "config": "DisasterRecoveryProjection_reattach_partial.cfg",
+    "expected": "invariant:PendingMatchesAuthority",
+    "kind": "fault"
+  },
+  {
+    "module": "DisasterRecoveryProjection",
+    "config": "DisasterRecoveryProjection_reattach_revived.cfg",
+    "expected": "invariant:NoResurrectedCaller",
+    "kind": "fault"
+  },
+  {
+    "module": "DisasterRecoveryProjection",
+    "config": "DisasterRecoveryProjection_reattach_halt.cfg",
+    "expected": "invariant:ReattachPreservesHalt",
+    "kind": "fault"
+  },
+  {
+    "module": "DisasterRecoveryProjection",
+    "config": "DisasterRecoveryProjection_reattach_pending_witness.cfg",
+    "expected": "invariant:PendingReattachNotReached",
+    "kind": "witness"
+  },
+  {
+    "module": "DisasterRecoveryProjection",
+    "config": "DisasterRecoveryProjection_reattach_restart_witness.cfg",
+    "expected": "invariant:RestartedPendingReattachNotReached",
+    "kind": "witness"
+  },
+  {
+    "module": "DisasterRecoveryProjection",
+    "config": "DisasterRecoveryProjection_schema2.cfg",
+    "expected": "pass",
+    "kind": "positive"
+  },
+  {
+    "module": "DisasterRecoveryProjection",
+    "config": "DisasterRecoveryProjection_schema2_pending.cfg",
+    "expected": "pass",
+    "kind": "positive"
+  },
+  {
+    "module": "SolanaRetainedAttempt",
+    "config": "SolanaRetainedAttempt.cfg",
+    "expected": "pass",
+    "kind": "positive"
+  },
+  {
+    "module": "SolanaRetainedAttempt",
+    "config": "SolanaRetainedAttempt_limit20.cfg",
+    "expected": "pass",
+    "kind": "positive"
+  },
+  {
+    "module": "SolanaRetainedAttempt",
+    "config": "SolanaRetainedAttempt_reset_budget.cfg",
+    "expected": "invariant:RecoveryAllowanceBound",
+    "kind": "fault"
+  },
+  {
+    "module": "SolanaRetainedAttempt",
+    "config": "SolanaRetainedAttempt_ignore_mode.cfg",
+    "expected": "invariant:RecoveryModeFencesOriginalGrants",
+    "kind": "fault"
+  },
+  {
+    "module": "SolanaRetainedAttempt",
+    "config": "SolanaRetainedAttempt_substitute.cfg",
+    "expected": "invariant:ExactJournalIdentity",
+    "kind": "fault"
+  },
+  {
+    "module": "SolanaRetainedAttempt",
+    "config": "SolanaRetainedAttempt_overwrite.cfg",
+    "expected": "invariant:ConflictingProjectionNotOverwritten",
+    "kind": "fault"
+  },
+  {
+    "module": "SolanaRetainedAttempt",
+    "config": "SolanaRetainedAttempt_stale_owner.cfg",
+    "expected": "invariant:RestoreOwned",
+    "kind": "fault"
+  },
+  {
+    "module": "SolanaRetainedAttempt",
+    "config": "SolanaRetainedAttempt_restored_permission.cfg",
+    "expected": "invariant:EverySendHasFreshGrant",
+    "kind": "fault"
+  },
+  {
+    "module": "SolanaRetainedAttempt",
+    "config": "SolanaRetainedAttempt_pre_first_send_witness.cfg",
+    "expected": "invariant:PreFirstSendRecoveryNotReached",
+    "kind": "witness"
+  },
+  {
+    "module": "SolanaRetainedAttempt",
+    "config": "SolanaRetainedAttempt_expired_witness.cfg",
+    "expected": "invariant:ExpiredRestoreNotReached",
+    "kind": "witness"
+  },
+  {
+    "module": "SolanaRetainedAttempt",
+    "config": "SolanaRetainedAttempt_lost_grant_witness.cfg",
+    "expected": "invariant:LostGrantRecoveryNotReached",
+    "kind": "witness"
+  },
+  {
+    "module": "SolanaRetainedAttempt",
+    "config": "SolanaRetainedAttempt_repeated_restore_witness.cfg",
+    "expected": "invariant:RepeatedRestoreNotReached",
+    "kind": "witness"
+  },
+  {
+    "module": "SolanaRetainedAttempt",
+    "config": "SolanaRetainedAttempt_limit20_witness.cfg",
+    "expected": "invariant:BothAllowancesNotReached",
+    "kind": "witness"
+  },
+  {
+    "module": "DisasterRecoveryProjection",
+    "config": "DisasterRecoveryProjection_schema2_migration_pending.cfg",
+    "expected": "pass",
+    "kind": "positive"
+  },
+  {
+    "module": "SolanaRetainedAttempt",
+    "config": "SolanaRetainedAttempt_original_counter_boundary.cfg",
+    "expected": "invariant:OriginalAllowanceBound",
+    "kind": "boundary"
+  },
+  {
+    "module": "DisasterRecoveryProjection",
+    "config": "DisasterRecoveryProjection_reattach_retry.cfg",
+    "expected": "pass",
+    "kind": "positive"
+  },
+  {
+    "module": "DisasterRecoveryProjection",
+    "config": "DisasterRecoveryProjection_reattach_retry_witness.cfg",
+    "expected": "invariant:CommittedReattachRetryNotReached",
+    "kind": "witness"
   }
 ]

@@ -1,6 +1,6 @@
 # Recoverable journal checkpoints and measured scheduling
 
-**Status: implemented in PR #2. Validation and measured results are recorded in the PR handoff.**
+**Status: checkpoint protocol implemented in PR #2; retained-attempt recovery and offline pending-target reattachment extend it. Validation records identify the tested revision.**
 
 ## Scope
 
@@ -34,14 +34,17 @@ recreate the crashed caller's send permission or enqueue a request. Normal
 original-ID retry and retained executor state govern further execution.
 After acknowledgement, the predecessor is invalid and a rollback still halts.
 Existing manual, storage and contradictory-evidence halts remain authoritative.
-Redis restart with an unresolved pending update requires explicit recovery.
+Redis restart with an unresolved pending update requires an explicit offline
+decision. Reattach may acknowledge only the exact recorded target on a writable
+primary; it cannot adopt the predecessor or return the crashed caller's permission.
 
-Schema 2 prevents old binaries from bypassing acknowledgement. A schema-1 journal
-migrates only after exact healthy continuity is observed; the schema/token change
-itself has a durable pending transition. A pre-existing schema-1 mismatch remains
-stopped. Blocking SQLite tasks retain the OS ownership lock through cancellation.
-Migration is automatic and one-way; see the [maintenance and rollback procedure](redis-disaster-recovery.md#schema-upgrade-and-rollback)
-before opening a production schema-1 journal.
+Schema 2 introduced acknowledgement; schema 3 additionally fences binaries that
+do not enforce retained Solana recovery budgets. A schema-1 or schema-2 journal
+migrates only after healthy continuity, including completion of a valid schema-2
+pending update. The schema/token change itself has a durable pending transition.
+Unrecorded mismatches remain stopped. Blocking SQLite tasks retain the OS ownership
+lock through cancellation. Migration is automatic and one-way; see the
+[maintenance and rollback procedure](redis-disaster-recovery.md#schema-upgrade-and-rollback).
 
 The marker does not hash every Redis key. Retrying an unacknowledged transition
 does not prove preservation of every queue mutation; that projection limitation
@@ -51,18 +54,22 @@ finality evidence and all send gates remain required.
 ## Checkpoint repair versus transaction recovery
 
 `PublicationPending` retries the same work after two seconds; all identity and
-send gates run again. Repairing the marker does not reconstruct executor data:
+send gates run again. Marker repair and executor reconstruction are separate:
 
 - **First Solana attempt:** `before_broadcast` commits the signed wire and binding
   to SQLite before the worker stores its Redis attempt. A crash or lost publication
-  response in that interval can leave the binding without a Redis attempt. Health
-  repair can finish the checkpoint, but the job then parks instead of signing again.
-  Original-ID resubmission does not rebuild that record. Operator reconciliation
-  is required; this PR adds no automatic reconstruction or resolution command.
-- **Terminal Solana update:** if the signed Redis attempt remains, a lost terminal
-  publication response requeues without cleanup. After checkpoint repair, the worker
-  can verify the same signature and finalized receipt again, then complete through
-  the existing queue ownership fence. It creates no new signature.
+  response in that interval can leave the binding without a Redis attempt. After
+  checkpoint repair, the worker validates and restores the exact retained bytes
+  under its storage lock, activates a durable recovery-send budget, and reconciles
+  that signature. It does not re-sign or recreate missing queue jobs.
+- **Terminal Solana update:** a lost terminal publication response requeues without
+  cleanup. A surviving or exactly restored signed attempt can verify the same
+  signature and finalized receipt again, then complete through the existing queue
+  ownership fence. It cannot acquire permission to send a terminal transaction.
+
+See [retained Solana recovery](retained-solana-recovery.md) for its additional
+schema-3 budget, rejected cases and limits. A quarantined unknown transaction is
+not made executable by either checkpoint repair or attempt restoration.
 
 EOA confirmation now nacks continuity failures instead of permanently failing the
 job. The same request retries through the health and identity gates; a durable

@@ -1,6 +1,6 @@
 # Recovery authority and restartable Redis publication
 
-**Scope: schema2 runtime and finite models. See the [PR handoff](../WORK_IN_PROGRESS.md) for validation results.**
+**Scope: schema3 runtime and finite models. See the [PR handoff](../WORK_IN_PROGRESS.md) for validation results.**
 
 ## Claim and limits
 
@@ -22,11 +22,13 @@ Neither is a Rust refinement proof, a composition theorem, a throughput result,
 
 ## Protocol boundary
 
-A schema2 authority mutation writes its new checkpoint and **one durable pending
+A schema3 authority mutation writes its new checkpoint and **one durable pending
 transition in the same FULL SQLite transaction**. The record binds the exact
 previous token, target token, Redis key and Redis process ID. Its target must
 match current authority. Its predecessor is either the immediately preceding
-schema2 checkpoint or the recorded schema1→schema2 migration at the same counter.
+same-schema checkpoint or a recorded schema1/2→schema3 migration at the same
+counter. Validated pending schema2 writes, including schema1→2 migration, retain
+their original schema until acknowledged.
 A numeric checkpoint gap alone is never evidence of an interrupted transition.
 
 The health gate accepts only the recorded predecessor or target from the same
@@ -37,7 +39,8 @@ CAS response remains blocked and retryable; it is not evidence that the CAS
 failed. Positive token, process or role contradictions and existing durable
 halts remain fenced.
 
-Restart may finish publication from either recorded token. It does not enqueue
+An Engine restart under the same Redis process may finish publication from either
+recorded token. It does not enqueue
 work, retransmit a wire, or recreate a dead caller's permission. Existing jobs
 or original-ID retries follow the ordinary admission and broadcast checks.
 Cancellation has the same distinction: durable pending state survives; local
@@ -54,20 +57,26 @@ fence that fault; they cannot retract bytes already delivered.
 
 ## Migration and explicit recovery
 
-Schema1 migrates only after an exact healthy observation under exclusive
-ownership. The schema bump and its schema1→schema2 pending transition are atomic.
-Old binaries reject schema2, including the interval where Redis has the target
-but SQL has not acknowledged it. A schema1 mismatch or existing halt is not
+Schema1 and schema2 migrate only after an exact healthy observation under
+exclusive ownership. An existing validated schema2 pending write must finish
+before migration. The schema3 bump and its exact old-schema→schema3 transition
+are atomic. Old binaries must reject schema3: they cannot enforce its durable
+Solana recovery mode and grant count. An older schema mismatch or halt is never
 retroactively reclassified as a pending transition.
 
-Redis process restart still needs explicit offline handling. Reattach rejects
-**any pending record**, even when Redis holds its target. A completed exact
-checkpoint can use the existing reattach policy. Explicit fresh-namespace
-recovery advances the epoch, quarantines attempted nonterminal identities,
-retains their bindings and evidence, and clears pending atomically with that
-state change. Recovery publishes its new marker separately; an interrupted
-recovery remains halted. It does not restore automatic execution of quarantined
-work.
+Redis process restart requires explicit offline handling. Reattach accepts a
+validated pending record **only when the current primary already holds its exact
+target**. It never publishes the predecessor or accepts a missing, foreign or
+wrong-epoch token. One FULL SQLite transaction acknowledges the exact pending
+record, adopts the observed Redis process ID, clears only permitted continuity
+halts, and records the action. A crash cannot leave adoption and acknowledgement
+half-committed. A fresh observation follows the commit; startup also checks
+continuity. No old caller, queue entry, signature or send permission is revived.
+
+Explicit fresh-namespace recovery remains separate: it advances the epoch,
+quarantines attempted nonterminal identities, retains bindings, wire evidence
+and Solana recovery counts, and clears pending with that state change. It
+publishes the new marker separately; interrupted recovery stays halted.
 
 ## Reviewed source correspondence
 
@@ -77,11 +86,11 @@ work.
 | `Mirror`; projection `Publish`, `Observe` | Exact Redis CAS plus a fresh process/role/token observation; uncertainty releases no new permission. |
 | `Acknowledge`, `ReturnPermission` | Compare-delete the exact pending record in FULL SQLite before returning success. |
 | `Crash`, `Cancel`, `Start` | Pending survives; caller and unissued permits do not. Actual blocking tasks must retain the OS owner through cancellation. |
-| `Migrate` | Healthy schema1 observation, atomic schema bump and recorded migration transition. |
+| `Migrate` | Healthy schema1/2 observation, completion of older pending state, atomic schema3 bump and recorded migration transition. |
 | `Send`, `Execute` | An already-authorized call or chain effect may occur after a later halt or process crash. |
 | `Enqueue` | Original-ID retry uses the persisted payload/generated identity; terminal/quarantined work is not recreated. |
 | `RedisUnavailable` | Observation failure retains its first cause; reattachment still requires an exact current marker and exclusive ownership. |
-| `Reattach`, `RecoverBegin/Publish/Finish` | Exact completed-checkpoint reattachment or explicit new-epoch quarantine; never silent process adoption. |
+| `ReattachObserve/Commit/Finish`, `RecoverBegin/Publish/Finish` | Exact-target offline acknowledgement plus process adoption, or explicit new-epoch quarantine; never silent online adoption or revived permission. |
 
 The identity model keeps operation metadata beside pending as specification
 bookkeeping to associate the living caller with its eventual return. Runtime
@@ -101,14 +110,19 @@ attempt membership, retained evidence, caller epoch, terminal exclusion,
 original retry payload, at most one business effect per intent, attribution and
 recovery quarantine. Existing fault/boundary/witness configurations remain.
 
-The focused projection model has one exclusive owner, two authority mutations,
-two schemas, one epoch change, two Redis process IDs and primary/replica roles.
-There are no state-space filters or fairness assumptions. A permanently failed
+The main projection configuration has one exclusive owner, two authority
+mutations, three schemas, one epoch change, one explicit offline reattach
+invocation, two Redis process IDs and primary/replica roles. Migration-focused
+positives use a one-write bound; a pre-existing same-schema write consumes that
+bound. The main schema3 case separately explores two new authority writes.
+A separate one-write configuration permits two offline reattach invocations
+and witnesses a retry after the first acknowledgement committed but its caller
+crashed. There are no state-space filters or fairness assumptions. A permanently failed
 provider or halted state may remain blocked forever.
 
 | New configuration | Required outcome |
 | --- | --- |
-| `DisasterRecoveryProjection`, `_legacy` | Exhaustive pass for the declared finite bounds. |
+| `DisasterRecoveryProjection`, `_legacy`, `_schema2`, `_schema2_pending`, `_schema2_migration_pending` | Exhaustive pass for the declared finite bounds. |
 | `_early_permission` | `PermissionRequiresAcknowledgement` catches permission returned before SQL acknowledgement. |
 | `_lost_pending` | `PendingRetained` catches deleting durable pending on a process crash. |
 | `_forgiven_rollback` | `NoUnwitnessedRepair` catches repairing completed history without a pending witness. |
@@ -117,6 +131,11 @@ provider or halted state may remain blocked forever.
 | `_clear_halt` | `NoArbitraryHaltClear` catches automatically clearing an existing durable halt. |
 | `_old_marker_witness`, `_new_marker_witness` | Named reachability violations demonstrate completed restart repair from each exact token. |
 | `_migration_witness`, `_uncertain_witness` | Named reachability violations demonstrate migration restart and recovery after uncertain transport. |
+| `_reattach_predecessor`, `_reattach_missing`, `_reattach_foreign` | `ReattachRequiresExactTarget` rejects acknowledgement without the exact observed target. |
+| `_reattach_partial` | `PendingMatchesAuthority` catches adopting a new process ID without atomically acknowledging its old pending record. |
+| `_reattach_revived`, `_reattach_halt` | Catch reviving a dead caller or clearing an unrelated durable halt during offline reattach. |
+| `_reattach_pending_witness`, `_reattach_restart_witness` | Show completed exact-target reattachment, including a changed Redis process ID. |
+| `_reattach_retry`, `_reattach_retry_witness` | Two-invocation positive and reachability case: retry after committed acknowledgement and caller crash. |
 
 Witness counterexamples show a path exists; they are **not universal liveness
 proofs**. Named fault counterexamples must fail their specified invariant;
@@ -156,6 +175,10 @@ not properties of the checkpoint model.
 The server's final drain also permanently closes registration, so a detached
 probe that wakes after the barrier cannot begin new authority work. Rejected
 registrations perform no modeled authority transition.
+
+The [retained Solana model](retained-solana.md) additionally separates exact-wire
+restoration, durable recovery mode, and cumulative recovered-send allowance.
+It is not a proof of model composition.
 
 `RepairMarker` remains an arbitrary marker write in the identity model. If
 unavailability was the first halt cause, manually restoring just the marker can

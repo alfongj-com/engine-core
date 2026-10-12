@@ -159,9 +159,10 @@ DetectMismatch ==
     /\ s' = [s EXCEPT !.halt = IF s.marker # Current THEN "continuity" ELSE "restart"]
 
 Reattach ==
-    /\ s.owners = {} /\ ~s.offlineAlive /\ s.pending = None
+    /\ s.owners = {} /\ ~s.offlineAlive
     /\ s.halt \in {None, "restart", "unavailable"} /\ s.marker = Current
-    /\ s' = [s EXCEPT !.expectedRun = s.run, !.halt = None]
+    /\ s' = [s EXCEPT !.expectedRun = s.run, !.halt = None,
+        !.pending = None, !.callerAlive = FALSE, !.returning = None]
 
 RecoverBegin ==
     /\ (s.owners = {} /\ ~s.offlineAlive) \/ FaultSharedLock

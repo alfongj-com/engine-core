@@ -23,7 +23,7 @@ decision, not a claim that Lean cannot verify systems code.
 | Queue ownership | Stale leases cannot commit; aborted EXEC is not success; physical WATCH sessions cannot interfere; ID reuse preserves live data and cancellation | [Queue model and Redis regressions](queue.md) |
 | EVM recovery | One intent per active nonce; crash retains attempts; absent receipts cannot cause a second execution; reverted receipt is failure | [EVM model](eoa.md) |
 | EVM allocator cleanup | Old retained receipts cannot rewind allocation below observed consumed count; outstanding reservations stay below the next nonce | [Allocator model](nonce-allocator.md) |
-| Solana recovery | Persist before send; retries keep signed identity; expiry/absence preserves evidence; bounded send/check budgets; fenced terminal cleanup | [Solana model](solana.md) |
+| Solana recovery | Persist before send; retries keep signed identity; expiry/absence preserves evidence; fenced cleanup; exact journal-wire restoration with cumulative recovery grants | [Solana worker model](solana.md), [retained-attempt model](retained-solana.md) |
 | Redis admission projection | Immutable request per retained Redis ID; atomic identity/queue admission; active identity survives cancellation; finite Redis retention boundary | [Admission model](admission.md); the server's independent journal adds longer-lived identity protection |
 | Finality | Provisional inclusion, orphaning and re-inclusion; both success and revert wait for canonical finality evidence | [Finality model](finality.md); honest RPC/stable consensus assumptions, explicit depth and catastrophic boundaries |
 | Depth checkpoint continuity | A shallow tip reorg above the qualified boundary must not halt; a qualified-boundary contradiction must halt | [Depth checkpoint model](depth-checkpoint.md); one checkpoint, explicit rollback boundary |
@@ -42,8 +42,8 @@ authoritative local ledger is retained**. Rolling back/copying that authority
 remains an explicit failure boundary. These separate models are not a
 machine-checked proof of their composition.
 
-The manifest contains **73 configurations**, including 12 focused checkpoint
-publication cases. Each positive configuration exhausts its declared finite
+The manifest contains **100 configurations**, including 25 focused checkpoint
+publication cases and 14 retained-Solana cases. Each positive configuration exhausts its declared finite
 bounds; each fault or reachability case must produce its named counterexample.
 [Historical evidence](https://github.com/alfongj-com/engine-core/blob/load-tests/formal/evidence/README.md)
 retains earlier source scopes. The [PR handoff](../WORK_IN_PROGRESS.md) identifies

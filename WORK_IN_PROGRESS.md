@@ -1,88 +1,60 @@
-# PR #2 status
+# Retained transaction recovery
 
-Updated October 12, 2026. [PR #1](https://github.com/alfongj-com/engine-core/pull/1)
-merged into `main`; [PR #2](https://github.com/alfongj-com/engine-core/pull/2)
-implements the follow-up against `main`.
+Updated October 12, 2026. PRs [#1](https://github.com/alfongj-com/engine-core/pull/1)
+and [#2](https://github.com/alfongj-com/engine-core/pull/2) are merged into `main`.
+This follow-up is on `recover-retained-transactions`, based on `918d7d9`.
 
-## Delivered
+## Scope
 
-- **Crash-recoverable checkpoints.** Schema 2 records the exact journal-to-Redis
-  transition in the authority commit. Startup or health repair can finish it after
-  a crash or lost reply. A second FULL SQLite commit acknowledges publication
-  before permission returns; a fresh observation still rejects rollback afterward.
-- **Unchanged safety boundaries.** Wrong tokens, Redis process/role changes,
-  corrupt records and durable halts stop execution. Healthy schema-1 journals
-  migrate under exclusive ownership. Old binaries reject schema 2; status/export
-  stay read-only. Missing signed Redis attempts still require reconciliation.
-- **Shared-chain scheduling.** One contender per chain reaches the journal mutex.
-  Health checks take their chain lane before shared health capacity, preventing a
-  busy chain's waiting polls from reserving all 32 slots. Metrics separate lane,
-  capacity, mutex, SQLite and Redis waits.
-- **Bounded Solana polling.** Eligible history lookups coalesce per cached
-  cluster/endpoint, with at most 256 outstanding polls, 32 signatures per batch,
-  four HTTP batches and a 5 ms collection window. Invalid entries fail only their
-  matching callers; a config switch disables coalescing. Finalized receipt and
-  signed-identity checks remain.
-- **Shutdown under Redis outage.** Stalled queue acquisition is cancellable.
-  Already-running handlers and owned journal repairs still drain before exit.
+- Restore missing Solana Redis attempts from the exact signed journal record.
+  Keep the same admitted payload, signer, signature and blockhash; preserve storage
+  ownership and finalized-receipt checks. Conflicting data remains blocked.
+- Count recovered sends durably so repeated Redis loss cannot reset the allowance.
+  Schema 3 rejects old binaries that lack this rule. Normal transaction execution
+  gains no additional durable commit.
+- Let offline reattach acknowledge a pending update only when Redis contains its
+  exact recorded target on a writable primary. Update process identity and
+  acknowledge atomically; a post-commit observation must also pass. Retain the
+  namespace, epoch, replay bindings and all unrelated safety halts.
 
-## Review follow-up
+The [Solana design](docs/design/retained-solana-recovery.md) and
+[restart/upgrade runbook](docs/design/redis-disaster-recovery.md) describe the
+protocol and operator actions. Recovery budget exhaustion, expiry and absent
+history never authorize a replacement transaction.
 
-Unscoped HTTP/health checks have separate bounded scheduling capacity; 4337 and
-7702 workers now carry their chain scope. Idle EVM lanes can be reclaimed without
-splitting live overflow work across lanes. Registration fails promptly when a
-shutdown drain is waiting, avoiding the health/mutation lock-order deadlock.
-The final shutdown barrier permanently closes registration, including delayed
-health probes that outlive their HTTP requests.
-Queue and executor metrics initialize before any startup work.
+## Validation plan
 
-The [restart and rollback runbook](docs/design/redis-disaster-recovery.md#redis-restart-with-intact-data)
-now covers pending transitions after Redis restart and one-way schema migration.
-Exact-target pending reattachment remains refused; this is a documented recovery
-limit, not a relaxed fence. Earlier measurements below predate these review fixes;
-their source hashes identify what was measured.
+Implementation and validation are in progress. Before review, require:
 
-The [review validation record](https://github.com/alfongj-com/engine-core/blob/load-tests/docs/baselines/pr2-review-2026-10-12/README.md)
-keeps new tests, load and crash results separate from the original PR measurements.
+- Workspace, real Redis, HTTP admission and queue regression suites.
+- First-send gap, repeated projection loss, budget exhaustion, stale-lock,
+  cancellation, corruption, terminal and migration regressions.
+- Offline reattach crash cuts and lost replies; reject predecessor, missing,
+  foreign and replica observations, and prohibited halts.
+- Actual Agave process restart with missing Redis attempts: same signed bytes,
+  exact effects and no new sends after terminal deduplication.
+- Full bounded protocol models, deliberate fault counterexamples and fee proofs.
+- Matched shared-chain load and Engine-crash runs against the prior binary.
 
-## Validation and measurements
+A fresh baseline run completed all 9,600 transactions at 8/8/16 TPS and drained
+all queues. Candidate results are not yet available. Historical schema-2 results
+remain in the [PR #2 evidence](https://github.com/alfongj-com/engine-core/blob/load-tests/docs/baselines/pr2-review-2026-10-12/README.md);
+these finite runs did not establish a sustainable maximum.
 
-[Versioned results and failures](https://github.com/alfongj-com/engine-core/blob/load-tests/docs/baselines/pr2-2026-10-12/README.md)
-are kept on `load-tests`, outside this implementation PR. They include binary/source
-provenance, baseline comparisons, latency/backlog, exact effect reconciliation,
-model outcomes and CI links. The PR checks qualify their own source commit.
+Generated evidence belongs on `load-tests`, outside this implementation PR.
+Private runs for this follow-up are under
+`/Users/alfongj/.local/share/engine-core/runs/pr3-retained-recovery-oct12/`.
+All fixtures use disposable local Redis, Anvil and Agave; no paid RPC is needed.
 
-The local checks cover the workspace suite, 49 journal regressions, 73 executor
-regressions, 36 queue regressions, HTTP/admission tests, real HTTP batching, process
-crashes, Redis data loss, reorgs and the live-outage shutdown regression. The formal
-suite has 73 bounded configurations, including deliberate faults that must produce
-specific counterexamples; fee arithmetic is checked separately with Kani.
+## Remaining limits
 
-The schema-2 acknowledgement adds real disk cost. The first corrected 10/10/20 TPS
-shared run passed its finite-run gates, but the journal was nearly fully occupied
-and Solana latency increased. This does **not** establish 50 TPS per chain or a
-sustainable maximum. See the evidence for repeats, overload and chaos outcomes;
-no baseline capacity figure transfers automatically to the new protocol.
+One process on one Unix host must retain the latest authoritative journal.
+Restoring a signed attempt does not reconstruct lost queue/admission records,
+release quarantined unknown effects, or recover lost/rolled-back authority.
+A pending predecessor after Redis restart remains ineligible for reattach.
 
-All new experiments use disposable local Redis, Anvil and Agave fixtures. No paid
-RPC calls are needed. Raw reports and fixture data stay private under
-`/Users/alfongj/.local/share/engine-core/runs/pr2-oct12/`.
+Production storage, public RPC capacity, real rollup settlement, sustained
+throughput and KMS integration still require qualification. No whole-service
+proof or 50 TPS-per-chain guarantee is claimed.
 
-## Remaining production work
-
-- Qualify sustained capacity on the intended storage, RPC and actual chain stack.
-  Further journal throughput work needs fewer durable commits per batch or faster
-  durable storage, with the same crash and rollback guarantees.
-- Add an explicit recovery procedure for missing signed Redis projections. Marker
-  repair alone cannot recreate them or resolve quarantined unknown transactions.
-- Keep the existing one-host, one-owner authority assumption. Lost or rolled-back
-  authority, filesystem guarantees, provider honesty and actual rollup settlement
-  remain outside these local tests and finite models.
-
-Fairness allocates journal operations, not equal TPS. Global admission capacity
-and overflow lanes can still delay peers. No whole-service proof is claimed.
-
-See [local commands and agent prompt](LOCAL_TESTING.md), the
-[checkpoint protocol](docs/design/recoverable-projection.md),
-[Solana polling design](docs/design/solana-status-batching.md), and
-[formal correspondence](formal/disaster-recovery.md).
+See [local test commands and agent prompt](LOCAL_TESTING.md).

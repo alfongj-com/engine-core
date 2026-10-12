@@ -41,21 +41,23 @@
     },
     {
       "path": "core/src/recovery.rs",
-      "sha256": "f4f6ce4ae010bc7d1d666357185f54fb60d46a990c2cbf3d83bf38e5296e85ff",
+      "sha256": "4b30e9c4f0aa463f196b01d2324d934a36089b3137423742d29567af23977ceb",
       "models": [
         "DisasterRecovery",
         "Finality",
         "EoaRecovery",
-        "DisasterRecoveryProjection"
+        "DisasterRecoveryProjection",
+        "SolanaRetainedAttempt"
       ]
     },
     {
       "path": "core/src/recovery/export.rs",
       "models": [
         "DisasterRecovery",
-        "DisasterRecoveryProjection"
+        "DisasterRecoveryProjection",
+        "SolanaRetainedAttempt"
       ],
-      "sha256": "777f3e5837d5f8bf46cf791a1921c69873fd9e95377e4045266c4fa9faa1539a"
+      "sha256": "2829c6523f39939a363c6e8a399c08f5548fbabe939f2fe074ca687f5fd74c92"
     },
     {
       "path": "core/src/recovery/history_index_tests.rs",
@@ -335,10 +337,11 @@
     },
     {
       "path": "executors/src/solana_executor/recovery_tests.rs",
-      "sha256": "ae5f5a33ebf86864209f95ca988e000cce65daf0f345d326015cb55a277e5698",
+      "sha256": "09c5d4149598e0dae329d938ce090b2f8c4ea7d6f70616044870b77ccf0e223c",
       "models": [
         "DisasterRecovery",
-        "SolanaRecovery"
+        "SolanaRecovery",
+        "SolanaRetainedAttempt"
       ]
     },
     {
@@ -357,19 +360,21 @@
     },
     {
       "path": "executors/src/solana_executor/storage.rs",
-      "sha256": "933b657e7751ae63593626c3615d08f249afda3a492464029b21f73e861b1b42",
+      "sha256": "a8700a8c7736737b5a6c8c3e618eb7dee39f2868b08e17fc6448c5f77a179b91",
       "models": [
         "Admission",
-        "SolanaRecovery"
+        "SolanaRecovery",
+        "SolanaRetainedAttempt"
       ]
     },
     {
       "path": "executors/src/solana_executor/worker.rs",
-      "sha256": "6f9060f0a80617c89c57d00c3d9d110cf71644a4e994079b5e6610d6cf1b384c",
+      "sha256": "413d3796c7c1b5c77b48c423da43b099203bae3c74c132ebf1f09a661e0a51f3",
       "models": [
         "DisasterRecovery",
         "SolanaRecovery",
-        "DisasterRecoveryProjection"
+        "DisasterRecoveryProjection",
+        "SolanaRetainedAttempt"
       ]
     },
     {
@@ -407,10 +412,11 @@
     },
     {
       "path": "scripts/local_solana_recovery.py",
-      "sha256": "8d62cb1ca1ef6e891e04347767f9adb282d0d19dfe76bdf92e0319e7592cdb14",
+      "sha256": "0394f281e25d4a289bd3db3e190adf24bee7ed28d087fa5291a9fe3e375face2",
       "models": [
         "DisasterRecovery",
-        "SolanaRecovery"
+        "SolanaRecovery",
+        "SolanaRetainedAttempt"
       ]
     },
     {
@@ -624,15 +630,16 @@
         "DisasterRecoveryProjection",
         "DisasterRecovery"
       ],
-      "sha256": "89823b707f28f570373142b25c0f4861781aa2250762f59c9d13e34a2b08ac69"
+      "sha256": "87c9c9c8938fdfc41eeaa75694a16d4e0dc7732e704dcc5c28bd098058b07998"
     },
     {
       "path": "core/src/recovery/projection_tests.rs",
       "models": [
         "DisasterRecoveryProjection",
-        "DisasterRecovery"
+        "DisasterRecovery",
+        "SolanaRetainedAttempt"
       ],
-      "sha256": "a5ab0ef84673c5034dbe1253a3d92c6851b20671e02f8dd9a537c8b4699bf801"
+      "sha256": "4f18ecbca278d0352bbde7b913f24cbbc8afe05cd6841ecb66c1fb97ea0648ef"
     },
     {
       "path": "core/src/recovery/projection_transport_tests.rs",
@@ -652,9 +659,10 @@
       "path": "test-support/redis_reply_loss.rs",
       "models": [
         "DisasterRecoveryProjection",
-        "SolanaRecovery"
+        "SolanaRecovery",
+        "SolanaRetainedAttempt"
       ],
-      "sha256": "840d1ff04a50d48721123b4dada16f19388990ab3e4098582a6ab886f90c3661"
+      "sha256": "798c8ea293da5d0b322856d6f8339edeb2b08a9715e44ef6f18d6b5618b5459a"
     },
     {
       "path": "executors/src/solana_executor/status_batcher.rs",
@@ -683,6 +691,30 @@
       "models": [
         "QueueLease"
       ]
+    },
+    {
+      "path": "core/src/recovery/solana_projection.rs",
+      "models": [
+        "SolanaRetainedAttempt",
+        "DisasterRecoveryProjection"
+      ],
+      "sha256": "f2847b03ee8a5d60fb4753163dbc11228346f39b7bd45991fc9f4fc20dd83c6e"
+    },
+    {
+      "path": "core/src/recovery/solana_projection_tests.rs",
+      "models": [
+        "SolanaRetainedAttempt",
+        "DisasterRecoveryProjection"
+      ],
+      "sha256": "1532ade53c1130266e6f73b49f86262974ff5a474ec02002b27c85468e75e4a9"
+    },
+    {
+      "path": "core/src/recovery/projection_reattach_tests.rs",
+      "models": [
+        "DisasterRecoveryProjection",
+        "DisasterRecovery"
+      ],
+      "sha256": "d26c506a82e05af0453c6364c52a02ee5a7e33b7daa64d2825c46631701a8237"
     }
   ],
   "review": {
@@ -866,6 +898,26 @@
         "core/src/recovery/projection_tests.rs"
       ],
       "reason": "Health checks acquire their bounded chain lane cancellably before reserving one of32 global health slots. Only after both permits are held does run_owned register and spawn. The owned operation consumes that same lane in serial_guard_with_lane, retaining both permits through any pending checkpoint repair, FULL acknowledgement and final observation. Cancellation before registration grants no permission and releases acquired permits; after registration the existing drain barrier retains work. Authority transactions, Redis CAS, acknowledgement, finality and send gates are unchanged, so protocol actions are unchanged. Real Redis tests reject hot-chain slot monopolization, bound detached operations across distinct lanes, and check cancellation/drain at both admission boundaries. FIFO ordering, Tokio scheduling and performance remain implementation obligations, not a new finite-model liveness proof."
+    },
+    "retained_recovery_oct12": {
+      "date": "2026-10-12",
+      "base_commit": "918d7d90486a7ae4e11bd1a6675e173871168f71",
+      "status": "Runtime, tests and model correspondence reviewed independently. Executable validation is recorded separately; hashes are source-change guards, not refinement proofs.",
+      "paths": [
+        "core/src/recovery.rs",
+        "core/src/recovery/export.rs",
+        "core/src/recovery/projection.rs",
+        "core/src/recovery/projection_tests.rs",
+        "executors/src/solana_executor/worker.rs",
+        "executors/src/solana_executor/storage.rs",
+        "executors/src/solana_executor/recovery_tests.rs",
+        "scripts/local_solana_recovery.py",
+        "test-support/redis_reply_loss.rs",
+        "core/src/recovery/solana_projection.rs",
+        "core/src/recovery/solana_projection_tests.rs",
+        "core/src/recovery/projection_reattach_tests.rs"
+      ],
+      "reason": "Schema3 retains recovery mode and cumulative grant count/time in the independent authority. A missing Redis Solana attempt is restored only from a unique canonical retained row after immutable admission, digest, binding, cryptographic wire, blockhash and fee-payer checks; storage-token SET NX never overwrites conflicting data. Restoration grants no send permission. Recovered sends consume a FULL-committed grant through the existing pending-token publication/acknowledgement protocol and recheck Redis ownership before dispatch; cancellation and lost replies burn grants. Durable mode rejects ordinary authorization despite a rolled-back Redis flag. Only the extra20 grants are independently bounded; the conditional20+20 model assumes the original Redis counter is retained before mode activation, and a named boundary shows that assumption failing. The Redis-only Solana model retains its loss boundary; the new retained model and projection model are separate abstractions with no composition theorem. Offline reattach accepts only a primary observation of the exact target, atomically acknowledges pending state and adopts the process identity, then reobserves. Predecessor/missing/foreign markers, unrelated halts and authority loss remain fail-closed. Schema1/2 upgrade, historical schema2 pending repair, serialization, SQL/Redis error behavior, cryptography, filesystem durability, polling costs, wall-clock spacing and throughput require implementation checks. Historical missing-projection-parks notes describe earlier behavior and are superseded only by this supported exact-record restoration path. The existing CI harness invocation now runs retained-Redis and missing-projection scenarios in separate disposable fixtures by default; explicit flags select one case. Reports stay separate and no workflow permission change is needed."
     }
   }
 }
