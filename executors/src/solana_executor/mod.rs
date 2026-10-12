@@ -1,4 +1,5 @@
 pub mod rpc_cache;
+mod status_batcher;
 pub mod storage;
 pub mod worker;
 

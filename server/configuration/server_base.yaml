@@ -19,6 +19,8 @@ recovery:
   journal_path: data/recovery.sqlite
 
 solana:
+  # Set false to keep singleton history lookups on endpoints unsuitable for batching.
+  status_batching_enabled: true
   devnet:
     http_url: https://api.devnet.solana.com
     ws_url: wss://api.devnet.solana.com

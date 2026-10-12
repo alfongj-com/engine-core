@@ -25,7 +25,7 @@ struct GapReplayState {
 }
 
 fn invalid(message: impl std::fmt::Display) -> EoaExecutorWorkerError {
-    crate::recovery::eoa_error(message)
+    crate::recovery::eoa_required(message)
 }
 
 impl<C: Chain> EoaExecutorWorker<C> {
@@ -115,7 +115,7 @@ impl<C: Chain> EoaExecutorWorker<C> {
             .await?;
         crate::finality::check_continuity(&self.chain)
             .await
-            .map_err(invalid)?;
+            .map_err(crate::recovery::eoa_error)?;
         let end = latest
             .saturating_add(GAP_REPLAY_NONCES)
             .min(state.through_nonce);
@@ -148,14 +148,14 @@ impl<C: Chain> EoaExecutorWorker<C> {
             let Some(attempt) = journal
                 .latest_eoa_attempt(id, &expected_key)
                 .await
-                .map_err(invalid)?
+                .map_err(crate::recovery::eoa_journal_error)?
             else {
                 break;
             };
             let admission = journal
                 .admission("eoa", id)
                 .await
-                .map_err(invalid)?
+                .map_err(crate::recovery::eoa_journal_error)?
                 .ok_or_else(|| invalid("Gap recovery admission disappeared"))?;
             let request: EoaTransactionRequest =
                 serde_json::from_value(admission.payload).map_err(invalid)?;
@@ -194,7 +194,7 @@ impl<C: Chain> EoaExecutorWorker<C> {
                 saved_hash,
             )
             .await
-            .map_err(invalid)?;
+            .map_err(crate::recovery::eoa_error)?;
             // Owner validation and journal authorization are deliberately fresh
             // for each send. Losing a lease can leave at most an already
             // authorized in-flight call; it can only carry this recorded wire.

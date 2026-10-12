@@ -278,6 +278,16 @@ async fn public_health_deadline_is_unknown_until_the_independent_fence_completes
     for (result, expected_status, expected_state) in [
         (Ok(()), StatusCode::OK, "ok"),
         (
+            Err(engine_core::recovery::RecoveryError::Busy),
+            StatusCode::SERVICE_UNAVAILABLE,
+            "busy",
+        ),
+        (
+            Err(engine_core::recovery::RecoveryError::PublicationPending),
+            StatusCode::SERVICE_UNAVAILABLE,
+            "recovery_pending",
+        ),
+        (
             Err(engine_core::recovery::RecoveryError::Storage),
             StatusCode::SERVICE_UNAVAILABLE,
             "recovery_required",
@@ -287,9 +297,46 @@ async fn public_health_deadline_is_unknown_until_the_independent_fence_completes
             bounded_recovery_health(slots.clone(), Duration::from_secs(1), async move { result })
                 .await;
         assert_eq!(response.status(), expected_status);
+        if matches!(expected_state, "recovery_pending" | "busy") {
+            assert_eq!(response.headers()["retry-after"], "1");
+        }
         let body: serde_json::Value =
             serde_json::from_slice(&to_bytes(response.into_body(), 1024).await.unwrap()).unwrap();
         assert_eq!(body["status"], expected_state);
         assert_eq!(slots.available_permits(), 1);
+    }
+}
+
+#[tokio::test]
+async fn mutation_gate_distinguishes_retryable_states_from_permanent_halts() {
+    for (error, expected, retryable) in [
+        (
+            engine_core::recovery::RecoveryError::Busy,
+            "RECOVERY_BUSY",
+            true,
+        ),
+        (
+            engine_core::recovery::RecoveryError::PublicationPending,
+            "RECOVERY_PENDING",
+            true,
+        ),
+        (
+            engine_core::recovery::RecoveryError::RecoveryRequired("Redis checkpoint mismatch"),
+            "RECOVERY_REQUIRED",
+            false,
+        ),
+        (
+            engine_core::recovery::RecoveryError::Storage,
+            "RECOVERY_REQUIRED",
+            false,
+        ),
+    ] {
+        let response = recovery_gate_failure(error);
+        assert_eq!(response.status(), StatusCode::SERVICE_UNAVAILABLE);
+        assert_eq!(response.headers().contains_key("retry-after"), retryable);
+        let body: serde_json::Value =
+            serde_json::from_slice(&to_bytes(response.into_body(), 1024).await.unwrap()).unwrap();
+        assert_eq!(body["error"], expected);
+        assert_eq!(body["retryable"].as_bool().unwrap_or(false), retryable);
     }
 }

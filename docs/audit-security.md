@@ -19,6 +19,14 @@ signed bytes and nonce. See the [current confirmation contract](design/confirmat
 and [review results](https://github.com/alfongj-com/engine-core/blob/load-tests/docs/baselines/review-2026-09-26/README.md). The findings below
 remain a dated audit of the original baseline, not a current feature matrix.
 
+PR #2 adds repair of an exactly recorded pending checkpoint, bounded Solana
+status batching and journal scheduling lanes. These preserve the existing identity
+and finality gates; they do not certify production providers, add multi-host
+fencing, or reconstruct missing queue/attempt records. A first Solana attempt may
+still require operator reconciliation after checkpoint repair; [the design](design/recoverable-projection.md#checkpoint-repair-versus-transaction-recovery)
+distinguishes that case from retrying a terminal update with retained signed bytes.
+Tests and finite models do not constitute a complete security proof.
+
 ## Follow-up implementation
 
 | Finding | Current change | Evidence |

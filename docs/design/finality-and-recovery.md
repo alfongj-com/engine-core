@@ -167,8 +167,11 @@ observed causes a halt; remote history/finality honesty remains an assumption.
 New durable Solana requests that explicitly select confirmed are rejected before
 queue admission; finalized is the supported completion policy. Existing queued
 confirmed requests are reconciled under the stronger floor without re-signing.
-The durable executor currently also uses finalized for blockhash acquisition and
-preflight; non-durable sign/simulate paths can still use their request preference.
+Instruction submissions use finalized blockhash acquisition and preflight.
+Serialized submissions keep their caller-provided hash and use processed admission
+and preflight, allowing hashes newer than the finalized bank. Both paths still
+require finalized terminal evidence. Non-durable sign/simulate paths can use their
+request preference.
 A confirmed observation is provisional:
 continue reconciliation and retain the attempt until finalized. Existing queued
 confirmed requests wait for finalized under their original identity; never
@@ -186,9 +189,10 @@ budgets and parking behavior; a parked attempt remains recoverable.
 
 Blockhash acquisition/preflight and completion are distinct policies. Solana's
 guide recommends confirmed blockhash acquisition with matching preflight to
-maximize validity time; that does not require completing at confirmed. Splitting
-these options is a later optimization, not an implicit change to already signed
-bytes. [Confirmation and expiration guidance](https://solana.com/developers/cookbook/transactions/confirmation)
+maximize validity time; that does not require completing at confirmed. Changing
+instruction-submission acquisition to confirmed remains a separate optimization;
+serialized input already has its own admission policy and its signed bytes remain
+unchanged. [Confirmation and expiration guidance](https://solana.com/developers/cookbook/transactions/confirmation)
 
 Persist finalized evidence before removing attempt bytes. Later null historical
 lookups do not retract a retained finalized outcome: history can be unavailable.
@@ -196,6 +200,11 @@ Conflicting positive finalized evidence presented during reconciliation durably
 halts execution. Completed signatures are not continuously queried afterward.
 The guarantee assumes honest cluster/RPC finality and retained durable records;
 it does not cover ledger resets, faulty consensus or loss of the outcome journal.
+
+Status batching and restartable checkpoint publication do not strengthen that
+finality guarantee. Batching preserves individual observations and receipt checks;
+checkpoint repair preserves the existing identity fence. Neither proves RPC
+honesty or reconstructs a [missing first-attempt projection](recoverable-projection.md#checkpoint-repair-versus-transaction-recovery).
 
 ## API, migration and disaster-recovery boundary
 

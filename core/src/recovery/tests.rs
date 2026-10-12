@@ -324,7 +324,7 @@ async fn rollback_latches_halt_and_recovery_quarantines_ambiguous_attempts() {
 
 #[tokio::test]
 #[ignore = "requires disposable Redis in TEST_REDIS_URL"]
-async fn lost_checkpoint_or_sql_commit_before_mirror_is_fail_closed() {
+async fn lost_checkpoint_or_unwitnessed_checkpoint_gap_is_fail_closed() {
     for deletion in [true, false] {
         let f = Fixture::fresh();
         f.initialize().await;
@@ -338,10 +338,13 @@ async fn lost_checkpoint_or_sql_commit_before_mirror_is_fail_closed() {
                 .await
                 .unwrap();
         } else {
-            // Crash cut immediately after a FULL SQL commit, before its Redis CAS.
+            // A numeric gap with no durable pending record is never repairable.
             j.db(|conn| {
                 let tx = conn.transaction()?;
-                advance(&tx)?;
+                tx.execute(
+                    "UPDATE control SET checkpoint=checkpoint+1 WHERE singleton=1",
+                    [],
+                )?;
                 tx.commit()?;
                 Ok(())
             })

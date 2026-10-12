@@ -1376,3 +1376,71 @@ async fn cleanup_reads_only_proven_nonce_groups_and_requires_exact_membership() 
     assert_eq!(owner.get_pending_transactions_count().await.unwrap(), 1);
     fixture.cleanup().await;
 }
+
+#[tokio::test]
+#[ignore = "requires disposable Redis in TEST_REDIS_URL"]
+async fn timing_separates_local_connection_wait_from_redis_conflict_and_commit() {
+    const TEST: &str = "eoa::store::atomic::tests::timing_separates_local_connection_wait_from_redis_conflict_and_commit";
+    const CHILD: &str = "ENGINE_EOA_TIMING_TEST_CHILD";
+    if std::env::var(CHILD).as_deref() != Ok(TEST) {
+        let result = std::process::Command::new(std::env::current_exe().unwrap())
+            .args(["--exact", TEST, "--ignored", "--nocapture"])
+            .env(CHILD, TEST)
+            .output()
+            .unwrap();
+        assert!(
+            result.status.success(),
+            "{} {}",
+            String::from_utf8_lossy(&result.stdout),
+            String::from_utf8_lossy(&result.stderr)
+        );
+        return;
+    }
+    let fixture = Fixture::new().await;
+    let owner = fixture.owner().await;
+    let key = format!("{}:timing-counter", fixture.namespace);
+    let guard = owner.transaction_connection.lock().await;
+    let mut blocked = std::pin::pin!(owner.with_lock_check::<_, (), _>(|pipeline| {
+        pipeline.set(&key, 0);
+    }));
+    assert!(futures::poll!(blocked.as_mut()).is_pending());
+    // Deliberately held client-side mutex; Redis is never asked to sleep.
+    tokio::time::sleep(Duration::from_millis(20)).await;
+    drop(guard);
+    blocked.await.unwrap();
+    let operation = ConflictingOperation {
+        state_key: key.clone(),
+        observer: fixture.shared.clone(),
+        attempts: AtomicUsize::new(0),
+        steal_lock: false,
+        clear_shared_watch: false,
+    };
+    assert_eq!(
+        owner
+            .execute_with_watch_and_retry(&operation)
+            .await
+            .unwrap(),
+        11
+    );
+    assert_eq!(operation.attempts.load(Ordering::SeqCst), 2);
+    let text = crate::metrics::export_default_metrics().unwrap();
+    let sample = |suffix: &str, phase: &str, outcome: &str| -> f64 {
+        let prefix = format!("tw_engine_executor_operation_duration_seconds_{suffix}{{");
+        let line = text
+            .lines()
+            .find(|line| {
+                line.starts_with(&prefix)
+                    && line.contains("chain_id=\"31337\"")
+                    && line.contains(&format!("phase=\"{phase}\""))
+                    && line.contains(&format!("outcome=\"{outcome}\""))
+            })
+            .unwrap();
+        line.rsplit_once(' ').unwrap().1.parse().unwrap()
+    };
+    assert!(sample("sum", "redis_connection_wait", "success") >= 0.020);
+    assert_eq!(sample("count", "redis_commit", "success"), 2.0);
+    assert_eq!(sample("count", "redis_commit", "conflict"), 1.0);
+    assert_eq!(sample("count", "redis_backoff", "success"), 1.0);
+    assert!(!text.contains(&fixture.namespace));
+    fixture.cleanup().await;
+}

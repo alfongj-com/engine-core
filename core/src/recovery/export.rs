@@ -49,9 +49,14 @@ impl Serialize for Snapshot<'_> {
         &self,
         serializer: S,
     ) -> std::result::Result<S::Ok, S::Error> {
-        let mut map = serializer.serialize_map(Some(7))?;
+        let mut map = serializer.serialize_map(Some(8))?;
         map.serialize_entry("format", "engine-recovery-export-v1")?;
         map.serialize_entry("status", &status(self.0).map_err(S::Error::custom)?)?;
+        let current = control(self.0).map_err(S::Error::custom)?;
+        map.serialize_entry(
+            "projection_pending",
+            &projection::load(self.0, &current).map_err(S::Error::custom)?,
+        )?;
         map.serialize_entry(
             "admissions",
             &Rows {

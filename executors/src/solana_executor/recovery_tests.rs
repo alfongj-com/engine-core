@@ -1720,3 +1720,195 @@ async fn configured_confirmation_polling_preserves_wire_and_requires_finalized_r
     lock.release().await.unwrap();
     f.cleanup().await;
 }
+
+#[path = "../../../test-support/redis_reply_loss.rs"]
+mod redis_reply_loss;
+
+#[test]
+fn only_typed_publication_pending_shortens_the_recovery_park() {
+    for (error, expected_delay) in [
+        (
+            engine_core::recovery::RecoveryError::PublicationPending,
+            NETWORK_ERROR_RETRY_DELAY,
+        ),
+        (
+            engine_core::recovery::RecoveryError::RecoveryRequired("Redis checkpoint mismatch"),
+            RECOVERY_PARK_DELAY,
+        ),
+        (
+            engine_core::recovery::RecoveryError::Storage,
+            RECOVERY_PARK_DELAY,
+        ),
+    ] {
+        let nack =
+            SolanaExecutorJobHandler::recovery_nack(crate::recovery::from_journal_error(error));
+        assert!(matches!(
+            nack,
+            JobError::Nack { delay: Some(delay), position: RequeuePosition::Last, .. }
+                if delay == expected_delay
+        ));
+    }
+    // An arbitrary message containing the transient state's words is not authority.
+    assert!(matches!(
+        SolanaExecutorJobHandler::recovery_nack(EngineError::InternalError {
+            message: "Recovery publication pending".into(),
+        }),
+        JobError::Nack {
+            delay: Some(RECOVERY_PARK_DELAY),
+            ..
+        }
+    ));
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+#[ignore = "requires disposable Redis in TEST_REDIS_URL; journal isolated in subprocess"]
+async fn lost_terminal_publication_reply_retries_original_signature_without_signing() {
+    const CHILD: &str = "ENGINE_TEST_SOLANA_PENDING_TERMINAL_CHILD";
+    if std::env::var_os(CHILD).is_none() {
+        let output = std::process::Command::new(std::env::current_exe().unwrap())
+            .args(["--exact", "solana_executor::worker::recovery_tests::lost_terminal_publication_reply_retries_original_signature_without_signing", "--ignored", "--nocapture"])
+            .env(CHILD, "1").output().unwrap();
+        assert!(
+            output.status.success(),
+            "{} {}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+        return;
+    }
+    use engine_core::recovery::{self, RecoveryError, RecoveryJournal};
+    use std::sync::atomic::Ordering;
+    let f = Fixture::new().await;
+    let directory =
+        std::env::temp_dir().join(format!("solana-pending-terminal-{}", uuid::Uuid::new_v4()));
+    let path = directory.join("ledger.sqlite");
+    let namespace = format!("{}_journal", f.namespace.replace(':', "_"));
+    let url = std::env::var("TEST_REDIS_URL").unwrap();
+    RecoveryJournal::initialize(&path, &url, Some(namespace.clone()))
+        .await
+        .unwrap();
+    let proxy = redis_reply_loss::ReplyLossProxy::start(&url).await;
+    let journal = RecoveryJournal::open(&path, &proxy.url, Some(namespace.clone()))
+        .await
+        .unwrap();
+    let payload = serde_json::to_value(&f.data).unwrap();
+    journal
+        .reserve_admission(
+            "solana",
+            "intent",
+            &recovery::admission_fingerprint("solana", &payload).unwrap(),
+            payload,
+        )
+        .await
+        .unwrap();
+    recovery::install(journal.clone()).unwrap();
+    f.handler
+        .authorize_attempt(&f.data, &f.attempt)
+        .await
+        .unwrap_or_else(|_| panic!("original signed identity must be reserved"));
+    let lock = f.seed().await;
+    let (rpc, seen, server) = rpc(vec![
+        status(finalized()),
+        details(&f.attempt),
+        status(finalized()),
+        details(&f.attempt),
+    ])
+    .await;
+
+    // Redis executes the terminal marker CAS but its successful reply disappears.
+    // The exact worker path must requeue, keep Redis state, and not claim success.
+    proxy.armed.store(true, Ordering::SeqCst);
+    let result = tokio::time::timeout(
+        Duration::from_secs(10),
+        f.handler.execute_transaction(&rpc, &f.data, &lock, 1),
+    )
+    .await
+    .unwrap();
+    assert!(matches!(
+        result,
+        Err(JobError::Nack {
+            error: SolanaExecutorError::RpcError {
+                inner_error: EngineError::RecoveryPending { .. },
+            },
+            delay: Some(NETWORK_ERROR_RETRY_DELAY),
+            position: RequeuePosition::Last,
+        })
+    ));
+    assert!(proxy.dropped.load(Ordering::SeqCst));
+    let pending = RecoveryJournal::status(&path).unwrap();
+    assert!(pending.projection_pending && !pending.halted);
+    assert_eq!((pending.attempts, pending.terminal), (1, 1));
+    assert_eq!(
+        f.stored(&lock).await.signed_transaction,
+        f.attempt.signed_transaction
+    );
+
+    tokio::time::timeout(Duration::from_secs(10), async {
+        loop {
+            match journal.ensure_healthy().await {
+                Ok(()) => break,
+                Err(RecoveryError::PublicationPending) => {
+                    tokio::time::sleep(Duration::from_millis(10)).await
+                }
+                Err(error) => panic!("unexpected permanent halt: {error}"),
+            }
+        }
+    })
+    .await
+    .unwrap();
+    let result = f.handler.execute_transaction(&rpc, &f.data, &lock, 2).await;
+    assert!(matches!(result, Ok(ref value) if value.signature == f.attempt.signature.to_string()));
+    finish(server).await;
+    assert!(!RecoveryJournal::status(&path).unwrap().projection_pending);
+    assert_eq!(RecoveryJournal::status(&path).unwrap().attempts, 1);
+    assert_eq!(
+        f.stored(&lock).await.signed_transaction,
+        f.attempt.signed_transaction
+    );
+    let requests = seen.lock().unwrap();
+    assert_eq!(requests.len(), 4);
+    for request in requests.iter() {
+        match request["method"].as_str().unwrap() {
+            "getSignatureStatuses" => assert_eq!(
+                request["params"][0],
+                json!([f.attempt.signature.to_string()])
+            ),
+            "getTransaction" => {
+                assert_eq!(request["params"][0], f.attempt.signature.to_string());
+                assert_eq!(request["params"][1]["commitment"], "finalized");
+            }
+            method => panic!("recovery must not sign, fetch a blockhash, or broadcast: {method}"),
+        }
+    }
+    drop(requests);
+    lock.release().await.unwrap();
+
+    // A mismatched marker remains a permanent halt even after this legitimate
+    // transient repair. The process gate must stop before any RPC or signing.
+    let _: () = f
+        .redis
+        .clone()
+        .set(format!("{namespace}:recovery:checkpoint"), "foreign-marker")
+        .await
+        .unwrap();
+    assert!(matches!(
+        f.handler.process(&f.job()).await,
+        Err(JobError::Nack {
+            error: SolanaExecutorError::RpcError {
+                inner_error: EngineError::InternalError { .. }
+            },
+            delay: Some(RECOVERY_PARK_DELAY),
+            ..
+        })
+    ));
+    assert!(RecoveryJournal::status(&path).unwrap().halted);
+    assert_eq!(RecoveryJournal::status(&path).unwrap().attempts, 1);
+    let _: () = f
+        .redis
+        .clone()
+        .del(format!("{namespace}:recovery:checkpoint"))
+        .await
+        .unwrap();
+    f.cleanup().await;
+    std::fs::remove_dir_all(directory).unwrap();
+}

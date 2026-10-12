@@ -289,7 +289,10 @@ impl QueueManager {
             mainnet: solana_config.mainnet.http_url.clone(),
             local: solana_config.local.http_url.clone(),
         };
-        let solana_rpc_cache = Arc::new(SolanaRpcCache::new(solana_rpc_urls));
+        let solana_rpc_cache = Arc::new(SolanaRpcCache::new_with_status_batching(
+            solana_rpc_urls,
+            solana_config.status_batching_enabled,
+        ));
         let solana_storage = SolanaTransactionStorage::new(
             redis_client.get_connection_manager().await?,
             queue_config.execution_namespace.clone(),

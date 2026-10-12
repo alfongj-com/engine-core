@@ -1,3 +1,4 @@
+use crate::metrics::{ExecutorOperation, measure_eoa};
 use alloy::consensus::{Signed, Transaction, TypedTransaction};
 use alloy::network::AnyTransactionReceipt;
 use alloy::primitives::{Address, Bytes, U256};
@@ -437,8 +438,14 @@ impl EoaExecutorStore {
         let lock_key = self.eoa_lock_key_name();
         let mut conn = self.redis.clone();
 
-        let transaction_connection =
-            tokio::sync::Mutex::new(redis_client.get_multiplexed_async_connection().await?);
+        let transaction_connection = tokio::sync::Mutex::new(
+            measure_eoa(
+                self.chain_id,
+                ExecutorOperation::RedisConnection,
+                redis_client.get_multiplexed_async_connection(),
+            )
+            .await?,
+        );
 
         // First try normal acquisition
         let acquired: bool = conn.set_nx(&lock_key, worker_id).await?;
@@ -602,7 +609,12 @@ impl EoaExecutorStore {
         pipeline.hlen(self.borrowed_transactions_hashmap_name());
         pipeline.zcard(self.recycled_nonces_zset_name());
 
-        let counts: (u64, u64, u64, u64) = pipeline.query_async(&mut conn).await?;
+        let counts: (u64, u64, u64, u64) = measure_eoa(
+            self.chain_id,
+            ExecutorOperation::RedisCounts,
+            pipeline.query_async(&mut conn),
+        )
+        .await?;
         Ok(EoaExecutorCounts {
             pending_transactions: counts.0,
             submitted_transactions: counts.1,

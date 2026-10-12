@@ -1,3 +1,10 @@
+mod operations;
+pub(crate) use operations::record_eoa_cycle;
+pub use operations::{
+    ExecutorFamily, ExecutorOperation, MetricChain, OperationOutcome, OperationTimer, measure_eoa,
+    record_status_request_signatures,
+};
+
 use lazy_static::lazy_static;
 use prometheus::{
     Encoder, HistogramOpts, HistogramVec, Registry, TextEncoder,
@@ -7,6 +14,7 @@ use std::sync::Arc;
 
 /// Metrics configuration for executor metrics
 pub struct ExecutorMetrics {
+    operations: Arc<operations::OperationMetrics>,
     pub transaction_queued_to_sent_duration: HistogramVec,
     pub transaction_queued_to_confirmed_duration: HistogramVec,
     pub eoa_job_processing_duration: HistogramVec,
@@ -86,6 +94,7 @@ impl ExecutorMetrics {
         )?;
 
         Ok(ExecutorMetrics {
+            operations: Arc::new(operations::OperationMetrics::new(registry)?),
             transaction_queued_to_sent_duration,
             transaction_queued_to_confirmed_duration,
             eoa_job_processing_duration,

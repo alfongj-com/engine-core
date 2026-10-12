@@ -38,10 +38,40 @@ impl Default for EvmRpcConfig {
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct SolanaConfig {
+    /// Disable for endpoints where historical status batching is unsuitable.
+    #[serde(
+        default = "default_status_batching_enabled",
+        deserialize_with = "deserialize_status_batching_enabled"
+    )]
+    pub status_batching_enabled: bool,
     pub devnet: SolanRpcConfigData,
     pub mainnet: SolanRpcConfigData,
     #[serde(default = "default_local_rpc_config")]
     pub local: SolanRpcConfigData,
+}
+
+fn default_status_batching_enabled() -> bool {
+    true
+}
+
+fn deserialize_status_batching_enabled<'de, D>(deserializer: D) -> Result<bool, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum Boolean {
+        Value(bool),
+        Text(String),
+    }
+    match Boolean::deserialize(deserializer)? {
+        Boolean::Value(value) => Ok(value),
+        Boolean::Text(value) if value == "true" => Ok(true),
+        Boolean::Text(value) if value == "false" => Ok(false),
+        _ => Err(serde::de::Error::custom(
+            "status_batching_enabled must be true or false",
+        )),
+    }
 }
 
 fn default_local_rpc_config() -> SolanRpcConfigData {
@@ -355,6 +385,28 @@ mod throughput_config_tests {
             builder = builder.set_override(key, value)?;
         }
         builder.build()?.try_deserialize()
+    }
+
+    #[test]
+    fn solana_status_batching_can_be_disabled_by_boolean_or_environment_string() {
+        assert!(configured(None).unwrap().solana.status_batching_enabled);
+        for (value, expected) in [
+            (config::Value::from(true), true),
+            (config::Value::from(false), false),
+            (config::Value::from("true"), true),
+            (config::Value::from("false"), false),
+        ] {
+            let config = configured(Some(("solana.status_batching_enabled", value))).unwrap();
+            assert_eq!(config.solana.status_batching_enabled, expected);
+        }
+        for value in [
+            config::Value::from(0u64),
+            config::Value::from(1u64),
+            config::Value::from("yes"),
+            config::Value::from(""),
+        ] {
+            assert!(configured(Some(("solana.status_batching_enabled", value))).is_err());
+        }
     }
 
     #[test]

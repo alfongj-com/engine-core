@@ -364,5 +364,77 @@
     "config": "DepthCheckpoint_rollback_boundary.cfg",
     "expected": "invariant:AcceptedBoundaryRemainsCanonical",
     "kind": "boundary"
+  },
+  {
+    "module": "DisasterRecoveryProjection",
+    "config": "DisasterRecoveryProjection.cfg",
+    "expected": "pass",
+    "kind": "positive"
+  },
+  {
+    "module": "DisasterRecoveryProjection",
+    "config": "DisasterRecoveryProjection_legacy.cfg",
+    "expected": "pass",
+    "kind": "positive"
+  },
+  {
+    "module": "DisasterRecoveryProjection",
+    "config": "DisasterRecoveryProjection_early_permission.cfg",
+    "expected": "invariant:PermissionRequiresAcknowledgement",
+    "kind": "fault"
+  },
+  {
+    "module": "DisasterRecoveryProjection",
+    "config": "DisasterRecoveryProjection_lost_pending.cfg",
+    "expected": "invariant:PendingRetained",
+    "kind": "fault"
+  },
+  {
+    "module": "DisasterRecoveryProjection",
+    "config": "DisasterRecoveryProjection_forgiven_rollback.cfg",
+    "expected": "invariant:NoUnwitnessedRepair",
+    "kind": "fault"
+  },
+  {
+    "module": "DisasterRecoveryProjection",
+    "config": "DisasterRecoveryProjection_run_adoption.cfg",
+    "expected": "invariant:NoAutomaticRunAdoption",
+    "kind": "fault"
+  },
+  {
+    "module": "DisasterRecoveryProjection",
+    "config": "DisasterRecoveryProjection_revived_caller.cfg",
+    "expected": "invariant:NoResurrectedCaller",
+    "kind": "fault"
+  },
+  {
+    "module": "DisasterRecoveryProjection",
+    "config": "DisasterRecoveryProjection_clear_halt.cfg",
+    "expected": "invariant:NoArbitraryHaltClear",
+    "kind": "fault"
+  },
+  {
+    "module": "DisasterRecoveryProjection",
+    "config": "DisasterRecoveryProjection_old_marker_witness.cfg",
+    "expected": "invariant:OldMarkerRecoveryNotReached",
+    "kind": "witness"
+  },
+  {
+    "module": "DisasterRecoveryProjection",
+    "config": "DisasterRecoveryProjection_new_marker_witness.cfg",
+    "expected": "invariant:NewMarkerRecoveryNotReached",
+    "kind": "witness"
+  },
+  {
+    "module": "DisasterRecoveryProjection",
+    "config": "DisasterRecoveryProjection_migration_witness.cfg",
+    "expected": "invariant:MigrationRecoveryNotReached",
+    "kind": "witness"
+  },
+  {
+    "module": "DisasterRecoveryProjection",
+    "config": "DisasterRecoveryProjection_uncertain_witness.cfg",
+    "expected": "invariant:UncertainRecoveryNotReached",
+    "kind": "witness"
   }
 ]

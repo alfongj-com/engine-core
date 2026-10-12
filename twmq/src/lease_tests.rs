@@ -330,9 +330,11 @@ async fn completion_error_does_not_replay_partially_executed_commands() {
     pipeline.incr(&effects, 1).hset(&invalid, "field", "value");
     let result = tokio::time::timeout(
         Duration::from_secs(2),
-        queue
-            .transaction_connections
-            .commit_if_leased(&lease, &pipeline),
+        queue.transaction_connections.commit_if_leased(
+            crate::metrics::QueueType::Single,
+            &lease,
+            &pipeline,
+        ),
     )
     .await
     .unwrap();

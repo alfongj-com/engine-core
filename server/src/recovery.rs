@@ -44,7 +44,7 @@ pub(crate) async fn terminal_retry<T: Serialize>(
 }
 
 async fn terminal_retry_with_journal<T: Serialize>(
-    journal: &recovery::RecoveryJournal,
+    journal: &std::sync::Arc<recovery::RecoveryJournal>,
     kind: &str,
     id: &str,
     payload: &T,
@@ -74,7 +74,11 @@ fn internal(message: &str) -> EngineError {
 }
 
 fn recovery_error(error: recovery::RecoveryError) -> EngineError {
-    if matches!(error, recovery::RecoveryError::Busy) {
+    if matches!(error, recovery::RecoveryError::PublicationPending) {
+        EngineError::RecoveryPending {
+            message: error.to_string(),
+        }
+    } else if matches!(error, recovery::RecoveryError::Busy) {
         EngineError::Overloaded {
             message: error.to_string(),
         }
@@ -115,6 +119,28 @@ mod tests {
                 .status(),
             StatusCode::SERVICE_UNAVAILABLE
         );
+    }
+
+    #[tokio::test]
+    async fn publication_pending_is_typed_retryable_503_while_halts_remain_recovery_required() {
+        for (error, expected) in [
+            (
+                recovery::RecoveryError::PublicationPending,
+                "RECOVERY_PENDING",
+            ),
+            (
+                recovery::RecoveryError::RecoveryRequired("Redis checkpoint mismatch"),
+                "RECOVERY_REQUIRED",
+            ),
+        ] {
+            let response = ApiEngineError(recovery_error(error)).into_response();
+            assert_eq!(response.status(), StatusCode::SERVICE_UNAVAILABLE);
+            let bytes = axum::body::to_bytes(response.into_body(), 4096)
+                .await
+                .unwrap();
+            let body: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+            assert_eq!(body["error"]["details"]["type"], expected);
+        }
     }
 
     #[tokio::test]

@@ -160,7 +160,7 @@ async fn validate_durable_confirmation(job: &UserOpConfirmationJobData) -> Resul
     let admission = journal
         .admission("erc4337", &job.transaction_id)
         .await
-        .map_err(|_| invalid())?
+        .map_err(crate::recovery::from_journal_error)?
         .ok_or_else(invalid)?;
     let admitted: super::send::ExternalBundlerSendJobData =
         serde_json::from_value(admission.payload).map_err(|_| invalid())?;
@@ -189,7 +189,7 @@ async fn validate_durable_confirmation(job: &UserOpConfirmationJobData) -> Resul
             &durable_userop_identity(job),
         )
         .await
-        .map_err(|_| invalid())
+        .map_err(crate::recovery::from_journal_error)
 }
 
 fn userop_identity_matches(
@@ -290,185 +290,208 @@ where
         &self,
         job: &BorrowedJob<Self::JobData>,
     ) -> JobResult<Self::Output, Self::ErrorData> {
-        let job_data = &job.job.data;
+        let operation = async {
+            let job_data = &job.job.data;
 
-        // A deadline is a polling budget, not evidence of an on-chain failure.
-        let retry_delay = if job_age_seconds(job) > MAX_CONFIRMATION_JOB_AGE_SECONDS {
-            Duration::from_secs(3600)
-        } else if job.job.attempts >= self.max_confirmation_attempts {
-            self.confirmation_retry_delay.max(Duration::from_secs(10))
-        } else {
-            self.confirmation_retry_delay
-        };
+            // A deadline is a polling budget, not evidence of an on-chain failure.
+            let retry_delay = if job_age_seconds(job) > MAX_CONFIRMATION_JOB_AGE_SECONDS {
+                Duration::from_secs(3600)
+            } else if job.job.attempts >= self.max_confirmation_attempts {
+                self.confirmation_retry_delay.max(Duration::from_secs(10))
+            } else {
+                self.confirmation_retry_delay
+            };
 
-        if job.job.id != job_data.transaction_id {
-            return Err(UserOpConfirmationError::InternalError {
-                message: "Confirmation queue ID differs from admitted transaction ID".into(),
-            })
-            .map_err_nack(Some(retry_delay), RequeuePosition::Last);
-        }
-        validate_durable_confirmation(job_data)
-            .await
-            .map_err(|error| UserOpConfirmationError::InternalError {
-                message: error.to_string(),
-            })
-            .map_err_nack(Some(retry_delay), RequeuePosition::Last)?;
-
-        // 1. Get Chain
-        let chain = self
-            .chain_service
-            .get_chain(job_data.chain_id)
-            .map_err(|e| UserOpConfirmationError::ChainServiceError {
-                chain_id: job_data.chain_id,
-                message: format!("Failed to get chain instance: {e}"),
-            })
-            .map_err_nack(Some(retry_delay), RequeuePosition::Last)?;
-
-        let chain = chain.with_new_default_headers(
-            job.job
-                .data
-                .rpc_credentials
-                .to_header_map()
-                .map_err(|e| UserOpConfirmationError::InternalError {
-                    message: format!("Bad RPC Credential values, unserialisable into headers: {e}"),
-                })
-                .map_err_nack(Some(retry_delay), RequeuePosition::Last)?,
-        );
-
-        crate::finality::check_continuity(&chain)
-            .await
-            .map_err(|e| UserOpConfirmationError::ReceiptQueryFailed {
-                user_op_hash: job_data.user_op_hash.clone(),
-                message: "Finality checkpoint continuity unavailable".into(),
-                inner_error: Some(e),
-            })
-            .map_err_nack(Some(retry_delay), RequeuePosition::Last)?;
-
-        // 2. Query for User Operation Receipt
-        let receipt_option = chain
-            .bundler_client()
-            .get_user_op_receipt(job_data.user_op_hash.clone())
-            .await
-            .map_err(|e| UserOpConfirmationError::ReceiptQueryFailed {
-                user_op_hash: job_data.user_op_hash.clone(),
-                message: engine_core::error::rpc_error_diagnostic(&e),
-                inner_error: Some(e.to_engine_bundler_error(&chain)),
-            })
-            .map_err_nack(Some(retry_delay), RequeuePosition::Last)?;
-
-        let receipt = match receipt_option {
-            Some(receipt) => receipt,
-            None => {
-                return Err(UserOpConfirmationError::ReceiptNotAvailable {
-                    user_op_hash: job_data.user_op_hash.clone(),
-                    attempt_number: job.job.attempts,
+            if job.job.id != job_data.transaction_id {
+                return Err(UserOpConfirmationError::InternalError {
+                    message: "Confirmation queue ID differs from admitted transaction ID".into(),
                 })
                 .map_err_nack(Some(retry_delay), RequeuePosition::Last);
-                // NACK - triggers on_nack hook which keeps lock for retry
             }
-        };
+            validate_durable_confirmation(job_data)
+                .await
+                .map_err(|error| {
+                    crate::recovery::nack(error, retry_delay, |error| {
+                        UserOpConfirmationError::InternalError {
+                            message: error.to_string(),
+                        }
+                    })
+                })?;
 
-        if !userop_identity_matches(job_data, &receipt) {
-            return Err(UserOpConfirmationError::FinalityPending {
-                message: "Bundler receipt does not match persisted operation identity".into(),
-            })
-            .map_err_nack(Some(retry_delay), RequeuePosition::Last);
-        }
-        // Independently fetch the chain receipt: bundler success flags and logs are
-        // not execution evidence. Bind the EntryPoint event to the stored operation.
-        let canonical = chain
-            .provider()
-            .get_transaction_receipt(receipt.receipt.transaction_hash)
-            .await
-            .map_err(|e| UserOpConfirmationError::ReceiptQueryFailed {
-                user_op_hash: job_data.user_op_hash.clone(),
-                message: engine_core::error::rpc_error_diagnostic(&e),
-                inner_error: Some(e.to_engine_error(&chain)),
-            })
-            .map_err_nack(Some(retry_delay), RequeuePosition::Last)?;
-        let Some(canonical) = canonical else {
-            return Err(UserOpConfirmationError::FinalityPending {
-                message: "Chain receipt unavailable".into(),
-            })
-            .map_err_nack(Some(retry_delay), RequeuePosition::Last);
-        };
-        if canonical.block_hash != receipt.receipt.block_hash
-            || canonical.block_number != receipt.receipt.block_number
-            || !canonical.status()
-            || !userop_event_matches(job_data, &receipt, &canonical)
-        {
-            return Err(UserOpConfirmationError::FinalityPending {
-                message: "Bundler outcome is not corroborated by the chain receipt".into(),
-            })
-            .map_err_nack(Some(retry_delay), RequeuePosition::Last);
-        }
-        let finality =
-            crate::finality::assess(&chain, receipt.receipt.transaction_hash, &canonical)
+            // 1. Get Chain
+            let chain = self
+                .chain_service
+                .get_chain(job_data.chain_id)
+                .map_err(|e| UserOpConfirmationError::ChainServiceError {
+                    chain_id: job_data.chain_id,
+                    message: format!("Failed to get chain instance: {e}"),
+                })
+                .map_err_nack(Some(retry_delay), RequeuePosition::Last)?;
+
+            let chain = chain.with_new_default_headers(
+                job.job
+                    .data
+                    .rpc_credentials
+                    .to_header_map()
+                    .map_err(|e| UserOpConfirmationError::InternalError {
+                        message: format!(
+                            "Bad RPC Credential values, unserialisable into headers: {e}"
+                        ),
+                    })
+                    .map_err_nack(Some(retry_delay), RequeuePosition::Last)?,
+            );
+
+            crate::finality::check_continuity(&chain)
+                .await
+                .map_err(|error| {
+                    crate::recovery::nack(error, retry_delay, |error| {
+                        UserOpConfirmationError::ReceiptQueryFailed {
+                            user_op_hash: job_data.user_op_hash.clone(),
+                            message: "Finality checkpoint continuity unavailable".into(),
+                            inner_error: Some(error),
+                        }
+                    })
+                })?;
+
+            // 2. Query for User Operation Receipt
+            let receipt_option = chain
+                .bundler_client()
+                .get_user_op_receipt(job_data.user_op_hash.clone())
                 .await
                 .map_err(|e| UserOpConfirmationError::ReceiptQueryFailed {
                     user_op_hash: job_data.user_op_hash.clone(),
-                    message: "Finality query failed".into(),
-                    inner_error: Some(e),
+                    message: engine_core::error::rpc_error_diagnostic(&e),
+                    inner_error: Some(e.to_engine_bundler_error(&chain)),
                 })
                 .map_err_nack(Some(retry_delay), RequeuePosition::Last)?;
-        let FinalityAssessment::Finalized(finality) = finality else {
-            return Err(UserOpConfirmationError::FinalityPending {
-                message: "Operation is not canonically settled under the configured policy".into(),
-            })
-            .map_err_nack(Some(retry_delay), RequeuePosition::Last);
-        };
-        if let Some(journal) = engine_core::recovery::global() {
-            let mut proof = durable_userop_identity(job_data);
-            proof["transactionHash"] = serde_json::json!(canonical.transaction_hash);
-            proof["outcome"] = serde_json::json!(if receipt.success {
-                "success"
-            } else {
-                "reverted"
-            });
-            proof["finality"] = serde_json::json!(finality);
-            journal
-                .record_terminal("erc4337", &job_data.transaction_id, proof)
+
+            let receipt = match receipt_option {
+                Some(receipt) => receipt,
+                None => {
+                    return Err(UserOpConfirmationError::ReceiptNotAvailable {
+                        user_op_hash: job_data.user_op_hash.clone(),
+                        attempt_number: job.job.attempts,
+                    })
+                    .map_err_nack(Some(retry_delay), RequeuePosition::Last);
+                    // NACK - triggers on_nack hook which keeps lock for retry
+                }
+            };
+
+            if !userop_identity_matches(job_data, &receipt) {
+                return Err(UserOpConfirmationError::FinalityPending {
+                    message: "Bundler receipt does not match persisted operation identity".into(),
+                })
+                .map_err_nack(Some(retry_delay), RequeuePosition::Last);
+            }
+            // Independently fetch the chain receipt: bundler success flags and logs are
+            // not execution evidence. Bind the EntryPoint event to the stored operation.
+            let canonical = chain
+                .provider()
+                .get_transaction_receipt(receipt.receipt.transaction_hash)
                 .await
-                .map_err(|_| UserOpConfirmationError::InternalError {
-                    message: "Cannot persist verified operation settlement".into(),
+                .map_err(|e| UserOpConfirmationError::ReceiptQueryFailed {
+                    user_op_hash: job_data.user_op_hash.clone(),
+                    message: engine_core::error::rpc_error_diagnostic(&e),
+                    inner_error: Some(e.to_engine_error(&chain)),
                 })
                 .map_err_nack(Some(retry_delay), RequeuePosition::Last)?;
-        }
-        if !receipt.success {
-            return Err(UserOpConfirmationError::TransactionFailed {
-                receipt: Box::new(receipt),
-                finality,
-            })
-            .map_err_fail();
-        }
+            let Some(canonical) = canonical else {
+                return Err(UserOpConfirmationError::FinalityPending {
+                    message: "Chain receipt unavailable".into(),
+                })
+                .map_err_nack(Some(retry_delay), RequeuePosition::Last);
+            };
+            if canonical.block_hash != receipt.receipt.block_hash
+                || canonical.block_number != receipt.receipt.block_number
+                || !canonical.status()
+                || !userop_event_matches(job_data, &receipt, &canonical)
+            {
+                return Err(UserOpConfirmationError::FinalityPending {
+                    message: "Bundler outcome is not corroborated by the chain receipt".into(),
+                })
+                .map_err_nack(Some(retry_delay), RequeuePosition::Last);
+            }
+            let finality =
+                crate::finality::assess(&chain, receipt.receipt.transaction_hash, &canonical)
+                    .await
+                    .map_err(|error| {
+                        crate::recovery::nack(error, retry_delay, |error| {
+                            UserOpConfirmationError::ReceiptQueryFailed {
+                                user_op_hash: job_data.user_op_hash.clone(),
+                                message: "Finality query failed".into(),
+                                inner_error: Some(error),
+                            }
+                        })
+                    })?;
+            let FinalityAssessment::Finalized(finality) = finality else {
+                return Err(UserOpConfirmationError::FinalityPending {
+                    message: "Operation is not canonically settled under the configured policy"
+                        .into(),
+                })
+                .map_err_nack(Some(retry_delay), RequeuePosition::Last);
+            };
+            if let Some(journal) = engine_core::recovery::global() {
+                let mut proof = durable_userop_identity(job_data);
+                proof["transactionHash"] = serde_json::json!(canonical.transaction_hash);
+                proof["outcome"] = serde_json::json!(if receipt.success {
+                    "success"
+                } else {
+                    "reverted"
+                });
+                proof["finality"] = serde_json::json!(finality);
+                journal
+                    .record_terminal("erc4337", &job_data.transaction_id, proof)
+                    .await
+                    .map_err(crate::recovery::from_journal_error)
+                    .map_err(|error| {
+                        crate::recovery::nack(error, retry_delay, |error| {
+                            UserOpConfirmationError::InternalError {
+                                message: error.to_string(),
+                            }
+                        })
+                    })?;
+            }
+            if !receipt.success {
+                return Err(UserOpConfirmationError::TransactionFailed {
+                    receipt: Box::new(receipt),
+                    finality,
+                })
+                .map_err_fail();
+            }
 
-        tracing::info!(
-            transaction_id = job_data.transaction_id,
-            user_op_hash = ?job_data.user_op_hash,
-            transaction_hash = ?receipt.receipt.transaction_hash,
-            success = ?receipt.success,
-            "User operation confirmed on-chain"
-        );
-
-        // 4. Record metrics if original timestamp is available
-        if let Some(original_timestamp) = job_data.original_queued_timestamp {
-            let confirmed_timestamp = current_timestamp_ms();
-            let queued_to_confirmed_duration =
-                calculate_duration_seconds_from_twmq(original_timestamp, confirmed_timestamp);
-            record_transaction_queued_to_confirmed(
-                "erc4337-external",
-                job_data.chain_id,
-                queued_to_confirmed_duration,
+            tracing::info!(
+                transaction_id = job_data.transaction_id,
+                user_op_hash = ?job_data.user_op_hash,
+                transaction_hash = ?receipt.receipt.transaction_hash,
+                success = ?receipt.success,
+                "User operation confirmed on-chain"
             );
-        }
 
-        // 5. Success! Lock cleanup will happen atomically in on_success hook
-        Ok(UserOpConfirmationResult {
-            user_op_hash: job_data.user_op_hash.clone(),
-            receipt,
-            finality: Some(finality),
-            deployment_lock_released: None, // Ownership is checked later inside the Redis hook.
-        })
+            // 4. Record metrics if original timestamp is available
+            if let Some(original_timestamp) = job_data.original_queued_timestamp {
+                let confirmed_timestamp = current_timestamp_ms();
+                let queued_to_confirmed_duration =
+                    calculate_duration_seconds_from_twmq(original_timestamp, confirmed_timestamp);
+                record_transaction_queued_to_confirmed(
+                    "erc4337-external",
+                    job_data.chain_id,
+                    queued_to_confirmed_duration,
+                );
+            }
+
+            // 5. Success! Lock cleanup will happen atomically in on_success hook
+            Ok(UserOpConfirmationResult {
+                user_op_hash: job_data.user_op_hash.clone(),
+                receipt,
+                finality: Some(finality),
+                deployment_lock_released: None, // Ownership is checked later inside the Redis hook.
+            })
+        };
+        engine_core::recovery::fairness::scope(
+            engine_core::recovery::fairness::ChainScope::Evm(job.job.data.chain_id),
+            operation,
+        )
+        .await
     }
 
     async fn on_success(

@@ -1,3 +1,4 @@
+use crate::metrics::{self as timings, Phase, QueueType, Timer};
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
@@ -465,6 +466,7 @@ impl<H: DurableExecution> MultilaneQueue<H> {
 
             loop {
                 tokio::select! {
+                    biased;
                     _ = &mut shutdown_rx => {
                         tracing::info!("Shutdown signal received for multilane queue: {}", outer_queue_clone.queue_id());
                         break;
@@ -488,7 +490,19 @@ impl<H: DurableExecution> MultilaneQueue<H> {
 
                         tracing::trace!("Available permits: {}", available_permits);
 
-                        match queue_clone.pop_batch_jobs(available_permits).await {
+                        // A Redis reconnect can outlast shutdown. Cancel only
+                        // acquisition: an applied pop with an unseen reply leaves
+                        // leases to expire; no handler or completion is cancelled.
+                        let popped = tokio::select! {
+                            biased;
+                            _ = &mut shutdown_rx => {
+                                tracing::info!("Shutdown interrupted queue polling");
+                                break;
+                            }
+                            result = timings::measure(QueueType::Multilane, Phase::PopBatch,
+                                queue_clone.pop_batch_jobs(available_permits)) => result,
+                        };
+                        match popped {
                             Ok(jobs) => {
                                 tracing::trace!("Got {} jobs across lanes", jobs.len());
 
@@ -498,11 +512,15 @@ impl<H: DurableExecution> MultilaneQueue<H> {
                                     let job_id = job.id().to_string();
                                     let handler_clone = handler_clone.clone();
                                     let completed = completed.clone();
+                                    let dispatch_timer = Timer::start(QueueType::Multilane, Phase::DispatchWait);
 
                                     tokio::spawn(async move {
+                                        dispatch_timer.finish(timings::Outcome::Success);
+                                        let timer = Timer::start(QueueType::Multilane, Phase::Handler);
                                         let result = handler_clone.process(&job).await;
+                                        timer.finish_job(&result);
 
-                                        if let Err(e) = queue_clone.complete_job(&job, result).await {
+                                        if let Err(e) = timings::measure(QueueType::Multilane, Phase::Complete, queue_clone.complete_job(&job, result)).await {
                                             tracing::error!(
                                                 "Failed to complete job {} handling: {:?}",
                                                 job.id(),
@@ -517,7 +535,11 @@ impl<H: DurableExecution> MultilaneQueue<H> {
                             }
                             Err(e) => {
                                 tracing::error!("Failed to pop batch jobs: {:?}", e);
-                                sleep(Duration::from_millis(1000)).await;
+                                tokio::select! {
+                                    biased;
+                                    _ = &mut shutdown_rx => break,
+                                    _ = sleep(Duration::from_millis(1000)) => {},
+                                }
                             }
                         };
                     }
@@ -782,19 +804,23 @@ impl<H: DurableExecution> MultilaneQueue<H> {
             Vec<(String, String, String, String, String, String, String)>,
             Vec<(String, String)>,
             Vec<(String, String)>,
-        ) = script
-            .key(self.lanes_zset_name())
-            .key(self.job_data_hash_name())
-            .key(self.pending_cancellation_set_name())
-            .key(self.failed_list_name())
-            .key(self.success_list_name())
-            .arg(&self.queue_id)
-            .arg(now)
-            .arg(batch_size)
-            .arg(self.options.lease_duration.as_secs())
-            .arg(nanoid::nanoid!())
-            .invoke_async(&mut self.redis.clone())
-            .await?;
+        ) = timings::measure(
+            QueueType::Multilane,
+            Phase::RedisPop,
+            script
+                .key(self.lanes_zset_name())
+                .key(self.job_data_hash_name())
+                .key(self.pending_cancellation_set_name())
+                .key(self.failed_list_name())
+                .key(self.success_list_name())
+                .arg(&self.queue_id)
+                .arg(now)
+                .arg(batch_size)
+                .arg(self.options.lease_duration.as_secs())
+                .arg(nanoid::nanoid!())
+                .invoke_async(&mut self.redis.clone()),
+        )
+        .await?;
 
         let (job_results, cancelled_jobs, timed_out_jobs) = results_from_lua;
 
@@ -1054,18 +1080,22 @@ impl<H: DurableExecution> MultilaneQueue<H> {
             "#,
         );
 
-        let trimmed_count: usize = trim_script
-            .key(self.queue_id())
-            .key(self.success_list_name())
-            .key(self.job_data_hash_name())
-            .key(self.job_result_hash_name())
-            .key(self.dedupe_set_name())
-            .key(self.lanes_zset_name()) // Need to check lanes
-            .key(self.failed_list_name())
-            .key(self.pending_cancellation_set_name())
-            .arg(self.options.max_success)
-            .invoke_async(&mut self.redis.clone())
-            .await?;
+        let trimmed_count: usize = timings::measure(
+            QueueType::Multilane,
+            Phase::RedisPrune,
+            trim_script
+                .key(self.queue_id())
+                .key(self.success_list_name())
+                .key(self.job_data_hash_name())
+                .key(self.job_result_hash_name())
+                .key(self.dedupe_set_name())
+                .key(self.lanes_zset_name()) // Need to check lanes
+                .key(self.failed_list_name())
+                .key(self.pending_cancellation_set_name())
+                .arg(self.options.max_success)
+                .invoke_async(&mut self.redis.clone()),
+        )
+        .await?;
 
         if trimmed_count > 0 {
             tracing::info!("Pruned {} successful jobs", trimmed_count);
@@ -1229,17 +1259,21 @@ impl<H: DurableExecution> MultilaneQueue<H> {
             "#,
         );
 
-        let trimmed_count: usize = trim_script
-            .key(self.queue_id())
-            .key(self.failed_list_name())
-            .key(self.job_data_hash_name())
-            .key(self.dedupe_set_name())
-            .key(self.success_list_name())
-            .key(self.job_result_hash_name())
-            .key(self.pending_cancellation_set_name())
-            .arg(self.options.max_failed)
-            .invoke_async(&mut self.redis.clone())
-            .await?;
+        let trimmed_count: usize = timings::measure(
+            QueueType::Multilane,
+            Phase::RedisPrune,
+            trim_script
+                .key(self.queue_id())
+                .key(self.failed_list_name())
+                .key(self.job_data_hash_name())
+                .key(self.dedupe_set_name())
+                .key(self.success_list_name())
+                .key(self.job_result_hash_name())
+                .key(self.pending_cancellation_set_name())
+                .arg(self.options.max_failed)
+                .invoke_async(&mut self.redis.clone()),
+        )
+        .await?;
 
         if trimmed_count > 0 {
             tracing::info!("Pruned {} failed jobs", trimmed_count);
@@ -1341,7 +1375,7 @@ impl<H: DurableExecution> MultilaneQueue<H> {
         let lease_key = self.lease_key_name(&job.job.id, &job.lease_token);
         if self
             .transaction_connections
-            .commit_if_leased(&lease_key, &hook_pipeline)
+            .commit_if_leased(QueueType::Multilane, &lease_key, &hook_pipeline)
             .await?
         {
             match &result {
@@ -1415,7 +1449,7 @@ impl<H: DurableExecution> MultilaneQueue<H> {
 
         if self
             .transaction_connections
-            .commit_if_leased(&lease_key, &hook_pipeline)
+            .commit_if_leased(QueueType::Multilane, &lease_key, &hook_pipeline)
             .await?
         {
             self.post_fail_completion().await?;

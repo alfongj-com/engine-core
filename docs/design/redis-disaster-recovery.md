@@ -64,33 +64,37 @@ outside Engine's recovery and inclusion guarantee.
 
 Critical ledger writes are serialized in-process:
 
-1. Check the durable halt flag, Redis primary role, process identity and exact
-   mirrored `(deployment, epoch, checkpoint)` token.
-2. Commit the admission, attempt, terminal observation or chain checkpoint and
-   increment the independent checkpoint in one SQLite transaction.
-3. Compare-and-swap the Redis token from the previous value to the new value.
-4. Recheck Redis continuity before returning permission to continue.
+1. Check the durable halt, Redis primary role, process identity and checkpoint.
+2. Commit the authority mutation and its exact pending predecessor/target tokens
+   together in a FULL SQLite transaction.
+3. Compare-and-swap Redis from the recorded predecessor to target, then observe
+   the target on the same primary process.
+4. Acknowledge by deleting the exact pending record in a second FULL commit.
+5. Check continuity again before returning permission.
+
+A crash or lost CAS response leaves a durable witness of the unfinished update.
+Startup or a health check may finish that exact transition. It cannot accept an
+arbitrary checkpoint lag, recreate a dead caller's permission, or enqueue work.
+Once acknowledged, an older marker is a rollback and halts execution. See
+[recoverable checkpoint protocol](recoverable-projection.md) for migration,
+failure boundaries and implementation checks.
 
 SQLite uses WAL with `synchronous=FULL`; initialization and private output files
-are synced, including containing directory entries. Database writes run on a
-blocking worker thread. Each serialized mutation runs in an owned task through
-the Redis update and continuity recheck. Canceling an HTTP request or worker wait
-does not abandon the update or release its admission slot early. The canceled
-request may still be recorded; retry the original ID and intent. Blocking database
-work retains the file lock even if its async waiter or runtime is shutting down.
-Graceful shutdown stops HTTP and workers, then drains registered journal mutations
-before allowing the runtime to exit. Forced termination can still leave a mismatch. A write or mirror failure latches the process gate and
-attempts to persist a durable halt. If storage cannot even persist the halt, the
-process still rejects subsequent execution; no failed ledger operation authorizes
-a send. An acknowledged committed attempt is conservatively possibly broadcast,
-including a crash before its first network write.
+are synced, including containing directory entries. Owned tasks retain the
+serialization lock and admission permit through publication and acknowledgement.
+Cancelling a caller does not abandon its update; retry the original ID and intent.
+Blocking database work retains the OS owner lock. Graceful shutdown stops HTTP
+and workers, then permanently closes registration and drains registered work.
+Delayed detached health probes cannot start a repair after that barrier returns.
+Health repair has a separate 32-operation
+bound, and callers cancelled while waiting for that capacity spawn no detached task.
 
-A crash between the SQL commit and Redis mirror leaves a detectable mismatch.
-A stale snapshot, missing marker, Redis process restart or role change blocks
-execution. Repairing a marker does not clear a recorded halt. A Redis-only token
-would not provide this guarantee; the comparison is against independent durable
-state. `WAIT` improves replication durability but cannot replace that authority:
-acknowledged replicated writes can still be lost in failover. [Redis WAIT](https://redis.io/docs/latest/commands/wait/)
+Positive marker, process or role contradictions still halt execution, as do storage
+failures and existing durable halts. Transport uncertainty is retryable only while
+an exact pending record exists. Without that witness, unavailable continuity still
+halts. A possibly broadcast attempt retains its identity even when a crash happens
+before its first network write. Redis replication acknowledgements cannot replace
+this independent authority. [Redis WAIT](https://redis.io/docs/latest/commands/wait/)
 
 **Projection limit:** the token is not a hash of every Redis key. A restore that
 preserves the current token can still lose Redis-only scheduling changes. Job
@@ -98,7 +102,11 @@ payload validation, durable replay ownership and retained intent prevent that
 loss from authorizing a different effect; missing projection work may require an
 explicit original-request retry or offline recovery. Arbitrary selective Redis
 corruption and hostile modification of the journal are outside the continuity
-claim. Ordinary Redis persistence remains necessary for availability.
+claim. In particular, the first Solana attempt can be bound in SQLite before its
+Redis attempt is stored. Checkpoint repair then succeeds but the job still parks;
+it cannot regenerate the signed record. A retained attempt can resume terminal
+reconciliation after a lost publication response. See the [two failure cases](recoverable-projection.md#checkpoint-repair-versus-transaction-recovery).
+Ordinary Redis persistence remains necessary for availability.
 
 SQLite WAL requires all database users on the same host. FULL synchronization is
 needed for power-loss durability; NORMAL may lose committed transactions after an
@@ -128,7 +136,7 @@ engine-recovery export --path data/recovery.sqlite --out data/recovery-export.js
 Initialization requires a fresh ledger and empty destination namespace. It does
 not import legacy queued jobs. Normal startup opens only an existing initialized
 ledger and requires its configured namespace to match. Status exposes counts and
-deployment identity. Full exports include credentials and signed requests: they
+deployment identity plus whether checkpoint publication is pending. Full exports include credentials and signed requests: they
 are written only to a new 0600 file inside a private directory, never to stdout.
 SQLite data/WAL/lock files belong in the same protected directory. Errors suppress
 SQL values and Redis URLs. This is filesystem protection, not encryption at rest.
@@ -146,7 +154,15 @@ each container start or scale this image to multiple active replicas.
 
 ### Redis restart with intact data
 
-Stop Engine. If the persisted Redis checkpoint exactly matches the independent
+For a planned Redis restart, stop admission and gracefully stop Engine **before
+restarting Redis**. Wait for Engine to exit and its owned journal operations to
+drain; inspect `engine-recovery status` and confirm `projection_pending=false`.
+If publication is still pending, restore connectivity to the same Redis process
+and, if no durable halt exists, let the current Engine version finish repair
+before continuing maintenance. Connectivity alone cannot clear a durable halt.
+Do not edit the marker or pending record by hand.
+
+After restarting Redis, keep Engine stopped. If the persisted Redis checkpoint exactly matches the independent
 ledger, explicitly reattach:
 
 ```sh
@@ -155,11 +171,45 @@ engine-recovery reattach --path data/recovery.sqlite --namespace engine_v1
 
 Reattach only updates Redis process identity. It requires the same deployment,
 epoch, checkpoint, namespace and primary role. It may clear only Redis process
-change, unavailable-continuity or primary-role-change halts. A network outage
-while Engine is running still latches execution; stop Engine before reattaching.
+change, unavailable-continuity or primary-role-change halts. Reattach refuses every unacknowledged pending transition. A network outage
+without a pending transition still latches execution; stop Engine before reattaching.
 It cannot override a checkpoint mismatch, storage failure, manual quarantine
 or terminal-evidence conflict. Unknown attempts remain bound to their original
 identity and must still follow the normal confirmation/replay rules.
+
+An **unplanned restart during load** can interrupt an unacknowledged transition.
+Reattach refuses it even when Redis retained the exact target token. This version
+requires `recover` into a fresh namespace, which quarantines attempted nonterminal
+requests. Automatic checkpoint repair requires the original Redis process; it does
+not provide automatic recovery across Redis restarts. The live-restart test below
+covers intact, idle reattachment, not this pending-under-load case.
+
+### Schema upgrade and rollback
+
+Opening a healthy schema-1 journal with this version automatically migrates it to
+schema 2. This is a one-way maintenance-window upgrade; the old binary rejects
+the upgraded journal. Qualify the additional FULL commit cost on disposable state
+before upgrading production. `status` and `export` do not migrate the journal.
+
+Before cutover, stop admission and drain/reconcile existing work, stop Engine,
+and preserve the stopped binary, configuration and consistent journal/Redis
+backups. Keep the original authority intact. After migration, a binary rollback
+requires a schema-2-compatible build with the same checkpoint protocol. There is
+no supported in-place downgrade to schema 1.
+
+Only if migration was the sole post-snapshot authority change, with no newer
+admission, signature, execution, finality evidence or safety halt, may an operator
+abandon the new deployment and restore the stopped, matching schema-1 journal
+and Redis snapshot together. Keep all newer processes stopped. A restored Redis
+has a new process ID: perform exact-checkpoint `reattach` with a schema-1-capable
+CLI before starting the preserved old binary. The current standalone
+`engine-recovery reattach` accepts schema 1 without migrating it.
+
+This is a deployment rollback, never an automatic journal restore. If any newer
+effect, request or safety evidence is possible, retain the latest schema-2 authority and fix forward;
+restoring the old snapshot can discard replay ownership and allow duplicate effects.
+Unknown outcomes block rollback. Do not lower the schema number or remove the
+pending table to make an old binary start.
 
 ### Redis loss or stale snapshot
 
@@ -171,7 +221,8 @@ engine-recovery recover --path data/recovery.sqlite --new-namespace engine_v2
 ```
 
 The command advances the epoch, retains all immutable records/replay bindings,
-and quarantines every attempted nonterminal ID. It creates only the new checkpoint
+and quarantines every attempted nonterminal ID. It clears any pending transition
+in the same epoch-change transaction. It creates only the new checkpoint
 projection; **it does not send or enqueue any transaction**. Configure Engine with
 the new namespace, then restart. Old configuration is rejected by ledger metadata.
 
@@ -217,7 +268,7 @@ storage-write failure. Cancellation tests stop every mutation after its SQLite
 commit and before Redis publication, abort its caller, then require exact marker
 continuity without recovery; a separate test cancels blocking database work and
 checks ownership remains held. `scripts/local_eoa_recovery.py --live-redis-restart`
-kills Redis while Engine remains running, checks admission is fenced, stops Engine
+kills Redis after work is idle while Engine remains running, checks admission is fenced, stops Engine
 with SIGTERM, and requires intact reattach without quarantine or a new namespace.
 A child process is SIGKILLed both before network emission
 and after a loopback HTTP server accepts a request and drops its response. Exact

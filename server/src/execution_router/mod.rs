@@ -65,6 +65,21 @@ impl ExecutionRouter {
         rpc_credentials: RpcCredentials,
         signing_credential: engine_core::credentials::SigningCredential,
     ) -> Result<Vec<QueuedTransaction>, EngineError> {
+        engine_core::recovery::fairness::scope(
+            engine_core::recovery::fairness::ChainScope::Evm(
+                execution_request.execution_options.base.chain_id,
+            ),
+            self.execute_scoped(execution_request, rpc_credentials, signing_credential),
+        )
+        .await
+    }
+
+    async fn execute_scoped(
+        &self,
+        execution_request: SendTransactionRequest,
+        rpc_credentials: RpcCredentials,
+        signing_credential: engine_core::credentials::SigningCredential,
+    ) -> Result<Vec<QueuedTransaction>, EngineError> {
         validate_execution_request(&execution_request)?;
         self.validate_webhooks(&execution_request.webhook_options)?;
         if self
@@ -450,6 +465,19 @@ impl ExecutionRouter {
     }
 
     pub async fn execute_solana(
+        &self,
+        request: engine_core::execution_options::solana::SendSolanaTransactionRequest,
+        signing_credential: SigningCredential,
+    ) -> Result<engine_core::execution_options::solana::QueuedSolanaTransactionResponse, EngineError>
+    {
+        engine_core::recovery::fairness::scope(
+            engine_core::recovery::fairness::ChainScope::Solana(request.execution_options.chain_id),
+            self.execute_solana_scoped(request, signing_credential),
+        )
+        .await
+    }
+
+    async fn execute_solana_scoped(
         &self,
         request: engine_core::execution_options::solana::SendSolanaTransactionRequest,
         signing_credential: SigningCredential,

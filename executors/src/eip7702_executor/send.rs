@@ -182,245 +182,257 @@ where
         &self,
         job: &BorrowedJob<Self::JobData>,
     ) -> JobResult<Self::Output, Self::ErrorData> {
-        super::require_bundled_execution_qualification()
-            .map_err(|error| Eip7702SendError::InternalError {
-                message: error.to_string(),
-            })
-            .map_err_nack(
-                Some(Duration::from_secs(3600)),
-                twmq::job::RequeuePosition::Last,
-            )?;
-        let job_data = &job.job.data;
-        crate::recovery::validate("eip7702", &job_data.transaction_id, job_data)
-            .await
-            .map_err(|error| Eip7702SendError::InternalError {
-                message: error.to_string(),
-            })
-            .map_err_nack(
-                Some(Duration::from_secs(10)),
-                twmq::job::RequeuePosition::Last,
-            )?;
-        let call_uid = job_data.nonce.ok_or_else(|| Eip7702SendError::InternalError {
+        let operation = async {
+            super::require_bundled_execution_qualification()
+                .map_err(|error| Eip7702SendError::InternalError {
+                    message: error.to_string(),
+                })
+                .map_err_nack(
+                    Some(Duration::from_secs(3600)),
+                    twmq::job::RequeuePosition::Last,
+                )?;
+            let job_data = &job.job.data;
+            crate::recovery::validate("eip7702", &job_data.transaction_id, job_data)
+                .await
+                .map_err(|error| {
+                    crate::recovery::nack(error, Duration::from_secs(10), |error| {
+                        Eip7702SendError::InternalError {
+                            message: error.to_string(),
+                        }
+                    })
+                })?;
+            let call_uid = job_data.nonce.ok_or_else(|| Eip7702SendError::InternalError {
             message: "Job has no persisted replay UID. Reconcile its on-chain outcome before resubmitting; legacy jobs cannot be retried safely.".to_string(),
         }).map_err_fail()?;
 
-        let now_secs = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .map(|d| d.as_secs())
-            .unwrap_or(0);
-        let age_seconds = now_secs.saturating_sub(job.job.created_at);
-        if age_seconds > 24 * 60 * 60 {
-            tracing::error!(
-                transaction_id = job_data.transaction_id,
-                attempts = job.attempts(),
-                age_seconds,
-                "EIP-7702 send job exceeded max age, failing permanently"
-            );
-            return Err(Eip7702SendError::InternalError {
+            let now_secs = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_secs())
+                .unwrap_or(0);
+            let age_seconds = now_secs.saturating_sub(job.job.created_at);
+            if age_seconds > 24 * 60 * 60 {
+                tracing::error!(
+                    transaction_id = job_data.transaction_id,
+                    attempts = job.attempts(),
+                    age_seconds,
+                    "EIP-7702 send job exceeded max age, failing permanently"
+                );
+                return Err(Eip7702SendError::InternalError {
                 message: format!(
                     "Send job exceeded maximum retry age of 24h (current age: {age_seconds}s, attempts: {attempts}); failing to prevent zombie retries",
                     attempts = job.attempts()
                 ),
             })
             .map_err_fail();
-        }
-
-        // 1. Get Chain
-        let chain = self
-            .chain_service
-            .get_chain(job_data.chain_id)
-            .map_err(|e| Eip7702SendError::ChainServiceError {
-                chain_id: job_data.chain_id,
-                message: format!("Failed to get chain instance: {e}"),
-            })
-            .map_err_fail()?;
-
-        let mut chain_auth_headers = job_data
-            .rpc_credentials
-            .to_header_map()
-            .map_err(|e| Eip7702SendError::InvalidRpcCredentials {
-                message: e.to_string(),
-            })
-            .map_err_fail()?;
-
-        // Add optional fleet_id header for bundler routing
-        if let Some(fleet_id) = job_data.execution_options.fleet_id() {
-            chain_auth_headers.insert(
-                "x-executor-fleet-id",
-                fleet_id
-                    .parse()
-                    .map_err(|e| Eip7702SendError::InvalidRpcCredentials {
-                        message: format!("Invalid fleet_id value: {e}"),
-                    })
-                    .map_err_fail()?,
-            );
-        }
-
-        let chain = chain.with_new_default_headers(chain_auth_headers);
-
-        let owner_address = match &job_data.execution_options {
-            Eip7702ExecutionOptions::Owner(o) => o.from,
-            Eip7702ExecutionOptions::SessionKey(s) => s.session_key_address,
-        };
-
-        let account = DelegatedAccount::new(owner_address, chain);
-
-        let session_key_target_address = match &job_data.execution_options {
-            Eip7702ExecutionOptions::Owner(_) => None,
-            Eip7702ExecutionOptions::SessionKey(s) => Some(s.account_address),
-        };
-
-        let transactions = match session_key_target_address {
-            Some(target_address) => {
-                account.session_key_transaction(target_address, &job_data.transactions)
             }
-            None => account.owner_transaction(&job_data.transactions),
-        }
-        .with_uid(B256::from(call_uid.to_be_bytes::<32>()));
 
-        // Get delegation contract from cache
-        let delegation_contract = self
-            .delegation_contract_cache
-            .get_delegation_contract(transactions.account().chain())
-            .await
-            .map_err(|e| {
-                let mapped_error = Eip7702SendError::DelegationCheckFailed {
-                    inner_error: e.clone(),
-                };
+            // 1. Get Chain
+            let chain = self
+                .chain_service
+                .get_chain(job_data.chain_id)
+                .map_err(|e| Eip7702SendError::ChainServiceError {
+                    chain_id: job_data.chain_id,
+                    message: format!("Failed to get chain instance: {e}"),
+                })
+                .map_err_fail()?;
 
-                // Retry only if the error is retryable (network issues, 5xx, etc.)
-                // Client errors (4xx) like "Invalid chain" or auth errors fail immediately
-                if is_build_error_retryable(&e) {
-                    mapped_error.nack(
-                        Some(Duration::from_secs(2)),
-                        twmq::job::RequeuePosition::Last,
-                    )
-                } else {
-                    mapped_error.fail()
+            let mut chain_auth_headers = job_data
+                .rpc_credentials
+                .to_header_map()
+                .map_err(|e| Eip7702SendError::InvalidRpcCredentials {
+                    message: e.to_string(),
+                })
+                .map_err_fail()?;
+
+            // Add optional fleet_id header for bundler routing
+            if let Some(fleet_id) = job_data.execution_options.fleet_id() {
+                chain_auth_headers.insert(
+                    "x-executor-fleet-id",
+                    fleet_id
+                        .parse()
+                        .map_err(|e| Eip7702SendError::InvalidRpcCredentials {
+                            message: format!("Invalid fleet_id value: {e}"),
+                        })
+                        .map_err_fail()?,
+                );
+            }
+
+            let chain = chain.with_new_default_headers(chain_auth_headers);
+
+            let owner_address = match &job_data.execution_options {
+                Eip7702ExecutionOptions::Owner(o) => o.from,
+                Eip7702ExecutionOptions::SessionKey(s) => s.session_key_address,
+            };
+
+            let account = DelegatedAccount::new(owner_address, chain);
+
+            let session_key_target_address = match &job_data.execution_options {
+                Eip7702ExecutionOptions::Owner(_) => None,
+                Eip7702ExecutionOptions::SessionKey(s) => Some(s.account_address),
+            };
+
+            let transactions = match session_key_target_address {
+                Some(target_address) => {
+                    account.session_key_transaction(target_address, &job_data.transactions)
                 }
-            })?;
+                None => account.owner_transaction(&job_data.transactions),
+            }
+            .with_uid(B256::from(call_uid.to_be_bytes::<32>()));
 
-        let transactions = transactions
-            .add_authorization_if_needed(
-                self.eoa_signer.deref(),
-                &job_data.signing_credential,
-                delegation_contract,
-            )
-            .await
-            .map_err(|e| {
-                let mapped_error = match e {
-                    EngineError::RpcError { .. } => Eip7702SendError::DelegationCheckFailed {
+            // Get delegation contract from cache
+            let delegation_contract = self
+                .delegation_contract_cache
+                .get_delegation_contract(transactions.account().chain())
+                .await
+                .map_err(|e| {
+                    let mapped_error = Eip7702SendError::DelegationCheckFailed {
                         inner_error: e.clone(),
-                    },
-                    _ => Eip7702SendError::SigningFailed {
-                        inner_error: e.clone(),
-                    },
-                };
+                    };
 
-                // Retry only if the error is retryable (network issues, 5xx, etc.)
-                // Client errors (4xx) like "Invalid chain" or auth errors fail immediately
-                if is_build_error_retryable(&e) {
-                    mapped_error.nack_with_max_retries(
-                        Some(Duration::from_secs(2)),
-                        twmq::job::RequeuePosition::Last,
-                        3,
-                        job.attempts(),
-                    )
-                } else {
-                    mapped_error.fail()
-                }
-            })?;
+                    // Retry only if the error is retryable (network issues, 5xx, etc.)
+                    // Client errors (4xx) like "Invalid chain" or auth errors fail immediately
+                    if is_build_error_retryable(&e) {
+                        mapped_error.nack(
+                            Some(Duration::from_secs(2)),
+                            twmq::job::RequeuePosition::Last,
+                        )
+                    } else {
+                        mapped_error.fail()
+                    }
+                })?;
 
-        let (wrapped_calls, signature) = transactions
-            .build(self.eoa_signer.deref(), &job_data.signing_credential)
-            .await
-            .map_err(|e| Eip7702SendError::SigningFailed { inner_error: e })
-            .map_err_fail()?;
-
-        if let Some(journal) = engine_core::recovery::global() {
-            let replay_key = format!(
-                "eip7702:{}:{owner_address:#x}:{call_uid}",
-                job_data.chain_id
-            );
-            journal
-                .before_broadcast(
-                    "eip7702",
-                    &job_data.transaction_id,
-                    &replay_key,
-                    serde_json::json!({"chainId":job_data.chain_id, "sender":owner_address,
-                    "uid":call_uid, "wrappedCalls":wrapped_calls, "signature":signature,
-                    "authorization":transactions.authorization()}),
+            let transactions = transactions
+                .add_authorization_if_needed(
+                    self.eoa_signer.deref(),
+                    &job_data.signing_credential,
+                    delegation_contract,
                 )
                 .await
-                .map_err(|error| Eip7702SendError::InternalError {
-                    message: error.to_string(),
-                })
-                .map_err_nack(
-                    Some(Duration::from_secs(10)),
-                    twmq::job::RequeuePosition::Last,
-                )?;
-        }
-        let transaction_id = transactions
-            .account()
-            .chain()
-            .bundler_client()
-            .tw_execute(
-                owner_address,
-                &wrapped_calls,
-                &signature,
-                transactions.authorization(),
-            )
-            .await
-            .map_err(|e| {
-                let engine_error = e.to_engine_bundler_error(transactions.account().chain());
-                let wrapped_error = Eip7702SendError::BundlerCallFailed {
-                    inner_error: engine_error.clone(),
-                };
-                if let EngineError::BundlerError { kind, .. } = &engine_error {
-                    if is_retryable_rpc_error(kind) {
-                        wrapped_error.nack_with_max_retries(
+                .map_err(|e| {
+                    let mapped_error = match e {
+                        EngineError::RpcError { .. } => Eip7702SendError::DelegationCheckFailed {
+                            inner_error: e.clone(),
+                        },
+                        _ => Eip7702SendError::SigningFailed {
+                            inner_error: e.clone(),
+                        },
+                    };
+
+                    // Retry only if the error is retryable (network issues, 5xx, etc.)
+                    // Client errors (4xx) like "Invalid chain" or auth errors fail immediately
+                    if is_build_error_retryable(&e) {
+                        mapped_error.nack_with_max_retries(
                             Some(Duration::from_secs(2)),
                             twmq::job::RequeuePosition::Last,
                             3,
                             job.attempts(),
                         )
                     } else {
+                        mapped_error.fail()
+                    }
+                })?;
+
+            let (wrapped_calls, signature) = transactions
+                .build(self.eoa_signer.deref(), &job_data.signing_credential)
+                .await
+                .map_err(|e| Eip7702SendError::SigningFailed { inner_error: e })
+                .map_err_fail()?;
+
+            if let Some(journal) = engine_core::recovery::global() {
+                let replay_key = format!(
+                    "eip7702:{}:{owner_address:#x}:{call_uid}",
+                    job_data.chain_id
+                );
+                journal
+                    .before_broadcast(
+                        "eip7702",
+                        &job_data.transaction_id,
+                        &replay_key,
+                        serde_json::json!({"chainId":job_data.chain_id, "sender":owner_address,
+                    "uid":call_uid, "wrappedCalls":wrapped_calls, "signature":signature,
+                    "authorization":transactions.authorization()}),
+                    )
+                    .await
+                    .map_err(crate::recovery::from_journal_error)
+                    .map_err(|error| {
+                        crate::recovery::nack(error, Duration::from_secs(10), |error| {
+                            Eip7702SendError::InternalError {
+                                message: error.to_string(),
+                            }
+                        })
+                    })?;
+            }
+            let transaction_id = transactions
+                .account()
+                .chain()
+                .bundler_client()
+                .tw_execute(
+                    owner_address,
+                    &wrapped_calls,
+                    &signature,
+                    transactions.authorization(),
+                )
+                .await
+                .map_err(|e| {
+                    let engine_error = e.to_engine_bundler_error(transactions.account().chain());
+                    let wrapped_error = Eip7702SendError::BundlerCallFailed {
+                        inner_error: engine_error.clone(),
+                    };
+                    if let EngineError::BundlerError { kind, .. } = &engine_error {
+                        if is_retryable_rpc_error(kind) {
+                            wrapped_error.nack_with_max_retries(
+                                Some(Duration::from_secs(2)),
+                                twmq::job::RequeuePosition::Last,
+                                3,
+                                job.attempts(),
+                            )
+                        } else {
+                            wrapped_error.fail()
+                        }
+                    } else {
                         wrapped_error.fail()
                     }
-                } else {
-                    wrapped_error.fail()
-                }
-            })?;
+                })?;
 
-        tracing::debug!(transaction_id = ?transaction_id, "EIP-7702 transaction sent to bundler");
+            tracing::debug!(transaction_id = ?transaction_id, "EIP-7702 transaction sent to bundler");
 
-        // Record metrics: transaction queued to sent
-        let sent_timestamp = current_timestamp_ms();
-        let queued_to_sent_duration =
-            calculate_duration_seconds_from_twmq(job.job.created_at, sent_timestamp);
-        record_transaction_queued_to_sent("eip7702", job_data.chain_id, queued_to_sent_duration);
+            // Record metrics: transaction queued to sent
+            let sent_timestamp = current_timestamp_ms();
+            let queued_to_sent_duration =
+                calculate_duration_seconds_from_twmq(job.job.created_at, sent_timestamp);
+            record_transaction_queued_to_sent(
+                "eip7702",
+                job_data.chain_id,
+                queued_to_sent_duration,
+            );
 
-        let sender_details = match session_key_target_address {
-            Some(target_address) => Eip7702Sender::SessionKey {
-                session_key_address: owner_address,
-                eoa_address: target_address,
-            },
-            None => Eip7702Sender::Owner {
-                eoa_address: owner_address,
-            },
+            let sender_details = match session_key_target_address {
+                Some(target_address) => Eip7702Sender::SessionKey {
+                    session_key_address: owner_address,
+                    eoa_address: target_address,
+                },
+                None => Eip7702Sender::Owner {
+                    eoa_address: owner_address,
+                },
+            };
+
+            Ok(Eip7702SendResult {
+                sender_details,
+                transaction_id: transaction_id.clone(),
+                wrapped_calls: serde_json::to_value(&wrapped_calls)
+                    .map_err(|e| Eip7702SendError::InternalError {
+                        message: format!("Failed to serialize wrapped calls: {e}"),
+                    })
+                    .map_err_fail()?,
+                signature,
+                authorization: transactions.authorization().map(|f| f.inner().clone()),
+            })
         };
-
-        Ok(Eip7702SendResult {
-            sender_details,
-            transaction_id: transaction_id.clone(),
-            wrapped_calls: serde_json::to_value(&wrapped_calls)
-                .map_err(|e| Eip7702SendError::InternalError {
-                    message: format!("Failed to serialize wrapped calls: {e}"),
-                })
-                .map_err_fail()?,
-            signature,
-            authorization: transactions.authorization().map(|f| f.inner().clone()),
-        })
+        engine_core::recovery::fairness::scope(
+            engine_core::recovery::fairness::ChainScope::Evm(job.job.data.chain_id),
+            operation,
+        )
+        .await
     }
 
     async fn on_success(
