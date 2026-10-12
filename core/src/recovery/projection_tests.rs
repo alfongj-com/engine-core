@@ -597,6 +597,16 @@ async fn legacy_inventory_is_read_only_and_incomplete_or_unknown_schemas_are_rej
     }
 }
 
+/// Poll a caller through its ready gates without allowing it to finish.
+/// This makes semaphore admission/cancellation assertions independent of timers.
+async fn poll_pending_once<F: std::future::Future>(mut future: std::pin::Pin<&mut F>) {
+    std::future::poll_fn(|cx| {
+        assert!(future.as_mut().poll(cx).is_pending());
+        std::task::Poll::Ready(())
+    })
+    .await;
+}
+
 #[tokio::test]
 #[ignore = "requires disposable Redis in TEST_REDIS_URL"]
 async fn cancelled_health_callers_cannot_create_unbounded_owned_tasks() {
@@ -604,35 +614,35 @@ async fn cancelled_health_callers_cannot_create_unbounded_owned_tasks() {
     f.initialize().await;
     let j = f.open().await;
     let held = j.serial.lock().await;
-    // Poll and drop callers before their spawned operations can run. Detached
-    // work must retain each slot, rather than recycling it on caller cancellation.
-    for _ in 0..MAX_CONCURRENT_HEALTH_CHECKS {
-        let mut caller = Box::pin(j.ensure_healthy());
-        std::future::poll_fn(|cx| {
-            assert!(std::future::Future::poll(caller.as_mut(), cx).is_pending());
-            std::task::Poll::Ready(())
-        })
-        .await;
+    // Distinct chain lanes can occupy all health slots. Each detached operation
+    // retains both its lane and slot even after its caller disappears.
+    for id in 1..=MAX_CONCURRENT_HEALTH_CHECKS as u64 {
+        let mut caller = Box::pin(fairness::scope(
+            fairness::ChainScope::Evm(id),
+            j.ensure_healthy(),
+        ));
+        poll_pending_once(caller.as_mut()).await;
         drop(caller);
     }
     assert_eq!(j.health_slots.available_permits(), 0);
     let retained = Arc::strong_count(&j);
-    // These additional callers wait outside owned registration/spawn. Dropping
-    // their futures must release their semaphore waiters and retain no journal.
+    // Another lane can wait for global capacity, but cancellation before spawn
+    // must release that lane and must not register more detached work.
     for _ in 0..(MAX_CONCURRENT_HEALTH_CHECKS * 4) {
         let mut waiting = Box::pin(j.ensure_healthy());
-        std::future::poll_fn(|cx| {
-            assert!(std::future::Future::poll(waiting.as_mut(), cx).is_pending());
-            std::task::Poll::Ready(())
-        })
-        .await;
+        poll_pending_once(waiting.as_mut()).await;
         drop(waiting);
     }
     assert_eq!(Arc::strong_count(&j), retained);
     assert_eq!(j.health_slots.available_permits(), 0);
-    assert!(j.owned_operations.try_write().is_err());
+    let fallback = tokio::time::timeout(Duration::from_secs(1), j.fairness.acquire())
+        .await
+        .expect("cancelled capacity waiters must release their chain lane");
+    drop(fallback);
+    let mut drained = Box::pin(j.drain_mutations());
+    poll_pending_once(drained.as_mut()).await;
     drop(held);
-    tokio::time::timeout(Duration::from_secs(10), j.drain_mutations())
+    tokio::time::timeout(Duration::from_secs(10), drained)
         .await
         .unwrap();
     assert_eq!(
@@ -640,6 +650,82 @@ async fn cancelled_health_callers_cannot_create_unbounded_owned_tasks() {
         MAX_CONCURRENT_HEALTH_CHECKS
     );
     j.ensure_healthy().await.unwrap();
+    drop(j);
+    f.cleanup(&[]).await;
+}
+
+#[tokio::test]
+#[ignore = "requires disposable Redis in TEST_REDIS_URL"]
+async fn hot_chain_health_waiters_cannot_reserve_capacity_ahead_of_a_peer() {
+    let f = Fixture::fresh();
+    f.initialize().await;
+    let j = f.open().await;
+    let held = j.serial.lock().await;
+    let hot_chain =
+        fairness::ChainScope::Solana(crate::execution_options::solana::SolanaChainId::SolanaLocal);
+    let mut hot = Box::pin(fairness::scope(hot_chain, j.ensure_healthy()));
+    poll_pending_once(hot.as_mut()).await;
+    assert_eq!(
+        j.health_slots.available_permits(),
+        MAX_CONCURRENT_HEALTH_CHECKS - 1
+    );
+    let retained = Arc::strong_count(&j);
+    // Keep more hot-chain callers alive than the global capacity. They must
+    // wait before reserving a slot or registering a journal-owned operation.
+    let mut waiting = Vec::new();
+    for _ in 0..(MAX_CONCURRENT_HEALTH_CHECKS * 2) {
+        let mut caller = Box::pin(fairness::scope(hot_chain, j.ensure_healthy()));
+        poll_pending_once(caller.as_mut()).await;
+        waiting.push(caller);
+    }
+    assert_eq!(
+        j.health_slots.available_permits(),
+        MAX_CONCURRENT_HEALTH_CHECKS - 1
+    );
+    assert_eq!(Arc::strong_count(&j), retained);
+
+    let mut peer = Box::pin(fairness::scope(
+        fairness::ChainScope::Evm(1),
+        j.ensure_healthy(),
+    ));
+    poll_pending_once(peer.as_mut()).await;
+    assert_eq!(
+        j.health_slots.available_permits(),
+        MAX_CONCURRENT_HEALTH_CHECKS - 2
+    );
+    assert_eq!(
+        Arc::strong_count(&j),
+        retained + 1,
+        "the peer must enter owned work despite the hot chain's live backlog"
+    );
+    // Cancellation on either side of admission has different ownership:
+    // queued callers leave immediately; admitted repairs remain in the drain.
+    drop(waiting);
+    drop(hot);
+    drop(peer);
+    assert_eq!(
+        j.health_slots.available_permits(),
+        MAX_CONCURRENT_HEALTH_CHECKS - 2
+    );
+    let mut drained = Box::pin(j.drain_mutations());
+    poll_pending_once(drained.as_mut()).await;
+    drop(held);
+    tokio::time::timeout(Duration::from_secs(10), drained)
+        .await
+        .unwrap();
+    assert_eq!(
+        j.health_slots.available_permits(),
+        MAX_CONCURRENT_HEALTH_CHECKS
+    );
+    for chain in [hot_chain, fairness::ChainScope::Evm(1)] {
+        tokio::time::timeout(
+            Duration::from_secs(1),
+            fairness::scope(chain, j.ensure_healthy()),
+        )
+        .await
+        .expect("the chain lane must be released after detached repair completes")
+        .unwrap();
+    }
     drop(j);
     f.cleanup(&[]).await;
 }

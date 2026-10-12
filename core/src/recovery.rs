@@ -644,10 +644,21 @@ impl RecoveryJournal {
             }
         })
     }
-    async fn serial_guard(&self, operation: &'static str) -> SerialGuard<'_> {
+    async fn lane_permit(&self, operation: &'static str) -> tokio::sync::OwnedSemaphorePermit {
         let lane_wait = metrics::timer(operation, "lane_wait");
         let lane = self.fairness.acquire().await;
         drop(lane_wait);
+        lane
+    }
+    async fn serial_guard(&self, operation: &'static str) -> SerialGuard<'_> {
+        let lane = self.lane_permit(operation).await;
+        self.serial_guard_with_lane(operation, lane).await
+    }
+    async fn serial_guard_with_lane(
+        &self,
+        operation: &'static str,
+        lane: tokio::sync::OwnedSemaphorePermit,
+    ) -> SerialGuard<'_> {
         let wait = metrics::timer(operation, "serial_wait");
         let guard = self.serial.lock().await;
         drop(wait);
@@ -777,6 +788,10 @@ impl RecoveryJournal {
     }
 
     pub async fn ensure_healthy(self: &Arc<Self>) -> Result<()> {
+        // Wait cancellably in this chain's lane before reserving global health
+        // capacity. A hot chain must not fill all slots with its lane waiters.
+        // Both permits transfer to the owned task before any repair can begin.
+        let lane = self.lane_permit("health").await;
         let capacity_wait = metrics::timer("health", "health_capacity_wait");
         let permit = self
             .health_slots
@@ -787,7 +802,7 @@ impl RecoveryJournal {
         drop(capacity_wait);
         self.run_owned(move |journal| async move {
             let _permit = permit;
-            let _guard = journal.serial_guard("health").await;
+            let _guard = journal.serial_guard_with_lane("health", lane).await;
             journal.healthy_locked().await.map(|_| ())
         })
         .await

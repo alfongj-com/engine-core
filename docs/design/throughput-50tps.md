@@ -1,9 +1,14 @@
 # Sustaining 50 transactions/second from one signer
 
-**Review:** 2026-09-26. **Reference implementation:** `5baa70b` before this review;
-changes below describe the working revision. **Target:** 50 admitted, broadcast
-and eventually finalized transactions/second **per chain**, measured separately.
-A submission acknowledgment is not terminal throughput.
+**Historical review:** 2026-09-26. **Reference implementation:** `5baa70b` before
+that review; September measurements below describe the subsequent September
+revision. **Target:** 50 admitted, broadcast and eventually finalized
+transactions/second **per chain**, measured separately. A submission acknowledgment
+is not terminal throughput.
+
+PR #2 changes journal durability and Solana polling. Its [October 12 measurements](https://github.com/alfongj-com/engine-core/blob/load-tests/docs/baselines/pr2-2026-10-12/README.md)
+are the current comparison; September capacity figures do not transfer to schema 2.
+This document does not establish that the target has been reached.
 
 ## Decision
 
@@ -23,7 +28,7 @@ Numbers derived from them are sizing examples, not service-level guarantees.
 | Arbitrum Nitro | Out-of-order nonces have a short, operator-configured retry buffer; `pending` count equals `latest`. Parent-chain batch finality is distinct from sequencer inclusion. [Nonce management](https://docs.arbitrum.io/arbitrum-essentials/arbitrum-vs-ethereum/nonce-management), [Finality](https://docs.arbitrum.io/how-arbitrum-works/reference/finality-and-reorgs) | Keep one coordinated allocator and recover gaps promptly; a larger inflight window does not guarantee sequencer acceptance. Orbit/L3 configurations inherit their actual parent/DA assumptions. |
 | OP Mainnet | Typical L2 inclusion is about 2s; hard finality is about 15–30 minutes in the documented standard configuration. Safe means L1 data inclusion, finalized means its L1 finality. [OP finality](https://docs.optimism.io/op-stack/transactions/transaction-finality) | A 100-nonce window provides only an ideal 50/s with no latency headroom. Retain roughly 45k–90k attempts at 50/s before polling delay, replacements and outage headroom. |
 | Base | The documented stages are ~200ms preconfirmation, ~2s L2 block, ~2min batch and ~20min L1 batch finality. [Base finality](https://docs.base.org/specifications/transactions/transaction-finality) | Flashblocks may free a submission window earlier; they cannot authorize final cleanup. About 60k retained attempts precede extra headroom at 50/s. |
-| Solana | `getSignatureStatuses` accepts up to 256 signatures; historical lookup must be requested explicitly. [RPC](https://solana.com/docs/rpc/http/getsignaturestatuses) | Current per-job single-signature polling leaves batching gains unused. A shared writable fee payer also consumes the per-account budget (currently 12M CUs/block); transaction compute/account usage and fee selection require workload-specific measurement. [Account limits](https://solana.com/upgrades/100m-cu-blocks), [writable payer](https://solana.com/docs/core/transactions/transaction-pipeline). No generic 50/s guarantee follows from cluster TPS. |
+| Solana | `getSignatureStatuses` accepts up to 256 signatures; historical lookup must be requested explicitly. [RPC](https://solana.com/docs/rpc/http/getsignaturestatuses) | PR #2 [batches eligible singleton status reads](solana-status-batching.md) within one cached cluster/endpoint. Actual batch sizes and RPC savings require measurement. A shared writable fee payer also consumes the per-account budget (12M CUs/block in the reviewed documentation); transaction compute/account usage and fee selection require workload-specific measurement. [Account limits](https://solana.com/upgrades/100m-cu-blocks), [writable payer](https://solana.com/docs/core/transactions/transaction-pipeline). No generic 50/s guarantee follows from cluster TPS. |
 
 Finality timings are planning inputs. The implementation uses evidence, not a
 wall-clock timer, to finalize. Ethereum/rollup retention can rise sharply during
@@ -63,7 +68,7 @@ zero reuses the already observed latest count and omits the hint RPC. CAS races
 can add continuity reads. Nonce, fee, estimation and broadcast calls are extra.
 
 At a fully saturated 1024/5s receipt budget, receipt calls alone reach 17.69M/day
-per signer/chain. At dRPC's current 20 CU per ordinary call and $0.30/M CU, that
+per signer/chain. At the September pricing used here, 20 CU per ordinary dRPC call and $0.30/M CU, that
 is about **$106/day** before other RPCs. This is a budget ceiling illustration,
 not an observed bill or recommendation to poll that aggressively continuously.
 [Official compute-unit pricing](https://drpc.org/docs/pricing/compute-units)
@@ -74,11 +79,20 @@ receipt lookup per intent, receipt reads alone are 4.32M/day (~$25.92 at that
 price), plus block evidence and all submission calls. This is an estimate;
 missing receipts, page boundaries, replacement fanout and RPC lag add reads.
 
-Solana's present unbatched status rate is approximately `T × F / I`: transaction
-rate `T`, time awaiting finality `F`, effective poll interval `I`. For example,
-50/s × hypothetical 20s / 1s = 1000 status calls/s, plus blockhash, send and final
-transaction reads. The example's 20s is not a promised finality time. Existing
-[public measurements](https://github.com/alfongj-com/engine-core/blob/load-tests/docs/design/solana-polling-cost.md) show actual intervals can be longer.
+Before PR #2, Solana's unbatched status rate was approximately `T × F / I`:
+transaction rate `T`, time awaiting finality `F`, effective poll interval `I`.
+For example, 50/s × hypothetical 20s / 1s = 1000 logical polls/s, plus blockhash,
+send and final transaction reads. The example's 20s is not a promised finality
+time. PR #2 coalesces eligible polls; measure actual HTTP batches separately from
+logical polls using the [bounded polling design](solana-status-batching.md).
+The older [public measurements](https://github.com/alfongj-com/engine-core/blob/load-tests/docs/design/solana-polling-cost.md)
+show actual intervals can be longer; they did not measure this coordinator.
+
+Schema 2 [acknowledges each new checkpoint](recoverable-projection.md) in a second
+FULL SQLite commit after Redis publication and verification. That required durable
+write changes the shared storage budget. September journal/Engine capacity cannot
+be carried forward without measuring both commits, Redis waits and aggregate
+chain progress under the new protocol.
 
 Sizing rule: retain at least `T × (finality delay + scan delay + outage margin)`
 attempts, multiplied by measured replacement fanout. A 100k cap may still bind
@@ -101,10 +115,10 @@ Shared provider throttling and lifetime EOA retry budgets are not implemented.
   Ethereum/L2 workload sustained; a fast-finality local run tests different work.
 - Collect RPC method counts, rejected admissions, p95/p99 latency, retained depth,
   allocator progress, memory and journal fsync time. Preserve old/new run scope.
-- Next optimization candidates: a finalized-head coordinator and a provisional
-  block index, and Solana signature batching. Keys must include endpoint/policy;
-  absent/stale observations cannot erase or renew identity. These are proposals,
-  not implemented claims.
+- Further optimization candidates: a finalized-head coordinator and a provisional
+  block index. Keys must include endpoint/policy; absent/stale observations cannot
+  erase or renew identity. Solana status batching is implemented in PR #2 and
+  needs its own measured comparison; these other candidates remain proposals.
 - Finite models check identity/finality/failure transitions. Pagination,
   bounded-concurrency and backlog regressions exercise implementation. None
   proves 50 TPS, resource bounds under arbitrary traffic, or model composition.
@@ -112,9 +126,10 @@ Shared provider throttling and lifetime EOA retry budgets are not implemented.
 ## Durable writer capacity qualification
 
 The [separate unoptimized journal probe](https://github.com/alfongj-com/engine-core/blob/load-tests/docs/baselines/review-2026-09-26/JOURNAL.md)
-on this host measured an equivalent 53–57 three-stage intents/second, derived
+in September on this host measured an equivalent 53–57 three-stage intents/second, derived
 from separately timed admission, attempt and terminal phases. This was not mixed
-Engine traffic. That isolated measurement cannot support a claim of
+Engine traffic and predates schema 2's second FULL acknowledgement. That isolated
+measurement cannot support a current claim of
 50 TPS on several chains simultaneously: all chains share the serial durable
 writer. Per-chain send/receipt improvements must therefore be qualified together
 under the intended aggregate load, including SQLite FULL-sync and Redis persistence.

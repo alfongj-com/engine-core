@@ -41,7 +41,7 @@
     },
     {
       "path": "core/src/recovery.rs",
-      "sha256": "c00471af0fd77b03314031b1951c85554135ca117361b838b56bc27e6819fb4e",
+      "sha256": "89eca0b047328046a4162a7707ee2003e90a5832dc7fa13ad6c725dcfc0acf37",
       "models": [
         "DisasterRecovery",
         "Finality",
@@ -632,7 +632,7 @@
         "DisasterRecoveryProjection",
         "DisasterRecovery"
       ],
-      "sha256": "006747140d34cd4b3e447e5b5af8cd412c1f39a30ebe05d22ba530422eda2cab"
+      "sha256": "de6d503768e5f83250a1d006d0718bcb8b1197141354f30095da8c2524a0ccd1"
     },
     {
       "path": "core/src/recovery/projection_transport_tests.rs",
@@ -858,6 +858,14 @@
         "twmq/src/shutdown_tests.rs"
       ],
       "reason": "Single and multilane worker loops prioritize shutdown and observe it while awaiting Redis pop or error backoff. Cancellation before Lua applies stutters over QueueLease; an applied pop with an unseen reply maps to Poll then stuttering, retaining its lease until Expire and a later Poll. Shutdown does not create a completion, dispatch the unseen job, or cancel active handlers or their lease-fenced completion. WATCH/EXISTS/EXEC and journal ownership/drain are unchanged. Real-Redis tests withhold applied pop replies in both queue types, require bounded shutdown, then reclaim the original job through explicit lease expiry and observe one successful hook. A separate gated handler checks active work still drains through acknowledgement. Redis reconnect timing, response loss, Tokio cancellation, wall-clock shutdown bounds and liveness remain implementation obligations, not finite-model theorems. The active-job log count correction is diagnostic only."
+    },
+    "health_capacity_fairness_oct12": {
+      "base": "12aa6d8",
+      "paths": [
+        "core/src/recovery.rs",
+        "core/src/recovery/projection_tests.rs"
+      ],
+      "reason": "Health checks acquire their bounded chain lane cancellably before reserving one of32 global health slots. Only after both permits are held does run_owned register and spawn. The owned operation consumes that same lane in serial_guard_with_lane, retaining both permits through any pending checkpoint repair, FULL acknowledgement and final observation. Cancellation before registration grants no permission and releases acquired permits; after registration the existing drain barrier retains work. Authority transactions, Redis CAS, acknowledgement, finality and send gates are unchanged, so protocol actions are unchanged. Real Redis tests reject hot-chain slot monopolization, bound detached operations across distinct lanes, and check cancellation/drain at both admission boundaries. FIFO ordering, Tokio scheduling and performance remain implementation obligations, not a new finite-model liveness proof."
     }
   }
 }

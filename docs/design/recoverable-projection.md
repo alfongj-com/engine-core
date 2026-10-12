@@ -104,6 +104,12 @@ a flood can fill it before another chain reaches its lane. Overflow chains and
 unscoped work share a lane. Neither per-chain ingress quotas nor a wall-clock
 fairness guarantee is claimed.
 
+Health checks acquire their chain lane before a global health slot. Waiting polls
+from one chain therefore cannot occupy all 32 slots. Both waits are cancellable;
+after registration, the owned repair retains both permits through acknowledgement
+and participates in shutdown drain. This order was corrected after the first
+matched load run exposed contention before the chain lanes.
+
 Interpret `lane_wait`, `serial_wait` and health-capacity wait together. Moving wait
 ahead of the global lock is not itself an improvement; compare each chain's actual
 attempt/terminal progress and backlog under the same offered load.
