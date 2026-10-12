@@ -1,0 +1,12 @@
+[package]
+name = "engine-fee-proofs"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+# Deliberately independent: proofs compile the production arithmetic without
+# pulling the executor's networking/signing dependencies into the verifier.
+[workspace]
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kani)'] }

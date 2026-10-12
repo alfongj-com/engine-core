@@ -224,8 +224,19 @@ pub async fn read_contract(
     OptionalRpcCredentialsExtractor(rpc_credentials): OptionalRpcCredentialsExtractor,
     EngineJson(request): EngineJson<ReadRequest>,
 ) -> Result<impl IntoResponse, ApiEngineError> {
-    let auth: Option<ThirdwebAuth> = rpc_credentials.map(|creds| match creds {
-        engine_core::chain::RpcCredentials::Thirdweb(auth) => auth,
+    if state.chains.is_configured(request.read_options.chain_id)
+        && !matches!(
+            rpc_credentials,
+            Some(engine_core::chain::RpcCredentials::Configured)
+        )
+    {
+        return Err(ApiEngineError(EngineError::ValidationError {
+            message: "Configured RPC access requires x-engine-signing-token".into(),
+        }));
+    }
+    let auth: Option<ThirdwebAuth> = rpc_credentials.and_then(|creds| match creds {
+        engine_core::chain::RpcCredentials::Thirdweb(auth) => Some(auth),
+        engine_core::chain::RpcCredentials::Configured => None,
     });
 
     let chain_id = request.read_options.chain_id;
@@ -512,7 +523,13 @@ async fn execute_multicall(
         .input(multicall_call.abi_encode().into());
 
     let result = provider.call(call_request).await.map_err(|e| {
-        EngineError::contract_multicall_error(chain_id, format!("Multicall failed: {e}"))
+        EngineError::contract_multicall_error(
+            chain_id,
+            format!(
+                "Multicall failed: {}",
+                engine_core::error::rpc_error_diagnostic(&e)
+            ),
+        )
     })?;
 
     let decoded = aggregate3Call::abi_decode_returns(&result).map_err(|e| {

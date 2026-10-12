@@ -1,12 +1,13 @@
 use std::time::Duration;
 
 use alloy::{
+    consensus::Transaction,
     primitives::U256,
     transports::{RpcError, TransportErrorKind},
 };
 use engine_core::{
     chain::Chain,
-    error::{AlloyRpcErrorToEngineError, EngineError, RpcErrorKind},
+    error::{EngineError, RpcErrorKind},
 };
 use serde::{Deserialize, Serialize};
 use thirdweb_core::iaw::IAWError;
@@ -78,6 +79,9 @@ pub enum EoaExecutorWorkerError {
     #[error("Internal error: {message}")]
     InternalError { message: String },
 
+    #[error("Recovery required: {message}")]
+    RecoveryRequired { message: String },
+
     #[error("User cancelled")]
     UserCancelled,
 }
@@ -137,79 +141,12 @@ impl UserCancellable for EoaExecutorWorkerError {
     }
 }
 
-// ========== SIMPLE ERROR CLASSIFICATION ==========
-#[derive(Debug)]
-pub enum SendErrorClassification {
-    PossiblySent,                     // "nonce too low", "already known" etc
-    DeterministicFailure,             // Invalid signature, malformed tx, insufficient funds etc
-    DeterministicFailureNonRetryable, // Non-retryable deterministic failure
-}
-
+// Once dispatch starts, neither provider error text nor a transport failure can
+// revoke the durable nonce reservation. Reconcile or retry the same signed bytes.
 #[derive(PartialEq, Eq, Debug)]
 pub enum SendContext {
     Rebroadcast,
     InitialBroadcast,
-}
-
-#[tracing::instrument(skip_all, fields(error = ?error, context = ?context))]
-pub fn classify_send_error(
-    error: &RpcError<TransportErrorKind>,
-    context: SendContext,
-) -> SendErrorClassification {
-    if !error.is_error_resp() {
-        return SendErrorClassification::DeterministicFailure;
-    }
-
-    let error_str = error.to_string().to_lowercase();
-
-    // Deterministic failures that didn't consume nonce (spec-compliant)
-    if error_str.contains("invalid signature")
-        || error_str.contains("malformed transaction")
-        || (context == SendContext::InitialBroadcast && error_str.contains("insufficient funds"))
-        || error_str.contains("invalid transaction format")
-        || error_str.contains("nonce too high")
-        || error_str.contains("transaction execution error: user cant pay the bills")
-    // chain 106
-    // Should trigger nonce reset
-    {
-        return SendErrorClassification::DeterministicFailure;
-    }
-
-    // Transaction possibly made it to mempool (spec-compliant)
-    if error_str.contains("nonce too low")
-        || error_str.contains("already known")
-        || error_str.contains("replacement transaction underpriced")
-        || error_str.contains("transaction already imported")
-    {
-        return SendErrorClassification::PossiblySent;
-    }
-
-    // Additional common failures that didn't consume nonce
-    if error_str.contains("malformed")
-        || error_str.contains("gas limit")
-        || error_str.contains("intrinsic gas too low")
-    {
-        return SendErrorClassification::DeterministicFailure;
-    }
-
-    if error_str.contains("oversized") {
-        return SendErrorClassification::DeterministicFailureNonRetryable;
-    }
-
-    tracing::warn!(
-        "Unknown send error: {}. PLEASE REPORT FOR ADDING CORRECT CLASSIFICATION [NOTIFY]",
-        error_str
-    );
-
-    // Default: assume possibly sent for safety
-    SendErrorClassification::PossiblySent
-}
-
-pub fn should_trigger_nonce_reset(error: &RpcError<TransportErrorKind>) -> bool {
-    let error_str = error.to_string().to_lowercase();
-
-    // "nonce too high" should trigger nonce reset as per spec
-    error_str.contains("nonce too high")
 }
 
 pub fn should_update_balance_threshold(error: &EngineError) -> bool {
@@ -264,19 +201,18 @@ pub fn is_retryable_preparation_error(error: &EoaExecutorWorkerError) -> bool {
         EoaExecutorWorkerError::TransactionSimulationFailed { .. } => false, // Deterministic
         EoaExecutorWorkerError::TransactionBuildFailed { .. } => false,      // Deterministic
         EoaExecutorWorkerError::SigningError { inner_error, .. } => match inner_error {
-            // if vault error, it's not retryable
-            EngineError::VaultError { .. } => false,
             // if iaw error, it's retryable only if it's a network error
             EngineError::IawError { error, .. } => matches!(error, IAWError::NetworkError { .. }),
             _ => false,
         },
         EoaExecutorWorkerError::TransactionNotFound { .. } => false, // Deterministic
         EoaExecutorWorkerError::InternalError { .. } => false,       // Deterministic
-        EoaExecutorWorkerError::UserCancelled => false,              // Deterministic
+        EoaExecutorWorkerError::RecoveryRequired { .. } => true, // Never classify uncertainty as chain failure.
+        EoaExecutorWorkerError::UserCancelled => false,          // Deterministic
         EoaExecutorWorkerError::TransactionSendError { .. } => false, // Different context
         EoaExecutorWorkerError::SignatureParsingFailed { .. } => false, // Deterministic
-        EoaExecutorWorkerError::WorkRemaining { .. } => false,       // Different context
-        EoaExecutorWorkerError::EoaOutOfFunds { .. } => false,       // Deterministic
+        EoaExecutorWorkerError::WorkRemaining { .. } => false,   // Different context
+        EoaExecutorWorkerError::EoaOutOfFunds { .. } => false,   // Deterministic
     }
 }
 
@@ -287,42 +223,24 @@ impl SubmissionResult {
         borrowed_transaction: &BorrowedTransaction,
         send_result: Result<SR, RpcError<TransportErrorKind>>,
         send_context: SendContext,
-        chain: &impl Chain,
+        _chain: &impl Chain,
     ) -> Self {
-        match send_result {
-            Ok(_) => SubmissionResult {
-                result: SubmissionResultType::Success,
-                transaction: borrowed_transaction.clone().into(),
-            },
-            Err(ref rpc_error) => {
-                match classify_send_error(rpc_error, send_context) {
-                    SendErrorClassification::PossiblySent => SubmissionResult {
-                        result: SubmissionResultType::Success,
-                        transaction: borrowed_transaction.clone().into(),
-                    },
-                    SendErrorClassification::DeterministicFailure => {
-                        // Transaction failed, should be retried
-                        let engine_error = rpc_error.to_engine_error(chain);
-                        let error = EoaExecutorWorkerError::TransactionSendError {
-                            message: format!("Transaction send failed: {rpc_error}"),
-                            inner_error: engine_error,
-                        };
-                        SubmissionResult {
-                            result: SubmissionResultType::Nack(error),
-                            transaction: borrowed_transaction.clone().into(),
-                        }
-                    }
-                    SendErrorClassification::DeterministicFailureNonRetryable => SubmissionResult {
-                        result: SubmissionResultType::Fail(
-                            EoaExecutorWorkerError::TransactionSendError {
-                                message: format!("Transaction send failed: {rpc_error}"),
-                                inner_error: rpc_error.to_engine_error(chain),
-                            },
-                        ),
-                        transaction: borrowed_transaction.clone().into(),
-                    },
-                }
+        let result = match send_result {
+            Ok(_) => SubmissionResultType::Success,
+            Err(error) => {
+                tracing::warn!(
+                    context = ?send_context,
+                    transaction_id = %borrowed_transaction.transaction_id,
+                    nonce = borrowed_transaction.signed_transaction.tx().nonce(),
+                    error = %engine_core::error::rpc_error_diagnostic(&error),
+                    "Broadcast outcome is unknown; retaining signed attempt for recovery"
+                );
+                SubmissionResultType::Uncertain
             }
+        };
+        SubmissionResult {
+            result,
+            transaction: borrowed_transaction.clone().into(),
         }
     }
 }

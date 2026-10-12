@@ -10,11 +10,11 @@ const ETHERLINK_GAS_PER_AUTHORIZATION: u64 = 500_000;
 
 use alloy::{
     consensus::{
-        SignableTransaction, Signed, TxEip4844Variant, TxEip4844WithSidecar, TypedTransaction,
+        SignableTransaction, Signed, Transaction, TxEip4844Variant, TxEip4844WithSidecar,
+        TypedTransaction,
     },
-    eips::eip7702::SignedAuthorization,
     network::{TransactionBuilder, TransactionBuilder7702},
-    primitives::{Address, Bytes, U256},
+    primitives::{Bytes, U256},
     providers::Provider,
     rpc::types::TransactionRequest as AlloyTransactionRequest,
     signers::Signature,
@@ -27,7 +27,6 @@ use engine_core::{
     signer::{AccountSigner, EoaSigningOptions},
     transaction::TransactionTypeData,
 };
-use engine_eip7702_core::constants::{EIP_7702_DELEGATION_CODE_LENGTH, EIP_7702_DELEGATION_PREFIX};
 
 use crate::eoa::{
     EoaTransactionRequest,
@@ -45,6 +44,79 @@ use crate::eoa::{
 // Retry constants for preparation phase
 const MAX_PREPARATION_RETRIES: u32 = 3;
 const PREPARATION_RETRY_DELAY_MS: u64 = 100;
+
+#[path = "fee_math.rs"]
+mod fee_math;
+
+/// Explicit caller fees remain ceilings during recovery. An unchanged fee pair
+/// is not a replacement and must not cause another signature/broadcast attempt.
+fn bump_transaction_fees(
+    mut tx: TypedTransaction,
+    multiplier: u32,
+    requested: Option<&TransactionTypeData>,
+) -> Option<TypedTransaction> {
+    if multiplier <= 100 {
+        return None;
+    }
+    let (fee_cap, priority_cap) = match requested {
+        Some(TransactionTypeData::Legacy(data)) => (data.gas_price, None),
+        Some(TransactionTypeData::Eip1559(data)) => {
+            (data.max_fee_per_gas, data.max_priority_fee_per_gas)
+        }
+        Some(TransactionTypeData::Eip7702(data)) => {
+            (data.max_fee_per_gas, data.max_priority_fee_per_gas)
+        }
+        None => (None, None),
+    };
+    let old_fees = (tx.max_fee_per_gas(), tx.max_priority_fee_per_gas());
+    let dynamic = |fee: &mut u128, priority: &mut u128| {
+        (*fee, *priority) =
+            fee_math::capped_dynamic_fees(*fee, *priority, multiplier, fee_cap, priority_cap);
+    };
+    match &mut tx {
+        TypedTransaction::Legacy(tx) => {
+            tx.gas_price = fee_math::capped_increase(tx.gas_price, multiplier, fee_cap)
+        }
+        TypedTransaction::Eip2930(tx) => {
+            tx.gas_price = fee_math::capped_increase(tx.gas_price, multiplier, fee_cap)
+        }
+        TypedTransaction::Eip1559(tx) => {
+            dynamic(&mut tx.max_fee_per_gas, &mut tx.max_priority_fee_per_gas)
+        }
+        TypedTransaction::Eip7702(tx) => {
+            dynamic(&mut tx.max_fee_per_gas, &mut tx.max_priority_fee_per_gas)
+        }
+        TypedTransaction::Eip4844(tx) => match tx {
+            TxEip4844Variant::TxEip4844(tx)
+            | TxEip4844Variant::TxEip4844WithSidecar(TxEip4844WithSidecar { tx, .. }) => {
+                dynamic(&mut tx.max_fee_per_gas, &mut tx.max_priority_fee_per_gas)
+            }
+        },
+    }
+    (old_fees != (tx.max_fee_per_gas(), tx.max_priority_fee_per_gas())).then_some(tx)
+}
+
+#[cfg(test)]
+#[path = "fee_tests.rs"]
+mod fee_tests;
+
+/// These errors are useful only before the first signature/dispatch. A send
+/// error with the same text remains uncertain and never frees its nonce.
+fn is_invalid_preflight_envelope(message: &str) -> bool {
+    let message = message.to_ascii_lowercase();
+    [
+        "intrinsic gas too low",
+        "intrinsic gas exceeds",
+        "exceeds block gas limit",
+        "transaction gas limit too high",
+        "unsupported transaction type",
+        "transaction type not supported",
+        "oversized",
+        "max initcode size exceeded",
+    ]
+    .iter()
+    .any(|reason| message.contains(reason))
+}
 
 impl<C: Chain> EoaExecutorWorker<C> {
     pub async fn build_and_sign_single_transaction_with_retries(
@@ -144,7 +216,13 @@ impl<C: Chain> EoaExecutorWorker<C> {
             .provider()
             .estimate_gas(tx_request.clone())
             .await
-            .unwrap_or(21000);
+            .map_err(|e| EoaExecutorWorkerError::RpcError {
+                message: format!(
+                    "NOOP gas estimation failed: {}",
+                    engine_core::error::rpc_error_diagnostic(&e)
+                ),
+                inner_error: e.to_engine_error(&self.chain),
+            })?;
         tx_request = tx_request.with_gas_limit(gas_limit);
 
         let tx_request = self.estimate_gas_fees(tx_request).await?;
@@ -165,20 +243,35 @@ impl<C: Chain> EoaExecutorWorker<C> {
         &self,
         nonce: u64,
     ) -> Result<SubmittedNoopTransaction, EoaExecutorWorkerError> {
+        let recovery_id = crate::recovery::reserve_noop(self.chain_id, self.eoa, nonce).await?;
         let tx = self.build_and_sign_noop_transaction(nonce).await?;
 
-        self.chain
+        crate::recovery::before_noop(&recovery_id, self.chain_id, self.eoa, &tx).await?;
+
+        // The nonce is durably assigned even if dispatch is rejected or its
+        // response is lost. Remove it from recycling before contacting the node.
+        // NOOP has no borrowed retry slot: an absent attempt stays submitted for
+        // finality polling or explicit offline reconciliation using journal bytes.
+        let submitted = SubmittedNoopTransaction {
+            nonce,
+            transaction_hash: tx.hash().to_string(),
+        };
+        self.store
+            .process_noop_transactions(std::slice::from_ref(&submitted))
+            .await?;
+        let _ = self
+            .chain
             .provider()
             .send_tx_envelope(tx.into())
             .await
             .map_err(|e| EoaExecutorWorkerError::TransactionSendError {
-                message: format!("Failed to send no-op transaction: {e:?}"),
+                message: format!(
+                    "NOOP broadcast outcome unknown; retaining reserved identity: {}",
+                    engine_core::error::rpc_error_diagnostic(&e)
+                ),
                 inner_error: e.to_engine_error(&self.chain),
-            })
-            .map(|pending| SubmittedNoopTransaction {
-                nonce,
-                transaction_hash: pending.tx_hash().to_string(),
-            })
+            })?;
+        Ok(submitted)
     }
 
     async fn estimate_gas_fees(
@@ -221,6 +314,11 @@ impl<C: Chain> EoaExecutorWorker<C> {
             Err(eip1559_error) => {
                 // Check if this is an "unsupported feature" error
                 if is_unsupported_eip1559_error(&eip1559_error) {
+                    if tx.max_fee_per_gas.is_some() || tx.max_priority_fee_per_gas.is_some() {
+                        return Err(EoaExecutorWorkerError::TransactionBuildFailed {
+                            message: "Cannot estimate explicit EIP-1559 fees on this chain; refusing legacy fallback that would discard caller fee limits".to_string(),
+                        });
+                    }
                     tracing::debug!("EIP-1559 not supported, falling back to legacy gas price");
 
                     // Fall back to legacy gas price only if no gas price is set
@@ -231,7 +329,10 @@ impl<C: Chain> EoaExecutorWorker<C> {
                                 Ok(tx.with_gas_price(gas_price))
                             }
                             Err(legacy_error) => Err(EoaExecutorWorkerError::RpcError {
-                                message: format!("Failed to get legacy gas price: {legacy_error}"),
+                                message: format!(
+                                    "Failed to get legacy gas price: {}",
+                                    engine_core::error::rpc_error_diagnostic(&legacy_error)
+                                ),
                                 inner_error: legacy_error.to_engine_error(&self.chain),
                             }),
                         }
@@ -243,7 +344,10 @@ impl<C: Chain> EoaExecutorWorker<C> {
                 } else {
                     // Other EIP-1559 error
                     Err(EoaExecutorWorkerError::RpcError {
-                        message: format!("Failed to estimate EIP-1559 fees: {eip1559_error}"),
+                        message: format!(
+                            "Failed to estimate EIP-1559 fees: {}",
+                            engine_core::error::rpc_error_diagnostic(&eip1559_error)
+                        ),
                         inner_error: eip1559_error.to_engine_error(&self.chain),
                     })
                 }
@@ -251,68 +355,12 @@ impl<C: Chain> EoaExecutorWorker<C> {
         }
     }
 
-    /// Filter out authorization list entries where the authority is already delegated
-    /// to the target contract. This prevents Etherlink (and potentially other strict chains)
-    /// from rejecting type-4 transactions that include redundant/stale authorizations.
-    ///
-    /// On most chains, a stale authorization is simply skipped. On Etherlink, the entire
-    /// transaction is rejected at the RPC level, causing it to be silently dropped.
-    async fn filter_already_delegated_authorizations(
-        &self,
-        authorization_list: &[SignedAuthorization],
-        to: Option<Address>,
-    ) -> Vec<SignedAuthorization> {
-        // If we have a `to` address, check if it's already delegated to any of the
-        // authorization targets. In the 7702 relayer flow, `to` is the user's smart
-        // account and the authorization targets the delegation contract.
-        if let Some(account_address) = to {
-            match self.chain.provider().get_code_at(account_address).await {
-                Ok(code) => {
-                    let prefix_len = EIP_7702_DELEGATION_PREFIX.len();
-                    if code.len() >= EIP_7702_DELEGATION_CODE_LENGTH
-                        && code.starts_with(&EIP_7702_DELEGATION_PREFIX)
-                    {
-                        let delegated_to = Address::from_slice(&code[prefix_len..prefix_len + 20]);
-
-                        // Filter out any auth entries whose target matches the existing delegation
-                        let filtered: Vec<_> = authorization_list
-                            .iter()
-                            .filter(|auth| {
-                                if auth.address == delegated_to {
-                                    tracing::info!(
-                                        account = ?account_address,
-                                        delegation_target = ?delegated_to,
-                                        "Stripping redundant authorization - account already delegated to target"
-                                    );
-                                    false
-                                } else {
-                                    true
-                                }
-                            })
-                            .cloned()
-                            .collect();
-
-                        return filtered;
-                    }
-                }
-                Err(e) => {
-                    tracing::warn!(
-                        account = ?account_address,
-                        error = ?e,
-                        "Failed to check delegation status, keeping all authorizations"
-                    );
-                }
-            }
-        }
-
-        authorization_list.to_vec()
-    }
-
     pub async fn build_typed_transaction(
         &self,
         request: &EoaTransactionRequest,
         nonce: u64,
     ) -> Result<TypedTransaction, EoaExecutorWorkerError> {
+        crate::recovery::validate_eoa_nonce(request, nonce).await?;
         // Build transaction request from stored data
         let mut tx_request = AlloyTransactionRequest::default()
             .with_from(request.from)
@@ -360,11 +408,11 @@ impl<C: Chain> EoaExecutorWorker<C> {
                 TransactionTypeData::Eip7702(data) => {
                     let mut req = tx_request;
                     if let Some(authorization_list) = &data.authorization_list {
-                        let filtered = self
-                            .filter_already_delegated_authorizations(authorization_list, request.to)
-                            .await;
-                        if !filtered.is_empty() {
-                            req = req.with_authorization_list(filtered);
+                        // Authorization signatures are admitted intent. Recipient
+                        // code cannot justify deleting entries, including entries
+                        // signed by other authorities in the same transaction.
+                        if !authorization_list.is_empty() {
+                            req = req.with_authorization_list(authorization_list.clone());
                         }
                     }
                     if let Some(max_fee) = data.max_fee_per_gas {
@@ -419,12 +467,10 @@ impl<C: Chain> EoaExecutorWorker<C> {
                                 ),
                                 inner_error: e.to_engine_error(&self.chain),
                             });
-                        } else if error_payload.message.to_lowercase().contains("oversized") {
-                            // This is an oversized transaction - the transaction is fundamentally broken
-                            // This should fail the individual transaction, not the worker
+                        } else if is_invalid_preflight_envelope(&error_payload.message) {
                             return Err(EoaExecutorWorkerError::TransactionSimulationFailed {
                                 message: format!(
-                                    "Transaction data is oversized during gas estimation: {}",
+                                    "Transaction rejected before signing during gas estimation: {}",
                                     error_payload.message
                                 ),
                                 inner_error: e.to_engine_error(&self.chain),
@@ -444,7 +490,7 @@ impl<C: Chain> EoaExecutorWorker<C> {
 
         // Etherlink (42793) requires extra gas per authorization list item
         // because their node's gas estimation doesn't account for it.
-        if request.chain_id == ETHERLINK_CHAIN_ID {
+        if request.chain_id == ETHERLINK_CHAIN_ID && request.gas_limit.is_none() {
             if let Some(auth_list) = &tx_request.authorization_list {
                 let extra = auth_list.len() as u64 * ETHERLINK_GAS_PER_AUTHORIZATION;
                 let current_gas = tx_request.gas.unwrap_or(0);
@@ -455,6 +501,17 @@ impl<C: Chain> EoaExecutorWorker<C> {
                     "Adding Etherlink authorization list gas overhead"
                 );
                 tx_request = tx_request.with_gas_limit(current_gas + extra);
+            }
+        }
+
+        if let (Some(max_fee), Some(priority)) = (
+            tx_request.max_fee_per_gas,
+            tx_request.max_priority_fee_per_gas,
+        ) {
+            if priority > max_fee {
+                return Err(EoaExecutorWorkerError::TransactionBuildFailed {
+                    message: "Estimated maxPriorityFeePerGas exceeds maxFeePerGas; refusing an invalid fee pair".into(),
+                });
             }
         }
 
@@ -471,6 +528,9 @@ impl<C: Chain> EoaExecutorWorker<C> {
         typed_tx: TypedTransaction,
         credential: &SigningCredential,
     ) -> Result<Signed<TypedTransaction>, EoaExecutorWorkerError> {
+        engine_core::recovery::ensure_healthy()
+            .await
+            .map_err(crate::recovery::eoa_error)?;
         let signing_options = EoaSigningOptions {
             from: self.eoa,
             chain_id: Some(self.chain_id),
@@ -499,7 +559,11 @@ impl<C: Chain> EoaExecutorWorker<C> {
         request: &EoaTransactionRequest,
         nonce: u64,
     ) -> Result<Signed<TypedTransaction>, EoaExecutorWorkerError> {
+        crate::recovery::validate("eoa", &request.transaction_id, request)
+            .await
+            .map_err(crate::recovery::eoa_error)?;
         let typed_tx = self.build_typed_transaction(request, nonce).await?;
+        self.validate_supplied_gas(request, &typed_tx).await?;
 
         // Inject KMS cache into the signing credential (after deserialization from Redis)
         let credential_with_cache = request
@@ -511,41 +575,74 @@ impl<C: Chain> EoaExecutorWorker<C> {
             .await
     }
 
+    /// Supplied gas used to bypass all node validation, allowing a permanently
+    /// invalid envelope to reserve a nonce at its first dispatch. Ask the node
+    /// about its current rules before signing, retaining the caller's gas limit.
+    /// This is not a mempool-acceptance promise: rules/state can change, RPCs do
+    /// not expose every admission cap, and L2 gas accounting is chain-specific.
+    async fn validate_supplied_gas(
+        &self,
+        request: &EoaTransactionRequest,
+        typed_tx: &TypedTransaction,
+    ) -> Result<(), EoaExecutorWorkerError> {
+        let Some(gas_limit) = request.gas_limit else {
+            return Ok(()); // Already estimated while building.
+        };
+        let rpc_request: AlloyTransactionRequest = typed_tx.clone().into();
+        let rpc_request = rpc_request.with_from(request.from);
+        match self.chain.provider().estimate_gas(rpc_request).await {
+            Ok(estimate) if estimate > gas_limit => {
+                Err(EoaExecutorWorkerError::TransactionBuildFailed {
+                    message: format!(
+                        "Supplied gasLimit {gas_limit} is below the node estimate {estimate}"
+                    ),
+                })
+            }
+            Ok(_) => Ok(()),
+            Err(error) => {
+                if let RpcError::ErrorResp(payload) = &error {
+                    if is_invalid_preflight_envelope(&payload.message) {
+                        return Err(EoaExecutorWorkerError::TransactionSimulationFailed {
+                            message: format!(
+                                "Transaction rejected before signing: {}",
+                                payload.message
+                            ),
+                            inner_error: error.to_engine_error(&self.chain),
+                        });
+                    }
+                    // An intentionally reverting execution is still a valid
+                    // transaction that consumes its nonce. Explicit gas keeps
+                    // that behavior; intrinsic/type/size failures above do not.
+                    if payload.as_revert_data().is_some()
+                        || payload
+                            .message
+                            .to_ascii_lowercase()
+                            .contains("execution reverted")
+                    {
+                        return Ok(());
+                    }
+                }
+                Err(EoaExecutorWorkerError::RpcError {
+                    message: format!(
+                        "Pre-sign gas validation failed: {}",
+                        engine_core::error::rpc_error_diagnostic(&error)
+                    ),
+                    inner_error: error.to_engine_error(&self.chain),
+                })
+            }
+        }
+    }
+
     pub fn apply_gas_bump_to_typed_transaction(
         &self,
-        mut typed_tx: TypedTransaction,
+        typed_tx: TypedTransaction,
         bump_multiplier: u32, // e.g., 120 for 20% increase
-    ) -> TypedTransaction {
-        match &mut typed_tx {
-            TypedTransaction::Eip1559(tx) => {
-                tx.max_fee_per_gas = tx.max_fee_per_gas * bump_multiplier as u128 / 100;
-                tx.max_priority_fee_per_gas =
-                    tx.max_priority_fee_per_gas * bump_multiplier as u128 / 100;
-            }
-            TypedTransaction::Legacy(tx) => {
-                tx.gas_price = tx.gas_price * bump_multiplier as u128 / 100;
-            }
-            TypedTransaction::Eip2930(tx) => {
-                tx.gas_price = tx.gas_price * bump_multiplier as u128 / 100;
-            }
-            TypedTransaction::Eip7702(tx) => {
-                tx.max_fee_per_gas = tx.max_fee_per_gas * bump_multiplier as u128 / 100;
-                tx.max_priority_fee_per_gas =
-                    tx.max_priority_fee_per_gas * bump_multiplier as u128 / 100;
-            }
-            TypedTransaction::Eip4844(tx) => match tx {
-                TxEip4844Variant::TxEip4844(tx) => {
-                    tx.max_fee_per_gas = tx.max_fee_per_gas * bump_multiplier as u128 / 100;
-                    tx.max_priority_fee_per_gas =
-                        tx.max_priority_fee_per_gas * bump_multiplier as u128 / 100;
-                }
-                TxEip4844Variant::TxEip4844WithSidecar(TxEip4844WithSidecar { tx, .. }) => {
-                    tx.max_fee_per_gas = tx.max_fee_per_gas * bump_multiplier as u128 / 100;
-                    tx.max_priority_fee_per_gas =
-                        tx.max_priority_fee_per_gas * bump_multiplier as u128 / 100;
-                }
-            },
-        }
-        typed_tx
+        request: &EoaTransactionRequest,
+    ) -> Option<TypedTransaction> {
+        bump_transaction_fees(
+            typed_tx,
+            bump_multiplier,
+            request.transaction_type_data.as_ref(),
+        )
     }
 }

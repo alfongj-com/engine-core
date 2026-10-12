@@ -21,7 +21,9 @@ use twmq::{
 mod fixtures;
 use fixtures::TestJobErrorData;
 
-const REDIS_URL: &str = "redis://127.0.0.1:6379/";
+fn redis_url() -> String {
+    std::env::var("TEST_REDIS_URL").expect("set TEST_REDIS_URL to a disposable Redis instance")
+}
 
 // Helper to clean up Redis keys
 async fn cleanup_redis_keys(conn_manager: &ConnectionManager, queue_name: &str) {
@@ -185,7 +187,7 @@ async fn test_job_retry_attempts() {
     let handler = RetryJobHandler;
 
     let queue = Arc::new(
-        RetryJobQueue::new(REDIS_URL, &queue_name, Some(queue_options), handler)
+        RetryJobQueue::new(&redis_url(), &queue_name, Some(queue_options), handler)
             .await
             .expect("Failed to create retry queue"),
     );
@@ -306,7 +308,7 @@ async fn test_different_retry_counts() {
         let handler = RetryJobHandler;
 
         let queue = Arc::new(
-            RetryJobQueue::new(REDIS_URL, &queue_name, Some(queue_options), handler)
+            RetryJobQueue::new(&redis_url(), &queue_name, Some(queue_options), handler)
                 .await
                 .expect("Failed to create retry queue"),
         );

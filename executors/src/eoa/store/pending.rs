@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use alloy::{consensus::Transaction, primitives::Address};
-use twmq::redis::{AsyncCommands, Pipeline, aio::ConnectionManager};
+use twmq::redis::{AsyncCommands, Pipeline, aio::MultiplexedConnection};
 
 use crate::eoa::{
     EoaExecutorStore,
@@ -41,12 +41,13 @@ impl SafeRedisTransaction for MovePendingToBorrowedWithIncrementedNonces<'_> {
         vec![
             self.keys.optimistic_transaction_count_key_name(),
             self.keys.borrowed_transactions_hashmap_name(),
+            self.keys.pending_transactions_zset_name(),
         ]
     }
 
     async fn validation(
         &self,
-        conn: &mut ConnectionManager,
+        conn: &mut MultiplexedConnection,
         _store: &EoaExecutorStore,
     ) -> Result<Self::ValidationData, TransactionStoreError> {
         if self.transactions.is_empty() {
@@ -54,6 +55,8 @@ impl SafeRedisTransaction for MovePendingToBorrowedWithIncrementedNonces<'_> {
                 message: "Cannot process empty transaction list".to_string(),
             });
         }
+
+        validate_unique_allocations(self.transactions)?;
 
         // Get current optimistic nonce
         let current_optimistic: Option<u64> = conn
@@ -75,7 +78,12 @@ impl SafeRedisTransaction for MovePendingToBorrowedWithIncrementedNonces<'_> {
 
         // Check that nonces are sequential with no gaps
         for (i, &nonce) in nonces.iter().enumerate() {
-            let expected_nonce = current_optimistic_nonce + i as u64;
+            let expected_nonce =
+                current_optimistic_nonce
+                    .checked_add(i as u64)
+                    .ok_or_else(|| TransactionStoreError::InternalError {
+                        message: "Nonce range overflow".into(),
+                    })?;
             if nonce != expected_nonce {
                 return Err(TransactionStoreError::InternalError {
                     message: format!(
@@ -83,6 +91,12 @@ impl SafeRedisTransaction for MovePendingToBorrowedWithIncrementedNonces<'_> {
                     ),
                 });
             }
+        }
+
+        if nonces.last() == Some(&u64::MAX) {
+            return Err(TransactionStoreError::InternalError {
+                message: "Nonce range overflow".into(),
+            });
         }
 
         // Verify all transactions exist in pending queue using batched ZSCORE calls
@@ -137,8 +151,10 @@ impl SafeRedisTransaction for MovePendingToBorrowedWithIncrementedNonces<'_> {
 
         let new_optimistic_tx_count = self
             .transactions
-            .last()
-            .map(|tx| tx.signed_transaction.nonce() + 1);
+            .iter()
+            .map(|tx| tx.signed_transaction.nonce())
+            .max()
+            .map(|nonce| nonce + 1);
 
         // Update optimistic tx count to highest nonce + 1, if we have a new optimistic nonce
         if let Some(new_optimistic_tx_count) = new_optimistic_tx_count {
@@ -176,12 +192,13 @@ impl SafeRedisTransaction for MovePendingToBorrowedWithRecycledNonces<'_> {
         vec![
             self.keys.recycled_nonces_zset_name(),
             self.keys.borrowed_transactions_hashmap_name(),
+            self.keys.pending_transactions_zset_name(),
         ]
     }
 
     async fn validation(
         &self,
-        conn: &mut ConnectionManager,
+        conn: &mut MultiplexedConnection,
         _store: &EoaExecutorStore,
     ) -> Result<Self::ValidationData, TransactionStoreError> {
         if self.transactions.is_empty() {
@@ -189,6 +206,8 @@ impl SafeRedisTransaction for MovePendingToBorrowedWithRecycledNonces<'_> {
                 message: "Cannot process empty transaction list".to_string(),
             });
         }
+
+        validate_unique_allocations(self.transactions)?;
 
         // Get all recycled nonces
         let recycled_nonces: HashSet<u64> = conn
@@ -260,4 +279,20 @@ impl SafeRedisTransaction for MovePendingToBorrowedWithRecycledNonces<'_> {
 
         self.transactions.len()
     }
+}
+
+fn validate_unique_allocations(
+    transactions: &[BorrowedTransactionData],
+) -> Result<(), TransactionStoreError> {
+    let mut nonces = HashSet::with_capacity(transactions.len());
+    let mut ids = HashSet::with_capacity(transactions.len());
+    for tx in transactions {
+        if !nonces.insert(tx.signed_transaction.nonce()) || !ids.insert(&tx.transaction_id) {
+            return Err(TransactionStoreError::InternalError {
+                message: "A nonce allocation batch must contain unique transaction IDs and nonces"
+                    .into(),
+            });
+        }
+    }
+    Ok(())
 }

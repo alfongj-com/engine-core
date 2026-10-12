@@ -101,9 +101,9 @@ lazy_static! {
     static ref DEFAULT_EXECUTOR_METRICS_REGISTRY: Registry = Registry::new();
 
     /// Default executor metrics instance (used when no external metrics are provided)
-    static ref DEFAULT_EXECUTOR_METRICS: ExecutorMetrics =
-        ExecutorMetrics::new(&DEFAULT_EXECUTOR_METRICS_REGISTRY)
-            .expect("Failed to create default executor metrics");
+    static ref DEFAULT_EXECUTOR_METRICS: Arc<ExecutorMetrics> =
+        Arc::new(ExecutorMetrics::new(&DEFAULT_EXECUTOR_METRICS_REGISTRY)
+            .expect("Failed to create default executor metrics"));
 
     /// Global metrics instance - can be set by the binary crate or uses default
     static ref EXECUTOR_METRICS_INSTANCE: std::sync::RwLock<Option<Arc<ExecutorMetrics>>> =
@@ -126,10 +126,7 @@ fn get_metrics() -> Arc<ExecutorMetrics> {
             // Use default metrics if no custom metrics were set
             // This ensures backward compatibility
             drop(instance); // Release read lock
-            Arc::new(
-                ExecutorMetrics::new(&DEFAULT_EXECUTOR_METRICS_REGISTRY)
-                    .expect("Failed to create default metrics"),
-            )
+            DEFAULT_EXECUTOR_METRICS.clone()
         }
     }
 }
@@ -292,6 +289,27 @@ pub fn current_timestamp_ms() -> u64 {
 mod tests {
     use super::*;
 
+    // Metrics initialization changes process-global routing. Run these scenarios
+    // in separate processes so neither can redirect the other's observations.
+    fn isolated_registry_scenario(test_name: &str) -> bool {
+        const CHILD_SCENARIO: &str = "ENGINE_METRICS_TEST_SCENARIO";
+        if std::env::var(CHILD_SCENARIO).as_deref() == Ok(test_name) {
+            return true;
+        }
+        let output = std::process::Command::new(std::env::current_exe().unwrap())
+            .args(["--exact", test_name, "--nocapture"])
+            .env(CHILD_SCENARIO, test_name)
+            .output()
+            .expect("run isolated metrics scenario");
+        assert!(
+            output.status.success(),
+            "{}\n{}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+        false
+    }
+
     #[test]
     fn test_calculate_duration_seconds() {
         // Test normal case
@@ -322,7 +340,10 @@ mod tests {
 
     #[test]
     fn test_metrics_recording() {
-        // Test that metrics can be recorded without panicking
+        if !isolated_registry_scenario("metrics::tests::test_metrics_recording") {
+            return;
+        }
+        // Repeated default observations must share collectors, not re-register them.
         record_transaction_queued_to_sent("test", 1, 1.5);
         record_transaction_queued_to_confirmed("test", 1, 10.0);
         record_eoa_job_processing_time(1, 2.0);
@@ -338,6 +359,22 @@ mod tests {
         eoa_metrics.record_transaction_confirmed(test_address, 1, 60.0); // Won't record degradation (below threshold)
         eoa_metrics.record_transaction_confirmed(test_address, 1, 180.0); // Will record degradation (above threshold)
         eoa_metrics.record_stuck_eoa(test_address, 1, 900.0, false); // Will record stuck EOA
+
+        let metrics = get_metrics();
+        let sent = metrics
+            .transaction_queued_to_sent_duration
+            .with_label_values(&["test", "1"]);
+        assert_eq!(sent.get_sample_count(), 1);
+        assert_eq!(sent.get_sample_sum(), 1.5);
+        let degraded = metrics
+            .eoa_degraded_send_duration
+            .with_label_values(&[&test_address.to_string(), "1"]);
+        assert_eq!(
+            degraded.get_sample_count(),
+            1,
+            "only the observation above the threshold is degraded"
+        );
+        assert_eq!(degraded.get_sample_sum(), 15.0);
 
         // Test that default metrics can be exported
         let metrics_output =
@@ -361,6 +398,9 @@ mod tests {
 
     #[test]
     fn test_custom_metrics_registry() {
+        if !isolated_registry_scenario("metrics::tests::test_custom_metrics_registry") {
+            return;
+        }
         // Test using a custom registry
         let custom_registry = Registry::new();
         let custom_metrics =
@@ -387,5 +427,14 @@ mod tests {
         );
         assert!(metrics_output.contains("custom_test"));
         assert!(metrics_output.contains("42"));
+        let sample = get_metrics()
+            .transaction_queued_to_sent_duration
+            .with_label_values(&["custom_test", "42"]);
+        assert_eq!(sample.get_sample_count(), 1);
+        assert_eq!(sample.get_sample_sum(), 2.5);
+        assert!(
+            !export_default_metrics().unwrap().contains("custom_test"),
+            "custom observations belong only to the custom registry"
+        );
     }
 }

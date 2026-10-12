@@ -18,7 +18,9 @@ use twmq::{
 mod fixtures;
 use fixtures::TestJobErrorData;
 
-const REDIS_URL: &str = "redis://127.0.0.1:6379/";
+fn redis_url() -> String {
+    std::env::var("TEST_REDIS_URL").expect("set TEST_REDIS_URL to a disposable Redis instance")
+}
 
 // Helper to clean up Redis keys
 async fn cleanup_redis_keys(conn_manager: &ConnectionManager, queue_name: &str) {
@@ -165,7 +167,7 @@ async fn test_job_lease_expiry() {
     };
 
     let queue = Arc::new(
-        SleepForeverQueue::new(REDIS_URL, &queue_name, Some(queue_options), handler)
+        SleepForeverQueue::new(&redis_url(), &queue_name, Some(queue_options), handler)
             .await
             .expect("Failed to create lease expiry queue"),
     );
@@ -310,7 +312,7 @@ async fn test_multiple_job_lease_expiry() {
 
     let queue = Arc::new(
         SleepForeverQueue::new(
-            REDIS_URL,
+            &redis_url(),
             &queue_name,
             Some(queue_options),
             SleepForeverHandler {

@@ -29,11 +29,6 @@ jobs:
             arch: arm64
     
     steps:
-      - name: Give GitHub Actions access to @thirdweb-dev/vault
-        uses: webfactory/ssh-agent@a6f90b1f127823b31d4d4a8d96047790581349bd
-        with:
-          ssh-private-key: ${{ secrets.VAULT_REPO_DEPLOY_KEY }}
-
       - name: Checkout repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
@@ -56,17 +51,6 @@ jobs:
             type=raw,value=nightly
             type=sha,prefix={{branch}}-{{date 'YYYYMMDD'}}-
 
-      - name: Configure Git for SSH
-        run: |
-          git config --global url."git@github.com:".insteadOf "https://github.com/"
-
-      - name: Verify SSH agent and add GitHub to known hosts
-        run: |
-          ssh-add -l
-          mkdir -p ~/.ssh
-          ssh-keyscan github.com >> ~/.ssh/known_hosts
-          echo "SSH_AUTH_SOCK=$SSH_AUTH_SOCK" >> $GITHUB_ENV
-
       - name: Build and push platform-specific image
         id: build
         uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # @6.18.0
@@ -79,8 +63,6 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=nightly-${{ matrix.arch }}
           cache-to: type=gha,mode=max,scope=nightly-${{ matrix.arch }}
-          ssh: |
-            default=${{ env.SSH_AUTH_SOCK }}
 
       - name: Export digest
         run: |

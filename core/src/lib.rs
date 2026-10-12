@@ -4,6 +4,8 @@ pub mod credentials;
 pub mod defs;
 pub mod error;
 pub mod execution_options;
+pub mod finality;
+pub mod recovery;
 pub mod rpc_clients;
 pub mod signer;
 pub mod transaction;

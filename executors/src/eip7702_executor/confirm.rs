@@ -6,6 +6,7 @@ use engine_core::rpc_clients::TwGetTransactionHashResponse;
 use engine_core::{
     chain::{Chain, ChainService, RpcCredentials},
     execution_options::WebhookOptions,
+    finality::{FinalityAssessment, FinalityEvidence},
 };
 use serde::{Deserialize, Serialize};
 use std::{sync::Arc, time::Duration};
@@ -39,7 +40,7 @@ fn transaction_hash_retry_delay(attempts: u32) -> Duration {
     }
 }
 
-/// Maximum age (in seconds) of a confirmation job before it is permanently failed.
+/// Age after which unresolved confirmation polling is slowed to one hour.
 const MAX_CONFIRMATION_JOB_AGE_SECONDS: u64 = 24 * 60 * 60;
 
 fn job_age_seconds<T: Clone>(job: &BorrowedJob<T>) -> u64 {
@@ -86,6 +87,8 @@ pub struct Eip7702ConfirmationResult {
     pub transaction_id: String,
     pub transaction_hash: TxHash,
     pub receipt: TransactionReceipt,
+    #[serde(default)]
+    pub finality: Option<FinalityEvidence>,
 
     #[serde(flatten)]
     pub sender_details: Eip7702Sender,
@@ -119,10 +122,15 @@ pub enum Eip7702ConfirmationError {
         transaction_hash: TxHash,
     },
 
+    #[error("Awaiting verified finality: {message}")]
+    FinalityPending { message: String },
+
     #[error("Transaction failed: {message}")]
     TransactionFailed {
         message: String,
         receipt: Box<TransactionReceipt>,
+        #[serde(default)]
+        finality: Option<FinalityEvidence>,
     },
 
     #[error("Invalid RPC Credentials: {message}")]
@@ -194,27 +202,23 @@ where
         &self,
         job: &BorrowedJob<Self::JobData>,
     ) -> JobResult<Self::Output, Self::ErrorData> {
+        super::require_bundled_execution_qualification()
+            .map_err(|error| Eip7702ConfirmationError::InternalError {
+                message: error.to_string(),
+            })
+            .map_err_nack(
+                Some(Duration::from_secs(3600)),
+                twmq::job::RequeuePosition::Last,
+            )?;
         let job_data = &job.job.data;
         let transaction_hash_delay = transaction_hash_retry_delay(job.attempts());
 
-        let age_seconds = job_age_seconds(job);
-        if age_seconds > MAX_CONFIRMATION_JOB_AGE_SECONDS {
-            tracing::error!(
-                bundler_transaction_id = job_data.bundler_transaction_id,
-                transaction_id = job_data.transaction_id,
-                attempts = job.attempts(),
-                age_seconds,
-                max_age_seconds = MAX_CONFIRMATION_JOB_AGE_SECONDS,
-                "EIP-7702 confirmation job exceeded max age, failing permanently"
-            );
-            return Err(Eip7702ConfirmationError::TransactionHashError {
-                message: format!(
-                    "Job exceeded maximum retry age of {MAX_CONFIRMATION_JOB_AGE_SECONDS}s (current age: {age_seconds}s, attempts: {attempts}); failing to prevent zombie retries",
-                    attempts = job.attempts()
-                ),
-            })
-            .map_err_fail();
-        }
+        // Age only reduces polling. It cannot turn an unknown broadcast into failure.
+        let transaction_hash_delay = if job_age_seconds(job) > MAX_CONFIRMATION_JOB_AGE_SECONDS {
+            Duration::from_secs(3600)
+        } else {
+            transaction_hash_delay
+        };
 
         // 1. Get Chain
         let chain = self
@@ -224,7 +228,7 @@ where
                 chain_id: job_data.chain_id,
                 message: format!("Failed to get chain instance: {e}"),
             })
-            .map_err_fail()?;
+            .map_err_nack(Some(transaction_hash_delay), RequeuePosition::Last)?;
 
         let chain_auth_headers = job_data
             .rpc_credentials
@@ -232,9 +236,17 @@ where
             .map_err(|e| Eip7702ConfirmationError::InvalidRpcCredentials {
                 message: e.to_string(),
             })
-            .map_err_fail()?;
+            .map_err_nack(Some(transaction_hash_delay), RequeuePosition::Last)?;
 
         let chain = chain.with_new_default_headers(chain_auth_headers);
+
+        crate::finality::check_continuity(&chain)
+            .await
+            .map_err(|e| Eip7702ConfirmationError::ConfirmationError {
+                message: "Finality checkpoint continuity unavailable".into(),
+                inner_error: Some(e),
+            })
+            .map_err_nack(Some(transaction_hash_delay), RequeuePosition::Last)?;
 
         // 2. Get transaction hash from bundler
         let transaction_hash_res = chain
@@ -245,27 +257,14 @@ where
                 tracing::error!(
                     bundler_transaction_id = job_data.bundler_transaction_id,
                     sender_details = ?job_data.sender_details,
-                    error = ?e,
+                    error = %engine_core::error::rpc_error_diagnostic(&e),
                     "Failed to get transaction hash from bundler"
                 );
 
-                if e.is_error_resp() {
-                    Eip7702ConfirmationError::TransactionHashError {
-                        message: e.to_string(),
-                    }
-                    .fail()
-                } else {
-                    tracing::warn!(
-                        bundler_transaction_id = job_data.bundler_transaction_id,
-                        attempt = job.attempts(),
-                        retry_delay_seconds = transaction_hash_delay.as_secs(),
-                        "Retrying transaction hash fetch after bundler error"
-                    );
-                    Eip7702ConfirmationError::TransactionHashError {
-                        message: e.to_string(),
-                    }
-                    .nack(Some(transaction_hash_delay), RequeuePosition::Last)
+                Eip7702ConfirmationError::TransactionHashError {
+                    message: engine_core::error::rpc_error_diagnostic(&e),
                 }
+                .nack(Some(transaction_hash_delay), RequeuePosition::Last)
             })?;
 
         let transaction_hash = match transaction_hash_res {
@@ -274,7 +273,7 @@ where
                     Eip7702ConfirmationError::TransactionHashError {
                         message: format!("Invalid transaction hash format: {e}"),
                     }
-                    .fail()
+                    .nack(Some(transaction_hash_delay), RequeuePosition::Last)
                 })?
             }
 
@@ -306,10 +305,13 @@ where
             .map_err(|e| {
                 // If transaction not found, nack and retry
                 Eip7702ConfirmationError::ConfirmationError {
-                    message: format!("Failed to get transaction receipt: {e}"),
+                    message: format!(
+                        "Failed to get transaction receipt: {}",
+                        engine_core::error::rpc_error_diagnostic(&e)
+                    ),
                     inner_error: Some(e.to_engine_error(&chain)),
                 }
-                .nack(Some(Duration::from_secs(1)), RequeuePosition::Last)
+                .nack(Some(transaction_hash_delay), RequeuePosition::Last)
             })?;
 
         let receipt = match receipt {
@@ -320,16 +322,46 @@ where
                     message: "Transaction not mined yet".to_string(),
                     transaction_hash,
                 })
-                .map_err_nack(Some(Duration::from_secs(1)), RequeuePosition::Last);
+                .map_err_nack(Some(transaction_hash_delay), RequeuePosition::Last);
             }
         };
 
-        // 4. Check transaction status
+        let finality = crate::finality::assess(&chain, transaction_hash, &receipt)
+            .await
+            .map_err(|e| Eip7702ConfirmationError::ConfirmationError {
+                message: "Finality verification unavailable".into(),
+                inner_error: Some(e),
+            })
+            .map_err_nack(Some(transaction_hash_delay), RequeuePosition::Last)?;
+        let FinalityAssessment::Finalized(finality) = finality else {
+            return Err(Eip7702ConfirmationError::FinalityPending {
+                message: "Receipt is not canonically settled under the configured policy".into(),
+            })
+            .map_err_nack(Some(transaction_hash_delay), RequeuePosition::Last);
+        };
+
+        crate::finality::record_evm_terminal(
+            "eip7702",
+            &job_data.transaction_id,
+            job_data.chain_id,
+            transaction_hash,
+            receipt.status(),
+            &finality,
+        )
+        .await
+        .map_err(|e| Eip7702ConfirmationError::ConfirmationError {
+            message: "Cannot persist final settlement".into(),
+            inner_error: Some(e),
+        })
+        .map_err_nack(Some(transaction_hash_delay), RequeuePosition::Last)?;
+
+        // 4. Both success and revert require the same final settlement evidence.
         let success = receipt.status();
         if !success {
             return Err(Eip7702ConfirmationError::TransactionFailed {
                 message: "Transaction reverted".to_string(),
                 receipt: Box::new(receipt),
+                finality: Some(finality),
             })
             .map_err_fail();
         }
@@ -357,6 +389,7 @@ where
             transaction_id: job_data.transaction_id.clone(),
             transaction_hash,
             receipt,
+            finality: Some(finality),
             sender_details: job_data.sender_details.clone(),
         })
     }
@@ -394,6 +427,7 @@ where
             nack_data.error,
             Eip7702ConfirmationError::ReceiptNotAvailable { .. }
                 | Eip7702ConfirmationError::TransactionHashPending { .. }
+                | Eip7702ConfirmationError::FinalityPending { .. }
         );
 
         if should_queue_webhook {
@@ -418,7 +452,13 @@ where
         fail_data: FailHookData<'_, Eip7702ConfirmationError>,
         tx: &mut TransactionContext<'_>,
     ) {
-        // Remove transaction from registry since it failed permanently
+        if !matches!(
+            fail_data.error,
+            Eip7702ConfirmationError::TransactionFailed { .. }
+        ) {
+            return; // Unknown/cancelled broadcasts retain their reconciliation identity.
+        }
+        // Only a verified final revert ends chain reconciliation.
         self.transaction_registry
             .add_remove_command(tx.pipeline(), &job.job.data.transaction_id);
 

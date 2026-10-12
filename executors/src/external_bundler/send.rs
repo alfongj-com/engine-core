@@ -23,7 +23,9 @@ use twmq::{
     FailHookData, NackHookData, Queue, SuccessHookData, UserCancellable,
     error::TwmqError,
     hooks::TransactionContext,
-    job::{BorrowedJob, DelayOptions, JobResult, RequeuePosition, ToJobError, ToJobResult},
+    job::{
+        BorrowedJob, DelayOptions, JobError, JobResult, RequeuePosition, ToJobError, ToJobResult,
+    },
 };
 
 use crate::{
@@ -58,7 +60,7 @@ pub struct ExternalBundlerSendJobData {
 
     pub rpc_credentials: RpcCredentials,
 
-    /// Pregenerated nonce for vault signed tokens
+    /// Nonce persisted at admission, before any bundler broadcast.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub pregenerated_nonce: Option<U256>,
 }
@@ -78,6 +80,8 @@ pub struct ExternalBundlerSendResult {
     pub user_op_hash: Bytes,
     pub user_operation_sent: VersionedUserOp,
     pub deployment_lock_acquired: bool,
+    #[serde(default)]
+    pub deployment_lock_id: Option<String>,
 }
 
 // --- Policy Error Structure ---
@@ -118,6 +122,8 @@ pub enum ExternalBundlerSendError {
         account_address: Address,
         nonce_used: U256,
         had_deployment_lock: bool,
+        #[serde(default)]
+        deployment_lock_id: Option<String>,
         stage: String,
         message: String,
         inner_error: Option<EngineError>,
@@ -128,6 +134,8 @@ pub enum ExternalBundlerSendError {
         account_address: Address,
         nonce_used: U256,
         had_deployment_lock: bool,
+        #[serde(default)]
+        deployment_lock_id: Option<String>,
         user_op: VersionedUserOp,
         message: String,
         inner_error: Option<EngineError>,
@@ -161,32 +169,21 @@ impl UserCancellable for ExternalBundlerSendError {
 }
 
 impl ExternalBundlerSendError {
-    /// Returns the account address if a lock was acquired while processing
-    /// Otherwise returns None
-    pub fn did_acquire_lock(&self) -> Option<Address> {
+    /// Old serialized errors have no token and must not release any current lock.
+    pub fn acquired_lock(&self) -> Option<(Address, &str)> {
         match self {
-            ExternalBundlerSendError::BundlerSendFailed {
-                had_deployment_lock,
+            Self::BundlerSendFailed {
                 account_address,
+                deployment_lock_id,
                 ..
-            } => {
-                if *had_deployment_lock {
-                    Some(*account_address)
-                } else {
-                    None
-                }
             }
-            ExternalBundlerSendError::UserOpBuildFailed {
-                had_deployment_lock,
+            | Self::UserOpBuildFailed {
                 account_address,
+                deployment_lock_id,
                 ..
-            } => {
-                if *had_deployment_lock {
-                    Some(*account_address)
-                } else {
-                    None
-                }
-            }
+            } => deployment_lock_id
+                .as_deref()
+                .map(|id| (*account_address, id)),
             _ => None,
         }
     }
@@ -257,6 +254,30 @@ where
         job: &BorrowedJob<Self::JobData>,
     ) -> JobResult<Self::Output, Self::ErrorData> {
         let job_data = &job.job.data;
+        crate::recovery::validate("erc4337", &job_data.transaction_id, job_data)
+            .await
+            .map_err(|error| ExternalBundlerSendError::InternalError {
+                message: error.to_string(),
+            })
+            .map_err_nack(Some(Duration::from_secs(10)), RequeuePosition::Last)?;
+        // A prior broadcast reservation is durable evidence of an unknown
+        // outcome. Later build/provider errors cannot turn it into failure.
+        let previously_broadcast = if let Some(journal) = engine_core::recovery::global() {
+            journal
+                .admission("erc4337", &job_data.transaction_id)
+                .await
+                .map_err(|error| ExternalBundlerSendError::InternalError {
+                    message: error.to_string(),
+                })
+                .map_err_nack(Some(Duration::from_secs(10)), RequeuePosition::Last)?
+                .is_some_and(|admission| admission.replay_key.is_some())
+        } else {
+            false
+        };
+        let result = async {
+        let nonce = job_data.pregenerated_nonce.ok_or_else(|| ExternalBundlerSendError::InternalError {
+            message: "Job has no persisted UserOperation nonce. Reconcile its on-chain outcome before resubmitting; legacy jobs cannot be retried safely.".to_string(),
+        }).map_err_fail()?;
 
         let now_secs = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
@@ -268,15 +289,15 @@ where
                 transaction_id = job_data.transaction_id,
                 attempts = job.attempts(),
                 age_seconds,
-                "External bundler send job exceeded max age, failing permanently"
+                "External bundler send job exceeded automatic retry age; parking for reconciliation"
             );
             return Err(ExternalBundlerSendError::InternalError {
                 message: format!(
-                    "Send job exceeded maximum retry age of 24h (current age: {age_seconds}s, attempts: {attempts}); failing to prevent zombie retries",
+                    "Send job exceeded automatic retry age of 24h (current age: {age_seconds}s, attempts: {attempts}); outcome remains unresolved, reconcile the persisted nonce",
                     attempts = job.attempts()
                 ),
             })
-            .map_err_fail();
+            .map_err_nack(Some(Duration::from_secs(3600)), RequeuePosition::Last);
         }
 
         // 1. Get Chain
@@ -369,8 +390,8 @@ where
                 }
             })?;
 
-        let needs_init_code = match deployment_status {
-            DeploymentStatus::Deployed => false,
+        let deployment_lock_id = match deployment_status {
+            DeploymentStatus::Deployed => None,
             DeploymentStatus::BeingDeployed { stale, lock_id } => {
                 return Err(ExternalBundlerSendError::DeploymentLocked {
                     account_address: smart_account.address,
@@ -392,10 +413,7 @@ where
                     })
                     .map_err_nack(Some(Duration::from_secs(15)), RequeuePosition::Last)?
                 {
-                    AcquireLockResult::Acquired => {
-                        // We got the lock! Continue with deployment
-                        true
-                    }
+                    AcquireLockResult::Acquired(lock_id) => Some(lock_id),
                     AcquireLockResult::AlreadyLocked(lock_id) => {
                         // Someone else has the lock, NACK and retry later
                         return Err(ExternalBundlerSendError::DeploymentLocked {
@@ -408,17 +426,10 @@ where
             }
         };
 
+        let needs_init_code = deployment_lock_id.is_some();
         tracing::debug!(lock_acquired = ?needs_init_code);
 
-        // 5. Get Nonce - use pregenerated nonce if available, otherwise generate random
-        let nonce = job_data.pregenerated_nonce.unwrap_or_else(|| {
-            use rand::Rng;
-            let mut rng = rand::rng();
-            let limb1: u64 = rng.random();
-            let limb2: u64 = rng.random();
-            let limb3: u64 = rng.random();
-            U256::from_limbs([0, limb1, limb2, limb3])
-        });
+        // 5. Reuse the persisted nonce, including after uncertain broadcasts.
 
         // 6. Prepare Init Call Data
         let init_call_data = get_account_factory(
@@ -477,7 +488,7 @@ where
             .map_err(|e| {
                 tracing::error!(error = ?e, "Error building user operation");
                 let mapped_error =
-                    map_build_error(&e, smart_account.address, nonce, needs_init_code);
+                    map_build_error(&e, smart_account.address, nonce, deployment_lock_id.clone());
                 if is_external_bundler_error_retryable(&mapped_error) {
                     mapped_error.nack(Some(Duration::from_secs(10)), RequeuePosition::Last)
                 } else {
@@ -488,41 +499,37 @@ where
         tracing::debug!("User operation built");
 
         // 9. Send to Bundler
-        let user_op_hash = chain
-            .bundler_client()
-            .send_user_op(
-                &signed_user_op,
+        if let Some(journal) = engine_core::recovery::global() {
+            let replay_key = format!(
+                "erc4337:{}:{:#x}:{:#x}:{}",
+                job_data.chain_id,
                 job_data
                     .execution_options
                     .entrypoint_details
                     .entrypoint_address,
-            )
-            .await
-            .map_err(|e| {
-                let mapped_error = map_bundler_error(
-                    e,
-                    &smart_account,
-                    nonce,
-                    &signed_user_op,
-                    &chain,
-                    needs_init_code,
-                );
-
-                tracing::warn!(
-                    error = serde_json::to_string(&mapped_error).unwrap(),
-                    "error"
-                );
-
-                if is_bundler_error_retryable(&mapped_error.to_string()) {
-                    if job.job.attempts < 100 {
-                        mapped_error.nack(Some(Duration::from_secs(10)), RequeuePosition::Last)
-                    } else {
-                        mapped_error.fail()
-                    }
-                } else {
-                    mapped_error.fail()
-                }
-            })?;
+                smart_account.address,
+                nonce
+            );
+            journal
+                .before_broadcast(
+                    "erc4337",
+                    &job_data.transaction_id,
+                    &replay_key,
+                    serde_json::json!({"chainId":job_data.chain_id, "sender":smart_account.address,
+                    "entrypoint":job_data.execution_options.entrypoint_details.entrypoint_address,
+                    "nonce":nonce, "userOperation":signed_user_op}),
+                )
+                .await
+                .map_err(|error| ExternalBundlerSendError::InternalError {
+                    message: error.to_string(),
+                })
+                .map_err_nack(Some(Duration::from_secs(10)), RequeuePosition::Last)?;
+        }
+        let user_op_hash = send_built_userop(
+            &chain, &smart_account, nonce, &signed_user_op,
+            job_data.execution_options.entrypoint_details.entrypoint_address,
+            deployment_lock_id.clone(), job.attempts(),
+        ).await?;
 
         tracing::debug!(userop_hash = ?user_op_hash, "User operation sent to bundler");
 
@@ -542,7 +549,10 @@ where
             user_op_hash,
             user_operation_sent: signed_user_op,
             deployment_lock_acquired: needs_init_code,
+            deployment_lock_id,
         })
+        }.await;
+        result.map_err(|error| preserve_unknown_outcome(error, previously_broadcast))
     }
 
     async fn on_success(
@@ -565,11 +575,19 @@ where
                 account_address: success_data.result.account_address,
                 chain_id: job.job.data.chain_id,
                 nonce: success_data.result.nonce,
+                entrypoint_address: Some(
+                    job.job
+                        .data
+                        .execution_options
+                        .entrypoint_details
+                        .entrypoint_address,
+                ),
                 user_op_hash: success_data.result.user_op_hash.clone(),
                 transaction_id: job.job.data.transaction_id.clone(),
                 webhook_options: job.job.data.webhook_options().clone(),
                 rpc_credentials: job.job.data.rpc_credentials.clone(),
                 deployment_lock_acquired: success_data.result.deployment_lock_acquired,
+                deployment_lock_id: success_data.result.deployment_lock_id.clone(),
                 original_queued_timestamp: Some(job.job.created_at),
             })
             .with_id(job.job.transaction_id())
@@ -601,11 +619,12 @@ where
         nack_data: NackHookData<'_, ExternalBundlerSendError>,
         tx: &mut TransactionContext<'_>,
     ) {
-        if let Some(account_address) = nack_data.error.did_acquire_lock() {
+        if let Some((account_address, lock_id)) = nack_data.error.acquired_lock() {
             self.deployment_lock.release_lock_with_pipeline(
                 tx.pipeline(),
                 job.job.data.chain_id,
                 &account_address,
+                lock_id,
             );
         }
 
@@ -628,11 +647,12 @@ where
         self.transaction_registry
             .add_remove_command(tx.pipeline(), &job.job.data.transaction_id);
 
-        if let Some(account_address) = fail_data.error.did_acquire_lock() {
+        if let Some((account_address, lock_id)) = fail_data.error.acquired_lock() {
             self.deployment_lock.release_lock_with_pipeline(
                 tx.pipeline(),
                 job.job.data.chain_id,
                 &account_address,
+                lock_id,
             );
         }
 
@@ -643,6 +663,52 @@ where
                 "Failed to queue fail webhook"
             );
         }
+    }
+}
+
+/// A provider error after dispatch is not proof that an operation never landed.
+/// Retrying always uses the persisted nonce; the age gate eventually parks it.
+async fn send_built_userop(
+    chain: &impl Chain,
+    account: &DeterminedSmartAccount,
+    nonce: U256,
+    userop: &VersionedUserOp,
+    entrypoint: Address,
+    lock_id: Option<String>,
+    attempts: u32,
+) -> JobResult<Bytes, ExternalBundlerSendError> {
+    let expected = userop
+        .hash_with_custom_entrypoint(chain.chain_id(), entrypoint)
+        .map_err(|error| ExternalBundlerSendError::InternalError {
+            message: error.to_string(),
+        })
+        .map_err_nack(Some(Duration::from_secs(60)), RequeuePosition::Last)?;
+    let returned = chain
+        .bundler_client()
+        .send_user_op(userop, entrypoint)
+        .await
+        .map_err(|error| map_bundler_error(error, account, nonce, userop, chain, lock_id))
+        .map_err_nack(
+            Some(Duration::from_secs(if attempts >= 100 { 60 } else { 10 })),
+            RequeuePosition::Last,
+        )?;
+    if returned.as_ref() != expected.as_slice() {
+        return Err(ExternalBundlerSendError::InternalError {
+            message: "Bundler returned a different UserOperation hash; retaining the original operation for reconciliation".into(),
+        }.nack(Some(Duration::from_secs(60)), RequeuePosition::Last));
+    }
+    Ok(Bytes::copy_from_slice(expected.as_slice()))
+}
+
+fn preserve_unknown_outcome(
+    error: JobError<ExternalBundlerSendError>,
+    previously_broadcast: bool,
+) -> JobError<ExternalBundlerSendError> {
+    match error {
+        JobError::Fail(error) if previously_broadcast => {
+            error.nack(Some(Duration::from_secs(60)), RequeuePosition::Last)
+        }
+        other => other,
     }
 }
 
@@ -658,7 +724,7 @@ fn map_build_error(
     engine_error: &EngineError,
     account_address: Address,
     nonce: U256,
-    had_lock: bool,
+    deployment_lock_id: Option<String>,
 ) -> ExternalBundlerSendError {
     // First check if this is a paymaster policy error
     if let EngineError::PaymasterError { kind, .. } = engine_error {
@@ -686,7 +752,7 @@ fn map_build_error(
     let stage = match engine_error {
         EngineError::RpcError { .. } | EngineError::PaymasterError { .. } => "BUILDING".to_string(),
         EngineError::BundlerError { .. } => "BUNDLING".to_string(),
-        EngineError::VaultError { .. } => "SIGNING".to_string(),
+
         _ => "UNKNOWN".to_string(),
     };
 
@@ -696,7 +762,8 @@ fn map_build_error(
         stage,
         message: engine_error.to_string(),
         inner_error: Some(engine_error.clone()),
-        had_deployment_lock: had_lock,
+        had_deployment_lock: deployment_lock_id.is_some(),
+        deployment_lock_id,
     }
 }
 
@@ -706,7 +773,7 @@ fn map_bundler_error(
     nonce: U256,
     signed_user_op: &VersionedUserOp,
     chain: &impl Chain,
-    had_lock: bool,
+    deployment_lock_id: Option<String>,
 ) -> ExternalBundlerSendError {
     let engine_error = bundler_error.to_engine_bundler_error(chain);
 
@@ -716,7 +783,8 @@ fn map_bundler_error(
         user_op: signed_user_op.clone(),
         message: engine_error.to_string(),
         inner_error: Some(engine_error),
-        had_deployment_lock: had_lock,
+        had_deployment_lock: deployment_lock_id.is_some(),
+        deployment_lock_id,
     }
 }
 
@@ -734,9 +802,6 @@ fn is_build_error_retryable(e: &EngineError) -> bool {
         EngineError::PaymasterError { kind, .. } | EngineError::BundlerError { kind, .. } => {
             is_retryable_rpc_error(kind)
         }
-
-        // Vault errors are never retryable (auth/encryption issues)
-        EngineError::VaultError { .. } => false,
 
         // All other errors are not retryable by default
         _ => false,
@@ -795,60 +860,6 @@ fn is_non_retryable_rpc_code(code: i64) -> bool {
     }
 }
 
-/// Determines if a bundler error should be retried based on its content
-fn is_bundler_error_retryable(error_msg: &str) -> bool {
-    // Check for specific AA error codes that should not be retried
-    if error_msg.contains("AA10") || // sender already constructed
-        error_msg.contains("AA13") || // initCode failed or OOG
-        error_msg.contains("AA14") || // initCode must return sender
-        error_msg.contains("AA15") || // initCode must create sender
-        error_msg.contains("AA21") || // didn't pay prefund
-        error_msg.contains("AA22") || // expired or not due
-        error_msg.contains("AA23") || // reverted (or OOG)
-        error_msg.contains("AA24") || // signature error
-        error_msg.contains("AA25") || // invalid account nonce
-        error_msg.contains("AA31") || // paymaster deposit too low
-        error_msg.contains("AA32") || // paymaster stake too low
-        error_msg.contains("AA33") || // reverted (or OOG)
-        error_msg.contains("AA34") || // signature error
-        error_msg.contains("AA40") || // over verificationGasLimit
-        error_msg.contains("AA41") || // too little verificationGas
-        error_msg.contains("AA50") || // postOp reverted
-        error_msg.contains("AA51")
-    // prefund below actualGasCost
-    {
-        return false;
-    }
-
-    // Check for revert-related messages that indicate permanent failures
-    if error_msg.contains("execution reverted")
-        || error_msg.contains("UserOperation reverted")
-        || error_msg.contains("reverted during simulation")
-        || error_msg.contains("invalid signature")
-        || error_msg.contains("signature error")
-        || error_msg.contains("nonce too low")
-        || error_msg.contains("nonce too high")
-        || error_msg.contains("insufficient funds")
-    {
-        return false;
-    }
-
-    // Check for HTTP status codes that shouldn't be retried (4xx client errors)
-    if error_msg.contains("status: 400")
-        || error_msg.contains("status: 401")
-        || error_msg.contains("status: 403")
-        || error_msg.contains("status: 404")
-        || error_msg.contains("status: 422")
-        || error_msg.contains("status: 429")
-    // rate limit - could be retried but often permanent
-    {
-        return false;
-    }
-
-    // Retry everything else (network issues, 5xx errors, timeouts, etc.)
-    true
-}
-
 /// Determines if an ExternalBundlerSendError should be retried
 fn is_external_bundler_error_retryable(e: &ExternalBundlerSendError) -> bool {
     match e {
@@ -888,3 +899,7 @@ fn is_external_bundler_error_retryable(e: &ExternalBundlerSendError) -> bool {
         _ => false,
     }
 }
+
+#[cfg(test)]
+#[path = "send_security_tests.rs"]
+mod security_tests;

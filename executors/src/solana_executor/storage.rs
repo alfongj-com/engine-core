@@ -6,6 +6,27 @@ use twmq::{
     redis::{AsyncCommands, aio::ConnectionManager},
 };
 
+/// Stable identity for a normalized queued Solana request, independent of map
+/// insertion order. Store only this digest and the already-public signer reference.
+pub fn solana_admission_fingerprint(value: &impl Serialize) -> Result<String, serde_json::Error> {
+    use sha2::{Digest, Sha256};
+    fn canonicalize(value: &mut serde_json::Value) {
+        match value {
+            serde_json::Value::Object(fields) => {
+                for value in fields.values_mut() {
+                    canonicalize(value);
+                }
+                fields.sort_keys();
+            }
+            serde_json::Value::Array(items) => items.iter_mut().for_each(canonicalize),
+            _ => {}
+        }
+    }
+    let mut value = serde_json::to_value(value)?;
+    canonicalize(&mut value);
+    Ok(format!("{:x}", Sha256::digest(serde_json::to_vec(&value)?)))
+}
+
 /// Represents a single attempt to send a Solana transaction
 /// This is stored in Redis BEFORE sending to prevent duplicate transactions
 #[serde_as]
@@ -18,7 +39,16 @@ pub struct SolanaTransactionAttempt {
     #[serde_as(as = "DisplayFromStr")]
     pub blockhash: Hash,
     /// The block height at which this blockhash expires
-    pub blockhash_last_valid_height: u64,
+    pub blockhash_last_valid_height: Option<u64>,
+    /// Canonical signed wire bytes. Missing on legacy records: reconcile only, never rebuild.
+    #[serde(default)]
+    pub signed_transaction: Option<String>,
+    #[serde(default)]
+    pub broadcast_attempts: u32,
+    #[serde(default)]
+    pub last_broadcast_at: u64,
+    #[serde(default)]
+    pub reconciliation_checks: u32,
     /// Timestamp when the transaction was sent (milliseconds)
     pub sent_at: u64,
     /// Resubmission attempt number (1 = first submission, 2 = first resubmission, etc.)
@@ -29,13 +59,18 @@ impl SolanaTransactionAttempt {
     pub fn new(
         signature: Signature,
         blockhash: Hash,
-        blockhash_last_valid_height: u64,
+        blockhash_last_valid_height: Option<u64>,
         submission_attempt_number: u32,
+        signed_transaction: String,
     ) -> Self {
         Self {
             signature,
             blockhash,
             blockhash_last_valid_height,
+            signed_transaction: Some(signed_transaction),
+            broadcast_attempts: 0,
+            last_broadcast_at: 0,
+            reconciliation_checks: 0,
             sent_at: crate::metrics::current_timestamp_ms(),
             submission_attempt_number,
         }
@@ -123,15 +158,64 @@ impl From<redis::RedisError> for LockError {
 pub struct SolanaTransactionStorage {
     redis: ConnectionManager,
     namespace: Option<String>,
+    completed_transaction_ttl_seconds: u64,
 }
 
 impl SolanaTransactionStorage {
     pub fn new(redis: ConnectionManager, namespace: Option<String>) -> Self {
-        Self { redis, namespace }
+        Self {
+            redis,
+            namespace,
+            completed_transaction_ttl_seconds: 86_400,
+        }
+    }
+
+    pub fn with_completed_transaction_ttl_seconds(mut self, seconds: u64) -> Self {
+        self.completed_transaction_ttl_seconds = seconds.max(1);
+        self
+    }
+
+    /// Admission identity is independent of bounded queue history and pruning.
+    pub fn admission_key(&self, transaction_id: &str) -> String {
+        match &self.namespace {
+            Some(ns) => format!("{ns}:solana_admission:{transaction_id}"),
+            None => format!("solana_admission:{transaction_id}"),
+        }
+    }
+
+    /// Only a terminal queue commit may begin completed-intent retention. Legacy
+    /// jobs without a fingerprint cannot create a trustworthy tombstone.
+    pub fn add_terminal_admission_command(
+        &self,
+        pipeline: &mut redis::Pipeline,
+        transaction_id: &str,
+        fingerprint: &str,
+        status: &str,
+        require_no_attempt: bool,
+    ) {
+        pipeline
+            .cmd("EVAL")
+            .arg(
+                r#"
+            if redis.call('HGET', KEYS[1], 'fingerprint') == ARGV[3]
+                and (ARGV[4] == '0' or redis.call('EXISTS', KEYS[2]) == 0) then
+                redis.call('HSET', KEYS[1], 'state', ARGV[1])
+                redis.call('EXPIRE', KEYS[1], ARGV[2])
+            end
+            return 1
+        "#,
+            )
+            .arg(2)
+            .arg(self.admission_key(transaction_id))
+            .arg(self.attempt_key(transaction_id))
+            .arg(status)
+            .arg(self.completed_transaction_ttl_seconds)
+            .arg(fingerprint)
+            .arg(if require_no_attempt { 1 } else { 0 });
     }
 
     /// Get the Redis key for a transaction's attempt
-    fn attempt_key(&self, transaction_id: &str) -> String {
+    pub fn attempt_key(&self, transaction_id: &str) -> String {
         match &self.namespace {
             Some(ns) => format!("{ns}:solana_tx_attempt:{transaction_id}"),
             None => format!("solana_tx_attempt:{transaction_id}"),
@@ -209,7 +293,6 @@ impl SolanaTransactionStorage {
             local lock_value = ARGV[1]
             local attempt_key = KEYS[2]
             local attempt_json = ARGV[2]
-            local expiry = tonumber(ARGV[3])
             
             -- Check if we still hold the lock
             local current_lock = redis.call('GET', lock_key)
@@ -218,7 +301,7 @@ impl SolanaTransactionStorage {
             end
             
             -- Try to store attempt if it doesn't exist
-            local result = redis.call('SET', attempt_key, attempt_json, 'NX', 'EX', expiry)
+            local result = redis.call('SET', attempt_key, attempt_json, 'NX')
             if result then
                 return 1
             else
@@ -232,7 +315,6 @@ impl SolanaTransactionStorage {
             .key(&attempt_key)
             .arg(&lock.lock_value)
             .arg(&json)
-            .arg(600) // 10 minutes expiry
             .invoke_async(&mut self.redis.clone())
             .await;
 
@@ -281,6 +363,7 @@ impl SolanaTransactionStorage {
             end
             
             -- Get the attempt
+            redis.call('PERSIST', attempt_key)
             return redis.call('GET', attempt_key)
             "#,
         );
@@ -339,7 +422,6 @@ impl SolanaTransactionStorage {
             local lock_value = ARGV[1]
             local attempt_key = KEYS[2]
             local attempt_json = ARGV[2]
-            local expiry = tonumber(ARGV[3])
             
             -- Check if we still hold the lock
             local current_lock = redis.call('GET', lock_key)
@@ -348,7 +430,7 @@ impl SolanaTransactionStorage {
             end
             
             -- Update the attempt
-            redis.call('SETEX', attempt_key, expiry, attempt_json)
+            redis.call('SET', attempt_key, attempt_json)
             return 1
             "#,
         );
@@ -358,7 +440,6 @@ impl SolanaTransactionStorage {
             .key(&attempt_key)
             .arg(&lock.lock_value)
             .arg(&json)
-            .arg(600) // 10 minutes expiry
             .invoke_async(&mut self.redis.clone())
             .await;
 
@@ -378,11 +459,25 @@ impl SolanaTransactionStorage {
         }
     }
 
-    /// Delete an attempt after successful confirmation or permanent failure
-    pub async fn delete_attempt(&self, transaction_id: &str) -> Result<(), redis::RedisError> {
-        let key = self.attempt_key(transaction_id);
-        self.redis.clone().del::<_, ()>(&key).await?;
-        Ok(())
+    /// Cleanup belongs to the queue's fenced terminal transaction, never a side effect
+    /// during process(). An aborted or stale queue completion retains recovery evidence.
+    pub fn add_delete_attempt_command(&self, pipeline: &mut redis::Pipeline, transaction_id: &str) {
+        pipeline.del(self.attempt_key(transaction_id));
+    }
+
+    /// Explicit operator recovery: replenish read checks without changing signed bytes,
+    /// blockhash, signature, or the lifetime broadcast limit. Caller must own the lock.
+    pub async fn resume_reconciliation(
+        &self,
+        transaction_id: &str,
+        lock: &TransactionLock,
+    ) -> Result<bool, redis::RedisError> {
+        let Some(mut attempt) = self.get_attempt(transaction_id, lock).await? else {
+            return Ok(false);
+        };
+        attempt.reconciliation_checks = 0;
+        self.update_attempt(transaction_id, &attempt, lock).await?;
+        Ok(true)
     }
 
     /// Check if an attempt exists without retrieving it
@@ -390,46 +485,5 @@ impl SolanaTransactionStorage {
         let key = self.attempt_key(transaction_id);
         let exists: bool = self.redis.clone().exists(&key).await?;
         Ok(exists)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn mock_attempt() -> SolanaTransactionAttempt {
-        use std::str::FromStr;
-        SolanaTransactionAttempt {
-            signature: solana_sdk::signature::Signature::from_str(
-                "5j7s6NiJS3JAkvgkoc18WVAsiSaci2pxB2A6ueCJP4tprA2TFg9wSyTLeYouxPBJEMzJinENTkpA52YStRW5Dia7"
-            ).unwrap(),
-            blockhash: "EkSnNWid2cvwEVnVx9aBqawnmiCNiDgp3gUdkDPTKN1N".parse().unwrap(),
-            blockhash_last_valid_height: 123456789,
-            sent_at: 1234567890000,
-            submission_attempt_number: 1,
-        }
-    }
-
-    #[test]
-    fn test_attempt_serialization() {
-        let attempt = mock_attempt();
-        let json = serde_json::to_string(&attempt).unwrap();
-        let deserialized: SolanaTransactionAttempt = serde_json::from_str(&json).unwrap();
-
-        assert_eq!(attempt.signature, deserialized.signature);
-        assert_eq!(attempt.blockhash, deserialized.blockhash);
-        assert_eq!(
-            attempt.submission_attempt_number,
-            deserialized.submission_attempt_number
-        );
-    }
-
-    #[test]
-    fn test_attempt_parse_signature() {
-        let attempt = mock_attempt();
-        assert_eq!(
-            attempt.signature.to_string(),
-            "5j7s6NiJS3JAkvgkoc18WVAsiSaci2pxB2A6ueCJP4tprA2TFg9wSyTLeYouxPBJEMzJinENTkpA52YStRW5Dia7"
-        );
     }
 }

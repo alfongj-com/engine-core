@@ -1,9 +1,11 @@
+mod diagnostics;
 pub mod error;
 pub mod hooks;
 pub mod job;
 pub mod multilane;
 pub mod queue;
 pub mod shutdown;
+mod transaction;
 
 use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
@@ -134,6 +136,9 @@ where
     H: DurableExecution,
 {
     pub redis: ConnectionManager,
+    #[cfg(test)]
+    pub(crate) poll_count: std::sync::atomic::AtomicUsize,
+    pub(crate) transaction_connections: transaction::TransactionConnections,
     pub handler: Arc<H>,
     pub options: QueueOptions,
     // concurrency: usize,
@@ -153,6 +158,9 @@ impl<H: DurableExecution> Queue<H> {
 
         let queue = Self {
             redis,
+            #[cfg(test)]
+            poll_count: std::sync::atomic::AtomicUsize::new(0),
+            transaction_connections: transaction::TransactionConnections::new(client),
             name: name.to_string(),
             // concurrency,
             options: options.unwrap_or_default(),
@@ -477,6 +485,7 @@ impl<H: DurableExecution> Queue<H> {
         let (shutdown_tx, mut shutdown_rx) = tokio::sync::oneshot::channel::<()>();
         // Local semaphore to limit concurrency per instance
         let semaphore = Arc::new(Semaphore::new(self.options.local_concurrency));
+        let completed = Arc::new(tokio::sync::Notify::new());
         let handler = self.handler.clone();
         let outer_queue_clone = self.clone();
         // Start worker
@@ -494,8 +503,14 @@ impl<H: DurableExecution> Queue<H> {
                         break;
                     }
 
-                    // Normal polling tick
-                    _ = interval.tick() => {
+                    // Completed permits refill backlog immediately; the timer still
+                    // discovers external work and performs lease/delay housekeeping.
+                    _ = async {
+                        tokio::select! {
+                            _ = interval.tick() => {},
+                            _ = completed.notified() => {},
+                        }
+                    } => {
                         let queue_clone = outer_queue_clone.clone();
                         let queue_name = queue_clone.name();
 
@@ -516,6 +531,7 @@ impl<H: DurableExecution> Queue<H> {
                                     let queue_clone = queue_clone.clone();
                                     let job_id = job.id().to_string();
                                     let handler_clone = handler_clone.clone();
+                                    let completed = completed.clone();
 
                                     tokio::spawn(
                                         async move {
@@ -533,6 +549,7 @@ impl<H: DurableExecution> Queue<H> {
 
                                         // Release permit when done
                                         drop(permit);
+                                        completed.notify_one();
                                     }.instrument(tracing::info_span!("twmq_worker", job_id, queue_name)));
                                 }
                             }
@@ -586,7 +603,10 @@ impl<H: DurableExecution> Queue<H> {
         self: &Arc<Self>,
         batch_size: usize,
     ) -> RedisResult<Vec<BorrowedJob<H::JobData>>> {
-        let pop_id = nanoid::nanoid!(4);
+        #[cfg(test)]
+        self.poll_count
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        let pop_id = nanoid::nanoid!();
 
         // Lua script that does:
         // 1. Clean up expired leases (with lease token validation)
@@ -662,11 +682,19 @@ impl<H: DurableExecution> Queue<H> {
                     -- Still processing, keep in cancellation set
                 else
                     -- Job finished processing, check outcome
-                    if redis.call('LPOS', success_list_name, job_id) then
+                    -- Terminal lists retain older entries when an ID is reused.
+                    -- Runnable work belongs to the current generation and must
+                    -- be cancelled even if an earlier generation succeeded.
+                    local is_pending = redis.call('LPOS', pending_list_name, job_id) ~= false
+                    local is_delayed = redis.call('ZSCORE', delayed_zset_name, job_id) ~= false
+                    if not is_pending and not is_delayed and redis.call('LPOS', success_list_name, job_id) then
                         -- Job succeeded, just remove from cancellation set
                         table.insert(completed_jobs, job_id)
                     else
-                        -- Job not successful, cancel it now
+                        -- Remove recovered/retried work before this batch borrows jobs.
+                        redis.call('LREM', pending_list_name, 0, job_id)
+                        redis.call('ZREM', delayed_zset_name, job_id)
+                        redis.call('LREM', failed_list_name, 0, job_id)
                         redis.call('LPUSH', failed_list_name, job_id)
                         -- Add cancellation timestamp
                         local job_meta_hash_name = 'twmq:' .. queue_id .. ':job:' .. job_id .. ':meta'
@@ -963,13 +991,27 @@ impl<H: DurableExecution> Queue<H> {
                 local pending_list = KEYS[7]
                 local delayed_zset = KEYS[8]
 
+                local other_terminal_list = KEYS[9]
+
+                local pending_cancellations = KEYS[10]
+
                 local max_len = tonumber(ARGV[1])
 
                 local job_ids_to_delete = redis.call('LRANGE', list_name, max_len, -1)
                 local actually_deleted = 0
 
                 if #job_ids_to_delete > 0 then
+                    -- Trim first so LPOS observes only retained references. Keep
+                    -- shared records while either terminal list still names the ID.
+                    -- LTRIM 0 -1 retains everything, so zero retention needs DEL.
+                    if max_len == 0 then
+                        redis.call('DEL', list_name)
+                    else
+                        redis.call('LTRIM', list_name, 0, max_len - 1)
+                    end
                     for _, j_id in ipairs(job_ids_to_delete) do
+                        local has_retained_history = redis.call('LPOS', list_name, j_id) ~= false
+                            or redis.call('LPOS', other_terminal_list, j_id) ~= false
                         -- CRITICAL FIX: Check if this job_id is currently active/pending/delayed
                         -- This prevents the race where we prune metadata for a job that's currently running
                         -- or about to run (pending). LPOS is O(N) but necessary for correctness when
@@ -979,14 +1021,17 @@ impl<H: DurableExecution> Queue<H> {
                         local lpos_result = redis.call('LPOS', pending_list, j_id)
                         local is_pending = type(lpos_result) == "number"
                         local zscore_result = redis.call('ZSCORE', delayed_zset, j_id)
-                        local is_delayed = type(zscore_result) == "number"
+                        -- ZSCORE is a bulk string when present, false when absent.
+                        local is_delayed = zscore_result ~= false
                         
                         -- Only delete if the job is NOT currently in the system
-                        if not is_active and not is_pending and not is_delayed then
+                        if not is_active and not is_pending and not is_delayed and not has_retained_history then
                             local job_meta_hash = 'twmq:' .. queue_id .. ':job:' .. j_id .. ':meta'
                             local errors_list_name = 'twmq:' .. queue_id .. ':job:' .. j_id .. ':errors'
 
                             redis.call('SREM', dedupe_set_name, j_id)
+                            -- No retained/live record remains for this cancellation.
+                            redis.call('SREM', pending_cancellations, j_id)
                             redis.call('HDEL', job_data_hash, j_id)
                             redis.call('DEL', job_meta_hash)
                             redis.call('HDEL', results_hash, j_id)
@@ -994,7 +1039,6 @@ impl<H: DurableExecution> Queue<H> {
                             actually_deleted = actually_deleted + 1
                         end
                     end
-                    redis.call('LTRIM', list_name, 0, max_len - 1)
                 end
                 
                 return actually_deleted
@@ -1010,6 +1054,8 @@ impl<H: DurableExecution> Queue<H> {
             .key(self.active_hash_name()) // Check if job is active
             .key(self.pending_list_name()) // Check if job is pending
             .key(self.delayed_zset_name()) // Check if job is delayed
+            .key(self.failed_list_name())
+            .key(self.pending_cancellation_set_name())
             .arg(self.options.max_success) // max_len (LTRIM is 0 to max_success-1)
             .invoke_async(&mut self.redis.clone())
             .await?;
@@ -1056,8 +1102,12 @@ impl<H: DurableExecution> Queue<H> {
             created_at: now,
         };
 
-        let error_json = serde_json::to_string(&error_record)?;
-        pipeline.lpush(self.job_errors_list_name(&job.job.id), error_json);
+        let error_json = crate::diagnostics::encode_record(&error_record)?;
+        crate::diagnostics::append_record(
+            pipeline,
+            &self.job_errors_list_name(&job.job.id),
+            error_json,
+        );
 
         // Add to proper queue based on delay and position
         if let Some(delay_duration) = delay {
@@ -1120,8 +1170,12 @@ impl<H: DurableExecution> Queue<H> {
             details: JobErrorType::fail(),
             created_at: now,
         };
-        let error_json = serde_json::to_string(&error_record)?;
-        pipeline.lpush(self.job_errors_list_name(&job.job.id), error_json);
+        let error_json = crate::diagnostics::encode_record(&error_record)?;
+        crate::diagnostics::append_record(
+            pipeline,
+            &self.job_errors_list_name(&job.job.id),
+            error_json,
+        );
 
         // For "active" idempotency mode, remove from deduplication set immediately
         if self.options.idempotency_mode == queue::IdempotencyMode::Active {
@@ -1143,13 +1197,28 @@ impl<H: DurableExecution> Queue<H> {
                 local pending_list = KEYS[6]
                 local delayed_zset = KEYS[7]
 
+                local other_terminal_list = KEYS[8]
+                local results_hash = KEYS[9]
+
+                local pending_cancellations = KEYS[10]
+
                 local max_len = tonumber(ARGV[1])
 
                 local job_ids_to_delete = redis.call('LRANGE', list_name, max_len, -1)
                 local actually_deleted = 0
 
                 if #job_ids_to_delete > 0 then
+                    -- Trim first so LPOS observes only retained references. Keep
+                    -- shared records while either terminal list still names the ID.
+                    -- LTRIM 0 -1 retains everything, so zero retention needs DEL.
+                    if max_len == 0 then
+                        redis.call('DEL', list_name)
+                    else
+                        redis.call('LTRIM', list_name, 0, max_len - 1)
+                    end
                     for _, j_id in ipairs(job_ids_to_delete) do
+                        local has_retained_history = redis.call('LPOS', list_name, j_id) ~= false
+                            or redis.call('LPOS', other_terminal_list, j_id) ~= false
                         -- CRITICAL FIX: Check if this job_id is currently active/pending/delayed
                         -- This prevents the race where we prune metadata for a job that's currently running
                         -- or about to run (pending). LPOS is O(N) but necessary for correctness when
@@ -1159,21 +1228,24 @@ impl<H: DurableExecution> Queue<H> {
                         local lpos_result = redis.call('LPOS', pending_list, j_id)
                         local is_pending = type(lpos_result) == "number"
                         local zscore_result = redis.call('ZSCORE', delayed_zset, j_id)
-                        local is_delayed = type(zscore_result) == "number"
+                        -- ZSCORE is a bulk string when present, false when absent.
+                        local is_delayed = zscore_result ~= false
                         
                         -- Only delete if the job is NOT currently in the system
-                        if not is_active and not is_pending and not is_delayed then
+                        if not is_active and not is_pending and not is_delayed and not has_retained_history then
                             local errors_list_name = 'twmq:' .. queue_id .. ':job:' .. j_id .. ':errors'
                             local job_meta_hash = 'twmq:' .. queue_id .. ':job:' .. j_id .. ':meta'
 
                             redis.call('SREM', dedupe_set_name, j_id)
+                            -- No retained/live record remains for this cancellation.
+                            redis.call('SREM', pending_cancellations, j_id)
                             redis.call('HDEL', job_data_hash, j_id)
+                            redis.call('HDEL', results_hash, j_id)
                             redis.call('DEL', job_meta_hash)
                             redis.call('DEL', errors_list_name)
                             actually_deleted = actually_deleted + 1
                         end
                     end
-                    redis.call('LTRIM', list_name, 0, max_len - 1)
                 end
                 return actually_deleted
             "#,
@@ -1187,6 +1259,9 @@ impl<H: DurableExecution> Queue<H> {
             .key(self.active_hash_name()) // Check if job is active
             .key(self.pending_list_name()) // Check if job is pending
             .key(self.delayed_zset_name()) // Check if job is delayed
+            .key(self.success_list_name())
+            .key(self.job_result_hash_name())
+            .key(self.pending_cancellation_set_name())
             .arg(self.options.max_failed)
             .invoke_async(&mut self.redis.clone())
             .await?;
@@ -1245,59 +1320,19 @@ impl<H: DurableExecution> Queue<H> {
             }
         }
 
-        // 2. Now use this pipeline in unlimited retry loop with lease check
         let lease_key = self.lease_key_name(&job.job.id, &job.lease_token);
-
-        loop {
-            let mut conn = self.redis.clone();
-
-            // WATCH the lease key
-            redis::cmd("WATCH")
-                .arg(&lease_key)
-                .query_async::<()>(&mut conn)
-                .await?;
-
-            // Check if lease exists - if not, job was cancelled or timed out
-            let lease_exists: bool = conn.exists(&lease_key).await?;
-            if !lease_exists {
-                redis::cmd("UNWATCH").query_async::<()>(&mut conn).await?;
-                tracing::warn!(
-                    job_id = job.job.id,
-                    "Lease no longer exists, job was cancelled or timed out"
-                );
-                return Ok(());
-            }
-
-            // Clone the pipeline and make it atomic for this attempt
-            let mut atomic_pipeline = hook_pipeline.clone();
-            atomic_pipeline.atomic();
-
-            // Execute atomically with WATCH/MULTI/EXEC
-            match atomic_pipeline
-                .query_async::<Vec<redis::Value>>(&mut conn)
-                .await
-            {
-                Ok(_) => {
-                    // Success! Now run post-completion methods
-                    match &result {
-                        Ok(_) => self.post_success_completion().await?,
-                        Err(JobError::Nack { .. }) => self.post_nack_completion().await?,
-                        Err(JobError::Fail(_)) => self.post_fail_completion().await?,
-                    }
-
-                    tracing::debug!(job_id = job.job.id, "Job completion successful");
-                    return Ok(());
-                }
-                Err(_) => {
-                    // WATCH failed (lease key changed), retry
-                    tracing::debug!(
-                        job_id = job.job.id,
-                        "WATCH failed during completion, retrying"
-                    );
-                    continue;
-                }
+        if self
+            .transaction_connections
+            .commit_if_leased(&lease_key, &hook_pipeline)
+            .await?
+        {
+            match &result {
+                Ok(_) => self.post_success_completion().await?,
+                Err(JobError::Nack { .. }) => self.post_nack_completion().await?,
+                Err(JobError::Fail(_)) => self.post_fail_completion().await?,
             }
         }
+        Ok(())
     }
 
     // Special completion method for queue errors (deserialization failures) with lease token
@@ -1345,60 +1380,26 @@ impl<H: DurableExecution> Queue<H> {
             details: JobErrorType::fail(),
             created_at: now,
         };
-        let error_json = serde_json::to_string(&error_record)?;
-        hook_pipeline.lpush(self.job_errors_list_name(&job.id), error_json);
+        let error_json = crate::diagnostics::encode_record(&error_record)?;
+        crate::diagnostics::append_record(
+            &mut hook_pipeline,
+            &self.job_errors_list_name(&job.id),
+            error_json,
+        );
 
         // For "active" idempotency mode, remove from deduplication set immediately
         if self.options.idempotency_mode == queue::IdempotencyMode::Active {
             hook_pipeline.srem(self.dedupe_set_name(), &job.id);
         }
 
-        // 2. Use pipeline in unlimited retry loop with lease check
-        loop {
-            let mut conn = self.redis.clone();
-
-            // WATCH the lease key
-            redis::cmd("WATCH")
-                .arg(&lease_key)
-                .query_async::<()>(&mut conn)
-                .await?;
-
-            // Check if lease exists - if not, job was cancelled or timed out
-            let lease_exists: bool = conn.exists(&lease_key).await?;
-            if !lease_exists {
-                redis::cmd("UNWATCH").query_async::<()>(&mut conn).await?;
-                tracing::warn!(
-                    job_id = job.id,
-                    "Lease no longer exists, job was cancelled or timed out"
-                );
-                return Ok(());
-            }
-
-            // Clone the pipeline and make it atomic for this attempt
-            let mut atomic_pipeline = hook_pipeline.clone();
-            atomic_pipeline.atomic();
-
-            // Execute atomically with WATCH/MULTI/EXEC
-            match atomic_pipeline
-                .query_async::<Vec<redis::Value>>(&mut conn)
-                .await
-            {
-                Ok(_) => {
-                    // Success! Run post-completion
-                    self.post_fail_completion().await?;
-                    tracing::debug!(job_id = job.id, "Queue error job completion successful");
-                    return Ok(());
-                }
-                Err(_) => {
-                    // WATCH failed (lease key changed), retry
-                    tracing::debug!(
-                        job_id = job.id,
-                        "WATCH failed during queue error completion, retrying"
-                    );
-                    continue;
-                }
-            }
+        if self
+            .transaction_connections
+            .commit_if_leased(&lease_key, &hook_pipeline)
+            .await?
+        {
+            self.post_fail_completion().await?;
         }
+        Ok(())
     }
 
     pub async fn remove_from_dedupe_set(&self, job_id: &str) -> Result<(), TwmqError> {
@@ -1417,3 +1418,9 @@ impl<H: DurableExecution> Queue<H> {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod lease_tests;
+
+#[cfg(test)]
+mod diagnostic_tests;

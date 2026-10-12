@@ -222,16 +222,14 @@ impl SolanaTransaction {
             }
         })?;
 
-        // Deserialize from binary wire format using bincode
-        let (transaction, _): (VersionedTransaction, _) =
-            bincode::serde::decode_from_slice(&tx_bytes, bincode::config::standard()).map_err(
-                |e| SolanaTransactionError::DeserializationFailed {
-                    error: format!("Failed to deserialize VersionedTransaction: {}", e),
-                },
-            )?;
-
-        // Verify fee payer
-        let fee_payer = transaction.message.static_account_keys()[0];
+        let transaction = decode_transaction_wire(&tx_bytes)?;
+        let fee_payer = *transaction
+            .message
+            .static_account_keys()
+            .first()
+            .ok_or_else(|| SolanaTransactionError::DeserializationFailed {
+                error: "Missing fee payer".into(),
+            })?;
         if fee_payer != expected_payer {
             return Err(SolanaTransactionError::FeePayerMismatch {
                 expected: expected_payer.to_string(),
@@ -267,3 +265,46 @@ pub enum SolanaTransactionError {
     #[error("Fee payer mismatch: expected {expected}, got {got}")]
     FeePayerMismatch { expected: String, got: String },
 }
+
+/// Solana's SDK wire format uses bincode 1's fixed-integer configuration.
+/// Signature placeholders are allowed; cryptographic verification belongs to signing/submission.
+pub fn encode_transaction_wire(
+    transaction: &VersionedTransaction,
+) -> Result<Vec<u8>, SolanaTransactionError> {
+    transaction
+        .sanitize()
+        .map_err(|_| SolanaTransactionError::InvalidData {
+            error: "Malformed transaction".into(),
+        })?;
+    bincode::serde::encode_to_vec(transaction, bincode::config::legacy()).map_err(|_| {
+        SolanaTransactionError::InvalidData {
+            error: "Transaction encoding failed".into(),
+        }
+    })
+}
+
+pub fn decode_transaction_wire(
+    bytes: &[u8],
+) -> Result<VersionedTransaction, SolanaTransactionError> {
+    let invalid = || SolanaTransactionError::DeserializationFailed {
+        error: "Invalid Solana transaction wire bytes".into(),
+    };
+    if bytes.len() > 16_384 {
+        return Err(invalid());
+    }
+    let (transaction, consumed): (VersionedTransaction, usize) =
+        bincode::serde::decode_from_slice(bytes, bincode::config::legacy().with_limit::<16_384>())
+            .map_err(|_| invalid())?;
+    if consumed != bytes.len() {
+        return Err(invalid());
+    }
+    transaction.sanitize().map_err(|_| invalid())?;
+    if transaction.message.header().num_required_signatures == 0 {
+        return Err(invalid());
+    }
+    Ok(transaction)
+}
+
+#[cfg(test)]
+#[path = "transaction_wire_tests.rs"]
+mod wire_tests;

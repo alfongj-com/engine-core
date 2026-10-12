@@ -1,7 +1,6 @@
 // src/queue/manager.rs
 use std::{sync::Arc, time::Duration};
 
-use alloy::transports::http::reqwest;
 use engine_core::credentials::KmsClientCache;
 use engine_core::error::EngineError;
 use engine_executors::{
@@ -17,7 +16,7 @@ use engine_executors::{
         worker::SolanaExecutorJobHandler,
     },
     transaction_registry::TransactionRegistry,
-    webhook::{WebhookJobHandler, WebhookRetryConfig},
+    webhook::{WebhookDestinationPolicy, WebhookJobHandler, WebhookRetryConfig},
 };
 use twmq::{Queue, queue::QueueOptions, shutdown::ShutdownHandle};
 
@@ -59,6 +58,11 @@ impl QueueManager {
         authorization_cache: EoaAuthorizationCache,
         kms_client_cache: KmsClientCache,
     ) -> Result<Self, EngineError> {
+        if queue_config.completed_transaction_ttl_seconds == 0 {
+            return Err(EngineError::ValidationError {
+                message: "completed_transaction_ttl_seconds must be positive".into(),
+            });
+        }
         // Create transaction registry
         let transaction_registry = Arc::new(TransactionRegistry::new(
             redis_client.get_connection_manager().await?,
@@ -66,8 +70,12 @@ impl QueueManager {
         ));
 
         // Create deployment cache and lock
-        let deployment_cache = RedisDeploymentCache::new(redis_client.clone()).await?;
-        let deployment_lock = RedisDeploymentLock::new(redis_client.clone()).await?;
+        let deployment_cache = RedisDeploymentCache::new(redis_client.clone())
+            .await?
+            .with_namespace(queue_config.execution_namespace.clone());
+        let deployment_lock = RedisDeploymentLock::new(redis_client.clone())
+            .await?
+            .with_namespace(queue_config.execution_namespace.clone());
 
         // Create queue options
         let base_queue_opts = QueueOptions {
@@ -101,19 +109,15 @@ impl QueueManager {
         eoa_executor_queue_opts.local_concurrency = queue_config.eoa_executor_workers;
 
         // Create webhook queue
-        let webhook_handler = WebhookJobHandler {
-            // Specifc HTTP client config for high concurrency webhook handling
-            http_client: reqwest::Client::builder()
-                .pool_max_idle_per_host(50) // Allow more connections per host
-                .pool_idle_timeout(Duration::from_secs(30)) // Shorter idle timeout
-                .timeout(Duration::from_secs(10)) // Much shorter request timeout
-                .connect_timeout(Duration::from_secs(5)) // Quick connection timeout
-                .tcp_keepalive(Duration::from_secs(60)) // Keep connections alive
-                .tcp_nodelay(true) // Reduce latency
-                .build()
-                .expect("Failed to create HTTP client"),
-            retry_config: Arc::new(WebhookRetryConfig::default()),
-        };
+        let webhook_policy =
+            WebhookDestinationPolicy::from_env().map_err(|error| EngineError::InternalError {
+                message: error.to_string(),
+            })?;
+        let webhook_handler =
+            WebhookJobHandler::new(webhook_policy, Arc::new(WebhookRetryConfig::default()))
+                .map_err(|error| EngineError::InternalError {
+                    message: error.to_string(),
+                })?;
 
         let webhook_queue_name =
             get_queue_name_for_namespace(&queue_config.execution_namespace, WEBHOOK_QUEUE_NAME);
@@ -186,7 +190,6 @@ impl QueueManager {
             .arc();
 
         let solana_signer = Arc::new(engine_core::signer::SolanaSigner::new(
-            userop_signer.vault_client.clone(),
             userop_signer.iaw_client.clone(),
         ));
 
@@ -251,13 +254,15 @@ impl QueueManager {
         );
 
         let eoa_executor_handler = EoaExecutorJobHandler {
+            redis_client: redis_client.clone(),
             chain_service: chain_service.clone(),
             eoa_signer: eoa_signer.clone(),
             webhook_queue: webhook_queue.clone(),
             namespace: queue_config.execution_namespace.clone(),
             redis: redis_client.get_connection_manager().await?,
             authorization_cache,
-            max_inflight: 50,
+            max_inflight: queue_config.eoa_max_inflight,
+            broadcast_concurrency: queue_config.eoa_broadcast_concurrency,
             max_recycled_nonces: 50,
             eoa_metrics,
             kms_client_cache,
@@ -288,8 +293,12 @@ impl QueueManager {
         let solana_storage = SolanaTransactionStorage::new(
             redis_client.get_connection_manager().await?,
             queue_config.execution_namespace.clone(),
-        );
+        )
+        .with_completed_transaction_ttl_seconds(queue_config.completed_transaction_ttl_seconds);
         let solana_executor_handler = SolanaExecutorJobHandler {
+            confirmation_poll_interval: std::time::Duration::from_secs(
+                queue_config.solana_confirmation_poll_interval_seconds,
+            ),
             solana_signer,
             rpc_cache: solana_rpc_cache,
             storage: Arc::new(solana_storage),
