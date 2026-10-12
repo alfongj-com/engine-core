@@ -1,0 +1,158 @@
+{
+  "schema_version": 1,
+  "scope": "Concurrent local-chain Engine SIGKILL and exact-intent recovery; no sustainable-capacity or public-chain qualification.",
+  "provenance": {
+    "runtime_source_commit": "04d15d86ad960f40345d7dddb8c84505ba3e96ba",
+    "runtime_source_dirty": false,
+    "runtime_binary_sha256": "26a05c8f2ce303a8eb40d41f8b3b295befe273e098b4a16b1a9177c55d410dc3",
+    "captured_checkout_commit": "cfd7d074d2cec04e848ed7860ba51ef8f65fdc62",
+    "captured_checkout_dirty": false,
+    "raw_report_sha256": "cee6543e66933dc3c94e9d655f3f2f13075614ade0d63ec5c64838ce3fa0d71a",
+    "harness_sha256": {
+      "capacity_campaign.py": "c3af22b49a72617c0f3deaccc938abd3cd41012ab776b59f57431a3bee2c37f6",
+      "capacity_faults.py": "59e2bc4d90bceca2682c27e35c5871ee538d4878a795f990fa90e6d5f90afa13",
+      "capacity_resource_guard.py": "bbfda4901f49600cdff9fa907b73e2a64e8df534496083994fd4717c55979bb6"
+    },
+    "timing_source_sha256": "3c7321093f3f69721624a028991e1c27a2cf83b28c4b2ecfd5dedc693615f6c2",
+    "summarizer_sha256": "4438fabd2ec6cdb9e8d339ca74f9066a9503aba2d2307031305bebdc01d92d06",
+    "note": "The separately supplied executable is identified by its binary manifest and matching hash. Checkout metadata captured by the harness is not substituted for runtime provenance.",
+    "crash_summarizer_sha256": "73822e14e7e103681316091d44234d5a5288d60b4bec1a26f8c099c5422b9a49"
+  },
+  "duration_seconds": 90.0,
+  "warmup_seconds": 20.0,
+  "minimum_late_window_seconds": 30.0,
+  "mixed": false,
+  "settings": {
+    "queue_lease_seconds": 10,
+    "http_concurrency": 64,
+    "eoa_broadcast_concurrency": 32,
+    "solana_workers": 100,
+    "solana_confirmation_poll_seconds": 1,
+    "comparison_note": "The matched steady runs use a 600-second lease; this crash profile uses 10 seconds."
+  },
+  "durability": {
+    "sqlite_full": true,
+    "redis_everysec": true
+  },
+  "fault": {
+    "kind": "engine_sigkill",
+    "trigger_chain": "solana",
+    "trigger_configured_unique_wires": 200,
+    "trigger_observed_unique_wires": 200,
+    "trigger_observed": true,
+    "restart_succeeded": true,
+    "requested_fault_validated": true
+  },
+  "oracle": {
+    "outcome": "pass",
+    "safety_pass": true,
+    "liveness_pass": true,
+    "observed_intents": 2880,
+    "offered_intents": 2880,
+    "expected_parked_intents": 0
+  },
+  "per_chain": {
+    "evm025": {
+      "offered": 720,
+      "offered_tps": 8.0,
+      "dispatched": 720,
+      "client_capacity_drops": 0,
+      "initial_http_202": 719,
+      "initial_transport_errors": 1,
+      "retry_dispatched": 5,
+      "retry_http_202": 5,
+      "forwarded_sends": 720,
+      "rpc_proxy_overloads": 0,
+      "rpc_proxy_failure_count": 0,
+      "canonical_executions": 720,
+      "nonce_delta": 720,
+      "recipient_delta_wei": 720
+    },
+    "evm2": {
+      "offered": 720,
+      "offered_tps": 8.0,
+      "dispatched": 720,
+      "client_capacity_drops": 0,
+      "initial_http_202": 720,
+      "initial_transport_errors": 0,
+      "retry_dispatched": 0,
+      "retry_http_202": 0,
+      "forwarded_sends": 720,
+      "rpc_proxy_overloads": 0,
+      "rpc_proxy_failure_count": 0,
+      "canonical_executions": 720,
+      "nonce_delta": 720,
+      "recipient_delta_wei": 720
+    },
+    "solana": {
+      "offered": 1440,
+      "offered_tps": 16.0,
+      "dispatched": 1440,
+      "client_capacity_drops": 0,
+      "initial_http_202": 1440,
+      "initial_transport_errors": 0,
+      "retry_dispatched": 0,
+      "retry_http_202": 0,
+      "forwarded_sends": 1440,
+      "rpc_proxy_overloads": 0,
+      "rpc_proxy_failure_count": 0,
+      "canonical_executions": 1440,
+      "recipient_delta_lamports": 1440000
+    }
+  },
+  "observed_execution_counts_by_family": {
+    "eoa": {
+      "observed_intents": 1440,
+      "terminal_intents": 1440,
+      "canonical_executions": 1440,
+      "intents_with_multiple_canonical_executions": 0,
+      "finalized_canonical_executions": 1440,
+      "successful_canonical_executions": 1440,
+      "intents_without_canonical_execution": 0
+    },
+    "solana": {
+      "observed_intents": 1440,
+      "terminal_intents": 1440,
+      "canonical_executions": 1440,
+      "intents_with_multiple_canonical_executions": 0,
+      "finalized_canonical_executions": 1440,
+      "successful_canonical_executions": 1440,
+      "intents_without_canonical_execution": 0
+    }
+  },
+  "unexpected_observation_count": 0,
+  "same_id_retries": {
+    "unique_intents_retried": 5,
+    "terminal_duplicate_limit": 4,
+    "retry_ambiguous_http_response_enabled": true,
+    "ambiguous_initial_http_responses": 1,
+    "ambiguous_response_retry_exercised": true,
+    "retry_requests_accepted": 5,
+    "new_forwarded_sends_during_retry": {
+      "evm025": 0,
+      "evm2": 0,
+      "solana": 0
+    },
+    "scope_note": "An enabled unknown-response retry is reported as exercised only when an initial response is ambiguous; final reconciliation still checks every offered intent."
+  },
+  "drain": {
+    "client_pending": 0,
+    "http_inflight": 0,
+    "journal_unresolved": 0,
+    "node_pending": 0,
+    "redis_active": 0,
+    "redis_borrowed": 0,
+    "redis_delayed": 0,
+    "redis_pending": 0,
+    "redis_submitted": 0
+  },
+  "journal_halted": false,
+  "operator_recovery_required": false,
+  "owned_children_stopped": true,
+  "execution_error_count": 0,
+  "safety_failure_count": 0,
+  "liveness_failure_count": 0,
+  "process_exit_code": 2,
+  "exit_note": "Harness exit 2 means its finite capacity gate did not pass. Chaos is excluded from capacity qualification even when exact-effect safety and liveness pass.",
+  "timing_note": "No journal or executor histogram counters are subtracted across the Engine restart. Only exact-effect, retry, fault and drain evidence is summarized."
+}

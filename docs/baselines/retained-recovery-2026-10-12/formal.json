@@ -1,0 +1,229 @@
+{
+  "head_sha": "04d15d86ad960f40345d7dddb8c84505ba3e96ba",
+  "source_guard_scope": "Change-review hash guard; not a proof of implementation refinement or model composition.",
+  "local_protocols": {
+    "status": "pass",
+    "cases": 100,
+    "kinds": {
+      "positive": 22,
+      "fault": 49,
+      "boundary": 12,
+      "witness": 17
+    },
+    "source_hashes_verified": 91,
+    "model_config_pairs_verified": 100,
+    "tlc_version": "1.7.4",
+    "tlc_sha256": "936a262061c914694dfd669a543be24573c45d5aa0ff20a8b96b23d01e050e88",
+    "report_sha256": "d58e2d0cbd1eaa2f3e7b4b4bb17252faea7391263e025b953dbd6b5572f61d49",
+    "source_map_sha256": "c140d678412237300eca3a82593d923111ec27f707b909f66ad79a39edca555d",
+    "manifest_sha256": "f5df91a56e80835db24588d1e1e40a3aea0ff7b30757409e546cef0d456ce869",
+    "elapsed_seconds_reported_by_runner": 553.8
+  },
+  "ci": {
+    "run_id": 38272433716,
+    "url": "https://github.com/alfongj-com/engine-core/actions/runs/38272433716",
+    "head_sha": "04d15d86ad960f40345d7dddb8c84505ba3e96ba",
+    "status": "success",
+    "protocols": {
+      "status": "pass",
+      "cases": 100,
+      "all_expected_outcomes": true,
+      "kinds": {
+        "positive": 22,
+        "fault": 49,
+        "boundary": 12,
+        "witness": 17
+      },
+      "source_hashes_verified": 91,
+      "model_and_config_hashes_verified": 100,
+      "tlc_version": "1.7.4",
+      "tlc_sha256": "936a262061c914694dfd669a543be24573c45d5aa0ff20a8b96b23d01e050e88",
+      "report_sha256": "c7ccb6ff3e9b53b98e4901bb7c3190288580bbb079ed0356d8b8ea4eb0af02f5",
+      "source_map_sha256": "c140d678412237300eca3a82593d923111ec27f707b909f66ad79a39edca555d",
+      "manifest_sha256": "f5df91a56e80835db24588d1e1e40a3aea0ff7b30757409e546cef0d456ce869"
+    },
+    "fees": {
+      "status": "pass",
+      "production_harnesses_proved": 5,
+      "mutation_counterexamples": 2,
+      "kani_version": "0.68.0",
+      "source_sha256": {
+        "executors/src/eoa/worker/fee_math.rs": "98a27d1919e073ccf8d3ce66ce665bd03a6e6a14671fe371e7c1e2b7006db6f0",
+        "formal/fees/src/lib.rs": "cccdc619cfee272693cd81917ddc1e469e292160c1be963cc4df8d76b315d6d7",
+        "formal/fees/check.py": "4f0d088260e48ff2f46579e835c9b67a256115f7da4cf34fb936c3da5ac8c86e"
+      },
+      "summary_sha256": "e38a89899d11c305bbe2ed42ce5f8fc6e02a065e83b1138968cd587fda37016b",
+      "harnesses": [
+        {
+          "name": "proofs::actual_dynamic_bump_preserves_valid_order_and_values",
+          "status": "Success",
+          "checks": 24
+        },
+        {
+          "name": "proofs::division_parts_reconstruct_all_inputs",
+          "status": "Success",
+          "checks": 16
+        },
+        {
+          "name": "proofs::actual_parts_match_mathematical_saturation_threshold",
+          "status": "Success",
+          "checks": 30
+        },
+        {
+          "name": "proofs::all_increases_are_nondecreasing_when_cap_permits",
+          "status": "Success",
+          "checks": 22
+        },
+        {
+          "name": "proofs::all_multipliers_respect_caps_and_priority",
+          "status": "Success",
+          "checks": 24
+        }
+      ],
+      "mutations": [
+        {
+          "name": "removed_cap",
+          "expected_assertion": "new_fee <= fee_cap.unwrap_or(u128::MAX)"
+        },
+        {
+          "name": "wrapping_multiply",
+          "expected_assertion": "fee_math::capped_increase(value, multiplier, Some(cap)) >= value"
+        }
+      ]
+    },
+    "artifacts": [
+      {
+        "name": "protocol-model-results",
+        "id": 11758356448,
+        "digest": "sha256:439a562223c99ef83e19fa314b22f8d8f44e0ad9075c677c025fe28332d8c756",
+        "size_in_bytes": 452391,
+        "expired": false
+      },
+      {
+        "name": "rust-fee-proof-results",
+        "id": 11756974805,
+        "digest": "sha256:17fc64ddae604b48f68cd0ea0ab8116ad8fe45f92b53def6763b44cd088baed8",
+        "size_in_bytes": 11421,
+        "expired": false
+      }
+    ]
+  },
+  "superseded_heads": [
+    {
+      "head_sha": "cfd7d074d2cec04e848ed7860ba51ef8f65fdc62",
+      "runtime_and_formal_source_commit": "04d15d86ad960f40345d7dddb8c84505ba3e96ba",
+      "changed_paths": [
+        "LOCAL_TESTING.md",
+        "README.md",
+        "WORK_IN_PROGRESS.md"
+      ],
+      "only_documentation_changes": true,
+      "ci": {
+        "run_id": 38274306942,
+        "url": "https://github.com/alfongj-com/engine-core/actions/runs/38274306942",
+        "status": "superseded",
+        "github_conclusion": "cancelled",
+        "reason": "Replaced by a subsequent documentation-only head; no failed proof conclusion."
+      }
+    }
+  ],
+  "final_head": {
+    "head_sha": "146de9d78fa494a73d03bcc80dc7bc9410bdb733",
+    "runtime_and_formal_source_commit": "04d15d86ad960f40345d7dddb8c84505ba3e96ba",
+    "changed_paths": [
+      "LOCAL_TESTING.md",
+      "README.md",
+      "WORK_IN_PROGRESS.md"
+    ],
+    "only_documentation_changes": true,
+    "ci": {
+      "run_id": 38274782927,
+      "url": "https://github.com/alfongj-com/engine-core/actions/runs/38274782927",
+      "head_sha": "146de9d78fa494a73d03bcc80dc7bc9410bdb733",
+      "status": "success",
+      "protocols": {
+        "status": "pass",
+        "cases": 100,
+        "all_expected_outcomes": true,
+        "kinds": {
+          "positive": 22,
+          "fault": 49,
+          "boundary": 12,
+          "witness": 17
+        },
+        "source_hashes_verified": 91,
+        "model_and_config_hashes_verified": 100,
+        "tlc_version": "1.7.4",
+        "tlc_sha256": "936a262061c914694dfd669a543be24573c45d5aa0ff20a8b96b23d01e050e88",
+        "report_sha256": "5d78787328e537b7d46db0d22c88a985275105f960c45918971b16a40e69b1f9",
+        "source_map_sha256": "c140d678412237300eca3a82593d923111ec27f707b909f66ad79a39edca555d",
+        "manifest_sha256": "f5df91a56e80835db24588d1e1e40a3aea0ff7b30757409e546cef0d456ce869"
+      },
+      "fees": {
+        "status": "pass",
+        "production_harnesses_proved": 5,
+        "mutation_counterexamples": 2,
+        "kani_version": "0.68.0",
+        "source_sha256": {
+          "executors/src/eoa/worker/fee_math.rs": "98a27d1919e073ccf8d3ce66ce665bd03a6e6a14671fe371e7c1e2b7006db6f0",
+          "formal/fees/src/lib.rs": "cccdc619cfee272693cd81917ddc1e469e292160c1be963cc4df8d76b315d6d7",
+          "formal/fees/check.py": "4f0d088260e48ff2f46579e835c9b67a256115f7da4cf34fb936c3da5ac8c86e"
+        },
+        "summary_sha256": "526e72aaacd1ebf8592a844a2c12e0b11041e2d9d82ec53c951e975662bf7a11",
+        "harnesses": [
+          {
+            "name": "proofs::actual_dynamic_bump_preserves_valid_order_and_values",
+            "status": "Success",
+            "checks": 24
+          },
+          {
+            "name": "proofs::division_parts_reconstruct_all_inputs",
+            "status": "Success",
+            "checks": 16
+          },
+          {
+            "name": "proofs::actual_parts_match_mathematical_saturation_threshold",
+            "status": "Success",
+            "checks": 30
+          },
+          {
+            "name": "proofs::all_increases_are_nondecreasing_when_cap_permits",
+            "status": "Success",
+            "checks": 22
+          },
+          {
+            "name": "proofs::all_multipliers_respect_caps_and_priority",
+            "status": "Success",
+            "checks": 24
+          }
+        ],
+        "mutations": [
+          {
+            "name": "removed_cap",
+            "expected_assertion": "new_fee <= fee_cap.unwrap_or(u128::MAX)"
+          },
+          {
+            "name": "wrapping_multiply",
+            "expected_assertion": "fee_math::capped_increase(value, multiplier, Some(cap)) >= value"
+          }
+        ]
+      },
+      "artifacts": [
+        {
+          "name": "protocol-model-results",
+          "id": 11759013670,
+          "digest": "sha256:7f720e675df26fce591863b0819ed87f37cf487bed484794231e45fc954b343c",
+          "size_in_bytes": 452378,
+          "expired": false
+        },
+        {
+          "name": "rust-fee-proof-results",
+          "id": 11758846718,
+          "digest": "sha256:7903c093c16fa9700b12325e9189df2b8bc790c831e8be969bc98b03da97581b",
+          "size_in_bytes": 11416,
+          "expired": false
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,225 @@
+{
+  "method": "strict-posthoc-v1",
+  "scope": "Finite local post-warmup screen; nominal block cadence only, no public-chain qualification or sustainable maximum claim.",
+  "provenance": {
+    "runtime_source_commit": "04d15d86ad960f40345d7dddb8c84505ba3e96ba",
+    "runtime_source_dirty": false,
+    "runtime_binary_sha256": "26a05c8f2ce303a8eb40d41f8b3b295befe273e098b4a16b1a9177c55d410dc3",
+    "captured_checkout_commit": "04d15d86ad960f40345d7dddb8c84505ba3e96ba",
+    "captured_checkout_dirty": false,
+    "raw_report_sha256": "abe273ecac7faaf67c8b77c1e4855269cad57ffcf2afec0edab8a057f4b2bf5b",
+    "harness_sha256": {
+      "capacity_campaign.py": "c3af22b49a72617c0f3deaccc938abd3cd41012ab776b59f57431a3bee2c37f6",
+      "capacity_faults.py": "59e2bc4d90bceca2682c27e35c5871ee538d4878a795f990fa90e6d5f90afa13",
+      "capacity_resource_guard.py": "bbfda4901f49600cdff9fa907b73e2a64e8df534496083994fd4717c55979bb6"
+    },
+    "timing_source_sha256": "3c7321093f3f69721624a028991e1c27a2cf83b28c4b2ecfd5dedc693615f6c2",
+    "summarizer_sha256": "4438fabd2ec6cdb9e8d339ca74f9066a9503aba2d2307031305bebdc01d92d06",
+    "note": "The separately supplied executable is identified by its binary manifest and matching hash. Checkout metadata captured by the harness is not substituted for runtime provenance."
+  },
+  "analyzer_sha256": "8ebafce9dd136ce0a0179ab04292836d8c0d685fe9b31f9b455e45665e4b6865",
+  "thresholds": {
+    "post_warmup_seconds": 180,
+    "min_aligned_groups": 3,
+    "endpoint_growth_tx": 1,
+    "max_backlog_slope_tps": 0.01,
+    "stage_deficit_allowance": "one transaction per analyzed window"
+  },
+  "per_chain": {
+    "evm025": {
+      "classification": "unconfirmed_growth_or_cadence_ambiguity",
+      "original_candidate": true,
+      "reasons": [
+        "terminal_backlog_positive_aligned_mean_trend"
+      ],
+      "notes": [
+        "nominal_cadence_alignment; actual_block_head_series_not_recorded"
+      ],
+      "offered_tps": 8.0,
+      "window_seconds": 239.988,
+      "from_seconds": 60.019,
+      "to_seconds": 300.007,
+      "aggregation_seconds": 30.0,
+      "complete_aggregation_windows": 8,
+      "sample_interval_seconds": 5.0,
+      "one_transaction_rate_allowance_tps": 0.0041668750104171875,
+      "nominal_complete_block_cycles": 959.952,
+      "stage_rates_tps": {
+        "admitted": 7.996233144990583,
+        "attempted": 8.004566895011417,
+        "included": 8.004566895011417,
+        "terminal": 8.033735020084338
+      },
+      "backlog_endpoints": {
+        "unsigned": {
+          "start": 7.0,
+          "end": 5.0,
+          "growth": -2.0
+        },
+        "terminal": {
+          "start": 46.0,
+          "end": 37.0,
+          "growth": -9.0
+        }
+      },
+      "aligned_mean_backlogs": {
+        "unsigned": [
+          7.083533286647993,
+          6.8331998800186735,
+          5.834033499999999,
+          6.166417083333333,
+          7.500399583333331,
+          7.417099996666667,
+          6.58371750916084,
+          7.58426620065276
+        ],
+        "terminal": [
+          32.99651677337601,
+          46.75204989329065,
+          31.082483333333325,
+          38.16310241666666,
+          37.08799758333335,
+          30.248449976666677,
+          35.7457835964269,
+          54.66721664689853
+        ]
+      },
+      "aligned_mean_slopes_tps": {
+        "unsigned": 0.0033098789617055403,
+        "terminal": 0.03693767289972712
+      },
+      "persistent_growth_stages": []
+    },
+    "evm2": {
+      "classification": "unconfirmed_growth_or_cadence_ambiguity",
+      "original_candidate": true,
+      "reasons": [
+        "stage_rate_below_offered_beyond_one_transaction",
+        "unsigned_backlog_endpoint_growth"
+      ],
+      "notes": [
+        "nominal_cadence_alignment; actual_block_head_series_not_recorded"
+      ],
+      "offered_tps": 8.0,
+      "window_seconds": 239.988,
+      "from_seconds": 60.019,
+      "to_seconds": 300.007,
+      "aggregation_seconds": 30.0,
+      "complete_aggregation_windows": 8,
+      "sample_interval_seconds": 5.0,
+      "one_transaction_rate_allowance_tps": 0.0041668750104171875,
+      "nominal_complete_block_cycles": 119.994,
+      "stage_rates_tps": {
+        "admitted": 8.000400020001,
+        "attempted": 7.97123189492808,
+        "included": 7.967065019917663,
+        "terminal": 8.13374002033435
+      },
+      "backlog_endpoints": {
+        "unsigned": {
+          "start": 6.0,
+          "end": 13.0,
+          "growth": 7.0
+        },
+        "terminal": {
+          "start": 94.0,
+          "end": 62.0,
+          "growth": -32.0
+        }
+      },
+      "aligned_mean_backlogs": {
+        "unsigned": [
+          6.333633336668003,
+          9.165549829998666,
+          5.750350166666666,
+          7.332666833333334,
+          6.333999833333333,
+          5.916850003333334,
+          6.166499876786546,
+          6.249466573176056
+        ],
+        "terminal": [
+          77.83006663998933,
+          75.503166693344,
+          69.08141666666666,
+          75.25238258333334,
+          63.91101741666667,
+          74.41205002666666,
+          77.74713462534798,
+          69.75179940107913
+        ]
+      },
+      "aligned_mean_slopes_tps": {
+        "unsigned": -0.006382523037635987,
+        "terminal": -0.016141896131925803
+      },
+      "persistent_growth_stages": []
+    },
+    "solana": {
+      "classification": "unconfirmed_growth_or_cadence_ambiguity",
+      "original_candidate": true,
+      "reasons": [
+        "stage_rate_below_offered_beyond_one_transaction",
+        "unsigned_backlog_endpoint_growth",
+        "terminal_backlog_endpoint_growth"
+      ],
+      "notes": [
+        "no_fixed_block_cadence_assumed"
+      ],
+      "offered_tps": 16.0,
+      "window_seconds": 239.988,
+      "from_seconds": 60.019,
+      "to_seconds": 300.007,
+      "aggregation_seconds": 30.0,
+      "complete_aggregation_windows": 8,
+      "sample_interval_seconds": 5.0,
+      "one_transaction_rate_allowance_tps": 0.0041668750104171875,
+      "nominal_complete_block_cycles": null,
+      "stage_rates_tps": {
+        "admitted": 15.984132539960331,
+        "attempted": 15.92579628981449,
+        "included": 15.929963164824908,
+        "terminal": 15.967465039918663
+      },
+      "backlog_endpoints": {
+        "unsigned": {
+          "start": 0.0,
+          "end": 14.0,
+          "growth": 14.0
+        },
+        "terminal": {
+          "start": 281.0,
+          "end": 285.0,
+          "growth": 4.0
+        }
+      },
+      "aligned_mean_backlogs": {
+        "unsigned": [
+          2.2507833433373374,
+          4.99838332332933,
+          1.6672333333333351,
+          1.6663333333333337,
+          8.168149999999995,
+          3.5012499999999984,
+          3.0011675058275094,
+          4.750349300559391
+        ],
+        "terminal": [
+          296.3352332899826,
+          286.25006604335067,
+          294.080884,
+          285.9216485833333,
+          291.74716808333335,
+          291.1663333833333,
+          292.50273112549115,
+          294.4986182718175
+        ]
+      },
+      "aligned_mean_slopes_tps": {
+        "unsigned": 0.007744047542154652,
+        "terminal": 0.006146122968968035
+      },
+      "persistent_growth_stages": []
+    }
+  }
+}

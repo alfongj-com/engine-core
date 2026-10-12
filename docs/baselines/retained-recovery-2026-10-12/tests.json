@@ -1,0 +1,113 @@
+{
+  "source_commit": "04d15d86ad960f40345d7dddb8c84505ba3e96ba",
+  "runtime_binary_sha256": "26a05c8f2ce303a8eb40d41f8b3b295befe273e098b4a16b1a9177c55d410dc3",
+  "runtime_files_unchanged_after_local_rust_suite": true,
+  "outcome": "pass",
+  "workflow_steps_passed": 10,
+  "explicit_redis_api_tests_passed": 181,
+  "steps": [
+    {
+      "command": "cargo fmt --all --check",
+      "outcome": "pass",
+      "exit_code": 0,
+      "duration_seconds": 0.335
+    },
+    {
+      "command": "cargo test --locked --workspace -- --test-threads=1",
+      "outcome": "pass",
+      "exit_code": 0,
+      "duration_seconds": 133.658
+    },
+    {
+      "command": "cargo test --locked -p engine-core --lib recovery -- --ignored --test-threads=1",
+      "outcome": "pass",
+      "exit_code": 0,
+      "duration_seconds": 20.748,
+      "passed": 64
+    },
+    {
+      "command": "cargo test --locked -p engine-executors --lib -- --ignored --test-threads=1",
+      "outcome": "pass",
+      "exit_code": 0,
+      "duration_seconds": 31.362,
+      "passed": 74
+    },
+    {
+      "command": "cargo test --locked -p thirdweb-engine --lib solana_admission::tests -- --ignored --test-threads=1",
+      "outcome": "pass",
+      "exit_code": 0,
+      "duration_seconds": 13.388,
+      "passed": 4
+    },
+    {
+      "command": "cargo test --locked -p thirdweb-engine --test api_safety -- --ignored --test-threads=1",
+      "outcome": "pass",
+      "exit_code": 0,
+      "duration_seconds": 12.618,
+      "passed": 3
+    },
+    {
+      "command": "cargo test --locked -p twmq --lib -- --ignored --test-threads=1",
+      "outcome": "pass",
+      "exit_code": 0,
+      "duration_seconds": 1.454,
+      "passed": 36
+    },
+    {
+      "command": "cargo build --locked --bin thirdweb-engine --bin engine-recovery",
+      "outcome": "pass",
+      "exit_code": 0,
+      "duration_seconds": 0.308
+    },
+    {
+      "command": "python3 -m unittest capacity_metrics_test",
+      "outcome": "pass",
+      "exit_code": 0,
+      "duration_seconds": 0.117,
+      "passed": 7
+    },
+    {
+      "command": "python3 -m unittest discover -s formal -p test_*.py",
+      "outcome": "pass",
+      "exit_code": 0,
+      "duration_seconds": 0.047,
+      "passed": 3
+    }
+  ],
+  "actual_binary_upgrade": {
+    "outcome": "pass",
+    "initialized_schema": 2,
+    "upgraded_schema": 3,
+    "candidate_healthy": true,
+    "candidate_sigterm_exit": 0,
+    "old_binary_rejected_without_authority_change": true
+  },
+  "scope_notes": [
+    "Workspace results include their own subprocess fixtures; repeated child test summaries are not summed into a new test count.",
+    "Explicit Redis/API count is the sum of the five selected suites, separate from workspace tests.",
+    "A harness-only change after this suite made the Solana CLI run both scenarios by default. Runtime files and executable bytes were unchanged; explicit keep/drop process scenarios are recorded separately.",
+    "The parent task checked default, keep-only and drop-only harness dispatch modes after that harness change."
+  ],
+  "exact_head_correctness_ci": {
+    "run_id": 38272433786,
+    "url": "https://github.com/alfongj-com/engine-core/actions/runs/38272433786",
+    "head_sha": "04d15d86ad960f40345d7dddb8c84505ba3e96ba",
+    "status": "success",
+    "job_duration_seconds": 818.0,
+    "default_solana_both_scenarios": true,
+    "process_evidence": "ci-process.json",
+    "chronology": "The local Rust suite preceded the harness-only default change. The completed CI run tests the full exact head, including that default and both independent Solana recovery reports."
+  },
+  "review_head": "146de9d78fa494a73d03bcc80dc7bc9410bdb733",
+  "documentation_only_changes_since_runtime": true,
+  "final_head_correctness_ci": {
+    "run_id": 38274783197,
+    "url": "https://github.com/alfongj-com/engine-core/actions/runs/38274783197",
+    "head_sha": "146de9d78fa494a73d03bcc80dc7bc9410bdb733",
+    "status": "success",
+    "job_duration_seconds": 912.0,
+    "default_solana_both_scenarios": true,
+    "process_evidence": "ci-process.json",
+    "chronology": "The local Rust suite preceded the harness-only default change. Correctness CI passed runtime head 04d15d8 and now final documentation head 146de9d, verifying the final default and both independent Solana recovery reports."
+  }
+}

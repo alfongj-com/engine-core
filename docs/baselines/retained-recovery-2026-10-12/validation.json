@@ -1,0 +1,100 @@
+{
+  "source_commit": "04d15d86ad960f40345d7dddb8c84505ba3e96ba",
+  "runtime_binary_sha256": "26a05c8f2ce303a8eb40d41f8b3b295befe273e098b4a16b1a9177c55d410dc3",
+  "runtime_files_unchanged_after_local_rust_suite": true,
+  "scope": "Retained Solana projection recovery and offline exact-target reattach; local validation plus final-head CI.",
+  "local_rust_workflow": {
+    "status": "pass",
+    "steps": 10,
+    "explicit_redis_api_tests": 181,
+    "journal": 64,
+    "executors": 74,
+    "solana_admission": 4,
+    "http_api": 3,
+    "queue": 36,
+    "metrics_helpers": 7,
+    "formal_runner_helpers": 3
+  },
+  "binary_upgrade": {
+    "outcome": "pass",
+    "initialized_schema": 2,
+    "upgraded_schema": 3,
+    "candidate_healthy": true,
+    "candidate_sigterm_exit": 0,
+    "old_binary_rejected_without_authority_change": true
+  },
+  "process_scenarios": {
+    "planned": 10,
+    "passed": 10,
+    "failed": 0,
+    "pending": 0
+  },
+  "formal_and_ci": {
+    "status": "pass",
+    "correctness": {
+      "run_id": 38274783197,
+      "url": "https://github.com/alfongj-com/engine-core/actions/runs/38274783197",
+      "head_sha": "146de9d78fa494a73d03bcc80dc7bc9410bdb733",
+      "status": "success",
+      "job_duration_seconds": 912.0,
+      "recovery_scenarios": 9,
+      "short_load_smokes": 2,
+      "default_solana_both_scenarios": true,
+      "evidence": "ci-process.json"
+    },
+    "protocol_and_fee": {
+      "run_id": 38274782927,
+      "url": "https://github.com/alfongj-com/engine-core/actions/runs/38274782927",
+      "status": "success",
+      "protocol_expected_outcomes": 100,
+      "source_hashes_verified": 91,
+      "production_fee_harnesses_proved": 5,
+      "fee_mutations_rejected": 2,
+      "evidence": "formal.json"
+    }
+  },
+  "performance": {
+    "status": "four_matched_runs_complete",
+    "evidence": "comparison.json",
+    "interpretation": "performance.md",
+    "order": [
+      "baseline",
+      "candidate",
+      "candidate",
+      "baseline"
+    ],
+    "intervening_campaign": "candidate Engine crash between the candidate steady runs",
+    "matched_baseline_runtime_commit": "319035e70cd36ae81dbff91447df697633491c29",
+    "matched_candidate_runtime_commit": "04d15d86ad960f40345d7dddb8c84505ba3e96ba",
+    "offered_tps": {
+      "evm025": 8,
+      "evm2": 8,
+      "solana": 16
+    },
+    "duration_seconds_per_run": 300,
+    "warmup_seconds": 60,
+    "intents_per_run": 9600,
+    "runs_passing_exact_effect_and_drain": 4,
+    "strict_classifications": {
+      "unconfirmed_growth_or_cadence_ambiguity": 12
+    },
+    "statistical_no_regression_established": false,
+    "sustainable_capacity_established": false,
+    "finding": "The initial fast-EVM latency increase did not repeat with identical candidate bytes. Both binaries show run-to-run variability; all strict screens remain unconfirmed."
+  },
+  "review_head": "146de9d78fa494a73d03bcc80dc7bc9410bdb733",
+  "documentation_only_changes_since_runtime": true,
+  "concurrent_chain_crash": {
+    "status": "pass",
+    "runtime_source_commit": "04d15d86ad960f40345d7dddb8c84505ba3e96ba",
+    "duration_seconds": 90.0,
+    "offered_intents": 2880,
+    "successful_finalized_effects": 2880,
+    "duplicate_effect_intents": 0,
+    "all_drained": true,
+    "ambiguous_initial_http_responses": 1,
+    "original_intent_retries_accepted": 5,
+    "additional_sends_during_retry": 0,
+    "evidence": "candidate-crash.sanitized.json"
+  }
+}
