@@ -231,12 +231,13 @@ loopback endpoints and generated test keys. No paid/public RPCs, existing wallet
 keys, faucets, old incident journals or the retained Nitro VM. Preserve failed
 reports and runtime data. Do not clear safety fences or suppress failed tests.
 
-PR #2 is unfinished: instrumentation is not yet compiled, the recovery protocol
-and its tests are unwired, and formal source correspondence is intentionally stale.
-Report these accurately; do not implement features or refresh proof hashes just
-to make testing pass. If that draft cannot compile, finish independent baseline
-checks and report the precise blockers. Run optional low-rate smoke tests only
-after correctness gates pass; do not start a long capacity campaign.
+PR #2 implements checkpoint repair, journal scheduling and Solana polling batches.
+Read WORK_IN_PROGRESS.md for the latest qualification results and remaining limits.
+Verify the exact commit you build; historical test passes do not qualify later code.
+Do not implement features or refresh proof hashes merely to make testing pass.
+Report precise failures and keep independent baseline checks running when possible.
+Run optional low-rate smoke tests only after correctness gates pass; do not start
+a long capacity campaign.
 
 Save reports under /Users/alfongj/.local/share/engine-core/runs/ with a concise
 SUMMARY.md covering commits, commands, counts, failures, reproduction steps and

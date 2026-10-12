@@ -466,6 +466,7 @@ impl<H: DurableExecution> MultilaneQueue<H> {
 
             loop {
                 tokio::select! {
+                    biased;
                     _ = &mut shutdown_rx => {
                         tracing::info!("Shutdown signal received for multilane queue: {}", outer_queue_clone.queue_id());
                         break;
@@ -489,7 +490,19 @@ impl<H: DurableExecution> MultilaneQueue<H> {
 
                         tracing::trace!("Available permits: {}", available_permits);
 
-                        match timings::measure(QueueType::Multilane, Phase::PopBatch, queue_clone.pop_batch_jobs(available_permits)).await {
+                        // A Redis reconnect can outlast shutdown. Cancel only
+                        // acquisition: an applied pop with an unseen reply leaves
+                        // leases to expire; no handler or completion is cancelled.
+                        let popped = tokio::select! {
+                            biased;
+                            _ = &mut shutdown_rx => {
+                                tracing::info!("Shutdown interrupted queue polling");
+                                break;
+                            }
+                            result = timings::measure(QueueType::Multilane, Phase::PopBatch,
+                                queue_clone.pop_batch_jobs(available_permits)) => result,
+                        };
+                        match popped {
                             Ok(jobs) => {
                                 tracing::trace!("Got {} jobs across lanes", jobs.len());
 
@@ -522,7 +535,11 @@ impl<H: DurableExecution> MultilaneQueue<H> {
                             }
                             Err(e) => {
                                 tracing::error!("Failed to pop batch jobs: {:?}", e);
-                                sleep(Duration::from_millis(1000)).await;
+                                tokio::select! {
+                                    biased;
+                                    _ = &mut shutdown_rx => break,
+                                    _ = sleep(Duration::from_millis(1000)) => {},
+                                }
                             }
                         };
                     }

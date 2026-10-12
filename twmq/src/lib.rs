@@ -499,6 +499,7 @@ impl<H: DurableExecution> Queue<H> {
             tracing::info!("Worker started for queue: {}", outer_queue_clone.name());
             loop {
                 tokio::select! {
+                    biased;
                     // Check for shutdown signal
                     _ = &mut shutdown_rx => {
                         tracing::info!("Shutdown signal received for queue: {}", outer_queue_clone.name());
@@ -525,7 +526,19 @@ impl<H: DurableExecution> Queue<H> {
 
                         tracing::trace!("Available permits: {}", available_permits);
                         // Try to get multiple jobs - as many as we have permits
-                        match timings::measure(QueueType::Single, Phase::PopBatch, queue_clone.pop_batch_jobs(available_permits)).await {
+                        // A Redis reconnect can outlast shutdown. Cancel only
+                        // acquisition: an applied pop with an unseen reply leaves
+                        // leases to expire; no handler or completion is cancelled.
+                        let popped = tokio::select! {
+                            biased;
+                            _ = &mut shutdown_rx => {
+                                tracing::info!("Shutdown interrupted queue polling");
+                                break;
+                            }
+                            result = timings::measure(QueueType::Single, Phase::PopBatch,
+                                queue_clone.pop_batch_jobs(available_permits)) => result,
+                        };
+                        match popped {
                             Ok(jobs) => {
                                 tracing::trace!("Got {} jobs", jobs.len());
                                 for job in jobs {
@@ -562,7 +575,11 @@ impl<H: DurableExecution> Queue<H> {
                             Err(e) => {
                                 // No jobs found, we hit an error
                                 tracing::error!("Failed to pop batch jobs: {:?}", e);
-                                sleep(Duration::from_millis(1000)).await;
+                                tokio::select! {
+                                    biased;
+                                    _ = &mut shutdown_rx => break,
+                                    _ = sleep(Duration::from_millis(1000)) => {},
+                                }
                             }
                         };
 
@@ -573,9 +590,10 @@ impl<H: DurableExecution> Queue<H> {
             // Graceful shutdown: wait for all active jobs to complete
             tracing::info!(
                 "Waiting for {} active jobs to complete for queue: {}",
-                semaphore
-                    .available_permits()
-                    .saturating_sub(outer_queue_clone.options.local_concurrency),
+                outer_queue_clone
+                    .options
+                    .local_concurrency
+                    .saturating_sub(semaphore.available_permits()),
                 outer_queue_clone.name()
             );
 
@@ -1442,3 +1460,6 @@ mod lease_tests;
 
 #[cfg(test)]
 mod diagnostic_tests;
+
+#[cfg(test)]
+mod shutdown_tests;

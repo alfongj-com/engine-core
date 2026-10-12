@@ -39,6 +39,22 @@ terminal-list entries. `Poll` uses the actual corrected guard: a success-list ID
 wins over deferred cancellation only when no recovered pending or delayed work
 exists. It does not assume that the list entry belongs to the current admission.
 
+## Shutdown correspondence
+
+Workers stop waiting for a Redis pop or error backoff when shutdown arrives.
+An unapplied pop makes no model transition. An applied pop whose reply is lost
+maps to `Poll` followed by stuttering: its lease remains active until `Expire`
+and a later `Poll` reclaims the job. Shutdown neither acknowledges that job nor
+starts its handler. Already-running handlers and their lease-fenced completions
+still drain before worker shutdown returns.
+
+[Shutdown regressions](../twmq/src/shutdown_tests.rs) withhold real Redis pop
+replies for both queue types, then reclaim and complete the original job after
+explicit lease expiry. Another test holds an active handler through shutdown.
+These are implementation checks. The finite model does not prove a shutdown
+deadline, Tokio cancellation behavior, or network availability; no model action
+or configuration changes for this scheduling fix.
+
 ## Diagnostic retention correspondence
 
 The [diagnostic helper](../twmq/src/diagnostics.rs) keeps the newest 100 records

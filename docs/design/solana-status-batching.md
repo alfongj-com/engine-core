@@ -13,7 +13,7 @@ The prior local 60 TPS transfer screen used exactly 7 Engine calls per intent (r
 - At the existing single-attempt HTTP sender: fixed method/cluster labels, elapsed time and success/error/cancelled outcome. A histogram counts requested signatures, never signature values.
 - At the Solana handler: one elapsed timer covering journal validation, lock acquisition/release, status/receipt reads, signing and send work. Early errors are errors; dropping the future records cancellation.
 - Never label URLs, request IDs, payer addresses, signatures, error text or provider data. Histogram sums across concurrent requests measure accumulated wait, not wall-clock critical-path time.
-- SDK response decoding and worker consistency checks can fail after an HTTP-level success; handler outcomes expose that distinction. No retry, scheduling, fee, identity or lease behavior changes in this phase.
+- SDK response decoding and worker consistency checks can fail after an HTTP-level success; handler outcomes expose that distinction. Instrumentation alone changes no retry, scheduling, fee, identity or lease behavior.
 
 ## Implemented coordination
 
@@ -34,12 +34,17 @@ The collection deadline does not restart as new entries arrive. Waiting can exce
 
 `status_logical_poll` counts callers including errors/cancellations; `status_coordinator_wait` measures admission-to-dispatch wait. Existing `rpc_get_signature_statuses` timing and the signature-count histogram now describe actual HTTP batches. All metric dimensions are fixed operation/cluster/outcome labels; signatures and endpoint URLs never appear. HTTP success can precede batch-validation failure, which appears in logical-poll and handler outcomes.
 
-The coordinator never releases or transfers a transaction lease. The existing process timeout bounds each worker attempt; journal/lease checks remain authoritative before send and terminal cleanup. Batch errors consume each participating caller's existing logical reconciliation attempt; there is no hidden transport retry or expanded lifetime budget. Processed admission/preflight and finalized terminal receipt checks are unchanged. Null/expired history remains insufficient to re-sign an intent.
+The coordinator never releases or transfers a transaction lease. The existing process timeout bounds each worker attempt; journal/lease checks remain authoritative before send and terminal cleanup. Batch errors consume each participating caller's existing logical reconciliation attempt; there is no hidden transport retry or expanded lifetime budget. Serialized-input processed admission/preflight, instruction-input finalized preflight, and finalized terminal receipt checks are unchanged. Null/expired history remains insufficient to re-sign an intent.
+
+Checkpoint publication retries are separate from polling batches. A transient
+publication error retries the same work after two seconds; a missing Redis signed
+attempt still parks after marker repair. Batching cannot reconstruct it. Retained
+attempts can resume terminal reconciliation; see [the failure boundaries](recoverable-projection.md#checkpoint-repair-versus-transaction-recovery).
 
 ## Required evidence before keeping it
 
 1. Real HTTP fixtures in [`status_batcher_tests.rs`](../../executors/src/solana_executor/status_batcher_tests.rs): mixed null/provisional/finalized statuses map to original callers, including duplicate signatures and cancelled waiters.
-2. Exact256 boundary, queue saturation, timeout/shutdown and malformed-length batch failures; no lost waiter or unbounded batch.
+2. The 256-poll boundary, queue saturation, timeout/shutdown and malformed-length batch failures; no lost waiter or unbounded batch.
 3. Different endpoints/clusters/history settings never combine. Secrets remain absent from errors/metrics.
 4. Existing real-Redis finality/expiry/lease/cancellation/journal regressions pass unchanged; corrupt status cannot bypass finalized receipt/identity proof.
 5. Matched local baseline/candidate measure HTTP statuses per intent, actual batch distribution, handler/journal waits, admission/terminal latency and exact effect reconciliation. Keep only if measured savings justify added coordination; do not assume RPC savings equal TPS gains.

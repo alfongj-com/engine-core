@@ -46,6 +46,22 @@ does not prove preservation of every queue mutation; that projection limitation
 already exists with equal tokens. Exact intent, replay ownership, signed attempts,
 finality evidence and all send gates remain required.
 
+## Checkpoint repair versus transaction recovery
+
+`PublicationPending` retries the same work after two seconds; all identity and
+send gates run again. Repairing the marker does not reconstruct executor data:
+
+- **First Solana attempt:** `before_broadcast` commits the signed wire and binding
+  to SQLite before the worker stores its Redis attempt. A crash or lost publication
+  response in that interval can leave the binding without a Redis attempt. Health
+  repair can finish the checkpoint, but the job then parks instead of signing again.
+  Original-ID resubmission does not rebuild that record. Operator reconciliation
+  is required; this PR adds no automatic reconstruction or resolution command.
+- **Terminal Solana update:** if the signed Redis attempt remains, a lost terminal
+  publication response requeues without cleanup. After checkpoint repair, the worker
+  can verify the same signature and finalized receipt again, then complete through
+  the existing queue ownership fence. It creates no new signature.
+
 ## Measurements and acceptance
 
 Capture unchanged behavior first, using the same local fixtures, offered rates,

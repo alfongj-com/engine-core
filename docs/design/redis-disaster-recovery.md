@@ -100,7 +100,11 @@ payload validation, durable replay ownership and retained intent prevent that
 loss from authorizing a different effect; missing projection work may require an
 explicit original-request retry or offline recovery. Arbitrary selective Redis
 corruption and hostile modification of the journal are outside the continuity
-claim. Ordinary Redis persistence remains necessary for availability.
+claim. In particular, the first Solana attempt can be bound in SQLite before its
+Redis attempt is stored. Checkpoint repair then succeeds but the job still parks;
+it cannot regenerate the signed record. A retained attempt can resume terminal
+reconciliation after a lost publication response. See the [two failure cases](recoverable-projection.md#checkpoint-repair-versus-transaction-recovery).
+Ordinary Redis persistence remains necessary for availability.
 
 SQLite WAL requires all database users on the same host. FULL synchronization is
 needed for power-loss durability; NORMAL may lose committed transactions after an

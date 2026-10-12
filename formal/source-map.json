@@ -564,14 +564,14 @@
     },
     {
       "path": "twmq/src/lib.rs",
-      "sha256": "1d4c3c24a7566fd3376ce51b798bfa0b23eb4bbfede7f575181985c43b13f61a",
+      "sha256": "f6ae29909445a9f1ead10abe3debfed9c56aa379f3cbb696aa7c6a69092ce22e",
       "models": [
         "QueueLease"
       ]
     },
     {
       "path": "twmq/src/multilane.rs",
-      "sha256": "2ca946610c69f14063ee67ed77ee84e484da32e6bef0e599eb9a61aadcca7fa6",
+      "sha256": "0c904b73cb7ee068e0cfa182341b753fd75dbb8d3bcda876cfd1a7b3471ecdda",
       "models": [
         "QueueLease"
       ]
@@ -676,6 +676,13 @@
         "DisasterRecoveryProjection"
       ],
       "sha256": "2f6dc401112a9f419b37c0612ba35e7d58bdbd293a736974dcea7deb3831d17a"
+    },
+    {
+      "path": "twmq/src/shutdown_tests.rs",
+      "sha256": "6a1fd3884a599bf3789fa5155fc80434d9e45d0153ab7d5fc99f531dacee2625",
+      "models": [
+        "QueueLease"
+      ]
     }
   ],
   "review": {
@@ -840,6 +847,17 @@
         "server/src/shutdown.rs"
       ],
       "reason": "Journal mutations retain their owned task, serial lock and admission slot from health check through SQLite commit, Redis CAS and postcheck. Blocking DB closures separately retain the file owner. Caller cancellation grants no permission and performs no chain send; OS/runtime crash still exposes the old fail-closed checkpoint gap. DisasterRecovery now models unavailable observation as a distinct halt that offline reattach may clear only with the exact authority token; primary role remains a runtime obligation. Other halt causes and chain/terminal conflicts stay non-clearable. Solana serialized admission/preflight uses processed while status/receipt evidence remains finalized; a missing pre-sign hash retries with unchanged serialized input, and simulation errors never imply global non-execution. Existing identity models abstract this admission filter and same-wire retries; parked attempts issue nonterminal NACK notifications through the owner-fenced completion pipeline without releasing identity. Supplied-gas EVM estimation filters invalid envelopes before signing without altering gas; intentional execution reverts remain valid. Redis pool reconnect only precedes WATCH and never retries EXEC. SIGTERM enters existing shutdown; webhook admission policy/read-only route exceptions do not authorize mutation. Concrete task lifetimes, signals, webhooks, node fee/gas/capability policies, JSON numeric precision, redaction, connection timings, and throughput remain implementation tests/review obligations, not model theorems. Final shutdown review adds a read-guard registration before spawning each mutation and an explicit write-barrier drain after all HTTP/workers finish; a regression covers unpolled registration and canceled commit-to-mirror work. This prevents orderly runtime shutdown from aborting detached publication, without changing forced-crash model transitions."
+    },
+    "queue_shutdown_oct12": {
+      "date": "2026-10-12",
+      "base_commit": "2ba1970ce3ea71251aab6920c3712023510ad802",
+      "status": "Source cancellation boundaries reviewed; executable validation is recorded separately. No model action or configuration changed.",
+      "paths": [
+        "twmq/src/lib.rs",
+        "twmq/src/multilane.rs",
+        "twmq/src/shutdown_tests.rs"
+      ],
+      "reason": "Single and multilane worker loops prioritize shutdown and observe it while awaiting Redis pop or error backoff. Cancellation before Lua applies stutters over QueueLease; an applied pop with an unseen reply maps to Poll then stuttering, retaining its lease until Expire and a later Poll. Shutdown does not create a completion, dispatch the unseen job, or cancel active handlers or their lease-fenced completion. WATCH/EXISTS/EXEC and journal ownership/drain are unchanged. Real-Redis tests withhold applied pop replies in both queue types, require bounded shutdown, then reclaim the original job through explicit lease expiry and observe one successful hook. A separate gated handler checks active work still drains through acknowledgement. Redis reconnect timing, response loss, Tokio cancellation, wall-clock shutdown bounds and liveness remain implementation obligations, not finite-model theorems. The active-job log count correction is diagnostic only."
     }
   }
 }
