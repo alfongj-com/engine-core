@@ -171,13 +171,13 @@ Run sequentially after the build succeeds:
 "$PYTHON_BIN" scripts/local_eoa_reorg.py --report "$ENGINE_TEST_REPORTS/reorg.json"
 "$PYTHON_BIN" scripts/local_eoa_reorg.py --revert --report "$ENGINE_TEST_REPORTS/reorg-revert.json"
 "$PYTHON_BIN" scripts/local_solana_recovery.py --solana-bin-dir "$SOLANA_BIN_DIR" \
-  --keep-attempts-on-restart --rust-log debug --report "$ENGINE_TEST_REPORTS/solana.json"
-"$PYTHON_BIN" scripts/local_solana_recovery.py --solana-bin-dir "$SOLANA_BIN_DIR" \
-  --drop-attempts-on-restart --rust-log debug --report "$ENGINE_TEST_REPORTS/solana-projection-loss.json"
+  --rust-log debug --report "$ENGINE_TEST_REPORTS/solana.json"
 ```
 
-The Solana harness runs both variants by default; the commands above select
-each explicitly and keep separate reports.
+On PR #3, the Solana command runs both variants and writes `solana.json` and
+`solana-projection-loss.json`. The baseline runs only the retained-Redis case.
+On PR #3, use `--keep-attempts-on-restart` or `--drop-attempts-on-restart` to run
+one variant; those flags are unavailable in the baseline.
 
 These check actual signed identities, duplicate admission, reverted execution,
 provisional reorgs, ambiguous responses and quarantine. A refusal to restart or
