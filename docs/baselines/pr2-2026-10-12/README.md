@@ -1,5 +1,7 @@
 # PR #2 validation — October 12, 2026
 
+Review changes after these measurements have a [separate validation record](../pr2-review-2026-10-12/README.md).
+
 **The five-minute 8/8/16 TPS run and crash recovery pass their campaign checks. The stricter capacity screen remains unconfirmed, and 40 TPS fails on a longer run. All five final CI checks pass.** The [validation manifest](validation.json) separates completed checks, earlier failures, and qualification limits.
 
 ## Baseline

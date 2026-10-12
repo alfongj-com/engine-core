@@ -4,6 +4,7 @@ This branch preserves the reports and generated artifacts removed from PR #1.
 The original archive is byte-for-byte the content at `b31f43d4b6b699e885cd9601f8129dda158b1662`.
 It includes failed and incomplete runs as well as successful runs.
 
+- [PR #2 review fixes and final validation](docs/baselines/pr2-review-2026-10-12/README.md)
 - [PR #2 checkpoint recovery, fairness and polling results](docs/baselines/pr2-2026-10-12/README.md)
 - [Capacity and chaos results](docs/baselines/capacity-2026-09-26/RESULTS.md)
 - [Concise handoff](TO_ALFONSO.md)

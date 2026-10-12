@@ -1,0 +1,382 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-12",
+  "source_commit": "319035e70cd36ae81dbff91447df697633491c29",
+  "status": "validation_complete_finite_load_and_crash_pass_strict_sustainability_unconfirmed",
+  "scope": "Review follow-up validation; earlier runtime and benchmark results remain separate historical evidence.",
+  "sanitization": "Only allowlisted scalar aggregates and fixed source/test labels. Raw reports, signed bytes, transaction identities, endpoints, credentials, and local process paths remain private.",
+  "review_changes": [
+    "Separate bounded unscoped health lane; explicit chain scope for all account-abstraction process handlers.",
+    "Reclaim only idle EVM lanes; retain fallback while any overflow holder or waiter remains.",
+    "Reject owned-operation registration with retryable Busy behind a drain writer instead of waiting while holding a lane.",
+    "Register the common journal, queue, and executor collectors before startup work.",
+    "Limit Solana status batches to 32 signatures; validate each response position independently; provide a default-enabled batching opt-out.",
+    "Clarify operator recovery and EOA continuity retry documentation without adding automatic reconstruction."
+  ],
+  "full_rust_suite": {
+    "outcome": "pass",
+    "completed_checks": 10,
+    "checks": [
+      {
+        "check": "formatting",
+        "outcome": "pass",
+        "exit_code": 0,
+        "duration_seconds": 0.324
+      },
+      {
+        "check": "workspace_tests",
+        "outcome": "pass",
+        "exit_code": 0,
+        "duration_seconds": 150.795
+      },
+      {
+        "check": "redis_journal_tests",
+        "outcome": "pass",
+        "exit_code": 0,
+        "duration_seconds": 16.646,
+        "tests_passed": 47
+      },
+      {
+        "check": "redis_executor_tests",
+        "outcome": "pass",
+        "exit_code": 0,
+        "duration_seconds": 28.102,
+        "tests_passed": 73
+      },
+      {
+        "check": "solana_admission_tests",
+        "outcome": "pass",
+        "exit_code": 0,
+        "duration_seconds": 11.742,
+        "tests_passed": 4
+      },
+      {
+        "check": "http_api_safety_tests",
+        "outcome": "pass",
+        "exit_code": 0,
+        "duration_seconds": 11.599,
+        "tests_passed": 3
+      },
+      {
+        "check": "redis_queue_tests",
+        "outcome": "pass",
+        "exit_code": 0,
+        "duration_seconds": 1.027,
+        "tests_passed": 36
+      },
+      {
+        "check": "server_and_recovery_build",
+        "outcome": "pass",
+        "exit_code": 0,
+        "duration_seconds": 0.651
+      },
+      {
+        "check": "timing_parser_tests",
+        "outcome": "pass",
+        "exit_code": 0,
+        "duration_seconds": 0.123,
+        "tests_passed": 7
+      },
+      {
+        "check": "formal_runner_tests",
+        "outcome": "pass",
+        "exit_code": 0,
+        "duration_seconds": 0.046,
+        "tests_passed": 3
+      }
+    ],
+    "explicit_redis_api_tests_passed": 163,
+    "unique_workspace_test_total": null,
+    "count_note": "47 journal + 73 executor + 4 admission + 3 HTTP API + 36 queue tests; workspace results and nested subprocess output are not added again.",
+    "workspace_subsets": {
+      "core_unit_tests_passed": 33,
+      "executor_unit_tests_passed": 55,
+      "solana_batcher_http_fixture_tests_passed": 11
+    },
+    "redis_durability": "Disposable Redis AOF every second; not an AOF-always stress qualification.",
+    "source_commit": "b6a570494e4d4f22055f3c31b31a542194c20602"
+  },
+  "focused_formal": {
+    "outcome": "all_expected_outcomes_matched",
+    "tool": "TLC",
+    "version": "1.7.4",
+    "cases": 12,
+    "by_kind": {
+      "positive": 2,
+      "fault": 6,
+      "witness": 4
+    },
+    "mapped_source_hashes_match": 88,
+    "scope": "Projection-focused subset on the preceding revision; full final-head formal results are recorded separately. Finite protocol models and source guards do not prove Rust refinement or fair scheduling.",
+    "source_commit": "b6a570494e4d4f22055f3c31b31a542194c20602"
+  },
+  "process_scenarios": {
+    "source_commit": "b6a570494e4d4f22055f3c31b31a542194c20602",
+    "status": "pass",
+    "distinct_scenarios": 9,
+    "passed": 9,
+    "failed": 0,
+    "report": "process-b6a5704.json"
+  },
+  "candidate_campaigns": [
+    {
+      "name": "final_steady",
+      "source_commit": "319035e70cd36ae81dbff91447df697633491c29",
+      "summary": "candidate-319035e-steady.json",
+      "strict_assessment": "candidate-319035e-steady-strict.json",
+      "duration_seconds": 300,
+      "warmup_seconds": 60,
+      "minimum_late_window_seconds": 120,
+      "queue_lease_seconds": 600,
+      "offered_tps_by_fixture": {
+        "evm025": 8,
+        "evm2": 8,
+        "solana": 16
+      },
+      "offered_and_observed_intents": 9600,
+      "exactly_one_successful_finalized_canonical_execution_each": true,
+      "all_drained": true,
+      "safety_pass": true,
+      "liveness_pass": true,
+      "campaign_capacity_gate_pass": true,
+      "strict_sustainability_confirmed": false,
+      "strict_persistent_growth_stages": []
+    },
+    {
+      "name": "final_crash",
+      "source_commit": "319035e70cd36ae81dbff91447df697633491c29",
+      "summary": "candidate-319035e-crash.json",
+      "duration_seconds": 90,
+      "warmup_seconds": 20,
+      "minimum_late_window_seconds": 30,
+      "queue_lease_seconds": 10,
+      "offered_tps_by_fixture": {
+        "evm025": 8,
+        "evm2": 8,
+        "solana": 16
+      },
+      "offered_and_observed_intents": 2880,
+      "exactly_one_successful_finalized_canonical_execution_each": true,
+      "all_drained": true,
+      "safety_pass": true,
+      "liveness_pass": true,
+      "requested_fault_validated": true,
+      "terminal_same_id_retry_count": 4,
+      "ambiguous_response_retry_exercised": false,
+      "extra_sends_during_retry": 0,
+      "capacity_qualification": false,
+      "process_exit_code": 2
+    }
+  ],
+  "final_ci": {
+    "source_commit": "319035e70cd36ae81dbff91447df697633491c29",
+    "status": "all_checks_pass",
+    "fee_proofs": "pass",
+    "coverage": "pass",
+    "queue_tests": "pass",
+    "rust_correctness": "pass",
+    "protocols": "pass",
+    "review_bot": "pass",
+    "formal_summary": "formal-319035e.json",
+    "checks": [
+      {
+        "name": "protocols",
+        "workflowName": "Formal verification",
+        "conclusion": "SUCCESS",
+        "startedAt": "2026-10-12T10:53:53Z",
+        "completedAt": "2026-10-12T11:01:02Z",
+        "detailsUrl": "https://github.com/alfongj-com/engine-core/actions/runs/38239041354/job/114777237541"
+      },
+      {
+        "name": "test",
+        "workflowName": "Rust correctness gates",
+        "conclusion": "SUCCESS",
+        "startedAt": "2026-10-12T10:53:52Z",
+        "completedAt": "2026-10-12T11:08:52Z",
+        "detailsUrl": "https://github.com/alfongj-com/engine-core/actions/runs/38239041267/job/114777232556"
+      },
+      {
+        "name": "coverage",
+        "workflowName": "twmq Coverage",
+        "conclusion": "SUCCESS",
+        "startedAt": "2026-10-12T10:52:36Z",
+        "completedAt": "2026-10-12T10:57:57Z",
+        "detailsUrl": "https://github.com/alfongj-com/engine-core/actions/runs/38239041294/job/114776784080"
+      },
+      {
+        "name": "test",
+        "workflowName": "twmq Tests",
+        "conclusion": "SUCCESS",
+        "startedAt": "2026-10-12T10:52:35Z",
+        "completedAt": "2026-10-12T10:54:55Z",
+        "detailsUrl": "https://github.com/alfongj-com/engine-core/actions/runs/38239041292/job/114776786629"
+      },
+      {
+        "name": "rust-fees",
+        "workflowName": "Formal verification",
+        "conclusion": "SUCCESS",
+        "startedAt": "2026-10-12T10:53:53Z",
+        "completedAt": "2026-10-12T10:57:52Z",
+        "detailsUrl": "https://github.com/alfongj-com/engine-core/actions/runs/38239041354/job/114777237224"
+      }
+    ],
+    "review_contexts": [
+      {
+        "context": "Devin Review",
+        "state": "SUCCESS",
+        "startedAt": "2026-10-12T10:58:11Z"
+      }
+    ]
+  },
+  "prior_evidence": {
+    "runtime": "4320ea875828ddc403d4f8e56c5407d9aeaa9867",
+    "review_head": "0ad0453e0dcadee57a40870ec5830f9b20089959",
+    "report": "../pr2-2026-10-12/README.md",
+    "scope_note": "Earlier 32 TPS finite-run pass and crash recovery, strict capacity unconfirmed; 40 TPS longer-run failure retained. The earlier 256-signature batch cap differs from this revision with a 32-signature cap."
+  },
+  "pending": [],
+  "shutdown_followup": {
+    "status": "targeted_checks_pass",
+    "source_commit": "319035e70cd36ae81dbff91447df697633491c29",
+    "finding": "A caller waiting before owned registration could acquire a registration guard after the reusable drain writer returned.",
+    "fix": "A permanent closed flag under the same registration lock rejects late callers after server shutdown close, while already owned repairs finish.",
+    "independent_review": "No blocker found; both registration and closed-state observation use the same read guard. The writer waits for prior readers before latching closed.",
+    "checks": [
+      {
+        "check": "formatting",
+        "outcome": "pass",
+        "exit_code": 0,
+        "duration_seconds": 0.338
+      },
+      {
+        "check": "core_unit_tests",
+        "outcome": "pass",
+        "exit_code": 0,
+        "duration_seconds": 6.153,
+        "tests_passed": 33
+      },
+      {
+        "check": "redis_journal_tests",
+        "outcome": "pass",
+        "exit_code": 0,
+        "duration_seconds": 10.738,
+        "tests_passed": 49
+      },
+      {
+        "check": "exact_terminal_retry",
+        "outcome": "pass",
+        "exit_code": 0,
+        "duration_seconds": 12.847,
+        "tests_passed": 1
+      },
+      {
+        "check": "server_and_recovery_build",
+        "outcome": "pass",
+        "exit_code": 0,
+        "duration_seconds": 11.638
+      }
+    ],
+    "completed_checks": 5,
+    "regressions": [
+      "Canceled owned acknowledgement keeps close waiting until repair completes.",
+      "Detached health callers released after close from either lane or capacity waits cannot repair or alter the checkpoint.",
+      "Close remains permanent through repeated barriers; a newly opened journal can operate."
+    ]
+  },
+  "binary_provenance": {
+    "commit": "319035e70cd36ae81dbff91447df697633491c29",
+    "sha256": "cc2e6d39fca65eac1eac873df64ab0e72f02b1e23c293126ec968b3fff49c43a",
+    "profile": "dev, debug symbols disabled",
+    "sqlite": "WAL synchronous=FULL/fullfsync=ON",
+    "status_batching_enabled": true,
+    "max_signatures_per_batch": 32,
+    "health_unscoped_slots": 2
+  },
+  "final_focused_formal": {
+    "source_commit": "319035e70cd36ae81dbff91447df697633491c29",
+    "outcome": "all_expected_outcomes_matched",
+    "tool": "TLC",
+    "version": "1.7.4",
+    "cases": 12,
+    "by_kind": {
+      "positive": 2,
+      "fault": 6,
+      "witness": 4
+    },
+    "mapped_source_hashes_match": 88,
+    "scope": "Focused projection subset at the final revision; separate from full final-head formal CI."
+  },
+  "final_process_reruns": {
+    "source_commit": "319035e70cd36ae81dbff91447df697633491c29",
+    "status": "pass",
+    "passed": 2,
+    "failed": 0,
+    "report": "process-319035e.json",
+    "scenarios": [
+      "Redis restart while Engine stays alive",
+      "Solana lost send response and Engine restart"
+    ]
+  },
+  "review_dispositions": [
+    {
+      "topic": "Unscoped health and AA chain identity",
+      "status": "implemented",
+      "evidence": "Bounded unscoped health tests and explicit scopes in all four AA handlers; no per-chain ingress reservation."
+    },
+    {
+      "topic": "Historical EVM lane exhaustion",
+      "status": "implemented",
+      "evidence": "Idle reclamation preserves holder and queued-waiter references; live overflow prevents a split lane."
+    },
+    {
+      "topic": "Shutdown registration race",
+      "status": "implemented",
+      "evidence": "Nonblocking registration and permanent close; dedicated/overflow drain inversion and late lane/capacity probes tested."
+    },
+    {
+      "topic": "Startup metric loss",
+      "status": "implemented_and_observed",
+      "evidence": "One exported registry is installed before journal, queue and executor startup; the final campaign contains journal and executor timing observations."
+    },
+    {
+      "topic": "Malformed Solana batch member",
+      "status": "implemented",
+      "evidence": "Individual invalid positions fail independently; shared envelope and length failures still fail the batch."
+    },
+    {
+      "topic": "Slow archival lookup in a batch",
+      "status": "mitigated_provider_qualification_open",
+      "evidence": "32-signature cap, default-enabled opt-out, bounded transport and 11 HTTP fixtures. No production archival provider is qualified by these local runs."
+    },
+    {
+      "topic": "Pending exact-target reattach",
+      "status": "intentionally_refused",
+      "evidence": "A Redis process restart with any unacknowledged transition requires fresh-namespace recovery and quarantine even when the target marker survives. Intact idle reattach evidence does not cover pending-under-load recovery."
+    },
+    {
+      "topic": "Recovery and upgrade expectations",
+      "status": "documented_boundary",
+      "evidence": "One-way schema migration, retained unknown outcomes, two-second publication retry and ten-second other EOA continuity retry. No signed-attempt reconstruction or in-place downgrade."
+    }
+  ],
+  "final_fee_proofs": {
+    "outcome": "pass",
+    "source_commit": "319035e70cd36ae81dbff91447df697633491c29",
+    "production_harnesses_proved": 5,
+    "deliberate_mutations_rejected": 2,
+    "source_hashes_verified": 3,
+    "summary": "formal-319035e.json"
+  },
+  "final_protocol_models": {
+    "outcome": "pass",
+    "source_commit": "319035e70cd36ae81dbff91447df697633491c29",
+    "expected_outcomes_matched": 73,
+    "source_hashes_verified": 88,
+    "summary": "formal-319035e.json"
+  },
+  "remaining_limitations": [
+    "Strict sustainability assessment completed but remains unconfirmed on all three fixtures.",
+    "Local fixtures do not qualify production archival-provider behavior or public-chain throughput.",
+    "Pending exact-target Redis reattach remains intentionally refused."
+  ]
+}

@@ -4,59 +4,60 @@ Updated October 12, 2026.
 
 ## Saved and pushed
 
-PR #1 is merged. [PR #2](https://github.com/alfongj-com/engine-core/pull/2) implements
-recoverable checkpoints, measured journal scheduling and bounded Solana polling.
-The main local folder is `/Users/alfongj/Code/engine-core`; its README and
-`LOCAL_TESTING.md` contain the installed tool paths and a prompt for another agent.
-Generated evidence stays on this `load-tests` branch.
+[PR #2](https://github.com/alfongj-com/engine-core/pull/2) contains the recovery,
+fairness and polling changes. Code is pushed at `319035e`; your main local folder,
+`/Users/alfongj/Code/engine-core`, is current. Its README and `LOCAL_TESTING.md`
+include setup commands and a prompt for another agent. PR #1 is merged.
+Detailed test evidence stays on this `load-tests` branch.
 
-## What changed
+## Review comments addressed
 
-A crash or lost reply during an exactly recorded checkpoint update can now be
-repaired without forgiving unrelated rollback. Two FULL SQLite commits protect
-the permission boundary. Busy-chain health checks cannot fill other chains' health
-slots. Solana batches eligible status reads; stalled Redis polls no longer prevent
-graceful shutdown, while running work still drains.
+- Separate HTTP health checks from the shared fallback lane; scope all 4337/7702
+  workers and reclaim idle EVM lanes safely.
+- Install metrics before workers start.
+- Isolate malformed Solana statuses within each batch, reduce batches to 32,
+  and provide a switch to disable batching.
+- Fix shutdown lock ordering and permanently reject delayed repair registration
+  after the final drain.
+- Document planned Redis restarts and schema rollback. Pending transitions still
+  require recovery and quarantine after Redis restarts; the fence is unchanged.
 
-## What the measurements say
+## Validation and performance
 
-The shared journal is the throughput limit on this Mac. The extra durable
-acknowledgement is expensive. In the matched short run, Solana status HTTP calls
-fell from 42,213 to 5,633, but logical polling also slowed and Solana admission
-p99 rose from 170 ms to 912 ms. This is not a blanket latency improvement.
+The updated code passed the five-minute shared load at **32 TPS combined**:
+8 EVM + 8 OP-like + 16 Solana. All 9,600 transactions completed and all queues
+drained. Admission p99 was 69 / 64 / 710 ms respectively. The earlier run measured
+70 / 63 / 638 ms, so this does not establish a latency improvement.
 
-A short 10 + 10 + 20 TPS shared run passed; a four-minute repeat grew Solana
-backlog and failed capacity. At 25 + 25 + 50 TPS the system overloaded, although
-both EVM chains now progressed where the baseline stalled. No 50 TPS-per-chain
-or sustainable-maximum claim is justified.
+A forced Engine crash under the same offered rates also passed: all 2,880
+transactions completed, all queues drained, and four same-ID retries caused no
+extra sends. This fault test used a 10-second queue lease; the steady run used
+the 600-second default. The strict capacity screen remains unconfirmed.
 
-At **32 TPS combined** (8 EVM + 8 OP-like + 16 Solana), a five-minute run
-passed the campaign checks and reconciled all 9,600 transactions. Unsigned queues
-remained bounded. A stricter screen still flags confirmation timing, so this is
-a tested working point, not a proven sustained maximum.
+All five CI checks and automated review passed on `319035e`, including the full
+Rust correctness suite, dependency audit, queue coverage, 73 bounded model
+configurations and five fee proofs with two deliberate mutation rejections.
 
-Killing and restarting Engine during a separate 90-second load at the same rates
-also passed: all 2,880 transactions reconciled, with no duplicate effects or
-unresolved work. One lost API reply was retried using the original request ID.
-This fault test used a 10-second queue lease to exercise recovery
-within the test window; ordinary measurements used the 600-second default.
+The tests cover journal cancellation, shutdown, Redis loss, reorgs, response loss,
+duplicate effects, lane reclamation and malformed Solana statuses. The evidence
+separates the earlier full suite from targeted checks on the final revision.
 
-All five CI checks passed on `0ad0453`, including correctness, dependency audit,
-queue tests, coverage, 73 bounded model configurations and the fee proofs.
+[Review results and exact source hashes](docs/baselines/pr2-review-2026-10-12/README.md).
+[Earlier comparisons and failed overload runs](docs/baselines/pr2-2026-10-12/README.md)
+remain available. These local Anvil/Agave fixtures do not qualify real rollup
+settlement or public RPC capacity. No paid RPC credits were used.
 
-[Exact results, failures, methods and source hashes](docs/baselines/pr2-2026-10-12/README.md).
-The local fixtures use Anvil execution and Agave, not actual rollup settlement.
-No paid RPC credits were used.
+## Remaining before production
 
-## What remains before production
+1. Improve durable journal throughput and qualify the intended hardware, RPC,
+   workload and real chain stack. There is no sustainable maximum or 50 TPS per
+   chain claim; the earlier longer 40 TPS shared run accumulated backlog.
+2. Add explicit recovery for missing signed Redis projections and quarantined
+   unknown effects. Checkpoint repair alone cannot reconstruct them.
+3. Complete KMS/account and deployment qualification, including archival-provider
+   latency with batching enabled and disabled.
 
-1. Improve the journal's durable write throughput and qualify the intended hardware,
-   RPC, workload and real chain stack. Preserve crash/rollback guarantees.
-2. Add a recovery procedure for missing signed Redis projections and quarantined
-   unknown effects. Checkpoint repair alone cannot recreate those records.
-3. Complete the previously documented KMS/account and deployment qualification.
-
-The old incident journals and retained Nitro environment were not changed. An
-unrecorded schema-1 checkpoint mismatch does not become repairable merely by
-upgrading. The September capacity results remain [historical evidence](docs/baselines/capacity-2026-09-26/RESULTS.md),
-not capacity claims for schema 2. Finite models do not prove the whole service.
+The old incident journals and retained Nitro environment were not changed.
+Unrecorded schema-1 mismatches do not become repairable just by upgrading.
+One host and one retained authority are still required; finite models do not
+prove the whole service.

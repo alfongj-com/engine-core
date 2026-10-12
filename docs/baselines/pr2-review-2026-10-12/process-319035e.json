@@ -1,0 +1,37 @@
+{
+  "source_commit": "319035e70cd36ae81dbff91447df697633491c29",
+  "scope": "Two targeted process reruns after permanent shutdown close; the full nine-scenario run remains attached to b6a5704.",
+  "passed": 2,
+  "failed": 0,
+  "results": [
+    {
+      "scenario": "Redis restart while Engine stays alive",
+      "outcome": "pass",
+      "exit_code": 0,
+      "duration_seconds": 9.142,
+      "duplicate_chain_effects": 0,
+      "live_engine_fenced": true,
+      "reattached_without_quarantine_or_namespace_change": true,
+      "reverted_transactions": 0,
+      "sigterm_exit_code": 0,
+      "successful_transfers": 24,
+      "transactions": 24,
+      "unauthorized_requests_rejected": 2,
+      "unique_chain_effects": 24
+    },
+    {
+      "scenario": "Solana lost send response and Engine restart",
+      "outcome": "pass",
+      "exit_code": 0,
+      "duration_seconds": 82.905,
+      "completed_admission_tombstones": 12,
+      "discarded_send_responses": 12,
+      "duplicate_chain_effects": 0,
+      "rpc_url_secret_logged": false,
+      "same_wire_retransmissions": 12,
+      "terminal_attempt_records_remaining": 0,
+      "transactions": 12,
+      "unique_chain_effects": 12
+    }
+  ]
+}

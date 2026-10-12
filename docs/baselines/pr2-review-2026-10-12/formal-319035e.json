@@ -1,0 +1,133 @@
+{
+  "source_commit": "319035e70cd36ae81dbff91447df697633491c29",
+  "ci_url": "https://github.com/alfongj-com/engine-core/actions/runs/38239041354",
+  "scope": "Finite protocol models, selected production fee-arithmetic proofs, and deliberate mutation sensitivity checks. These do not prove complete Rust refinement, filesystem durability, provider behavior, or throughput.",
+  "fees": {
+    "outcome": "pass",
+    "kani_version": "0.68.0",
+    "production_harnesses_proved": 5,
+    "deliberate_mutations_rejected": 2,
+    "source_sha256": {
+      "executors/src/eoa/worker/fee_math.rs": "98a27d1919e073ccf8d3ce66ce665bd03a6e6a14671fe371e7c1e2b7006db6f0",
+      "formal/fees/src/lib.rs": "cccdc619cfee272693cd81917ddc1e469e292160c1be963cc4df8d76b315d6d7",
+      "formal/fees/check.py": "4f0d088260e48ff2f46579e835c9b67a256115f7da4cf34fb936c3da5ac8c86e"
+    },
+    "source_hashes_verified": 3,
+    "runs": [
+      {
+        "label": "production",
+        "status": "proved",
+        "duration_seconds": 207.284,
+        "harnesses": [
+          {
+            "name": "proofs::actual_dynamic_bump_preserves_valid_order_and_values",
+            "status": "Success",
+            "checks": 24,
+            "duration_ms": 2560
+          },
+          {
+            "name": "proofs::division_parts_reconstruct_all_inputs",
+            "status": "Success",
+            "checks": 16,
+            "duration_ms": 203958
+          },
+          {
+            "name": "proofs::actual_parts_match_mathematical_saturation_threshold",
+            "status": "Success",
+            "checks": 30,
+            "duration_ms": 12915
+          },
+          {
+            "name": "proofs::all_increases_are_nondecreasing_when_cap_permits",
+            "status": "Success",
+            "checks": 22,
+            "duration_ms": 14134
+          },
+          {
+            "name": "proofs::all_multipliers_respect_caps_and_priority",
+            "status": "Success",
+            "checks": 24,
+            "duration_ms": 1012
+          }
+        ],
+        "expected_assertion": null,
+        "failed_checks": []
+      },
+      {
+        "label": "removed_cap",
+        "status": "expected_counterexample",
+        "duration_seconds": 2.119,
+        "harnesses": [
+          {
+            "name": "proofs::all_multipliers_respect_caps_and_priority",
+            "status": "Failure",
+            "checks": 24,
+            "duration_ms": 1772
+          }
+        ],
+        "expected_assertion": "new_fee <= fee_cap.unwrap_or(u128::MAX)",
+        "failed_checks": [
+          {
+            "category": "assertion",
+            "description": "assertion failed: new_fee <= fee_cap.unwrap_or(u128::MAX)"
+          },
+          {
+            "category": "assertion",
+            "description": "assertion failed: new_priority <= priority_cap.unwrap_or(u128::MAX)"
+          }
+        ]
+      },
+      {
+        "label": "wrapping_multiply",
+        "status": "expected_counterexample",
+        "duration_seconds": 1.117,
+        "harnesses": [
+          {
+            "name": "proofs::all_increases_are_nondecreasing_when_cap_permits",
+            "status": "Failure",
+            "checks": 21,
+            "duration_ms": 769
+          }
+        ],
+        "expected_assertion": "fee_math::capped_increase(value, multiplier, Some(cap)) >= value",
+        "failed_checks": [
+          {
+            "category": "assertion",
+            "description": "assertion failed: fee_math::capped_increase(value, multiplier, Some(cap)) >= value"
+          }
+        ]
+      }
+    ],
+    "artifact_sha256": {
+      "summary.json": "70569c81d2f49e4e0d23dd60deaa2bb8a7a536f083336fd59d4c4520cecbc233",
+      "production.json": "8dfc6a22dbbe88acad9feccc63d70a8aa13f87d465c6a82bfc1f0eba30bb08f1",
+      "production.log": "e3dfadbe3c81dce498ede57905ab236373cf5519155dea2457817dae56b052b3",
+      "removed_cap.json": "7f9a79f63da8f3acf4065e0916cf297951887351e16f941b54bb452ad3efb730",
+      "removed_cap.log": "35b73801465fdaf2de237516f65555063fd82deca5578731e7d4c628321495b2",
+      "wrapping_multiply.json": "e6a0a79d9ffb3a53d29de757ba0de08fe9f61575961aafe8a7a8126f255aa2c5",
+      "wrapping_multiply.log": "5c5a8d03bde823de466549fcbfedf5719f3a0738fd2d584a8e9941181347de62"
+    }
+  },
+  "protocols": {
+    "outcome": "pass",
+    "scope": "finite models; not a Rust/Redis refinement proof",
+    "tlc_version": "1.7.4",
+    "tlc_sha256": "936a262061c914694dfd669a543be24573c45d5aa0ff20a8b96b23d01e050e88",
+    "expected_outcomes_matched": 73,
+    "cases_by_kind": {
+      "positive": 16,
+      "fault": 37,
+      "boundary": 11,
+      "witness": 9
+    },
+    "all_cases_match_expected_outcome": true,
+    "source_hashes_verified": 88,
+    "all_source_hashes_match_final_commit": true,
+    "source_mapping_sha256": "df6fff90ff12612903b169c65b0de93b57cf75bde489eb342241575945284a11",
+    "source_mapping_hash_encoding": "UTF-8 sorted lines: repository-relative path, space, SHA256, LF",
+    "downloaded_report_sha256": "43c06d3817e6f1fa0ab081ae938d46d3200b4f5a797d71bd0b6a722570c56e5c",
+    "artifact_name": "protocol-model-results",
+    "note": "A successful deliberate-fault case means the intended counterexample was detected. Source hashes are change-review guards, not a refinement proof."
+  },
+  "artifact_note": "Artifact hashes identify exact downloaded CI files. Raw command paths and logs are retained privately; only allowed proof outcomes and source/artifact hashes are copied here."
+}
