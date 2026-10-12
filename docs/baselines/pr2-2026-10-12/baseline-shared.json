@@ -1,0 +1,355 @@
+{
+  "scope": "Local Anvil execution and Agave validator on one host; no public-chain capacity qualification",
+  "duration_seconds": 60.0,
+  "warmup_seconds": 20.0,
+  "minimum_late_window_seconds": 20.0,
+  "mixed": true,
+  "chaos_free": true,
+  "all_chain_capacity_candidate": false,
+  "safety_pass": true,
+  "liveness_pass": true,
+  "all_drained": true,
+  "journal_halted": false,
+  "operator_recovery_required": false,
+  "owned_children_stopped": true,
+  "settings": {
+    "http_concurrency": 64,
+    "rpc_proxy_concurrency": 256,
+    "eoa_broadcast_concurrency": 32,
+    "eoa_max_inflight_per_wallet": 4096,
+    "solana_workers": 100,
+    "solana_confirmation_poll_seconds": 1,
+    "queue_lease_seconds": 600
+  },
+  "durability": {
+    "sqlite_full": true,
+    "redis_everysec": true
+  },
+  "per_chain": {
+    "evm025": {
+      "offered": 1500,
+      "offered_tps": 25.0,
+      "dispatched": 1500,
+      "dropped_client_capacity": 0,
+      "accepted_initial_requests": 1500,
+      "all_offered_dispatched": true,
+      "late": {
+        "from_seconds": 40.015,
+        "to_seconds": 60.001,
+        "window_seconds": 19.985999999999997,
+        "terminal_backlog_start": 932,
+        "terminal_backlog_end": 1389,
+        "terminal_backlog_growth_per_second": 22.866,
+        "unsigned_backlog_start": 726,
+        "unsigned_backlog_end": 1233,
+        "unsigned_backlog_linear_trend_per_second": 25.153,
+        "capacity_candidate": false
+      },
+      "late_rates_tps": {
+        "admitted": 25.368,
+        "attempted": 0.0,
+        "included": 0.0,
+        "terminal": 2.502
+      },
+      "p99_scheduled_to_response_ms": 499.672,
+      "p99_http_service_ms": 498.592,
+      "p99_attempt_observed_upper_ms": 56727.016,
+      "p99_terminal_observed_upper_ms": 65689.846,
+      "all_initial_http_responses_202": true,
+      "rpc_method_error_count": 500,
+      "rpc_proxy_overloads": 0,
+      "rpc_proxy_failure_count": 0
+    },
+    "evm2": {
+      "offered": 1500,
+      "offered_tps": 25.0,
+      "dispatched": 1500,
+      "dropped_client_capacity": 0,
+      "accepted_initial_requests": 1500,
+      "all_offered_dispatched": true,
+      "late": {
+        "from_seconds": 40.015,
+        "to_seconds": 60.001,
+        "window_seconds": 19.985999999999997,
+        "terminal_backlog_start": 926,
+        "terminal_backlog_end": 1383,
+        "terminal_backlog_growth_per_second": 22.866,
+        "unsigned_backlog_start": 728,
+        "unsigned_backlog_end": 1235,
+        "unsigned_backlog_linear_trend_per_second": 25.153,
+        "capacity_candidate": false
+      },
+      "late_rates_tps": {
+        "admitted": 25.368,
+        "attempted": 0.0,
+        "included": 0.0,
+        "terminal": 2.502
+      },
+      "p99_scheduled_to_response_ms": 498.354,
+      "p99_http_service_ms": 496.946,
+      "p99_attempt_observed_upper_ms": 56675.86,
+      "p99_terminal_observed_upper_ms": 69041.557,
+      "all_initial_http_responses_202": true,
+      "rpc_method_error_count": 500,
+      "rpc_proxy_overloads": 0,
+      "rpc_proxy_failure_count": 0
+    },
+    "solana": {
+      "offered": 3000,
+      "offered_tps": 50.0,
+      "dispatched": 3000,
+      "dropped_client_capacity": 0,
+      "accepted_initial_requests": 3000,
+      "all_offered_dispatched": true,
+      "late": {
+        "from_seconds": 40.015,
+        "to_seconds": 60.001,
+        "window_seconds": 19.985999999999997,
+        "terminal_backlog_start": 932,
+        "terminal_backlog_end": 953,
+        "terminal_backlog_growth_per_second": 1.051,
+        "unsigned_backlog_start": 28,
+        "unsigned_backlog_end": 94,
+        "unsigned_backlog_linear_trend_per_second": 2.462,
+        "capacity_candidate": false
+      },
+      "late_rates_tps": {
+        "admitted": 50.736,
+        "attempted": 47.433,
+        "included": 48.684,
+        "terminal": 49.685
+      },
+      "p99_scheduled_to_response_ms": 496.515,
+      "p99_http_service_ms": 494.209,
+      "p99_attempt_observed_upper_ms": 6943.602,
+      "p99_terminal_observed_upper_ms": 24814.942,
+      "all_initial_http_responses_202": true,
+      "rpc_method_error_count": 0,
+      "rpc_proxy_overloads": 0,
+      "rpc_proxy_failure_count": 0
+    }
+  },
+  "timing_window": {
+    "from_seconds": 20.02826383302454,
+    "to_seconds": 60.01430141599849,
+    "scrape_mean_seconds": 0.009613791558270654
+  },
+  "journal": [
+    {
+      "operation": "admission",
+      "phase": "serial_hold",
+      "observations": 4002.0,
+      "sum_seconds": 15.648571181000026,
+      "mean_ms": 3.9101877013993067,
+      "observations_per_admission": 1.000249937515621,
+      "accumulated_ms_per_admission": 3.911165003999007
+    },
+    {
+      "operation": "admission",
+      "phase": "serial_wait",
+      "observations": 4001.0,
+      "sum_seconds": 531.6279327800016,
+      "mean_ms": 132.87376475381197,
+      "observations_per_admission": 1.0,
+      "accumulated_ms_per_admission": 132.87376475381197
+    },
+    {
+      "operation": "broadcast",
+      "phase": "serial_hold",
+      "observations": 3896.0,
+      "sum_seconds": 7.587865215999922,
+      "mean_ms": 1.9476040082135322,
+      "observations_per_admission": 0.973756560859785,
+      "accumulated_ms_per_admission": 1.8964921809547417
+    },
+    {
+      "operation": "broadcast",
+      "phase": "serial_wait",
+      "observations": 3896.0,
+      "sum_seconds": 637.3279487219972,
+      "mean_ms": 163.58520244404448,
+      "observations_per_admission": 0.973756560859785,
+      "accumulated_ms_per_admission": 159.29216413946443
+    },
+    {
+      "operation": "checkpoint",
+      "phase": "redis_mirror",
+      "observations": 8058.0,
+      "sum_seconds": 0.8649092080000069,
+      "mean_ms": 0.10733546885083234,
+      "observations_per_admission": 2.0139965008747813,
+      "accumulated_ms_per_admission": 0.2161732586853304
+    },
+    {
+      "operation": "continuity",
+      "phase": "redis_observation",
+      "observations": 46616.0,
+      "sum_seconds": 6.250246114000042,
+      "mean_ms": 0.13407941723871722,
+      "observations_per_admission": 11.651087228192951,
+      "accumulated_ms_per_admission": 1.5621709857535722
+    },
+    {
+      "operation": "database",
+      "phase": "blocking_queue",
+      "observations": 105436.0,
+      "sum_seconds": 1.2114003230000172,
+      "mean_ms": 0.011489437412269217,
+      "observations_per_admission": 26.352411897025743,
+      "accumulated_ms_per_admission": 0.302774387153216
+    },
+    {
+      "operation": "database",
+      "phase": "db_execution",
+      "observations": 105436.0,
+      "sum_seconds": 29.884250183001477,
+      "mean_ms": 0.2834349765070894,
+      "observations_per_admission": 26.352411897025743,
+      "accumulated_ms_per_admission": 7.469195246938635
+    },
+    {
+      "operation": "database",
+      "phase": "db_mutex_wait",
+      "observations": 105436.0,
+      "sum_seconds": 11.49852224499081,
+      "mean_ms": 0.10905688991417362,
+      "observations_per_admission": 26.352411897025743,
+      "accumulated_ms_per_admission": 2.8739120832268954
+    },
+    {
+      "operation": "database",
+      "phase": "sql_commit",
+      "observations": 8058.0,
+      "sum_seconds": 25.797286159999807,
+      "mean_ms": 3.2014502556465385,
+      "observations_per_admission": 2.0139965008747813,
+      "accumulated_ms_per_admission": 6.447709612596802
+    },
+    {
+      "operation": "health",
+      "phase": "serial_hold",
+      "observations": 28551.0,
+      "sum_seconds": 6.575801430000075,
+      "mean_ms": 0.23031772722496846,
+      "observations_per_admission": 7.135966008497875,
+      "accumulated_ms_per_admission": 1.6435394726318608
+    },
+    {
+      "operation": "health",
+      "phase": "serial_wait",
+      "observations": 28552.0,
+      "sum_seconds": 3546.4723931069834,
+      "mean_ms": 124.2109972368655,
+      "observations_per_admission": 7.136215946013497,
+      "accumulated_ms_per_admission": 886.3964991519579
+    },
+    {
+      "operation": "terminal",
+      "phase": "serial_hold",
+      "observations": 2109.0,
+      "sum_seconds": 7.714507942000017,
+      "mean_ms": 3.657898502607879,
+      "observations_per_admission": 0.5271182204448888,
+      "accumulated_ms_per_admission": 1.9281449492626885
+    },
+    {
+      "operation": "terminal",
+      "phase": "serial_wait",
+      "observations": 2109.0,
+      "sum_seconds": 379.1096681889992,
+      "mean_ms": 179.7580219009005,
+      "observations_per_admission": 0.5271182204448888,
+      "accumulated_ms_per_admission": 94.75372861509602
+    }
+  ],
+  "solana_operations": [
+    {
+      "phase": "handler",
+      "outcome": "requeue",
+      "observations": 18300.0,
+      "sum_seconds": 3293.968470690016,
+      "mean_ms": 179.99827708688613
+    },
+    {
+      "phase": "handler",
+      "outcome": "success",
+      "observations": 1903.0,
+      "sum_seconds": 660.1070981489999,
+      "mean_ms": 346.8770878344718
+    },
+    {
+      "phase": "rpc_get_block_height",
+      "outcome": "success",
+      "observations": 19.0,
+      "sum_seconds": 0.013086956999999996,
+      "mean_ms": 0.6887872105263156
+    },
+    {
+      "phase": "rpc_get_latest_blockhash",
+      "outcome": "success",
+      "observations": 1948.0,
+      "sum_seconds": 1.042418944999999,
+      "mean_ms": 0.5351226617043117
+    },
+    {
+      "phase": "rpc_get_signature_statuses",
+      "outcome": "success",
+      "observations": 18255.0,
+      "sum_seconds": 9.078159600000017,
+      "mean_ms": 0.4972971569433041
+    },
+    {
+      "phase": "rpc_get_transaction",
+      "outcome": "success",
+      "observations": 1903.0,
+      "sum_seconds": 1.988359574999998,
+      "mean_ms": 1.044855267997897
+    },
+    {
+      "phase": "rpc_send_transaction",
+      "outcome": "success",
+      "observations": 1948.0,
+      "sum_seconds": 2.989276382000006,
+      "mean_ms": 1.5345361303901468
+    }
+  ],
+  "counter_window": {
+    "from_seconds": 20.016,
+    "to_seconds": 60.001,
+    "all_chain_new_admissions": 4001
+  },
+  "solana_status_batch_size": {
+    "http_requests": 18254.0,
+    "signatures": 18254.0,
+    "mean_signatures_per_request": 1.0
+  },
+  "solana_rpc": {
+    "postwarm_load_new_admissions": 2000,
+    "postwarm_load_http_requests": 24081,
+    "postwarm_load_status_http_requests": 18263,
+    "postwarm_load_http_per_new_admission": 12.0405,
+    "postwarm_load_status_http_per_new_admission": 9.1315,
+    "whole_campaign_http_requests": 45922,
+    "whole_campaign_http_per_offered_intent": 15.307333333333334,
+    "whole_campaign_http_per_accepted_intent": 15.307333333333334,
+    "whole_campaign_status_http_per_accepted_intent": 12.290666666666667,
+    "whole_campaign_status_http_per_offered_intent": 12.290666666666667,
+    "whole_campaign_calls": {
+      "getBlockHeight": 50,
+      "getLatestBlockhash": 3000,
+      "getSignatureStatuses": 36872,
+      "getTransaction": 3000,
+      "sendTransaction": 3000
+    }
+  },
+  "notes": [
+    "Response latency percentiles cover dispatched requests with responses. Durable latency percentiles cover observed attempts and terminals, including drain; timings are sampled upper bounds. Dropped offers have no latency observation.",
+    "All-drained describes admitted work, not completion of offers dropped by the client; inspect dispatched and dropped counts and liveness_pass.",
+    "Late throughput excludes drain. Timing and proxy counters use their own post-warmup samples, differing by scrape duration.",
+    "Histogram observations overlap and are not wall-time utilization. SQL acknowledgement includes a SQL commit already counted by sql_commit.",
+    "Counter-window per-admission figures normalize work; they do not attribute each call to the newly admitted cohort.",
+    "Absent phases were not instrumented or had no observations. In particular, missing baseline lane_wait is not evidence of zero candidate queueing.",
+    "The mixed workload deliberately includes one reverting EVM call in three; aggregate eth_estimateGas errors alone do not prove transport failure.",
+    "A lower serial_wait alone cannot show fairness improved: include lane_wait and health_capacity_wait, end-to-end latency, attempted progress, and backlog."
+  ]
+}

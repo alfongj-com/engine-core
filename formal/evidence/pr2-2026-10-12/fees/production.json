@@ -1,0 +1,1804 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "timestamp": "2026-10-12T05:43:25.21117913Z",
+    "kani_version": "0.68.0",
+    "target": "x86_64-unknown-linux-gnu",
+    "build_mode": "release"
+  },
+  "project": {
+    "crate_name": [
+      "engine_fee_proofs"
+    ],
+    "workspace_root": "/home/runner/work/engine-core/engine-core/formal/fees",
+    "output_dir": "/home/runner/work/engine-core/engine-core/formal/fees/target/kani/x86_64-unknown-linux-gnu/debug/build/engine-fee-proofs/7d10706fbb4497bf/out"
+  },
+  "tools": {
+    "kani": "0.68.0",
+    "rustc": "rustc 1.100.0-nightly (8925ea358 2026-08-20)",
+    "cbmc": "6.11.0 (cbmc-6.11.0)",
+    "goto_cc": "gcc (goto-cc 6.11.0 (cbmc-6.11.0)) 13.3.0",
+    "goto_instrument": "6.11.0 (cbmc-6.11.0)",
+    "solvers": [
+      {
+        "name": "cadical",
+        "version": null
+      }
+    ]
+  },
+  "harness_metadata": [
+    {
+      "pretty_name": "proofs::all_increases_are_nondecreasing_when_cap_permits",
+      "mangled_name": "_RNvNtCsjBYitlvuq5I_17engine_fee_proofs6proofs48all_increases_are_nondecreasing_when_cap_permits",
+      "crate_name": "engine_fee_proofs",
+      "source": {
+        "file": "src/lib.rs",
+        "start_line": 42,
+        "end_line": 49
+      },
+      "goto_file": "/home/runner/work/engine-core/engine-core/formal/fees/target/kani/x86_64-unknown-linux-gnu/debug/build/engine-fee-proofs/7d10706fbb4497bf/out/engine_fee_proofs-7d10706fbb4497bf__RNvNtCsjBYitlvuq5I_17engine_fee_proofs6proofs48all_increases_are_nondecreasing_when_cap_permits.symtab.out",
+      "attributes": {
+        "kind": "Proof",
+        "should_panic": false
+      },
+      "contract": {
+        "contracted_function_name": null,
+        "recursion_tracker": null
+      },
+      "has_loop_contracts": false,
+      "is_automatically_generated": false,
+      "is_bounded": false,
+      "is_ctor_based": false
+    },
+    {
+      "pretty_name": "proofs::actual_parts_match_mathematical_saturation_threshold",
+      "mangled_name": "_RNvNtCsjBYitlvuq5I_17engine_fee_proofs6proofs52actual_parts_match_mathematical_saturation_threshold",
+      "crate_name": "engine_fee_proofs",
+      "source": {
+        "file": "src/lib.rs",
+        "start_line": 52,
+        "end_line": 72
+      },
+      "goto_file": "/home/runner/work/engine-core/engine-core/formal/fees/target/kani/x86_64-unknown-linux-gnu/debug/build/engine-fee-proofs/7d10706fbb4497bf/out/engine_fee_proofs-7d10706fbb4497bf__RNvNtCsjBYitlvuq5I_17engine_fee_proofs6proofs52actual_parts_match_mathematical_saturation_threshold.symtab.out",
+      "attributes": {
+        "kind": "Proof",
+        "should_panic": false
+      },
+      "contract": {
+        "contracted_function_name": null,
+        "recursion_tracker": null
+      },
+      "has_loop_contracts": false,
+      "is_automatically_generated": false,
+      "is_bounded": false,
+      "is_ctor_based": false
+    },
+    {
+      "pretty_name": "proofs::actual_dynamic_bump_preserves_valid_order_and_values",
+      "mangled_name": "_RNvNtCsjBYitlvuq5I_17engine_fee_proofs6proofs52actual_dynamic_bump_preserves_valid_order_and_values",
+      "crate_name": "engine_fee_proofs",
+      "source": {
+        "file": "src/lib.rs",
+        "start_line": 85,
+        "end_line": 98
+      },
+      "goto_file": "/home/runner/work/engine-core/engine-core/formal/fees/target/kani/x86_64-unknown-linux-gnu/debug/build/engine-fee-proofs/7d10706fbb4497bf/out/engine_fee_proofs-7d10706fbb4497bf__RNvNtCsjBYitlvuq5I_17engine_fee_proofs6proofs52actual_dynamic_bump_preserves_valid_order_and_values.symtab.out",
+      "attributes": {
+        "kind": "Proof",
+        "should_panic": false
+      },
+      "contract": {
+        "contracted_function_name": null,
+        "recursion_tracker": null
+      },
+      "has_loop_contracts": false,
+      "is_automatically_generated": false,
+      "is_bounded": false,
+      "is_ctor_based": false
+    },
+    {
+      "pretty_name": "proofs::all_multipliers_respect_caps_and_priority",
+      "mangled_name": "_RNvNtCsjBYitlvuq5I_17engine_fee_proofs6proofs41all_multipliers_respect_caps_and_priority",
+      "crate_name": "engine_fee_proofs",
+      "source": {
+        "file": "src/lib.rs",
+        "start_line": 28,
+        "end_line": 39
+      },
+      "goto_file": "/home/runner/work/engine-core/engine-core/formal/fees/target/kani/x86_64-unknown-linux-gnu/debug/build/engine-fee-proofs/7d10706fbb4497bf/out/engine_fee_proofs-7d10706fbb4497bf__RNvNtCsjBYitlvuq5I_17engine_fee_proofs6proofs41all_multipliers_respect_caps_and_priority.symtab.out",
+      "attributes": {
+        "kind": "Proof",
+        "should_panic": false
+      },
+      "contract": {
+        "contracted_function_name": null,
+        "recursion_tracker": null
+      },
+      "has_loop_contracts": false,
+      "is_automatically_generated": false,
+      "is_bounded": false,
+      "is_ctor_based": false
+    },
+    {
+      "pretty_name": "proofs::division_parts_reconstruct_all_inputs",
+      "mangled_name": "_RNvNtCsjBYitlvuq5I_17engine_fee_proofs6proofs37division_parts_reconstruct_all_inputs",
+      "crate_name": "engine_fee_proofs",
+      "source": {
+        "file": "src/lib.rs",
+        "start_line": 75,
+        "end_line": 82
+      },
+      "goto_file": "/home/runner/work/engine-core/engine-core/formal/fees/target/kani/x86_64-unknown-linux-gnu/debug/build/engine-fee-proofs/7d10706fbb4497bf/out/engine_fee_proofs-7d10706fbb4497bf__RNvNtCsjBYitlvuq5I_17engine_fee_proofs6proofs37division_parts_reconstruct_all_inputs.symtab.out",
+      "attributes": {
+        "kind": "Proof",
+        "should_panic": false
+      },
+      "contract": {
+        "contracted_function_name": null,
+        "recursion_tracker": null
+      },
+      "has_loop_contracts": false,
+      "is_automatically_generated": false,
+      "is_bounded": false,
+      "is_ctor_based": false
+    }
+  ],
+  "error_details": [
+    {
+      "harness_id": "proofs::all_increases_are_nondecreasing_when_cap_permits",
+      "has_errors": false
+    },
+    {
+      "harness_id": "proofs::actual_parts_match_mathematical_saturation_threshold",
+      "has_errors": false
+    },
+    {
+      "harness_id": "proofs::actual_dynamic_bump_preserves_valid_order_and_values",
+      "has_errors": false
+    },
+    {
+      "harness_id": "proofs::all_multipliers_respect_caps_and_priority",
+      "has_errors": false
+    },
+    {
+      "harness_id": "proofs::division_parts_reconstruct_all_inputs",
+      "has_errors": false
+    }
+  ],
+  "property_details": [
+    {
+      "harness_id": "proofs::all_increases_are_nondecreasing_when_cap_permits",
+      "property_details": {
+        "total_properties": 22,
+        "passed": 22,
+        "failed": 0,
+        "unreachable": 0,
+        "undetermined": 0,
+        "solver_error": 0,
+        "satisfied": 0,
+        "unsatisfiable": 0,
+        "covered": 0,
+        "uncovered": 0
+      }
+    },
+    {
+      "harness_id": "proofs::actual_parts_match_mathematical_saturation_threshold",
+      "property_details": {
+        "total_properties": 30,
+        "passed": 30,
+        "failed": 0,
+        "unreachable": 0,
+        "undetermined": 0,
+        "solver_error": 0,
+        "satisfied": 0,
+        "unsatisfiable": 0,
+        "covered": 0,
+        "uncovered": 0
+      }
+    },
+    {
+      "harness_id": "proofs::actual_dynamic_bump_preserves_valid_order_and_values",
+      "property_details": {
+        "total_properties": 24,
+        "passed": 24,
+        "failed": 0,
+        "unreachable": 0,
+        "undetermined": 0,
+        "solver_error": 0,
+        "satisfied": 0,
+        "unsatisfiable": 0,
+        "covered": 0,
+        "uncovered": 0
+      }
+    },
+    {
+      "harness_id": "proofs::all_multipliers_respect_caps_and_priority",
+      "property_details": {
+        "total_properties": 24,
+        "passed": 24,
+        "failed": 0,
+        "unreachable": 0,
+        "undetermined": 0,
+        "solver_error": 0,
+        "satisfied": 0,
+        "unsatisfiable": 0,
+        "covered": 0,
+        "uncovered": 0
+      }
+    },
+    {
+      "harness_id": "proofs::division_parts_reconstruct_all_inputs",
+      "property_details": {
+        "total_properties": 16,
+        "passed": 16,
+        "failed": 0,
+        "unreachable": 0,
+        "undetermined": 0,
+        "solver_error": 0,
+        "satisfied": 0,
+        "unsatisfiable": 0,
+        "covered": 0,
+        "uncovered": 0
+      }
+    }
+  ],
+  "cbmc": [
+    {
+      "harness_id": "proofs::all_increases_are_nondecreasing_when_cap_permits",
+      "cbmc_metadata": {
+        "version": "6.11.0",
+        "os_info": "x86_64 linux unix"
+      },
+      "configuration": {
+        "object_bits": 16,
+        "solver": "cadical"
+      },
+      "cbmc_stats": {
+        "runtime_symex_s": 0.00918004,
+        "size_program_expression": 420,
+        "slicing_removed_assignments": 174,
+        "vccs_generated": 26,
+        "vccs_remaining": 8,
+        "runtime_postprocess_equation_s": 0.00011151,
+        "runtime_convert_ssa_s": 0.042695,
+        "runtime_post_process_s": 0.00001068,
+        "runtime_solver_s": 13.9358,
+        "runtime_decision_procedure_s": 13.9361
+      }
+    },
+    {
+      "harness_id": "proofs::actual_parts_match_mathematical_saturation_threshold",
+      "cbmc_metadata": {
+        "version": "6.11.0",
+        "os_info": "x86_64 linux unix"
+      },
+      "configuration": {
+        "object_bits": 16,
+        "solver": "cadical"
+      },
+      "cbmc_stats": {
+        "runtime_symex_s": 0.0164615,
+        "size_program_expression": 819,
+        "slicing_removed_assignments": 392,
+        "vccs_generated": 55,
+        "vccs_remaining": 21,
+        "runtime_postprocess_equation_s": 0.000211439,
+        "runtime_convert_ssa_s": 0.0187647,
+        "runtime_post_process_s": 0.000013445,
+        "runtime_solver_s": 12.982,
+        "runtime_decision_procedure_s": 12.9821
+      }
+    },
+    {
+      "harness_id": "proofs::actual_dynamic_bump_preserves_valid_order_and_values",
+      "cbmc_metadata": {
+        "version": "6.11.0",
+        "os_info": "x86_64 linux unix"
+      },
+      "configuration": {
+        "object_bits": 16,
+        "solver": "cadical"
+      },
+      "cbmc_stats": {
+        "runtime_symex_s": 0.0215073,
+        "size_program_expression": 1092,
+        "slicing_removed_assignments": 500,
+        "vccs_generated": 66,
+        "vccs_remaining": 18,
+        "runtime_postprocess_equation_s": 0.000281542,
+        "runtime_convert_ssa_s": 0.0332361,
+        "runtime_post_process_s": 0.000011722,
+        "runtime_solver_s": 2.45005,
+        "runtime_decision_procedure_s": 2.4503
+      }
+    },
+    {
+      "harness_id": "proofs::all_multipliers_respect_caps_and_priority",
+      "cbmc_metadata": {
+        "version": "6.11.0",
+        "os_info": "x86_64 linux unix"
+      },
+      "configuration": {
+        "object_bits": 16,
+        "solver": "cadical"
+      },
+      "cbmc_stats": {
+        "runtime_symex_s": 0.0250005,
+        "size_program_expression": 1305,
+        "slicing_removed_assignments": 560,
+        "vccs_generated": 70,
+        "vccs_remaining": 22,
+        "runtime_postprocess_equation_s": 0.000287853,
+        "runtime_convert_ssa_s": 0.0862299,
+        "runtime_post_process_s": 0.000014186,
+        "runtime_solver_s": 0.810515,
+        "runtime_decision_procedure_s": 0.811201
+      }
+    },
+    {
+      "harness_id": "proofs::division_parts_reconstruct_all_inputs",
+      "cbmc_metadata": {
+        "version": "6.11.0",
+        "os_info": "x86_64 linux unix"
+      },
+      "configuration": {
+        "object_bits": 16,
+        "solver": "cadical"
+      },
+      "cbmc_stats": {
+        "runtime_symex_s": 0.00613672,
+        "size_program_expression": 435,
+        "slicing_removed_assignments": 212,
+        "vccs_generated": 27,
+        "vccs_remaining": 17,
+        "runtime_postprocess_equation_s": 0.000086774,
+        "runtime_convert_ssa_s": 0.00852176,
+        "runtime_post_process_s": 6.902e-6,
+        "runtime_solver_s": 154.579,
+        "runtime_decision_procedure_s": 154.579
+      }
+    }
+  ],
+  "verification_results": {
+    "summary": {
+      "total_harnesses": 5,
+      "executed": 5,
+      "status": "completed",
+      "successful": 5,
+      "failed": 0,
+      "duration_ms": 237563
+    },
+    "results": [
+      {
+        "harness_id": "proofs::actual_dynamic_bump_preserves_valid_order_and_values",
+        "status": "Success",
+        "duration_ms": 2590,
+        "checks": [
+          {
+            "id": 1,
+            "function": "std::option::Option::<u128>::unwrap_or",
+            "status": "Success",
+            "description": "unreachable code",
+            "location": {
+              "file": "/home/runner/.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/option.rs",
+              "line": "1040",
+              "column": "15"
+            },
+            "category": "unreachable"
+          },
+          {
+            "id": 2,
+            "function": "fee_math::division_parts",
+            "status": "Success",
+            "description": "attempt to divide by zero",
+            "location": {
+              "file": "src/../../../executors/src/eoa/worker/fee_math.rs",
+              "line": "11",
+              "column": "6"
+            },
+            "category": "assertion"
+          },
+          {
+            "id": 3,
+            "function": "fee_math::division_parts",
+            "status": "Success",
+            "description": "attempt to divide by zero",
+            "location": {
+              "file": "src/../../../executors/src/eoa/worker/fee_math.rs",
+              "line": "11",
+              "column": "6"
+            },
+            "category": "arithmetic_overflow"
+          },
+          {
+            "id": 4,
+            "function": "fee_math::division_parts",
+            "status": "Success",
+            "description": "attempt to calculate the remainder with a divisor of zero",
+            "location": {
+              "file": "src/../../../executors/src/eoa/worker/fee_math.rs",
+              "line": "11",
+              "column": "19"
+            },
+            "category": "assertion"
+          },
+          {
+            "id": 5,
+            "function": "fee_math::division_parts",
+            "status": "Success",
+            "description": "attempt to calculate the remainder with a divisor of zero",
+            "location": {
+              "file": "src/../../../executors/src/eoa/worker/fee_math.rs",
+              "line": "11",
+              "column": "19"
+            },
+            "category": "arithmetic_overflow"
+          },
+          {
+            "id": 6,
+            "function": "proofs::actual_dynamic_bump_preserves_valid_order_and_values",
+            "status": "Success",
+            "description": "assertion failed: new_fee >= fee",
+            "location": {
+              "file": "src/lib.rs",
+              "line": "95",
+              "column": "9"
+            },
+            "category": "assertion"
+          },
+          {
+            "id": 7,
+            "function": "proofs::actual_dynamic_bump_preserves_valid_order_and_values",
+            "status": "Success",
+            "description": "assertion failed: new_priority >= priority",
+            "location": {
+              "file": "src/lib.rs",
+              "line": "96",
+              "column": "9"
+            },
+            "category": "assertion"
+          },
+          {
+            "id": 8,
+            "function": "proofs::actual_dynamic_bump_preserves_valid_order_and_values",
+            "status": "Success",
+            "description": "assertion failed: new_priority <= new_fee",
+            "location": {
+              "file": "src/lib.rs",
+              "line": "97",
+              "column": "9"
+            },
+            "category": "assertion"
+          },
+          {
+            "id": 9,
+            "function": "fee_math::capped_increase_parts",
+            "status": "Success",
+            "description": "attempt to multiply with overflow",
+            "location": {
+              "file": "src/../../../executors/src/eoa/worker/fee_math.rs",
+              "line": "27",
+              "column": "25"
+            },
+            "category": "assertion"
+          },
+          {
+            "id": 10,
+            "function": "fee_math::capped_increase_parts",
+            "status": "Success",
+            "description": "attempt to divide by zero",
+            "location": {
+              "file": "src/../../../executors/src/eoa/worker/fee_math.rs",
+              "line": "27",
+              "column": "25"
+            },
+            "category": "assertion"
+          },
+          {
+            "id": 11,
+            "function": "fee_math::capped_increase_parts",
+            "status": "Success",
+            "description": "attempt to divide by zero",
+            "location": {
+              "file": "src/../../../executors/src/eoa/worker/fee_math.rs",
+              "line": "27",
+              "column": "25"
+            },
+            "category": "arithmetic_overflow"
+          },
+          {
+            "id": 12,
+            "function": "core::num::<impl u128>::saturating_mul",
+            "status": "Success",
+            "description": "unreachable code",
+            "location": {
+              "file": "/home/runner/.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/num/uint_macros.rs",
+              "line": "2585",
+              "column": "19"
+            },
+            "category": "unreachable"
+          },
+          {
+            "id": 13,
+            "function": "std::cmp::impls::<impl std::cmp::PartialOrd for u128>::lt",
+            "status": "Success",
+            "description": "dereference failure: pointer NULL",
+            "location": {
+              "file": "/home/runner/.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/cmp.rs",
+              "line": "2192",
+              "column": "50"
+            },
+            "category": "pointer_dereference"
+          },
+          {
+            "id": 14,
+            "function": "std::cmp::impls::<impl std::cmp::PartialOrd for u128>::lt",
+            "status": "Success",
+            "description": "dereference failure: pointer invalid",
+            "location": {
+              "file": "/home/runner/.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/cmp.rs",
+              "line": "2192",
+              "column": "50"
+            },
+            "category": "pointer_dereference"
+          },
+          {
+            "id": 15,
+            "function": "std::cmp::impls::<impl std::cmp::PartialOrd for u128>::lt",
+            "status": "Success",
+            "description": "dereference failure: deallocated dynamic object",
+            "location": {
+              "file": "/home/runner/.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/cmp.rs",
+              "line": "2192",
+              "column": "50"
+            },
+            "category": "pointer_dereference"
+          },
+          {
+            "id": 16,
+            "function": "std::cmp::impls::<impl std::cmp::PartialOrd for u128>::lt",
+            "status": "Success",
+            "description": "dereference failure: dead object",
+            "location": {
+              "file": "/home/runner/.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/cmp.rs",
+              "line": "2192",
+              "column": "50"
+            },
+            "category": "pointer_dereference"
+          },
+          {
+            "id": 17,
+            "function": "std::cmp::impls::<impl std::cmp::PartialOrd for u128>::lt",
+            "status": "Success",
+            "description": "dereference failure: pointer outside object bounds",
+            "location": {
+              "file": "/home/runner/.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/cmp.rs",
+              "line": "2192",
+              "column": "50"
+            },
+            "category": "pointer_dereference"
+          },
+          {
+            "id": 18,
+            "function": "std::cmp::impls::<impl std::cmp::PartialOrd for u128>::lt",
+            "status": "Success",
+            "description": "dereference failure: invalid integer address",
+            "location": {
+              "file": "/home/runner/.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/cmp.rs",
+              "line": "2192",
+              "column": "50"
+            },
+            "category": "pointer_dereference"
+          },
+          {
+            "id": 19,
+            "function": "std::cmp::impls::<impl std::cmp::PartialOrd for u128>::lt",
+            "status": "Success",
+            "description": "dereference failure: pointer NULL",
+            "location": {
+              "file": "/home/runner/.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/cmp.rs",
+              "line": "2192",
+              "column": "59"
+            },
+            "category": "pointer_dereference"
+          },
+          {
+            "id": 20,
+            "function": "std::cmp::impls::<impl std::cmp::PartialOrd for u128>::lt",
+            "status": "Success",
+            "description": "dereference failure: pointer invalid",
+            "location": {
+              "file": "/home/runner/.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/cmp.rs",
+              "line": "2192",
+              "column": "59"
+            },
+            "category": "pointer_dereference"
+          },
+          {
+            "id": 21,
+            "function": "std::cmp::impls::<impl std::cmp::PartialOrd for u128>::lt",
+            "status": "Success",
+            "description": "dereference failure: deallocated dynamic object",
+            "location": {
+              "file": "/home/runner/.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/cmp.rs",
+              "line": "2192",
+              "column": "59"
+            },
+            "category": "pointer_dereference"
+          },
+          {
+            "id": 22,
+            "function": "std::cmp::impls::<impl std::cmp::PartialOrd for u128>::lt",
+            "status": "Success",
+            "description": "dereference failure: dead object",
+            "location": {
+              "file": "/home/runner/.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/cmp.rs",
+              "line": "2192",
+              "column": "59"
+            },
+            "category": "pointer_dereference"
+          },
+          {
+            "id": 23,
+            "function": "std::cmp::impls::<impl std::cmp::PartialOrd for u128>::lt",
+            "status": "Success",
+            "description": "dereference failure: pointer outside object bounds",
+            "location": {
+              "file": "/home/runner/.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/cmp.rs",
+              "line": "2192",
+              "column": "59"
+            },
+            "category": "pointer_dereference"
+          },
+          {
+            "id": 24,
+            "function": "std::cmp::impls::<impl std::cmp::PartialOrd for u128>::lt",
+            "status": "Success",
+            "description": "dereference failure: invalid integer address",
+            "location": {
+              "file": "/home/runner/.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/cmp.rs",
+              "line": "2192",
+              "column": "59"
+            },
+            "category": "pointer_dereference"
+          }
+        ]
+      },
+      {
+        "harness_id": "proofs::division_parts_reconstruct_all_inputs",
+        "status": "Success",
+        "duration_ms": 206711,
+        "checks": [
+          {
+            "id": 1,
+            "function": "fee_math::division_parts",
+            "status": "Success",
+            "description": "attempt to divide by zero",
+            "location": {
+              "file": "src/../../../executors/src/eoa/worker/fee_math.rs",
+              "line": "11",
+              "column": "6"
+            },
+            "category": "assertion"
+          },
+          {
+            "id": 2,
+            "function": "fee_math::division_parts",
+            "status": "Success",
+            "description": "attempt to divide by zero",
+            "location": {
+              "file": "src/../../../executors/src/eoa/worker/fee_math.rs",
+              "line": "11",
+              "column": "6"
+            },
+            "category": "arithmetic_overflow"
+          },
+          {
+            "id": 3,
+            "function": "fee_math::division_parts",
+            "status": "Success",
+            "description": "attempt to calculate the remainder with a divisor of zero",
+            "location": {
+              "file": "src/../../../executors/src/eoa/worker/fee_math.rs",
+              "line": "11",
+              "column": "19"
+            },
+            "category": "assertion"
+          },
+          {
+            "id": 4,
+            "function": "fee_math::division_parts",
+            "status": "Success",
+            "description": "attempt to calculate the remainder with a divisor of zero",
+            "location": {
+              "file": "src/../../../executors/src/eoa/worker/fee_math.rs",
+              "line": "11",
+              "column": "19"
+            },
+            "category": "arithmetic_overflow"
+          },
+          {
+            "id": 5,
+            "function": "proofs::division_parts_reconstruct_all_inputs",
+            "status": "Success",
+            "description": "assertion failed: remainder < 100",
+            "location": {
+              "file": "src/lib.rs",
+              "line": "78",
+              "column": "9"
+            },
+            "category": "assertion"
+          },
+          {
+            "id": 6,
+            "function": "proofs::division_parts_reconstruct_all_inputs",
+            "status": "Success",
+            "description": "attempt to divide by zero",
+            "location": {
+              "file": "src/lib.rs",
+              "line": "79",
+              "column": "29"
+            },
+            "category": "assertion"
+          },
+          {
+            "id": 7,
+            "function": "proofs::division_parts_reconstruct_all_inputs",
+            "status": "Success",
+            "description": "attempt to divide by zero",
+            "location": {
+              "file": "src/lib.rs",
+              "line": "79",
+              "column": "29"
+            },
+            "category": "arithmetic_overflow"
+          },
+          {
+            "id": 8,
+            "function": "proofs::division_parts_reconstruct_all_inputs",
+            "status": "Success",
+            "description": "assertion failed: quotient <= u128::MAX / 100",
+            "location": {
+              "file": "src/lib.rs",
+              "line": "79",
+              "column": "9"
+            },
+            "category": "assertion"
+          },
+          {
+            "id": 9,
+            "function": "proofs::division_parts_reconstruct_all_inputs",
+            "status": "Success",
+            "description": "attempt to divide by zero",
+            "location": {
+              "file": "src/lib.rs",
+              "line": "80",
+              "column": "28"
+            },
+            "category": "assertion"
+          },
+          {
+            "id": 10,
+            "function": "proofs::division_parts_reconstruct_all_inputs",
+            "status": "Success",
+            "description": "attempt to divide by zero",
+            "location": {
+              "file": "src/lib.rs",
+              "line": "80",
+              "column": "28"
+            },
+            "category": "arithmetic_overflow"
+          },
+          {
+            "id": 11,
+            "function": "proofs::division_parts_reconstruct_all_inputs",
+            "status": "Success",
+            "description": "attempt to calculate the remainder with a divisor of zero",
+            "location": {
+              "file": "src/lib.rs",
+              "line": "80",
+              "column": "60"
+            },
+            "category": "assertion"
+          },
+          {
+            "id": 12,
+            "function": "proofs::division_parts_reconstruct_all_inputs",
+            "status": "Success",
+            "description": "attempt to calculate the remainder with a divisor of zero",
+            "location": {
+              "file": "src/lib.rs",
+              "line": "80",
+              "column": "60"
+            },
+            "category": "arithmetic_overflow"
+          },
+          {
+            "id": 13,
+            "function": "proofs::division_parts_reconstruct_all_inputs",
+            "status": "Success",
+            "description": "assertion failed: quotient < u128::MAX / 100 || remainder <= u128::MAX % 100",
+            "location": {
+              "file": "src/lib.rs",
+              "line": "80",
+              "column": "9"
+            },
+            "category": "assertion"
+          },
+          {
+            "id": 14,
+            "function": "proofs::division_parts_reconstruct_all_inputs",
+            "status": "Success",
+            "description": "attempt to multiply with overflow",
+            "location": {
+              "file": "src/lib.rs",
+              "line": "81",
+              "column": "20"
+            },
+            "category": "assertion"
+          },
+          {
+            "id": 15,
+            "function": "proofs::division_parts_reconstruct_all_inputs",
+            "status": "Success",
+            "description": "attempt to add with overflow",
+            "location": {
+              "file": "src/lib.rs",
+              "line": "81",
+              "column": "20"
+            },
+            "category": "assertion"
+          },
+          {
+            "id": 16,
+            "function": "proofs::division_parts_reconstruct_all_inputs",
+            "status": "Success",
+            "description": "assertion failed: quotient * 100 + remainder == value",
+            "location": {
+              "file": "src/lib.rs",
+              "line": "81",
+              "column": "9"
+            },
+            "category": "assertion"
+          }
+        ]
+      },
+      {
+        "harness_id": "proofs::actual_parts_match_mathematical_saturation_threshold",
+        "status": "Success",
+        "duration_ms": 13118,
+        "checks": [
+          {
+            "id": 1,
+            "function": "std::option::Option::<u128>::unwrap_or",
+            "status": "Success",
+            "description": "unreachable code",
+            "location": {
+              "file": "/home/runner/.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/option.rs",
+              "line": "1040",
+              "column": "15"
+            },
+            "category": "unreachable"
+          },
+          {
+            "id": 2,
+            "function": "fee_math::capped_increase_parts",
+            "status": "Success",
+            "description": "attempt to multiply with overflow",
+            "location": {
+              "file": "src/../../../executors/src/eoa/worker/fee_math.rs",
+              "line": "27",
+              "column": "25"
+            },
+            "category": "assertion"
+          },
+          {
+            "id": 3,
+            "function": "fee_math::capped_increase_parts",
+            "status": "Success",
+            "description": "attempt to divide by zero",
+            "location": {
+              "file": "src/../../../executors/src/eoa/worker/fee_math.rs",
+              "line": "27",
+              "column": "25"
+            },
+            "category": "assertion"
+          },
+          {
+            "id": 4,
+            "function": "fee_math::capped_increase_parts",
+            "status": "Success",
+            "description": "attempt to divide by zero",
+            "location": {
+              "file": "src/../../../executors/src/eoa/worker/fee_math.rs",
+              "line": "27",
+              "column": "25"
+            },
+            "category": "arithmetic_overflow"
+          },
+          {
+            "id": 5,
+            "function": "proofs::actual_parts_match_mathematical_saturation_threshold",
+            "status": "Success",
+            "description": "attempt to multiply with overflow",
+            "location": {
+              "file": "src/lib.rs",
+              "line": "60",
+              "column": "26"
+            },
+            "category": "assertion"
+          },
+          {
+            "id": 6,
+            "function": "proofs::actual_parts_match_mathematical_saturation_threshold",
+            "status": "Success",
+            "description": "attempt to divide by zero",
+            "location": {
+              "file": "src/lib.rs",
+              "line": "60",
+              "column": "26"
+            },
+            "category": "assertion"
+          },
+          {
+            "id": 7,
+            "function": "proofs::actual_parts_match_mathematical_saturation_threshold",
+            "status": "Success",
+            "description": "attempt to divide by zero",
+            "location": {
+              "file": "src/lib.rs",
+              "line": "60",
+              "column": "26"
+            },
+            "category": "arithmetic_overflow"
+          },
+          {
+            "id": 8,
+            "function": "proofs::actual_parts_match_mathematical_saturation_threshold",
+            "status": "Success",
+            "description": "attempt to divide by zero",
+            "location": {
+              "file": "src/lib.rs",
+              "line": "62",
+              "column": "23"
+            },
+            "category": "assertion"
+          },
+          {
+            "id": 9,
+            "function": "proofs::actual_parts_match_mathematical_saturation_threshold",
+            "status": "Success",
+            "description": "attempt to divide by zero",
+            "location": {
+              "file": "src/lib.rs",
+              "line": "62",
+              "column": "23"
+            },
+            "category": "arithmetic_overflow"
+          },
+          {
+            "id": 10,
+            "function": "proofs::actual_parts_match_mathematical_saturation_threshold",
+            "status": "Success",
+            "description": "attempt to divide by zero",
+            "location": {
+              "file": "src/lib.rs",
+              "line": "63",
+              "column": "29"
+            },
+            "category": "assertion"
+          },
+          {
+            "id": 11,
+            "function": "proofs::actual_parts_match_mathematical_saturation_threshold",
+            "status": "Success",
+            "description": "attempt to divide by zero",
+            "location": {
+              "file": "src/lib.rs",
+              "line": "63",
+              "column": "29"
+            },
+            "category": "arithmetic_overflow"
+          },
+          {
+            "id": 12,
+            "function": "proofs::actual_parts_match_mathematical_saturation_threshold",
+            "status": "Success",
+            "description": "attempt to calculate the remainder with a divisor of zero",
+            "location": {
+              "file": "src/lib.rs",
+              "line": "63",
+              "column": "61"
+            },
+            "category": "assertion"
+          },
+          {
+            "id": 13,
+            "function": "proofs::actual_parts_match_mathematical_saturation_threshold",
+            "status": "Success",
+            "description": "attempt to calculate the remainder with a divisor of zero",
+            "location": {
+              "file": "src/lib.rs",
+              "line": "63",
+              "column": "61"
+            },
+            "category": "arithmetic_overflow"
+          },
+          {
+            "id": 14,
+            "function": "proofs::actual_parts_match_mathematical_saturation_threshold",
+            "status": "Success",
+            "description": "assertion failed: result == cap.unwrap_or(u128::MAX)",
+            "location": {
+              "file": "src/lib.rs",
+              "line": "65",
+              "column": "13"
+            },
+            "category": "assertion"
+          },
+          {
+            "id": 15,
+            "function": "proofs::actual_parts_match_mathematical_saturation_threshold",
+            "status": "Success",
+            "description": "attempt to multiply with overflow",
+            "location": {
+              "file": "src/lib.rs",
+              "line": "69",
+              "column": "18"
+            },
+            "category": "assertion"
+          },
+          {
+            "id": 16,
+            "function": "proofs::actual_parts_match_mathematical_saturation_threshold",
+            "status": "Success",
+            "description": "attempt to add with overflow",
+            "location": {
+              "file": "src/lib.rs",
+              "line": "69",
+              "column": "17"
+            },
+            "category": "assertion"
+          },
+          {
+            "id": 17,
+            "function": "proofs::actual_parts_match_mathematical_saturation_threshold",
+            "status": "Success",
+            "description": "assertion failed: result == (quotient * 120 + fractional).min(cap.unwrap_or(u128::MAX))",
+            "location": {
+              "file": "src/lib.rs",
+              "line": "67",
+              "column": "13"
+            },
+            "category": "assertion"
+          },
+          {
+            "id": 18,
+            "function": "core::num::<impl u128>::saturating_mul",
+            "status": "Success",
+            "description": "unreachable code",
+            "location": {
+              "file": "/home/runner/.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/num/uint_macros.rs",
+              "line": "2585",
+              "column": "19"
+            },
+            "category": "unreachable"
+          },
+          {
+            "id": 19,
+            "function": "std::cmp::impls::<impl std::cmp::PartialOrd for u128>::lt",
+            "status": "Success",
+            "description": "dereference failure: pointer NULL",
+            "location": {
+              "file": "/home/runner/.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/cmp.rs",
+              "line": "2192",
+              "column": "50"
+            },
+            "category": "pointer_dereference"
+          },
+          {
+            "id": 20,
+            "function": "std::cmp::impls::<impl std::cmp::PartialOrd for u128>::lt",
+            "status": "Success",
+            "description": "dereference failure: pointer invalid",
+            "location": {
+              "file": "/home/runner/.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/cmp.rs",
+              "line": "2192",
+              "column": "50"
+            },
+            "category": "pointer_dereference"
+          },
+          {
+            "id": 21,
+            "function": "std::cmp::impls::<impl std::cmp::PartialOrd for u128>::lt",
+            "status": "Success",
+            "description": "dereference failure: deallocated dynamic object",
+            "location": {
+              "file": "/home/runner/.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/cmp.rs",
+              "line": "2192",
+              "column": "50"
+            },
+            "category": "pointer_dereference"
+          },
+          {
+            "id": 22,
+            "function": "std::cmp::impls::<impl std::cmp::PartialOrd for u128>::lt",
+            "status": "Success",
+            "description": "dereference failure: dead object",
+            "location": {
+              "file": "/home/runner/.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/cmp.rs",
+              "line": "2192",
+              "column": "50"
+            },
+            "category": "pointer_dereference"
+          },
+          {
+            "id": 23,
+            "function": "std::cmp::impls::<impl std::cmp::PartialOrd for u128>::lt",
+            "status": "Success",
+            "description": "dereference failure: pointer outside object bounds",
+            "location": {
+              "file": "/home/runner/.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/cmp.rs",
+              "line": "2192",
+              "column": "50"
+            },
+            "category": "pointer_dereference"
+          },
+          {
+            "id": 24,
+            "function": "std::cmp::impls::<impl std::cmp::PartialOrd for u128>::lt",
+            "status": "Success",
+            "description": "dereference failure: invalid integer address",
+            "location": {
+              "file": "/home/runner/.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/cmp.rs",
+              "line": "2192",
+              "column": "50"
+            },
+            "category": "pointer_dereference"
+          },
+          {
+            "id": 25,
+            "function": "std::cmp::impls::<impl std::cmp::PartialOrd for u128>::lt",
+            "status": "Success",
+            "description": "dereference failure: pointer NULL",
+            "location": {
+              "file": "/home/runner/.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/cmp.rs",
+              "line": "2192",
+              "column": "59"
+            },
+            "category": "pointer_dereference"
+          },
+          {
+            "id": 26,
+            "function": "std::cmp::impls::<impl std::cmp::PartialOrd for u128>::lt",
+            "status": "Success",
+            "description": "dereference failure: pointer invalid",
+            "location": {
+              "file": "/home/runner/.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/cmp.rs",
+              "line": "2192",
+              "column": "59"
+            },
+            "category": "pointer_dereference"
+          },
+          {
+            "id": 27,
+            "function": "std::cmp::impls::<impl std::cmp::PartialOrd for u128>::lt",
+            "status": "Success",
+            "description": "dereference failure: deallocated dynamic object",
+            "location": {
+              "file": "/home/runner/.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/cmp.rs",
+              "line": "2192",
+              "column": "59"
+            },
+            "category": "pointer_dereference"
+          },
+          {
+            "id": 28,
+            "function": "std::cmp::impls::<impl std::cmp::PartialOrd for u128>::lt",
+            "status": "Success",
+            "description": "dereference failure: dead object",
+            "location": {
+              "file": "/home/runner/.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/cmp.rs",
+              "line": "2192",
+              "column": "59"
+            },
+            "category": "pointer_dereference"
+          },
+          {
+            "id": 29,
+            "function": "std::cmp::impls::<impl std::cmp::PartialOrd for u128>::lt",
+            "status": "Success",
+            "description": "dereference failure: pointer outside object bounds",
+            "location": {
+              "file": "/home/runner/.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/cmp.rs",
+              "line": "2192",
+              "column": "59"
+            },
+            "category": "pointer_dereference"
+          },
+          {
+            "id": 30,
+            "function": "std::cmp::impls::<impl std::cmp::PartialOrd for u128>::lt",
+            "status": "Success",
+            "description": "dereference failure: invalid integer address",
+            "location": {
+              "file": "/home/runner/.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/cmp.rs",
+              "line": "2192",
+              "column": "59"
+            },
+            "category": "pointer_dereference"
+          }
+        ]
+      },
+      {
+        "harness_id": "proofs::all_increases_are_nondecreasing_when_cap_permits",
+        "status": "Success",
+        "duration_ms": 14034,
+        "checks": [
+          {
+            "id": 1,
+            "function": "proofs::all_increases_are_nondecreasing_when_cap_permits",
+            "status": "Success",
+            "description": "assertion failed: fee_math::capped_increase(value, multiplier, Some(cap)) >= value",
+            "location": {
+              "file": "src/lib.rs",
+              "line": "48",
+              "column": "9"
+            },
+            "category": "assertion"
+          },
+          {
+            "id": 2,
+            "function": "std::option::Option::<u128>::unwrap_or",
+            "status": "Success",
+            "description": "unreachable code",
+            "location": {
+              "file": "/home/runner/.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/option.rs",
+              "line": "1040",
+              "column": "15"
+            },
+            "category": "unreachable"
+          },
+          {
+            "id": 3,
+            "function": "fee_math::division_parts",
+            "status": "Success",
+            "description": "attempt to divide by zero",
+            "location": {
+              "file": "src/../../../executors/src/eoa/worker/fee_math.rs",
+              "line": "11",
+              "column": "6"
+            },
+            "category": "assertion"
+          },
+          {
+            "id": 4,
+            "function": "fee_math::division_parts",
+            "status": "Success",
+            "description": "attempt to divide by zero",
+            "location": {
+              "file": "src/../../../executors/src/eoa/worker/fee_math.rs",
+              "line": "11",
+              "column": "6"
+            },
+            "category": "arithmetic_overflow"
+          },
+          {
+            "id": 5,
+            "function": "fee_math::division_parts",
+            "status": "Success",
+            "description": "attempt to calculate the remainder with a divisor of zero",
+            "location": {
+              "file": "src/../../../executors/src/eoa/worker/fee_math.rs",
+              "line": "11",
+              "column": "19"
+            },
+            "category": "assertion"
+          },
+          {
+            "id": 6,
+            "function": "fee_math::division_parts",
+            "status": "Success",
+            "description": "attempt to calculate the remainder with a divisor of zero",
+            "location": {
+              "file": "src/../../../executors/src/eoa/worker/fee_math.rs",
+              "line": "11",
+              "column": "19"
+            },
+            "category": "arithmetic_overflow"
+          },
+          {
+            "id": 7,
+            "function": "fee_math::capped_increase_parts",
+            "status": "Success",
+            "description": "attempt to multiply with overflow",
+            "location": {
+              "file": "src/../../../executors/src/eoa/worker/fee_math.rs",
+              "line": "27",
+              "column": "25"
+            },
+            "category": "assertion"
+          },
+          {
+            "id": 8,
+            "function": "fee_math::capped_increase_parts",
+            "status": "Success",
+            "description": "attempt to divide by zero",
+            "location": {
+              "file": "src/../../../executors/src/eoa/worker/fee_math.rs",
+              "line": "27",
+              "column": "25"
+            },
+            "category": "assertion"
+          },
+          {
+            "id": 9,
+            "function": "fee_math::capped_increase_parts",
+            "status": "Success",
+            "description": "attempt to divide by zero",
+            "location": {
+              "file": "src/../../../executors/src/eoa/worker/fee_math.rs",
+              "line": "27",
+              "column": "25"
+            },
+            "category": "arithmetic_overflow"
+          },
+          {
+            "id": 10,
+            "function": "core::num::<impl u128>::saturating_mul",
+            "status": "Success",
+            "description": "unreachable code",
+            "location": {
+              "file": "/home/runner/.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/num/uint_macros.rs",
+              "line": "2585",
+              "column": "19"
+            },
+            "category": "unreachable"
+          },
+          {
+            "id": 11,
+            "function": "std::cmp::impls::<impl std::cmp::PartialOrd for u128>::lt",
+            "status": "Success",
+            "description": "dereference failure: pointer NULL",
+            "location": {
+              "file": "/home/runner/.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/cmp.rs",
+              "line": "2192",
+              "column": "50"
+            },
+            "category": "pointer_dereference"
+          },
+          {
+            "id": 12,
+            "function": "std::cmp::impls::<impl std::cmp::PartialOrd for u128>::lt",
+            "status": "Success",
+            "description": "dereference failure: pointer invalid",
+            "location": {
+              "file": "/home/runner/.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/cmp.rs",
+              "line": "2192",
+              "column": "50"
+            },
+            "category": "pointer_dereference"
+          },
+          {
+            "id": 13,
+            "function": "std::cmp::impls::<impl std::cmp::PartialOrd for u128>::lt",
+            "status": "Success",
+            "description": "dereference failure: deallocated dynamic object",
+            "location": {
+              "file": "/home/runner/.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/cmp.rs",
+              "line": "2192",
+              "column": "50"
+            },
+            "category": "pointer_dereference"
+          },
+          {
+            "id": 14,
+            "function": "std::cmp::impls::<impl std::cmp::PartialOrd for u128>::lt",
+            "status": "Success",
+            "description": "dereference failure: dead object",
+            "location": {
+              "file": "/home/runner/.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/cmp.rs",
+              "line": "2192",
+              "column": "50"
+            },
+            "category": "pointer_dereference"
+          },
+          {
+            "id": 15,
+            "function": "std::cmp::impls::<impl std::cmp::PartialOrd for u128>::lt",
+            "status": "Success",
+            "description": "dereference failure: pointer outside object bounds",
+            "location": {
+              "file": "/home/runner/.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/cmp.rs",
+              "line": "2192",
+              "column": "50"
+            },
+            "category": "pointer_dereference"
+          },
+          {
+            "id": 16,
+            "function": "std::cmp::impls::<impl std::cmp::PartialOrd for u128>::lt",
+            "status": "Success",
+            "description": "dereference failure: invalid integer address",
+            "location": {
+              "file": "/home/runner/.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/cmp.rs",
+              "line": "2192",
+              "column": "50"
+            },
+            "category": "pointer_dereference"
+          },
+          {
+            "id": 17,
+            "function": "std::cmp::impls::<impl std::cmp::PartialOrd for u128>::lt",
+            "status": "Success",
+            "description": "dereference failure: pointer NULL",
+            "location": {
+              "file": "/home/runner/.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/cmp.rs",
+              "line": "2192",
+              "column": "59"
+            },
+            "category": "pointer_dereference"
+          },
+          {
+            "id": 18,
+            "function": "std::cmp::impls::<impl std::cmp::PartialOrd for u128>::lt",
+            "status": "Success",
+            "description": "dereference failure: pointer invalid",
+            "location": {
+              "file": "/home/runner/.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/cmp.rs",
+              "line": "2192",
+              "column": "59"
+            },
+            "category": "pointer_dereference"
+          },
+          {
+            "id": 19,
+            "function": "std::cmp::impls::<impl std::cmp::PartialOrd for u128>::lt",
+            "status": "Success",
+            "description": "dereference failure: deallocated dynamic object",
+            "location": {
+              "file": "/home/runner/.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/cmp.rs",
+              "line": "2192",
+              "column": "59"
+            },
+            "category": "pointer_dereference"
+          },
+          {
+            "id": 20,
+            "function": "std::cmp::impls::<impl std::cmp::PartialOrd for u128>::lt",
+            "status": "Success",
+            "description": "dereference failure: dead object",
+            "location": {
+              "file": "/home/runner/.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/cmp.rs",
+              "line": "2192",
+              "column": "59"
+            },
+            "category": "pointer_dereference"
+          },
+          {
+            "id": 21,
+            "function": "std::cmp::impls::<impl std::cmp::PartialOrd for u128>::lt",
+            "status": "Success",
+            "description": "dereference failure: pointer outside object bounds",
+            "location": {
+              "file": "/home/runner/.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/cmp.rs",
+              "line": "2192",
+              "column": "59"
+            },
+            "category": "pointer_dereference"
+          },
+          {
+            "id": 22,
+            "function": "std::cmp::impls::<impl std::cmp::PartialOrd for u128>::lt",
+            "status": "Success",
+            "description": "dereference failure: invalid integer address",
+            "location": {
+              "file": "/home/runner/.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/cmp.rs",
+              "line": "2192",
+              "column": "59"
+            },
+            "category": "pointer_dereference"
+          }
+        ]
+      },
+      {
+        "harness_id": "proofs::all_multipliers_respect_caps_and_priority",
+        "status": "Success",
+        "duration_ms": 1110,
+        "checks": [
+          {
+            "id": 1,
+            "function": "fee_math::capped_increase_parts",
+            "status": "Success",
+            "description": "attempt to multiply with overflow",
+            "location": {
+              "file": "src/../../../executors/src/eoa/worker/fee_math.rs",
+              "line": "27",
+              "column": "25"
+            },
+            "category": "assertion"
+          },
+          {
+            "id": 2,
+            "function": "fee_math::capped_increase_parts",
+            "status": "Success",
+            "description": "attempt to divide by zero",
+            "location": {
+              "file": "src/../../../executors/src/eoa/worker/fee_math.rs",
+              "line": "27",
+              "column": "25"
+            },
+            "category": "assertion"
+          },
+          {
+            "id": 3,
+            "function": "fee_math::capped_increase_parts",
+            "status": "Success",
+            "description": "attempt to divide by zero",
+            "location": {
+              "file": "src/../../../executors/src/eoa/worker/fee_math.rs",
+              "line": "27",
+              "column": "25"
+            },
+            "category": "arithmetic_overflow"
+          },
+          {
+            "id": 4,
+            "function": "std::option::Option::<u128>::unwrap_or",
+            "status": "Success",
+            "description": "unreachable code",
+            "location": {
+              "file": "/home/runner/.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/option.rs",
+              "line": "1040",
+              "column": "15"
+            },
+            "category": "unreachable"
+          },
+          {
+            "id": 5,
+            "function": "core::num::<impl u128>::saturating_mul",
+            "status": "Success",
+            "description": "unreachable code",
+            "location": {
+              "file": "/home/runner/.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/num/uint_macros.rs",
+              "line": "2585",
+              "column": "19"
+            },
+            "category": "unreachable"
+          },
+          {
+            "id": 6,
+            "function": "fee_math::division_parts",
+            "status": "Success",
+            "description": "attempt to divide by zero",
+            "location": {
+              "file": "src/../../../executors/src/eoa/worker/fee_math.rs",
+              "line": "11",
+              "column": "6"
+            },
+            "category": "assertion"
+          },
+          {
+            "id": 7,
+            "function": "fee_math::division_parts",
+            "status": "Success",
+            "description": "attempt to divide by zero",
+            "location": {
+              "file": "src/../../../executors/src/eoa/worker/fee_math.rs",
+              "line": "11",
+              "column": "6"
+            },
+            "category": "arithmetic_overflow"
+          },
+          {
+            "id": 8,
+            "function": "fee_math::division_parts",
+            "status": "Success",
+            "description": "attempt to calculate the remainder with a divisor of zero",
+            "location": {
+              "file": "src/../../../executors/src/eoa/worker/fee_math.rs",
+              "line": "11",
+              "column": "19"
+            },
+            "category": "assertion"
+          },
+          {
+            "id": 9,
+            "function": "fee_math::division_parts",
+            "status": "Success",
+            "description": "attempt to calculate the remainder with a divisor of zero",
+            "location": {
+              "file": "src/../../../executors/src/eoa/worker/fee_math.rs",
+              "line": "11",
+              "column": "19"
+            },
+            "category": "arithmetic_overflow"
+          },
+          {
+            "id": 10,
+            "function": "proofs::all_multipliers_respect_caps_and_priority",
+            "status": "Success",
+            "description": "assertion failed: new_fee <= fee_cap.unwrap_or(u128::MAX)",
+            "location": {
+              "file": "src/lib.rs",
+              "line": "36",
+              "column": "9"
+            },
+            "category": "assertion"
+          },
+          {
+            "id": 11,
+            "function": "proofs::all_multipliers_respect_caps_and_priority",
+            "status": "Success",
+            "description": "assertion failed: new_priority <= priority_cap.unwrap_or(u128::MAX)",
+            "location": {
+              "file": "src/lib.rs",
+              "line": "37",
+              "column": "9"
+            },
+            "category": "assertion"
+          },
+          {
+            "id": 12,
+            "function": "proofs::all_multipliers_respect_caps_and_priority",
+            "status": "Success",
+            "description": "assertion failed: new_priority <= new_fee",
+            "location": {
+              "file": "src/lib.rs",
+              "line": "38",
+              "column": "9"
+            },
+            "category": "assertion"
+          },
+          {
+            "id": 13,
+            "function": "std::cmp::impls::<impl std::cmp::PartialOrd for u128>::lt",
+            "status": "Success",
+            "description": "dereference failure: pointer NULL",
+            "location": {
+              "file": "/home/runner/.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/cmp.rs",
+              "line": "2192",
+              "column": "50"
+            },
+            "category": "pointer_dereference"
+          },
+          {
+            "id": 14,
+            "function": "std::cmp::impls::<impl std::cmp::PartialOrd for u128>::lt",
+            "status": "Success",
+            "description": "dereference failure: pointer invalid",
+            "location": {
+              "file": "/home/runner/.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/cmp.rs",
+              "line": "2192",
+              "column": "50"
+            },
+            "category": "pointer_dereference"
+          },
+          {
+            "id": 15,
+            "function": "std::cmp::impls::<impl std::cmp::PartialOrd for u128>::lt",
+            "status": "Success",
+            "description": "dereference failure: deallocated dynamic object",
+            "location": {
+              "file": "/home/runner/.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/cmp.rs",
+              "line": "2192",
+              "column": "50"
+            },
+            "category": "pointer_dereference"
+          },
+          {
+            "id": 16,
+            "function": "std::cmp::impls::<impl std::cmp::PartialOrd for u128>::lt",
+            "status": "Success",
+            "description": "dereference failure: dead object",
+            "location": {
+              "file": "/home/runner/.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/cmp.rs",
+              "line": "2192",
+              "column": "50"
+            },
+            "category": "pointer_dereference"
+          },
+          {
+            "id": 17,
+            "function": "std::cmp::impls::<impl std::cmp::PartialOrd for u128>::lt",
+            "status": "Success",
+            "description": "dereference failure: pointer outside object bounds",
+            "location": {
+              "file": "/home/runner/.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/cmp.rs",
+              "line": "2192",
+              "column": "50"
+            },
+            "category": "pointer_dereference"
+          },
+          {
+            "id": 18,
+            "function": "std::cmp::impls::<impl std::cmp::PartialOrd for u128>::lt",
+            "status": "Success",
+            "description": "dereference failure: invalid integer address",
+            "location": {
+              "file": "/home/runner/.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/cmp.rs",
+              "line": "2192",
+              "column": "50"
+            },
+            "category": "pointer_dereference"
+          },
+          {
+            "id": 19,
+            "function": "std::cmp::impls::<impl std::cmp::PartialOrd for u128>::lt",
+            "status": "Success",
+            "description": "dereference failure: pointer NULL",
+            "location": {
+              "file": "/home/runner/.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/cmp.rs",
+              "line": "2192",
+              "column": "59"
+            },
+            "category": "pointer_dereference"
+          },
+          {
+            "id": 20,
+            "function": "std::cmp::impls::<impl std::cmp::PartialOrd for u128>::lt",
+            "status": "Success",
+            "description": "dereference failure: pointer invalid",
+            "location": {
+              "file": "/home/runner/.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/cmp.rs",
+              "line": "2192",
+              "column": "59"
+            },
+            "category": "pointer_dereference"
+          },
+          {
+            "id": 21,
+            "function": "std::cmp::impls::<impl std::cmp::PartialOrd for u128>::lt",
+            "status": "Success",
+            "description": "dereference failure: deallocated dynamic object",
+            "location": {
+              "file": "/home/runner/.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/cmp.rs",
+              "line": "2192",
+              "column": "59"
+            },
+            "category": "pointer_dereference"
+          },
+          {
+            "id": 22,
+            "function": "std::cmp::impls::<impl std::cmp::PartialOrd for u128>::lt",
+            "status": "Success",
+            "description": "dereference failure: dead object",
+            "location": {
+              "file": "/home/runner/.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/cmp.rs",
+              "line": "2192",
+              "column": "59"
+            },
+            "category": "pointer_dereference"
+          },
+          {
+            "id": 23,
+            "function": "std::cmp::impls::<impl std::cmp::PartialOrd for u128>::lt",
+            "status": "Success",
+            "description": "dereference failure: pointer outside object bounds",
+            "location": {
+              "file": "/home/runner/.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/cmp.rs",
+              "line": "2192",
+              "column": "59"
+            },
+            "category": "pointer_dereference"
+          },
+          {
+            "id": 24,
+            "function": "std::cmp::impls::<impl std::cmp::PartialOrd for u128>::lt",
+            "status": "Success",
+            "description": "dereference failure: invalid integer address",
+            "location": {
+              "file": "/home/runner/.rustup/toolchains/nightly-2026-08-21-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/cmp.rs",
+              "line": "2192",
+              "column": "59"
+            },
+            "category": "pointer_dereference"
+          }
+        ]
+      }
+    ]
+  },
+  "coverage": {
+    "enabled": false
+  }
+}

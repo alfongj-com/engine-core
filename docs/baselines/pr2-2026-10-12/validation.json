@@ -1,0 +1,635 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-12",
+  "status": "completed_with_capacity_limits",
+  "scope": "Final runtime validation complete for the recorded campaigns: clean five-minute 32 TPS workload and crash recovery pass, stricter steady-capacity confirmation remains unmet, extended 40 TPS and shared stress fail capacity. All five final-head CI checks pass.",
+  "sanitization": "Allowlisted aggregate results only. Original reports, observations, runtime logs, and process launch details remain private.",
+  "full_rust_suite": {
+    "source_stage": "after scoped-future boxing and queue Redis-outage shutdown fix",
+    "outcome": "pass",
+    "completed_checks": 10,
+    "checks": [
+      {
+        "check": "formatting",
+        "outcome": "pass",
+        "exit_code": 0,
+        "duration_seconds": 0.323
+      },
+      {
+        "check": "workspace_tests",
+        "outcome": "pass",
+        "exit_code": 0,
+        "duration_seconds": 155.977
+      },
+      {
+        "check": "redis_journal_tests",
+        "outcome": "pass",
+        "exit_code": 0,
+        "duration_seconds": 16.27,
+        "tests_passed": 44
+      },
+      {
+        "check": "redis_executor_tests",
+        "outcome": "pass",
+        "exit_code": 0,
+        "duration_seconds": 27.896,
+        "tests_passed": 73
+      },
+      {
+        "check": "solana_admission_tests",
+        "outcome": "pass",
+        "exit_code": 0,
+        "duration_seconds": 11.781,
+        "tests_passed": 4
+      },
+      {
+        "check": "http_api_safety_tests",
+        "outcome": "pass",
+        "exit_code": 0,
+        "duration_seconds": 11.426,
+        "tests_passed": 3
+      },
+      {
+        "check": "redis_queue_tests",
+        "outcome": "pass",
+        "exit_code": 0,
+        "duration_seconds": 3.701,
+        "tests_passed": 36
+      },
+      {
+        "check": "server_and_recovery_build",
+        "outcome": "pass",
+        "exit_code": 0,
+        "duration_seconds": 0.596
+      },
+      {
+        "check": "timing_parser_tests",
+        "outcome": "pass",
+        "exit_code": 0,
+        "duration_seconds": 0.106,
+        "tests_passed": 7
+      },
+      {
+        "check": "formal_runner_tests",
+        "outcome": "pass",
+        "exit_code": 0,
+        "duration_seconds": 0.047,
+        "tests_passed": 3
+      }
+    ],
+    "explicit_redis_api_tests_passed": 160,
+    "unique_workspace_test_total": null,
+    "count_note": "The 160 count covers five explicitly invoked Redis/API suites: 44 journal, 73 executor, 4 admission, 3 HTTP API, and 36 queue. Queue includes 3 shutdown regressions."
+  },
+  "terminal_retry_regression": {
+    "outcome": "pass",
+    "tests_passed": 1,
+    "scope": "A full admission queue accepts an exact terminal retry without recreating work; intermediate candidate."
+  },
+  "scope_boxing_regression": {
+    "outcome": "pass",
+    "tests_passed": 5,
+    "ignored_redis_tests": 1,
+    "build_passed": true,
+    "scope": "Boxed task-local wrapper preserves bounded future size and existing fairness/cancellation semantics."
+  },
+  "process_scenarios": {
+    "source_stage": "Eight scenarios after scoped-future boxing; live-Redis-outage scenario rerun after queue shutdown fix",
+    "results": [
+      {
+        "scenario": "EOA Engine crash and duplicate admission",
+        "outcome": "pass",
+        "exit_code": 0,
+        "duration_seconds": 10.36,
+        "transactions": 24,
+        "unique_chain_effects": 24,
+        "duplicate_chain_effects": 0,
+        "unauthorized_requests_rejected": 2,
+        "successful_transfers": 24,
+        "reverted_transactions": 0
+      },
+      {
+        "scenario": "EOA Engine and Redis crash with AOF replay",
+        "outcome": "pass",
+        "exit_code": 0,
+        "duration_seconds": 9.101,
+        "transactions": 24,
+        "unique_chain_effects": 24,
+        "duplicate_chain_effects": 0,
+        "unauthorized_requests_rejected": 2,
+        "successful_transfers": 24,
+        "reverted_transactions": 0
+      },
+      {
+        "scenario": "Redis restart while Engine stays alive",
+        "outcome": "pass",
+        "exit_code": 0,
+        "duration_seconds": 10.747,
+        "transactions": 24,
+        "live_engine_fenced": true,
+        "sigterm_exit_code": 0,
+        "reattached_without_quarantine_or_namespace_change": true,
+        "unique_chain_effects": 24,
+        "duplicate_chain_effects": 0,
+        "unauthorized_requests_rejected": 2,
+        "successful_transfers": 24,
+        "reverted_transactions": 0
+      },
+      {
+        "scenario": "Reverted EVM execution with Redis crash",
+        "outcome": "pass",
+        "exit_code": 0,
+        "duration_seconds": 8.723,
+        "transactions": 8,
+        "unique_chain_effects": 8,
+        "duplicate_chain_effects": 0,
+        "unauthorized_requests_rejected": 2,
+        "successful_transfers": 0,
+        "reverted_transactions": 8
+      },
+      {
+        "scenario": "Redis data loss and quarantine",
+        "outcome": "pass",
+        "exit_code": 0,
+        "duration_seconds": 6.779,
+        "prior_uncertain_effects": 1,
+        "new_intent_effects": 1,
+        "live_projection_loss_halts_writes": true,
+        "duplicate_effects": 0,
+        "unsafe_reattach_rejected": true,
+        "ordinary_startup_rejected": true,
+        "new_namespace_healthy": true,
+        "terminal_duplicate_created_no_work": true,
+        "quarantined_intent_count": 1
+      },
+      {
+        "scenario": "Redis rollback and quarantine",
+        "outcome": "pass",
+        "exit_code": 0,
+        "duration_seconds": 7.004,
+        "prior_uncertain_effects": 1,
+        "new_intent_effects": 1,
+        "live_projection_loss_halts_writes": true,
+        "duplicate_effects": 0,
+        "unsafe_reattach_rejected": true,
+        "ordinary_startup_rejected": true,
+        "new_namespace_healthy": true,
+        "terminal_duplicate_created_no_work": true,
+        "quarantined_intent_count": 1
+      },
+      {
+        "scenario": "EVM reorg with original nonce recovery",
+        "outcome": "pass",
+        "exit_code": 0,
+        "duration_seconds": 55.299,
+        "unique_chain_effects": 1,
+        "duplicate_effects": 0,
+        "provisional_result_withheld": true,
+        "orphaned_receipt_disappeared": true,
+        "engine_recovered_original_nonce": true,
+        "attempts": 1,
+        "manual_signed_wire_replay": false,
+        "allow_fee_replacement": false
+      },
+      {
+        "scenario": "EVM reorg with reverted execution",
+        "outcome": "pass",
+        "exit_code": 0,
+        "duration_seconds": 55.016,
+        "unique_chain_effects": 1,
+        "duplicate_effects": 0,
+        "provisional_result_withheld": true,
+        "orphaned_receipt_disappeared": true,
+        "engine_recovered_original_nonce": true,
+        "attempts": 1,
+        "manual_signed_wire_replay": false,
+        "allow_fee_replacement": false
+      },
+      {
+        "scenario": "Solana lost send response and Engine restart",
+        "outcome": "pass",
+        "exit_code": 0,
+        "duration_seconds": 91.945,
+        "transactions": 12,
+        "unique_chain_effects": 12,
+        "duplicate_chain_effects": 0,
+        "same_wire_retransmissions": 12,
+        "discarded_send_responses": 12,
+        "terminal_attempt_records_remaining": 0,
+        "completed_admission_tombstones": 12,
+        "rpc_url_secret_logged": false
+      }
+    ],
+    "distinct_scenarios": 9,
+    "latest_passed": 9,
+    "latest_failed": 0
+  },
+  "old_binary_schema_rejection": {
+    "outcome": "pass",
+    "older_binary_exit_code": 1,
+    "schema2_rejected": true,
+    "fixture_note": "The first fixture lacked its owner lock and stopped before reading the schema. The corrected fixture reached and rejected schema2; only that attempt counts."
+  },
+  "failure_history": [
+    {
+      "check": "AOF-always 100000-lane queue stress fixture",
+      "outcome": "interrupted",
+      "signal": "SIGTERM",
+      "assertion_failure_observed": false,
+      "counts_as_pass": false,
+      "note": "Stopped during fixture work. A later complete suite used disposable Redis with appendfsync=everysec; it is not an AOF-always stress pass."
+    },
+    {
+      "check": "First EOA real-process admission",
+      "outcome": "failed_then_fixed",
+      "failure": "Tokio worker stack overflow after adding inline task-local scope wrappers.",
+      "fix": "Box the inner future before adding the scope wrapper; do not increase thread stack size.",
+      "verification": "Five focused fairness tests and server build passed; subsequent EOA Engine/Redis crash process scenarios passed."
+    },
+    {
+      "check": "Live Redis outage shutdown",
+      "outcome": "failed_then_fixed",
+      "failure": "Engine shutdown exceeded 15 seconds while Redis was unavailable.",
+      "verification": "Three queue shutdown regressions, the full local suite, and the real-process live-Redis-outage rerun passed; Engine exited zero and 24 original effects completed without duplication.",
+      "fix": "Cancel blocked queue polling and lease-extension I/O during worker shutdown."
+    }
+  ],
+  "pending": [],
+  "initial_full_rust_suite": {
+    "source_stage": "before scoped-future boxing and Redis-outage shutdown fix",
+    "outcome": "pass",
+    "completed_checks": 10,
+    "checks": [
+      {
+        "check": "formatting",
+        "outcome": "pass",
+        "exit_code": 0,
+        "duration_seconds": 0.383
+      },
+      {
+        "check": "workspace_tests",
+        "outcome": "pass",
+        "exit_code": 0,
+        "duration_seconds": 115.5
+      },
+      {
+        "check": "redis_journal_tests",
+        "outcome": "pass",
+        "exit_code": 0,
+        "duration_seconds": 15.783,
+        "tests_passed": 44
+      },
+      {
+        "check": "redis_executor_tests",
+        "outcome": "pass",
+        "exit_code": 0,
+        "duration_seconds": 24.996,
+        "tests_passed": 73
+      },
+      {
+        "check": "solana_admission_tests",
+        "outcome": "pass",
+        "exit_code": 0,
+        "duration_seconds": 13.253,
+        "tests_passed": 4
+      },
+      {
+        "check": "http_api_safety_tests",
+        "outcome": "pass",
+        "exit_code": 0,
+        "duration_seconds": 12.383,
+        "tests_passed": 3
+      },
+      {
+        "check": "redis_queue_tests",
+        "outcome": "pass",
+        "exit_code": 0,
+        "duration_seconds": 0.827,
+        "tests_passed": 33
+      },
+      {
+        "check": "server_and_recovery_build",
+        "outcome": "pass",
+        "exit_code": 0,
+        "duration_seconds": 0.472
+      },
+      {
+        "check": "timing_parser_tests",
+        "outcome": "pass",
+        "exit_code": 0,
+        "duration_seconds": 0.105,
+        "tests_passed": 7
+      },
+      {
+        "check": "formal_runner_tests",
+        "outcome": "pass",
+        "exit_code": 0,
+        "duration_seconds": 0.054,
+        "tests_passed": 3
+      }
+    ],
+    "explicit_redis_api_tests_passed": 157,
+    "unique_workspace_test_total": null,
+    "count_note": "No workspace total is inferred from nested child-process output. The 157 count covers the five explicitly invoked Redis/API suites only."
+  },
+  "intermediate_ci": {
+    "source_stage": "before the final queue shutdown fix; this is not final-head validation",
+    "protocols": {
+      "outcome": "all_expected_outcomes_matched",
+      "cases": 73,
+      "by_kind": {
+        "positive": 16,
+        "fault": 37,
+        "boundary": 11,
+        "witness": 9
+      }
+    },
+    "fee_proofs": {
+      "outcome": "pass",
+      "kani_version": "0.68.0",
+      "production_harnesses_passed": 5,
+      "deliberate_mutations_rejected": 2
+    },
+    "correctness": "cancelled_by_new_push",
+    "coverage": "pass",
+    "queue_workflow": "pass"
+  },
+  "final_ci": {
+    "candidate": "0ad0453",
+    "runtime_candidate": "4320ea8",
+    "protocols_and_fee_proofs": "pass",
+    "coverage": "pass",
+    "queue_workflow": "pass",
+    "correctness": "pass",
+    "head": "0ad0453e0dcadee57a40870ec5830f9b20089959",
+    "checks": [
+      {
+        "name": "protocols",
+        "workflowName": "Formal verification",
+        "status": "COMPLETED",
+        "conclusion": "SUCCESS"
+      },
+      {
+        "name": "test",
+        "workflowName": "Rust correctness gates",
+        "status": "COMPLETED",
+        "conclusion": "SUCCESS"
+      },
+      {
+        "name": "coverage",
+        "workflowName": "twmq Coverage",
+        "status": "COMPLETED",
+        "conclusion": "SUCCESS"
+      },
+      {
+        "name": "test",
+        "workflowName": "twmq Tests",
+        "status": "COMPLETED",
+        "conclusion": "SUCCESS"
+      },
+      {
+        "name": "rust-fees",
+        "workflowName": "Formal verification",
+        "status": "COMPLETED",
+        "conclusion": "SUCCESS"
+      }
+    ],
+    "passed_checks": 5
+  },
+  "candidate_campaigns": [
+    {
+      "candidate": "12aa6d8",
+      "workload": "matched_moderate",
+      "outcome": "safety_and_drain_pass_capacity_fail",
+      "safety_pass": true,
+      "liveness_pass": true,
+      "fully_drained": true,
+      "all_chain_capacity_candidate": false,
+      "per_chain_capacity_candidate": {
+        "evm025": false,
+        "evm2": false,
+        "solana": true
+      },
+      "note": "Retain this result if later iterations supersede it; no aggregate throughput improvement is claimed."
+    },
+    {
+      "candidate": "12aa6d8",
+      "workload": "matched_mixed_stress",
+      "outcome": "safety_pass_admitted_drain_pass_offered_liveness_fail",
+      "safety_pass": true,
+      "liveness_pass": false,
+      "all_admitted_work_drained": true,
+      "offered_intents": 6000,
+      "accepted_intents": 5167,
+      "client_capacity_drops": 833,
+      "client_capacity_drops_per_chain": {
+        "evm025": 232,
+        "evm2": 93,
+        "solana": 508
+      },
+      "every_dispatched_initial_request_accepted": true,
+      "all_chain_capacity_candidate": false,
+      "per_chain_capacity_candidate": {
+        "evm025": false,
+        "evm2": false,
+        "solana": false
+      },
+      "journal_halted": false,
+      "operator_recovery_required": false,
+      "note": "Retain this failed overload result separately from subsequent candidates. Client-side drops are not API rejections and admitted drain does not imply completion of the offered cohort."
+    },
+    {
+      "candidate": "4320ea8",
+      "workload": "matched_moderate_first",
+      "outcome": "finite_run_campaign_gates_pass",
+      "safety_pass": true,
+      "liveness_pass": true,
+      "fully_drained": true,
+      "offered_intents": 4800,
+      "accepted_intents": 4800,
+      "client_capacity_drops": 0,
+      "all_chain_capacity_candidate": true,
+      "per_chain_capacity_candidate": {
+        "evm025": true,
+        "evm2": true,
+        "solana": true
+      },
+      "note": "Single 120-second run with 5% campaign tolerance; does not satisfy stricter 180-second postwarmup qualification. Solana admission p99 increases to 911.549 ms and unsigned trend 0.096 TPS approaches 0.1 TPS cutoff."
+    },
+    {
+      "candidate": "4320ea8",
+      "workload": "matched_mixed_stress",
+      "outcome": "safety_pass_admitted_drain_pass_offered_liveness_fail",
+      "safety_pass": true,
+      "liveness_pass": false,
+      "all_admitted_work_drained": true,
+      "offered_intents": 6000,
+      "accepted_intents": 4836,
+      "client_capacity_drops": 1164,
+      "client_capacity_drops_per_chain": {
+        "evm025": 311,
+        "evm2": 133,
+        "solana": 720
+      },
+      "every_dispatched_initial_request_accepted": true,
+      "all_chain_capacity_candidate": false,
+      "per_chain_capacity_candidate": {
+        "evm025": false,
+        "evm2": false,
+        "solana": false
+      },
+      "journal_halted": false,
+      "operator_recovery_required": false,
+      "note": "More EVM operation opportunities accompany lower Solana progress and more client drops. No aggregate performance win or full offered-cohort liveness claim."
+    },
+    {
+      "candidate": "4320ea8",
+      "workload": "extended_40tps",
+      "duration_seconds": 240,
+      "warmup_seconds": 60,
+      "late_window_seconds": 120,
+      "outcome": "safety_and_full_drain_pass_capacity_fail",
+      "safety_pass": true,
+      "liveness_pass": true,
+      "fully_drained": true,
+      "offered_intents": 9600,
+      "accepted_intents": 9600,
+      "client_capacity_drops": 0,
+      "all_chain_capacity_candidate": false,
+      "per_chain_capacity_candidate": {
+        "evm025": true,
+        "evm2": true,
+        "solana": false
+      },
+      "strict_classification": {
+        "evm025": "unconfirmed_growth_or_cadence_ambiguity",
+        "evm2": "unconfirmed_growth_or_cadence_ambiguity",
+        "solana": "observed_persistent_backlog_growth"
+      },
+      "note": "Longer 40 TPS run fails despite short gate pass. Profile timing differs from matched baseline; no sustained 40 TPS claim."
+    },
+    {
+      "candidate": "4320ea8",
+      "workload": "five_minute_32tps",
+      "duration_seconds": 300,
+      "warmup_seconds": 60,
+      "late_window_seconds": 120,
+      "outcome": "finite_run_campaign_gates_pass_strict_confirmation_unmet",
+      "safety_pass": true,
+      "liveness_pass": true,
+      "fully_drained": true,
+      "offered_intents": 9600,
+      "accepted_intents": 9600,
+      "client_capacity_drops": 0,
+      "all_chain_capacity_candidate": true,
+      "per_chain_capacity_candidate": {
+        "evm025": true,
+        "evm2": true,
+        "solana": true
+      },
+      "strict_classification": {
+        "evm025": "unconfirmed_growth_or_cadence_ambiguity",
+        "evm2": "unconfirmed",
+        "solana": "unconfirmed_growth_or_cadence_ambiguity"
+      },
+      "strict_persistent_growth_stages": {
+        "evm025": [],
+        "evm2": [],
+        "solana": []
+      },
+      "note": "Observed clean five-minute 32 TPS workload. Strict screen retains stage deficits and terminal trend concerns; no proven sustainable maximum."
+    },
+    {
+      "candidate": "4320ea8",
+      "workload": "engine_crash_32tps",
+      "duration_seconds": 90,
+      "warmup_seconds": 20,
+      "late_window_seconds": 30,
+      "queue_lease_seconds": 10,
+      "outcome": "safety_and_full_offered_recovery_pass_not_capacity_qualification",
+      "safety_pass": true,
+      "liveness_pass": true,
+      "fully_drained": true,
+      "requested_fault_validated": true,
+      "offered_intents": 2880,
+      "observed_terminal_intents": 2880,
+      "canonical_finalized_successful_executions": 2880,
+      "intents_with_multiple_canonical_executions": 0,
+      "initial_ambiguous_http_responses": 1,
+      "same_id_retry_requests": 5,
+      "same_id_retry_http_202": 5,
+      "same_id_retry_additional_forwarded_sends": 0,
+      "journal_halted": false,
+      "operator_recovery_required": false,
+      "harness_exit_code": 2,
+      "note": "Chaos intentionally cannot qualify capacity; exit 2 follows a passing safety/liveness outcome. No timing subtraction across restart. Lease differs from 600-second capacity runs."
+    }
+  ],
+  "health_ordering_regressions": {
+    "candidate": "4320ea8",
+    "outcome": "pass",
+    "completed_checks": 5,
+    "core_unit_tests_passed": 29,
+    "journal_tests_passed": 45,
+    "exact_terminal_retry_tests_passed": 1,
+    "formatting_passed": true,
+    "server_and_recovery_build_passed": true,
+    "note": "Targeted rerun after health ordering correction; do not relabel the earlier full workspace suite as a run on this source."
+  },
+  "candidate_12aa6d8_ci": {
+    "candidate": "12aa6d8",
+    "protocols_and_fee_proofs": "pass",
+    "coverage": "pass",
+    "queue_workflow": "pass",
+    "correctness": "pass",
+    "correctness_duration_seconds": 942,
+    "note": "Earlier runtime revision; does not substitute for the final health-gate head."
+  },
+  "initial_local_formal": {
+    "outcome": "all_expected_outcomes_matched",
+    "tool": "TLC",
+    "version": "1.7.4",
+    "cases": 73,
+    "by_kind": {
+      "positive": 16,
+      "fault": 37,
+      "boundary": 11,
+      "witness": 9
+    },
+    "source_stage": "frozen runtime source map precedes scoped-future boxing and the subsequent shutdown fix",
+    "final_source_guard_rerun_required": true,
+    "scope": "Finite models with declared fault, boundary, and witness counterexamples; not a Rust/Redis refinement proof."
+  },
+  "formal": {
+    "candidate": "0ad0453",
+    "head": "0ad0453e0dcadee57a40870ec5830f9b20089959",
+    "outcome": "all_expected_outcomes_matched",
+    "tool": "TLC",
+    "version": "1.7.4",
+    "cases": 73,
+    "by_kind": {
+      "positive": 16,
+      "fault": 37,
+      "boundary": 11,
+      "witness": 9
+    },
+    "mapped_source_hashes_match": 88,
+    "final_source_guard_rerun_required": false,
+    "archive": "formal/evidence/pr2-2026-10-12/protocols/report.json",
+    "scope": "Finite models with declared fault, boundary, and witness counterexamples plus source-change review guards; not a Rust/Redis refinement proof."
+  },
+  "fee_proofs": {
+    "candidate": "0ad0453",
+    "outcome": "pass",
+    "kani_version": "0.68.0",
+    "production_harnesses_passed": 5,
+    "deliberate_mutations_rejected": 2,
+    "archive": "formal/evidence/pr2-2026-10-12/fees/summary.json"
+  },
+  "qualification_limits": [
+    "32 TPS is an observed finite workload, not a proven sustainable maximum; stricter stage-rate and terminal-backlog confirmation is unmet.",
+    "Local Anvil cadence does not qualify OP sequencing/L1 settlement, Nitro, or public Solana capacity.",
+    "The crash profile uses a 10-second queue lease; capacity campaigns use 600 seconds.",
+    "Finite protocol models and selected arithmetic proofs are not a proof of the whole Rust/Redis service."
+  ]
+}

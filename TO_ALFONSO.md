@@ -1,54 +1,62 @@
 # To Alfonso
 
-Updated September 27, 2026. [Draft PR #1](https://github.com/alfongj-com/engine-core/pull/1).
+Updated October 12, 2026.
 
-## How fast it went
+## Saved and pushed
 
-Local tests, one signer per chain, durable SQLite and Redis. All offers at the
-rates below were accepted and reconciled exactly after drain:
+PR #1 is merged. [PR #2](https://github.com/alfongj-com/engine-core/pull/2) implements
+recoverable checkpoints, measured journal scheduling and bounded Solana polling.
+The main local folder is `/Users/alfongj/Code/engine-core`; its README and
+`LOCAL_TESTING.md` contain the installed tool paths and a prompt for another agent.
+Generated evidence stays on this `load-tests` branch.
 
-| Chain | Useful measured rate | What happened above it |
-|---|---|---|
-| EVM, 12-second blocks | **50 TPS for 15 minutes**; 45,000 outcomes | 55 TPS built unsigned work. |
-| OP execution, 2-second blocks | **55 TPS for 6 minutes**; 19,800 outcomes | Stability remains uncertain; the earlier 60 TPS screen grew queues. |
-| Native Arbitrum Nitro | **55 TPS for 6 minutes**; 19,800 outcomes | 65 TPS clearly overloaded. |
-| Solana | **60 TPS for 6 minutes**; 21,600 outcomes | 65 TPS showed backlog drift; 70 TPS rejected requests. |
-| All four together | **58.75 total TPS for 15 minutes**; 52,875 outcomes | 235 TPS rejected 29,495 requests and built a large queue. |
+## What changed
 
-The shared working rate was 15 EVM + 15 OP + 12.5 Nitro + 16.25 Solana TPS.
-These are measured working points and screens, not proven absolute maxima.
-The detailed report preserves different lease settings and the unchanged
-stability checks. Public-chain throughput, full rollup settlement and KMS remain
-untested by this campaign. **No paid RPC credits were used.**
+A crash or lost reply during an exactly recorded checkpoint update can now be
+repaired without forgiving unrelated rollback. Two FULL SQLite commits protect
+the permission boundary. Busy-chain health checks cannot fill other chains' health
+slots. Solana batches eligible status reads; stalled Redis polls no longer prevent
+graceful shutdown, while running work still drains.
 
-## What broke
+## What the measurements say
 
-Mixed transactions, 80 lost accepted responses, 60 injected send errors and an
-OP reorg/pool loss recovered exactly. The reorg replayed 253 original signed wires.
+The shared journal is the throughput limit on this Mac. The extra durable
+acknowledgement is expensive. In the matched short run, Solana status HTTP calls
+fell from 42,213 to 5,633, but logical polling also slowed and Solana admission
+p99 rose from 170 ms to 912 ms. This is not a blanket latency improvement.
 
-**Automatic crash recovery is the main blocker.** Killing Engine left SQLite
-one checkpoint ahead of Redis; restart refused to proceed. The Redis crash also
-required operator recovery. They retained 741 and 261 nonterminal test requests.
-The audit verified every recorded terminal proof without changing those states.
+A short 10 + 10 + 20 TPS shared run passed; a four-minute repeat grew Solana
+backlog and failed capacity. At 25 + 25 + 50 TPS the system overloaded, although
+both EVM chains now progressed where the baseline stalled. No 50 TPS-per-chain
+or sustainable-maximum claim is justified.
 
-Explicit Redis reconstruction worked: 413 completed records stayed completed,
-187 uncertain requests were quarantined, and five unsigned requests were retained.
-331 API probes produced no new sends. This preserves identity; it does not finish
-the 192 outstanding requests or prove resumed execution for that signer.
+At **32 TPS combined** (8 EVM + 8 OP-like + 16 Solana), a five-minute run
+passed the campaign checks and reconciled all 9,600 transactions. Unsigned queues
+remained bounded. A stricter screen still flags confirmation timing, so this is
+a tested working point, not a proven sustained maximum.
 
-An older disposable EVM test still has 1,980 unverified outcomes after losing node
-history. That evidence gap remains visible. The journal-reader bug found in this
-campaign is fixed; all **163 harness regressions pass on macOS and Linux**. The **61 formal-model
-outcomes** are bounded checks, not proof of the whole service.
+Killing and restarting Engine during a separate 90-second load at the same rates
+also passed: all 2,880 transactions reconciled, with no duplicate effects or
+unresolved work. One lost API reply was retried using the original request ID.
+This fault test used a 10-second queue lease to exercise recovery
+within the test window; ordinary measurements used the 600-second default.
 
-## Next priorities
+All five CI checks passed on `0ad0453`, including correctness, dependency audit,
+queue tests, coverage, 73 bounded model configurations and the fee proofs.
 
-1. Make the journal-to-Redis update recoverable after a crash without weakening the fence.
-2. Measure storage/Redis wait times, then improve shared-chain fairness and Solana polling.
-3. Repeat on production hardware and full rollup stacks before a capped testnet run.
+[Exact results, failures, methods and source hashes](docs/baselines/pr2-2026-10-12/README.md).
+The local fixtures use Anvil execution and Agave, not actual rollup settlement.
+No paid RPC credits were used.
 
-[Results and evidence](docs/baselines/capacity-2026-09-26/RESULTS.md),
-[five-area review](docs/baselines/capacity-2026-09-26/final-review/OUTCOME.md),
-[RPC sizing](docs/baselines/capacity-2026-09-26/final-review/RPC-SIZING.md).
-The additional CI workflow steps still need GitHub workflow permission.
-Rotate the shared dRPC key when finished using it.
+## What remains before production
+
+1. Improve the journal's durable write throughput and qualify the intended hardware,
+   RPC, workload and real chain stack. Preserve crash/rollback guarantees.
+2. Add a recovery procedure for missing signed Redis projections and quarantined
+   unknown effects. Checkpoint repair alone cannot recreate those records.
+3. Complete the previously documented KMS/account and deployment qualification.
+
+The old incident journals and retained Nitro environment were not changed. An
+unrecorded schema-1 checkpoint mismatch does not become repairable merely by
+upgrading. The September capacity results remain [historical evidence](docs/baselines/capacity-2026-09-26/RESULTS.md),
+not capacity claims for schema 2. Finite models do not prove the whole service.
