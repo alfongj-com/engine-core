@@ -1,51 +1,67 @@
 # PR #2 status
 
-Updated October 12, 2026. PR #1 merged into `main` at `154b0ac`.
-[PR #2](https://github.com/alfongj-com/engine-core/pull/2) now targets `main`.
-Implementation is complete; final qualification and matched measurements are running.
+Updated October 12, 2026. [PR #1](https://github.com/alfongj-com/engine-core/pull/1)
+merged into `main`; [PR #2](https://github.com/alfongj-com/engine-core/pull/2)
+implements the follow-up against `main`.
 
-## Changes
+## Delivered
 
-- Schema2 records the exact journal-to-Redis transition in the authority commit.
-  Startup or health repair can finish it after a crash or lost reply. A second
-  FULL SQLite commit acknowledges publication before permission returns.
-- Arbitrary rollback, wrong Redis process/role, corrupt records and durable halts
-  still block execution. Healthy schema1 journals migrate under exclusive ownership;
-  old binaries reject schema2. Status/export remain read-only.
-- Journal operations get one contender per chain ahead of the shared mutex.
-  Separate metrics expose lane, global-lock, health-capacity, storage and Redis waits.
-- Solana history lookups batch within one cached cluster/endpoint: at most 256
-  outstanding polls and four HTTP requests, with a 5 ms collection window.
-- Typed publication uncertainty retries the original work after 2 seconds. It does not
-  generate a replacement identity or clear a permanent fence.
+- **Crash-recoverable checkpoints.** Schema 2 records the exact journal-to-Redis
+  transition in the authority commit. Startup or health repair can finish it after
+  a crash or lost reply. A second FULL SQLite commit acknowledges publication
+  before permission returns; a fresh observation still rejects rollback afterward.
+- **Unchanged safety boundaries.** Wrong tokens, Redis process/role changes,
+  corrupt records and durable halts stop execution. Healthy schema-1 journals
+  migrate under exclusive ownership. Old binaries reject schema 2; status/export
+  stay read-only. Missing signed Redis attempts still require reconciliation.
+- **Shared-chain scheduling.** One contender per chain reaches the journal mutex.
+  Health checks take their chain lane before shared health capacity, preventing a
+  busy chain's waiting polls from reserving all 32 slots. Metrics separate lane,
+  capacity, mutex, SQLite and Redis waits.
+- **Bounded Solana polling.** Eligible history lookups coalesce per cached
+  cluster/endpoint, with at most 256 outstanding polls, four HTTP batches and a
+  5 ms collection window. Finalized receipt and signed-identity checks remain.
+- **Shutdown under Redis outage.** Stalled queue acquisition is cancellable.
+  Already-running handlers and owned journal repairs still drain before exit.
 
-## Validation in progress
+## Validation and measurements
 
-The instrumented baseline is commit `01d5048`; its unchanged binary is preserved
-privately. The full Rust suite, all 44 ignored journal regressions, 73 executor regressions,
-33 queue regressions, HTTP tests and eight real HTTP batching tests passed. All
-73 model configurations produced their expected outcomes. A later allocation-only
-fix bounds the task-local wrapper size and passes real EVM process recovery; CI
-will recheck the final source map. Remaining local gates are the other process
-scenarios and matched throughput comparisons.
+[Versioned results and failures](https://github.com/alfongj-com/engine-core/blob/load-tests/docs/baselines/pr2-2026-10-12/README.md)
+are kept on `load-tests`, outside this implementation PR. They include binary/source
+provenance, baseline comparisons, latency/backlog, exact effect reconciliation,
+model outcomes and CI links. The PR checks qualify their own source commit.
+
+The local checks cover the workspace suite, 45 journal regressions, 73 executor
+regressions, 36 queue regressions, HTTP/admission tests, real HTTP batching, process
+crashes, Redis data loss, reorgs and the live-outage shutdown regression. The formal
+suite has 73 bounded configurations, including deliberate faults that must produce
+specific counterexamples; fee arithmetic is checked separately with Kani.
+
+The schema-2 acknowledgement adds real disk cost. The first corrected 10/10/20 TPS
+shared run passed its finite-run gates, but the journal was nearly fully occupied
+and Solana latency increased. This does **not** establish 50 TPS per chain or a
+sustainable maximum. See the evidence for repeats, overload and chaos outcomes;
+no baseline capacity figure transfers automatically to the new protocol.
 
 All new experiments use disposable local Redis, Anvil and Agave fixtures. No paid
 RPC calls are needed. Raw reports and fixture data stay private under
-`/Users/alfongj/.local/share/engine-core/runs/pr2-oct12/`; sanitized reports and model
-logs belong on the separate [load-tests branch](https://github.com/alfongj-com/engine-core/tree/load-tests).
+`/Users/alfongj/.local/share/engine-core/runs/pr2-oct12/`.
 
-## Limits that remain
+## Remaining production work
 
-One Unix host and one retained authoritative journal are required. This does not
-recover a lost/rolled-back authority, prove filesystem durability, rebuild every
-missing Redis queue, or resolve quarantined unknown transactions automatically.
+- Qualify sustained capacity on the intended storage, RPC and actual chain stack.
+  Further journal throughput work needs fewer durable commits per batch or faster
+  durable storage, with the same crash and rollback guarantees.
+- Add an explicit recovery procedure for missing signed Redis projections. Marker
+  repair alone cannot recreate them or resolve quarantined unknown transactions.
+- Keep the existing one-host, one-owner authority assumption. Lost or rolled-back
+  authority, filesystem guarantees, provider honesty and actual rollup settlement
+  remain outside these local tests and finite models.
 
-Fairness covers journal operation opportunities. Global admission/health capacity
-and the shared overflow lane can still delay a peer. Solana batching reduces
-transport calls without changing finality or retry budgets; it does not qualify
-public RPC quotas or actual rollup consensus. Local throughput is not a mainnet
-capacity guarantee. Models remain finite abstractions, not whole-service proofs.
+Fairness allocates journal operations, not equal TPS. Global admission capacity
+and overflow lanes can still delay peers. No whole-service proof is claimed.
 
-See [LOCAL_TESTING.md](LOCAL_TESTING.md), the [protocol design](docs/design/recoverable-projection.md),
+See [local commands and agent prompt](LOCAL_TESTING.md), the
+[checkpoint protocol](docs/design/recoverable-projection.md),
 [Solana polling design](docs/design/solana-status-batching.md), and
 [formal correspondence](formal/disaster-recovery.md).

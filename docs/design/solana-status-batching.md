@@ -1,12 +1,17 @@
 # Solana polling: measure first, then coalesce reads
 
-Updated: 2026-10-12. Bounded coalescing is implemented on `crash-recovery-and-chain-fairness`; matched workload validation is still pending. Instrumentation-only baseline: `01d5048`.
+Updated: 2026-10-12. Bounded coalescing is implemented in PR #2. [Matched measurements and qualification limits](https://github.com/alfongj-com/engine-core/blob/load-tests/docs/baselines/pr2-2026-10-12/README.md) compare it with instrumentation-only baseline `01d5048`.
 
 ## Observed implementation and baseline
 
 Each retained Solana attempt performs one `getSignatureStatuses` request containing one signature and `searchTransactionHistory=true`. Provisional status requeues at the configured interval. Only a finalized status proceeds to a separate finalized `getTransaction`; the worker checks the first signature, slot, error consistency and durable attempt ownership before recording terminal evidence. Null/expired history does not permit fresh signing.
 
-The prior local 60 TPS transfer screen used exactly 7 Engine calls per intent (roughly 420 RPC/s). The October 12 shared baseline recorded 36,872 status requests for 3,000 Solana intents. Its approximately 0.5 ms mean status HTTP duration does not identify RPC latency as the throughput bottleneck; shared journal contention must be assessed separately. Compare the candidate with unchanged polling cadence, durability and workload, and collect method counts, cancellation, handler elapsed time and journal/Redis waits.
+The matched local baseline recorded 42,213 status HTTP requests for 2,400 Solana
+intents. Batching reduces actual HTTP calls, but shared-journal contention also
+changes how often workers reach a poll. Report logical polls, batch size, actual
+HTTP counts and terminal latency separately; a lower request count alone is not
+a throughput or latency improvement. Keep polling cadence, durability and
+workload fixed for the baseline comparison.
 
 ## Instrumentation now
 
@@ -41,7 +46,7 @@ publication error retries the same work after two seconds; a missing Redis signe
 attempt still parks after marker repair. Batching cannot reconstruct it. Retained
 attempts can resume terminal reconciliation; see [the failure boundaries](recoverable-projection.md#checkpoint-repair-versus-transaction-recovery).
 
-## Required evidence before keeping it
+## Validation requirements
 
 1. Real HTTP fixtures in [`status_batcher_tests.rs`](../../executors/src/solana_executor/status_batcher_tests.rs): mixed null/provisional/finalized statuses map to original callers, including duplicate signatures and cancelled waiters.
 2. The 256-poll boundary, queue saturation, timeout/shutdown and malformed-length batch failures; no lost waiter or unbounded batch.
