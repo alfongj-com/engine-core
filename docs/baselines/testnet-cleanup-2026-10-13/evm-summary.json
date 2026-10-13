@@ -1,0 +1,185 @@
+{
+  "chains": [
+    {
+      "chain_id": 11155111,
+      "chain_lock_absent": true,
+      "phases": {
+        "transfer": {
+          "original_report": "public-sepolia-baseline.json",
+          "original_outcome": "pass",
+          "reconciliation_report": null,
+          "qualified_effects": 6,
+          "unique_saved_wires": 6,
+          "send_calls": 28,
+          "reserved_sends_equal_recorded_responses": true,
+          "owned_service_ports_closed": {
+            "redis": true,
+            "guard": true,
+            "engine": true
+          }
+        },
+        "fixture": {
+          "original_report": "public-sepolia-fixture-v2.json",
+          "original_outcome": "pass",
+          "reconciliation_report": null,
+          "qualified_effects": 1,
+          "unique_saved_wires": 1,
+          "send_calls": 1,
+          "reserved_sends_equal_recorded_responses": true
+        },
+        "revert": {
+          "original_report": "public-11155111-revert.json",
+          "original_outcome": "pass",
+          "reconciliation_report": null,
+          "qualified_effects": 2,
+          "unique_saved_wires": 2,
+          "send_calls": 10,
+          "reserved_sends_equal_recorded_responses": true,
+          "owned_service_ports_closed": {
+            "redis": true,
+            "guard": true,
+            "engine": true
+          }
+        }
+      }
+    },
+    {
+      "chain_id": 421614,
+      "chain_lock_absent": true,
+      "phases": {
+        "transfer": {
+          "original_report": "public-421614-baseline.json",
+          "original_outcome": "pass",
+          "reconciliation_report": null,
+          "qualified_effects": 6,
+          "unique_saved_wires": 6,
+          "send_calls": 21,
+          "reserved_sends_equal_recorded_responses": true,
+          "owned_service_ports_closed": {
+            "redis": true,
+            "guard": true,
+            "engine": true
+          }
+        },
+        "fixture": {
+          "original_report": "public-421614-fixture.json",
+          "original_outcome": "pass",
+          "reconciliation_report": null,
+          "qualified_effects": 1,
+          "unique_saved_wires": 1,
+          "send_calls": 1,
+          "reserved_sends_equal_recorded_responses": true
+        },
+        "revert": {
+          "original_report": "public-421614-revert.json",
+          "original_outcome": "pass",
+          "reconciliation_report": null,
+          "qualified_effects": 2,
+          "unique_saved_wires": 2,
+          "send_calls": 5,
+          "reserved_sends_equal_recorded_responses": true,
+          "owned_service_ports_closed": {
+            "redis": true,
+            "guard": true,
+            "engine": true
+          }
+        }
+      }
+    },
+    {
+      "chain_id": 84532,
+      "chain_lock_absent": true,
+      "phases": {
+        "transfer": {
+          "original_report": "public-84532-baseline.json",
+          "original_outcome": "pass",
+          "reconciliation_report": null,
+          "qualified_effects": 6,
+          "unique_saved_wires": 6,
+          "send_calls": 24,
+          "reserved_sends_equal_recorded_responses": true,
+          "owned_service_ports_closed": {
+            "redis": true,
+            "guard": true,
+            "engine": true
+          }
+        },
+        "fixture": {
+          "original_report": "public-84532-fixture.json",
+          "original_outcome": "fail",
+          "reconciliation_report": "public-84532-fixture-reconciled.json",
+          "qualified_effects": 1,
+          "unique_saved_wires": 1,
+          "send_calls": 1,
+          "reserved_sends_equal_recorded_responses": true
+        },
+        "revert": {
+          "original_report": "public-84532-revert.json",
+          "original_outcome": "pass",
+          "reconciliation_report": null,
+          "qualified_effects": 2,
+          "unique_saved_wires": 2,
+          "send_calls": 5,
+          "reserved_sends_equal_recorded_responses": true,
+          "owned_service_ports_closed": {
+            "redis": true,
+            "guard": true,
+            "engine": true
+          }
+        }
+      }
+    },
+    {
+      "chain_id": 11155420,
+      "chain_lock_absent": true,
+      "phases": {
+        "transfer": {
+          "original_report": "public-11155420-baseline.json",
+          "original_outcome": "fail",
+          "reconciliation_report": "public-11155420-reconciled.json",
+          "qualified_effects": 6,
+          "unique_saved_wires": 6,
+          "send_calls": 27,
+          "reserved_sends_equal_recorded_responses": true,
+          "owned_service_ports_closed": {
+            "redis": true,
+            "guard": true,
+            "engine": true
+          }
+        },
+        "fixture": {
+          "original_report": "public-11155420-fixture.json",
+          "original_outcome": "pass",
+          "reconciliation_report": null,
+          "qualified_effects": 1,
+          "unique_saved_wires": 1,
+          "send_calls": 1,
+          "reserved_sends_equal_recorded_responses": true
+        },
+        "revert": {
+          "original_report": "public-11155420-revert.json",
+          "original_outcome": "fail",
+          "reconciliation_report": "public-11155420-revert-reconciled.json",
+          "qualified_effects": 2,
+          "unique_saved_wires": 2,
+          "send_calls": 4,
+          "reserved_sends_equal_recorded_responses": true,
+          "owned_service_ports_closed": {
+            "redis": true,
+            "guard": true,
+            "engine": true
+          }
+        }
+      }
+    }
+  ],
+  "transfer_effects": 24,
+  "reverted_effects": 8,
+  "fixture_creations": 4,
+  "duplicate_effects": 0,
+  "total_send_calls": 128,
+  "reconciliation_send_calls": 0,
+  "all_chain_locks_absent": true,
+  "active_frozen_public_engine_processes": 0,
+  "qualification_scope": "One configured public testnet RPC provider. Original failures remain preserved and separate from subsequent same-identity reconciliation. No capacity or consensus-proof claim."
+}

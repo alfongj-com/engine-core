@@ -1,0 +1,409 @@
+{
+  "scope": "This pass only; locally observed and conservatively reserved calls, not a provider invoice or account balance.",
+  "provider_pricing_url": "https://drpc.org/docs/pricing/compute-units",
+  "pricing_checked": "2026-10-13",
+  "assumed_usd_per_million_methods": 6,
+  "pass": {
+    "version": 1,
+    "ceiling": 100000,
+    "reserved": 13000,
+    "observed": 12249,
+    "startedAt": "2026-10-13T09:15:25.320Z",
+    "remainingCalls": 87751,
+    "estimatedUsageUsd": 0.073494,
+    "conservativeReservedUsd": 0.078,
+    "ceilingUsd": 0.6
+  },
+  "stats": {
+    "startedAt": "2026-10-13T09:15:25.332Z",
+    "forwarded": 12249,
+    "rejected": 0,
+    "transportErrors": 1,
+    "persistenceErrors": 0,
+    "methods": {
+      "11155111:eth_chainId": {
+        "count": 5,
+        "httpErrors": 0,
+        "rpcErrors": 0,
+        "totalMs": 328.36341699988407,
+        "maxMs": 180.72308400001202
+      },
+      "11155111:eth_getBalance": {
+        "count": 18,
+        "httpErrors": 0,
+        "rpcErrors": 0,
+        "totalMs": 1312.496835998405,
+        "maxMs": 146.90362499980256
+      },
+      "11155111:eth_getTransactionCount": {
+        "count": 2041,
+        "httpErrors": 0,
+        "rpcErrors": 0,
+        "totalMs": 137005.47438499713,
+        "maxMs": 4887.501959000016
+      },
+      "11155111:eth_getBlockByNumber": {
+        "count": 227,
+        "httpErrors": 0,
+        "rpcErrors": 0,
+        "totalMs": 16721.529463002633,
+        "maxMs": 502.9009999996051
+      },
+      "11155420:eth_chainId": {
+        "count": 6,
+        "httpErrors": 0,
+        "rpcErrors": 0,
+        "totalMs": 559.3608759998024,
+        "maxMs": 163.87808400020003
+      },
+      "11155420:eth_getBalance": {
+        "count": 21,
+        "httpErrors": 0,
+        "rpcErrors": 0,
+        "totalMs": 1605.2220430026937,
+        "maxMs": 170.53637500014156
+      },
+      "11155420:eth_getTransactionCount": {
+        "count": 2549,
+        "httpErrors": 1,
+        "rpcErrors": 1,
+        "totalMs": 139741.30005799225,
+        "maxMs": 15002.947416000068
+      },
+      "11155420:eth_getBlockByNumber": {
+        "count": 520,
+        "httpErrors": 0,
+        "rpcErrors": 0,
+        "totalMs": 39291.69291899394,
+        "maxMs": 374.456875000149
+      },
+      "421614:eth_chainId": {
+        "count": 4,
+        "httpErrors": 0,
+        "rpcErrors": 0,
+        "totalMs": 229.36812500012456,
+        "maxMs": 113.1387499999255
+      },
+      "421614:eth_getBalance": {
+        "count": 17,
+        "httpErrors": 0,
+        "rpcErrors": 0,
+        "totalMs": 995.4798729995091,
+        "maxMs": 106.5331250000745
+      },
+      "421614:eth_getTransactionCount": {
+        "count": 2548,
+        "httpErrors": 0,
+        "rpcErrors": 4,
+        "totalMs": 157658.65692800985,
+        "maxMs": 485.9227499999106
+      },
+      "421614:eth_getBlockByNumber": {
+        "count": 283,
+        "httpErrors": 0,
+        "rpcErrors": 0,
+        "totalMs": 19220.08870600065,
+        "maxMs": 202.79683300014585
+      },
+      "84532:eth_chainId": {
+        "count": 5,
+        "httpErrors": 0,
+        "rpcErrors": 0,
+        "totalMs": 303.8441250002652,
+        "maxMs": 149.37670899997465
+      },
+      "84532:eth_getBalance": {
+        "count": 18,
+        "httpErrors": 0,
+        "rpcErrors": 0,
+        "totalMs": 1475.8975829999545,
+        "maxMs": 151.28670900000725
+      },
+      "84532:eth_getTransactionCount": {
+        "count": 3018,
+        "httpErrors": 0,
+        "rpcErrors": 0,
+        "totalMs": 150583.38172399928,
+        "maxMs": 433.99883399996907
+      },
+      "84532:eth_getBlockByNumber": {
+        "count": 291,
+        "httpErrors": 0,
+        "rpcErrors": 0,
+        "totalMs": 18289.523747999236,
+        "maxMs": 408.3465840006247
+      },
+      "solana-devnet:getGenesisHash": {
+        "count": 11,
+        "httpErrors": 0,
+        "rpcErrors": 0,
+        "totalMs": 619.0363770001131,
+        "maxMs": 173.5537919999333
+      },
+      "solana-devnet:getHealth": {
+        "count": 1,
+        "httpErrors": 0,
+        "rpcErrors": 0,
+        "totalMs": 38.600416999994195,
+        "maxMs": 38.600416999994195
+      },
+      "solana-devnet:getBalance": {
+        "count": 13,
+        "httpErrors": 0,
+        "rpcErrors": 0,
+        "totalMs": 588.2550809999375,
+        "maxMs": 107.1712080000434
+      },
+      "11155111:eth_getCode": {
+        "count": 12,
+        "httpErrors": 0,
+        "rpcErrors": 0,
+        "totalMs": 1083.1000010009157,
+        "maxMs": 222.31929200002924
+      },
+      "11155111:eth_maxPriorityFeePerGas": {
+        "count": 4,
+        "httpErrors": 0,
+        "rpcErrors": 0,
+        "totalMs": 247.2451249996666,
+        "maxMs": 123.37525000004098
+      },
+      "11155111:eth_estimateGas": {
+        "count": 12,
+        "httpErrors": 0,
+        "rpcErrors": 2,
+        "totalMs": 1505.0330009999452,
+        "maxMs": 434.3989170000423
+      },
+      "11155111:eth_sendRawTransaction": {
+        "count": 39,
+        "httpErrors": 0,
+        "rpcErrors": 30,
+        "totalMs": 25931.79812400043,
+        "maxMs": 3108.5681670000777
+      },
+      "11155111:eth_getTransactionReceipt": {
+        "count": 47,
+        "httpErrors": 0,
+        "rpcErrors": 0,
+        "totalMs": 5142.012917998363,
+        "maxMs": 544.7852079998702
+      },
+      "421614:eth_getCode": {
+        "count": 14,
+        "httpErrors": 0,
+        "rpcErrors": 0,
+        "totalMs": 1215.9911690001609,
+        "maxMs": 159.2942079999484
+      },
+      "421614:eth_maxPriorityFeePerGas": {
+        "count": 3,
+        "httpErrors": 0,
+        "rpcErrors": 0,
+        "totalMs": 217.18512500065845,
+        "maxMs": 106.07508300011978
+      },
+      "11155420:eth_getCode": {
+        "count": 15,
+        "httpErrors": 0,
+        "rpcErrors": 0,
+        "totalMs": 1593.7906260001473,
+        "maxMs": 265.8888750001788
+      },
+      "421614:eth_estimateGas": {
+        "count": 10,
+        "httpErrors": 0,
+        "rpcErrors": 2,
+        "totalMs": 454.7556670003105,
+        "maxMs": 65.40049999998882
+      },
+      "11155420:eth_maxPriorityFeePerGas": {
+        "count": 3,
+        "httpErrors": 0,
+        "rpcErrors": 0,
+        "totalMs": 453.781917000073,
+        "maxMs": 236.04329199995846
+      },
+      "84532:eth_getCode": {
+        "count": 15,
+        "httpErrors": 0,
+        "rpcErrors": 0,
+        "totalMs": 1629.2416250008391,
+        "maxMs": 267.1964170001447
+      },
+      "11155420:eth_estimateGas": {
+        "count": 10,
+        "httpErrors": 0,
+        "rpcErrors": 2,
+        "totalMs": 894.642165999976,
+        "maxMs": 238.99083400005475
+      },
+      "84532:eth_maxPriorityFeePerGas": {
+        "count": 3,
+        "httpErrors": 0,
+        "rpcErrors": 0,
+        "totalMs": 268.2470840001479,
+        "maxMs": 170.26504199998453
+      },
+      "84532:eth_estimateGas": {
+        "count": 10,
+        "httpErrors": 0,
+        "rpcErrors": 2,
+        "totalMs": 1029.49179,
+        "maxMs": 174.51191599993035
+      },
+      "421614:eth_sendRawTransaction": {
+        "count": 27,
+        "httpErrors": 0,
+        "rpcErrors": 18,
+        "totalMs": 5250.2924150008475,
+        "maxMs": 386.51041600003373
+      },
+      "11155420:eth_sendRawTransaction": {
+        "count": 32,
+        "httpErrors": 0,
+        "rpcErrors": 23,
+        "totalMs": 11964.217459999374,
+        "maxMs": 631.1810419999529
+      },
+      "84532:eth_sendRawTransaction": {
+        "count": 30,
+        "httpErrors": 0,
+        "rpcErrors": 21,
+        "totalMs": 7525.0142109997105,
+        "maxMs": 559.4278330000816
+      },
+      "421614:eth_getTransactionReceipt": {
+        "count": 27,
+        "httpErrors": 0,
+        "rpcErrors": 0,
+        "totalMs": 2713.5714999993797,
+        "maxMs": 304.5916249998845
+      },
+      "84532:eth_getTransactionReceipt": {
+        "count": 47,
+        "httpErrors": 0,
+        "rpcErrors": 0,
+        "totalMs": 4547.73758299707,
+        "maxMs": 239.85270799975842
+      },
+      "11155420:eth_getTransactionReceipt": {
+        "count": 71,
+        "httpErrors": 0,
+        "rpcErrors": 0,
+        "totalMs": 7625.83537099848,
+        "maxMs": 316.41374999983236
+      },
+      "solana-devnet:getLatestBlockhash": {
+        "count": 18,
+        "httpErrors": 0,
+        "rpcErrors": 0,
+        "totalMs": 747.872335999622,
+        "maxMs": 50.478084000060335
+      },
+      "solana-devnet:getFeeForMessage": {
+        "count": 18,
+        "httpErrors": 0,
+        "rpcErrors": 0,
+        "totalMs": 906.2087470000843,
+        "maxMs": 103.82820800004993
+      },
+      "solana-devnet:sendTransaction": {
+        "count": 40,
+        "httpErrors": 0,
+        "rpcErrors": 21,
+        "totalMs": 2997.0881279999157,
+        "maxMs": 123.58916600001976
+      },
+      "solana-devnet:getSignatureStatuses": {
+        "count": 18,
+        "httpErrors": 0,
+        "rpcErrors": 0,
+        "totalMs": 788.1675399999367,
+        "maxMs": 94.26266699994449
+      },
+      "solana-devnet:getTransaction": {
+        "count": 36,
+        "httpErrors": 0,
+        "rpcErrors": 0,
+        "totalMs": 2364.640330999857,
+        "maxMs": 111.32216700003482
+      },
+      "solana-devnet:getBlockHeight": {
+        "count": 42,
+        "httpErrors": 0,
+        "rpcErrors": 0,
+        "totalMs": 2052.061708999565,
+        "maxMs": 134.8691670000553
+      },
+      "solana-devnet:getSignaturesForAddress": {
+        "count": 3,
+        "httpErrors": 0,
+        "rpcErrors": 0,
+        "totalMs": 140.19866499991622,
+        "maxMs": 58.90295799996238
+      },
+      "11155111:eth_getTransactionByHash": {
+        "count": 9,
+        "httpErrors": 0,
+        "rpcErrors": 0,
+        "totalMs": 538.0667489990592,
+        "maxMs": 142.2897499995306
+      },
+      "421614:eth_getTransactionByHash": {
+        "count": 9,
+        "httpErrors": 0,
+        "rpcErrors": 0,
+        "totalMs": 630.0580850001425,
+        "maxMs": 150.37724999990314
+      },
+      "84532:eth_getTransactionByHash": {
+        "count": 10,
+        "httpErrors": 0,
+        "rpcErrors": 0,
+        "totalMs": 832.7537520010956,
+        "maxMs": 188.824374999851
+      },
+      "11155420:eth_getTransactionByHash": {
+        "count": 15,
+        "httpErrors": 0,
+        "rpcErrors": 0,
+        "totalMs": 879.6529160006903,
+        "maxMs": 130.53887500055134
+      },
+      "11155111:eth_call": {
+        "count": 1,
+        "httpErrors": 0,
+        "rpcErrors": 1,
+        "totalMs": 46.86712499987334,
+        "maxMs": 46.86712499987334
+      },
+      "421614:eth_call": {
+        "count": 1,
+        "httpErrors": 0,
+        "rpcErrors": 1,
+        "totalMs": 41.18991700001061,
+        "maxMs": 41.18991700001061
+      },
+      "84532:eth_call": {
+        "count": 1,
+        "httpErrors": 0,
+        "rpcErrors": 1,
+        "totalMs": 44.05279200011864,
+        "maxMs": 44.05279200011864
+      },
+      "11155420:eth_call": {
+        "count": 1,
+        "httpErrors": 0,
+        "rpcErrors": 1,
+        "totalMs": 40.19066699966788,
+        "maxMs": 40.19066699966788
+      }
+    }
+  },
+  "gateway_stopped": true,
+  "gateway_port_closed": true,
+  "gateway_lock_removed": true,
+  "raw_final_report_sha256": "c6438f6f4b7a4db5a338717a9b5a9910ceca32d93fb4cf0f8a8a6231a9c98b46",
+  "free_rpc_note": "Solana rent-exemption reads used the official free Devnet endpoint and are outside the paid gateway ledger."
+}

@@ -1,0 +1,381 @@
+{
+  "head_sha": "9b3b8519a953d6bc25b0aeba4c9fb4c3c14ac9c4",
+  "ci_run_id": 38380513577,
+  "ci_url": "https://github.com/alfongj-com/engine-core/actions/runs/38380513577",
+  "workflow_conclusion": "failure",
+  "failed_steps": [
+    "Dependency advisories"
+  ],
+  "dependency_audit": {
+    "status": "failure",
+    "vulnerable_package": "quinn-proto",
+    "locked_version": "0.11.15",
+    "vulnerability_count": 5,
+    "minimum_version_resolving_all_reported_advisories": "0.11.18",
+    "advisories": [
+      {
+        "id": "RUSTSEC-2026-0338",
+        "url": "https://rustsec.org/advisories/RUSTSEC-2026-0338"
+      },
+      {
+        "id": "RUSTSEC-2026-0339",
+        "url": "https://rustsec.org/advisories/RUSTSEC-2026-0339"
+      },
+      {
+        "id": "RUSTSEC-2026-0340",
+        "url": "https://rustsec.org/advisories/RUSTSEC-2026-0340"
+      },
+      {
+        "id": "RUSTSEC-2026-0341",
+        "url": "https://rustsec.org/advisories/RUSTSEC-2026-0341"
+      },
+      {
+        "id": "RUSTSEC-2026-0342",
+        "url": "https://rustsec.org/advisories/RUSTSEC-2026-0342"
+      }
+    ]
+  },
+  "completed_test_steps": [
+    "RPC spending guard and load generator tests",
+    "Public transaction harness guards (offline)",
+    "Install pinned Rust toolchain",
+    "Run actions/cache@5a3ec84eff668545956fd18022155c47e93e2684",
+    "Formatting",
+    "Compile every test and binary",
+    "Unit and hermetic integration suites",
+    "Independent journal crash and rollback regressions",
+    "EOA and Solana Redis, RPC and deployment regressions",
+    "Solana request retention across queue pruning",
+    "HTTP authorization and admission integration",
+    "Queue lease and acknowledgement race regressions",
+    "Install pinned local EVM",
+    "Actual server crash recovery and duplicate admission",
+    "Redis AOF crash recovery",
+    "Reverted execution and Redis crash recovery",
+    "Redis data loss and stale-backup quarantine",
+    "Pre-finality reorg and same-nonce recovery",
+    "Single signer EVM load and finality drain (local debug build)",
+    "Install pinned local Solana validator",
+    "Solana accepted-send response loss and process recovery",
+    "Single payer Solana load and finality drain (local debug build)",
+    "Preserve local-chain scenario reports"
+  ],
+  "process_scenarios": {
+    "count": 9,
+    "all_passed": true,
+    "reports": [
+      {
+        "duplicate_chain_effects": 0,
+        "elapsed_seconds": 7.89,
+        "live_redis_restart": false,
+        "outcome": "pass",
+        "redis_crash": false,
+        "redis_persistence": "disabled; Engine process-restart test, not Redis power-loss test",
+        "reverted_execution": false,
+        "reverted_transactions": 0,
+        "scenario": "local EOA HTTP admission, crash with pending transactions, restart, mine, duplicate admission",
+        "successful_transfers": 24,
+        "terminal_status": "confirmed",
+        "transactions": 24,
+        "unauthorized_requests_rejected": 2,
+        "unique_chain_effects": 24,
+        "report_name": "local-eoa-recovery.json",
+        "report_sha256": "dccd98a175abf7f653db49899cfa7c96a29ef2a230a38cf99e098719c1f15610"
+      },
+      {
+        "duplicate_chain_effects": 0,
+        "elapsed_seconds": 7.855,
+        "live_redis_restart": false,
+        "outcome": "pass",
+        "redis_crash": true,
+        "redis_persistence": "appendonly=yes, appendfsync=always; Redis SIGKILL and AOF replay, not host power loss or failover",
+        "reverted_execution": false,
+        "reverted_transactions": 0,
+        "scenario": "local EOA HTTP admission, crash with pending transactions, restart, mine, duplicate admission",
+        "successful_transfers": 24,
+        "terminal_status": "confirmed",
+        "transactions": 24,
+        "unauthorized_requests_rejected": 2,
+        "unique_chain_effects": 24,
+        "report_name": "local-eoa-redis-crash.json",
+        "report_sha256": "5c646b70cd63dbcfd3142ab2928588d2964e16421e8e5a57d37055b57f999f9e"
+      },
+      {
+        "allow_fee_replacement": false,
+        "attempts": 1,
+        "duplicate_effects": 0,
+        "elapsed_seconds": 19.448,
+        "engine_recovered_original_nonce": true,
+        "manual_signed_wire_replay": false,
+        "orphaned_receipt_disappeared": true,
+        "outcome": "pass",
+        "policy": {
+          "mode": "depth",
+          "confirmations": 2
+        },
+        "post_restart_accepted_winning_sends": 1,
+        "provisional_result_withheld": true,
+        "recovery_mode": "exact_wire",
+        "reverted_execution": true,
+        "scenario": "pre-finality reorg and same-nonce recovery",
+        "terminal_status": "failed",
+        "unique_chain_effects": 1,
+        "report_name": "local-eoa-reorg-reverted.json",
+        "report_sha256": "235e321157e562e84f4bc3f7838911d4521b9b66a8702f04f803fcc2bb3d1b67"
+      },
+      {
+        "allow_fee_replacement": false,
+        "attempts": 1,
+        "duplicate_effects": 0,
+        "elapsed_seconds": 18.807,
+        "engine_recovered_original_nonce": true,
+        "manual_signed_wire_replay": false,
+        "orphaned_receipt_disappeared": true,
+        "outcome": "pass",
+        "policy": {
+          "mode": "depth",
+          "confirmations": 2
+        },
+        "post_restart_accepted_winning_sends": 1,
+        "provisional_result_withheld": true,
+        "recovery_mode": "exact_wire",
+        "reverted_execution": false,
+        "scenario": "pre-finality reorg and same-nonce recovery",
+        "terminal_status": "confirmed",
+        "unique_chain_effects": 1,
+        "report_name": "local-eoa-reorg.json",
+        "report_sha256": "2c83dc5a075d285cc83c6475ed24ee20b21566805635c557562432471a80b75e"
+      },
+      {
+        "duplicate_chain_effects": 0,
+        "elapsed_seconds": 7.753,
+        "live_redis_restart": false,
+        "outcome": "pass",
+        "redis_crash": true,
+        "redis_persistence": "appendonly=yes, appendfsync=always; Redis SIGKILL and AOF replay, not host power loss or failover",
+        "reverted_execution": true,
+        "reverted_transactions": 8,
+        "scenario": "local EOA HTTP admission, crash with pending transactions, restart, mine, duplicate admission",
+        "successful_transfers": 0,
+        "terminal_status": "failed",
+        "transactions": 8,
+        "unauthorized_requests_rejected": 2,
+        "unique_chain_effects": 8,
+        "report_name": "local-eoa-reverted-recovery.json",
+        "report_sha256": "1627063e0add8871ae2969399edcd81d255ea8ce771fc1e0fe205a440a250a24"
+      },
+      {
+        "duplicate_effects": 0,
+        "elapsed_seconds": 6.69,
+        "live_projection_loss_halts_writes": true,
+        "loss": "flush",
+        "new_intent_effects": 1,
+        "new_namespace_healthy": true,
+        "ordinary_startup_rejected": true,
+        "outcome": "pass",
+        "prior_uncertain_effects": 1,
+        "scenario": "Redis disaster quarantine and fresh intake",
+        "terminal_duplicate_created_no_work": true,
+        "unsafe_reattach_rejected": true,
+        "report_name": "local-redis-loss.json",
+        "report_sha256": "45dcc61192b745b16ea6e6b2ddb71a1420ad74c535beb7842318b7e61c4c0fdd"
+      },
+      {
+        "duplicate_effects": 0,
+        "elapsed_seconds": 6.811,
+        "live_projection_loss_halts_writes": true,
+        "loss": "rollback",
+        "new_intent_effects": 1,
+        "new_namespace_healthy": true,
+        "ordinary_startup_rejected": true,
+        "outcome": "pass",
+        "prior_uncertain_effects": 1,
+        "scenario": "Redis disaster quarantine and fresh intake",
+        "terminal_duplicate_created_no_work": true,
+        "unsafe_reattach_rejected": true,
+        "report_name": "local-redis-rollback.json",
+        "report_sha256": "9130474f076f4105132c959ef97a8d6bb901f35fb958d6c16804587ff8cb961e"
+      },
+      {
+        "completed_admission_tombstones": 12,
+        "discarded_send_responses": 12,
+        "drop_attempts_on_restart": true,
+        "duplicate_chain_effects": 0,
+        "duplicates_after_queue_pruning": "no new queue jobs or RPC sends",
+        "elapsed_seconds": 44.573,
+        "exact_signed_projections_restored": 12,
+        "outcome": "pass",
+        "redis_persistence": "disabled; Engine process-restart test, not Redis power-loss durability",
+        "rpc_url_secret_logged": false,
+        "same_wire_retransmissions": 12,
+        "scenario": "Solana accepted-send response loss, Engine crash/restart, identical-byte retransmission, duplicate admission",
+        "signed_projections_removed": 12,
+        "terminal_attempt_records_remaining": 0,
+        "transactions": 12,
+        "unique_chain_effects": 12,
+        "validator_version": {
+          "feature-set": 565236538,
+          "solana-core": "4.2.2"
+        },
+        "report_name": "local-solana-recovery-projection-loss.json",
+        "report_sha256": "dcebd339838a8255b77723dd968bf4d777d236dfc6ab6f7e3acdfb18c33177aa"
+      },
+      {
+        "completed_admission_tombstones": 12,
+        "discarded_send_responses": 12,
+        "drop_attempts_on_restart": false,
+        "duplicate_chain_effects": 0,
+        "duplicates_after_queue_pruning": "no new queue jobs or RPC sends",
+        "elapsed_seconds": 44.063,
+        "outcome": "pass",
+        "redis_persistence": "disabled; Engine process-restart test, not Redis power-loss durability",
+        "rpc_url_secret_logged": false,
+        "same_wire_retransmissions": 12,
+        "scenario": "Solana accepted-send response loss, Engine crash/restart, identical-byte retransmission, duplicate admission",
+        "terminal_attempt_records_remaining": 0,
+        "transactions": 12,
+        "unique_chain_effects": 12,
+        "validator_version": {
+          "feature-set": 565236538,
+          "solana-core": "4.2.2"
+        },
+        "report_name": "local-solana-recovery.json",
+        "report_sha256": "6e6b0d974321e2f1ff33b16376dfda6ab5ae00f23bb542cb2560ca41b790983e"
+      }
+    ]
+  },
+  "short_local_load_gates": {
+    "count": 2,
+    "all_passed": true,
+    "reports": [
+      {
+        "admission_completion_seconds": 19.991,
+        "admission_latency_ms": {
+          "p50": 11.248,
+          "p95": 66.123,
+          "p99": 80.481
+        },
+        "admission_responses": {
+          "202": 1000
+        },
+        "block_seconds": 1,
+        "durability": "SQLite WAL synchronous=FULL/fullfsync=ON; Redis AOF appendfsync=everysec",
+        "duration_seconds": 20,
+        "during_load": {
+          "seconds": 19.982,
+          "admitted": 999,
+          "attempted": 793,
+          "included": 793,
+          "terminal": 645
+        },
+        "engine_binary_sha256": "65e1419bc992184d0db7252b2a892aeb8c793a3e302451a8b1904ddb2394e755",
+        "final": {
+          "seconds": 35.014,
+          "admitted": 1000,
+          "attempted": 1000,
+          "included": 1000,
+          "terminal": 1000
+        },
+        "finality_depth": 2,
+        "journal_bytes": 6242048,
+        "observed_rates": {
+          "from_seconds": 5.002,
+          "to_seconds": 19.982,
+          "admitted_tps": 50.0,
+          "attempted_tps": 36.782,
+          "included_tps": 37.784,
+          "terminal_tps": 43.057
+        },
+        "offered_tps": 50,
+        "outcome": "pass",
+        "requested_max_inflight": 1024,
+        "rpc_calls_during_load": {
+          "eth_getCode": 1,
+          "eth_getTransactionCount": 15,
+          "eth_getBalance": 1,
+          "eth_blockNumber": 4,
+          "eth_feeHistory": 793,
+          "eth_estimateGas": 793,
+          "eth_sendRawTransaction": 793,
+          "eth_getTransactionReceipt": 657,
+          "eth_getBlockByNumber": 107
+        },
+        "rpc_calls_total": {
+          "eth_getCode": 1,
+          "eth_getTransactionCount": 23,
+          "eth_getBalance": 1,
+          "eth_blockNumber": 6,
+          "eth_feeHistory": 1000,
+          "eth_estimateGas": 1000,
+          "eth_sendRawTransaction": 1000,
+          "eth_getTransactionReceipt": 1000,
+          "eth_getBlockByNumber": 155
+        },
+        "scope": "local EOA; one signer; fixed-cadence Anvil; no public chain qualification",
+        "report_name": "local-eoa-throughput.json",
+        "report_sha256": "932a6376a6ee8bd55925403adfc4a8f4445b449510eec423d61a60b64b3daaea",
+        "interpretation": "Short local debug-build offered-load and eventual-drain check; not sustained capacity or public-provider qualification."
+      },
+      {
+        "admission_completion_seconds": 20.328,
+        "admission_latency_ms": {
+          "p50": 285.366,
+          "p95": 517.401,
+          "p99": 566.783
+        },
+        "admission_responses": {
+          "202": 1000
+        },
+        "durability": "SQLite WAL synchronous=FULL/fullfsync=ON; Redis AOF appendfsync=everysec",
+        "duration_seconds": 20,
+        "during_load": {
+          "seconds": 19.983,
+          "admitted": 986,
+          "attempted": 737,
+          "terminal": 64,
+          "finalized_transfers": 185
+        },
+        "engine_binary_sha256": "65e1419bc992184d0db7252b2a892aeb8c793a3e302451a8b1904ddb2394e755",
+        "final": {
+          "seconds": 45.357,
+          "admitted": 1000,
+          "attempted": 1000,
+          "terminal": 1000,
+          "finalized_transfers": 1000
+        },
+        "journal_bytes": 7302816,
+        "observed_rates": {
+          "from_seconds": 5.001,
+          "to_seconds": 19.983,
+          "admitted_tps": 50.26,
+          "attempted_tps": 35.776,
+          "terminal_tps": 4.272,
+          "finalized_transfers_tps": 12.348
+        },
+        "offered_tps": 50,
+        "outcome": "pass",
+        "scope": "local Agave validator, one payer, real Engine and durable stores; no public-chain qualification",
+        "validator_version": {
+          "feature-set": 565236538,
+          "solana-core": "4.2.2"
+        },
+        "workers": 100,
+        "report_name": "local-solana-throughput.json",
+        "report_sha256": "9ff5b12da9cf8ab9c60ef7280929ba04f5fcd07f5ff7fd365bc9c15ef08ee44d",
+        "interpretation": "Short local debug-build offered-load and eventual-drain check; not sustained capacity or public-provider qualification."
+      }
+    ]
+  },
+  "artifacts": [
+    {
+      "name": "local-chain-recovery-reports",
+      "id": 11804165705,
+      "digest": "sha256:58471669b29161029fc9188517d4c6e69f92b011968e6cfb6653237905ab0e82",
+      "size_in_bytes": 10131,
+      "expired": false,
+      "downloaded_archive_digest_verified": true
+    }
+  ],
+  "formal_summary": "prior-formal-ci.json",
+  "scope": "Exact-head CI reports. All process and short-load reports passed, but overall Rust workflow failed dependency audit. Formal artifact completion is distinct from its cancelled workflow status. No public-chain capacity claim."
+}

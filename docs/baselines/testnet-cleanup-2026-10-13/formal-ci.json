@@ -1,0 +1,189 @@
+{
+  "head_sha": "4e262c80e9e3866d055c87c43cf9c7d6b377af2a",
+  "ci_run_id": 38383908086,
+  "ci_url": "https://github.com/alfongj-com/engine-core/actions/runs/38383908086",
+  "workflow_conclusion": "success",
+  "job_conclusions": {
+    "protocols": "success",
+    "rust-fees": "success"
+  },
+  "workflow_status_note": "See workflow and job conclusions; model artifact verification is independent of workflow completion.",
+  "protocols": {
+    "cases": 100,
+    "all_expected_outcomes": true,
+    "kinds": {
+      "positive": 22,
+      "fault": 49,
+      "boundary": 12,
+      "witness": 17
+    },
+    "source_hashes_verified": 92,
+    "model_and_config_hashes_verified": 100,
+    "tlc_version": "1.7.4",
+    "tlc_sha256": "936a262061c914694dfd669a543be24573c45d5aa0ff20a8b96b23d01e050e88",
+    "report_sha256": "bdf909b295851c2623df9eec018b39e109eb213b6e106960bc8e46112be40761",
+    "source_map_sha256": "b0e4a77686e867dac8a37f625eb1de1b5d551e1600f2ea02b9b22b35a6b0e451",
+    "manifest_sha256": "f5df91a56e80835db24588d1e1e40a3aea0ff7b30757409e546cef0d456ce869",
+    "source_sha256": {
+      "core/src/chain.rs": "39ede93dd327f7218ed406f9b7cb04d99b84a4311a6fc4b73274d13c6b4f59f6",
+      "core/src/execution_options/solana.rs": "5b72692caf397365c1a07003258624122994cec0335461753a424a7d01ed1bea",
+      "core/src/finality.rs": "ffdad9f88eb09c4e38c9d3c87978395061753ef5a4b63af7ada6e33c2b3e6aae",
+      "core/src/finality_tests.rs": "32963ae19ae04e72057363e1b41173646a89ae3a29042ef7b1fca3807a3a2a69",
+      "core/src/lib.rs": "5a036570fc7c8af0e118636955ed625a5dc00fa69da230ae317dc999484189cb",
+      "core/src/recovery.rs": "4b3349ef5afe100eebc4ab61616ff685315e185265258b1fa29cd36172e17c21",
+      "core/src/recovery/operations.rs": "3a115e52f3467288c9b9fbfcb1e3c9bdfcbe76dc10f7f7e34361ed0506b6bb31",
+      "core/src/recovery/export.rs": "2829c6523f39939a363c6e8a399c08f5548fbabe939f2fe074ca687f5fd74c92",
+      "core/src/recovery/history_index_tests.rs": "f300a3ae043026c0d95d18483c5622ec8e744ae9c4e04a6fe68bedbd9848ab75",
+      "core/src/recovery/tests.rs": "e47bd7f61ac827b0684e76d2f7d552e5193054cba9e40e9c819efbf923bd24c8",
+      "executors/src/eip7702_executor/confirm.rs": "628f13e41800f39d281405da563526fa7961d3026779edfe9d6e7427762b6b87",
+      "executors/src/eip7702_executor/mod.rs": "e8bc6ba0c547349c1e9bb380b7c7bc0cef88112e0f25b2dc3798744c3b027e8a",
+      "executors/src/eip7702_executor/send.rs": "3ee9566864eeb2e3332d44074e1e4140933e4c8093ca2808067eb2166eb27291",
+      "executors/src/eoa/events.rs": "2b5f8935c11c10b8df177acfa12b6c85ebc49a9ddafcaddfd278ee07f6330b39",
+      "executors/src/eoa/store/atomic.rs": "ad4d7256739b339106f129b3b94c269252df5697418ade92c14297ae7e01dd10",
+      "executors/src/eoa/store/borrowed.rs": "665a02593e533cc49c243b83a52be9ab18cdb2172d40f54c5ac2546d51c0fe22",
+      "executors/src/eoa/store/hydrate.rs": "0bfb4397332e0f3b94779caf37f72820da15f96225ed6210d8da8f76c60d8fa6",
+      "executors/src/eoa/store/mod.rs": "7c1fefa822daa156474da3dc5bcb31bd951eda7e89e2a13f4fcb8bb9cdb10d4e",
+      "executors/src/eoa/store/pending.rs": "56792080135b85e1f8c3ec60e7a61c38370e730d1fc873b31329bc6a705a49de",
+      "executors/src/eoa/store/submitted.rs": "f9408dc0ec413c3f909ee00a576a6e8f3c14d352ed818a47d348b5cf16d655c3",
+      "executors/src/eoa/store/tests.rs": "d2abd50df66dc1ffc64f2564752e104f946b43f086f50e38d332a1474edb7370",
+      "executors/src/eoa/worker/confirm.rs": "d045cd9b652bbb396c64a1585ca04987c3d00fb4170b37d9798fe8afa33af3ed",
+      "executors/src/eoa/worker/error.rs": "525cd8260c35d04711b1b1f987a2f7456d2d010ff03ad109df8678d95b092b52",
+      "executors/src/eoa/worker/fee_math.rs": "98a27d1919e073ccf8d3ce66ce665bd03a6e6a14671fe371e7c1e2b7006db6f0",
+      "executors/src/eoa/worker/fee_tests.rs": "1d4f8b258453e88bf5e52d6d0e1eb94bd0862a038e88f4df7ddb59a6df8c72fd",
+      "executors/src/eoa/worker/gap_replay.rs": "a15ec4fb0017d6f3145bae9f0631f9ded26ec0f7ce77a728790c3c7f99251848",
+      "executors/src/eoa/worker/gap_replay_tests.rs": "3405e2f312acb0a82425d8b885dc908e1910ea2a4f018d1da6c38a1b1573971f",
+      "executors/src/eoa/worker/mod.rs": "6e9d03ecb5bf8bbae076e54516fa83d157eb41e071cd47915c6c0976ff700ee9",
+      "executors/src/eoa/worker/receipt_tests.rs": "ae63aed8e6a48697348f523a591ae4c712a251c8283d97b0c3dc6e24c28d6267",
+      "executors/src/eoa/worker/scheduling_tests.rs": "e13f61f476c4fe9b1b82f6a7024eed8b5d560225486c48456ea0848dec05a280",
+      "executors/src/eoa/worker/send.rs": "dd6f2d9e314459a8a9677255ad9b008a47a53056bb303e0474e40d5bb1128bd9",
+      "executors/src/eoa/worker/send_dispatch_tests.rs": "3e9cbc5b29f1c1b88e25b3d3592544f62cb4c220c5bbcad2a01edb9020efb183",
+      "executors/src/eoa/worker/send_tests.rs": "44ec24cd2cb9be1b9fc38b7a57fad6fa023f4964f2a50a62c765dde9c22279b0",
+      "executors/src/eoa/worker/transaction.rs": "5e54409bbfccdfbbcee6d76ca32f355bee9679cc36d9dd83505eb809d572f530",
+      "executors/src/external_bundler/confirm.rs": "f5c44a5dd5145ad8f0b0d805b0f1bb00d404956387bb17a2cc621877005514f5",
+      "executors/src/external_bundler/send.rs": "af0de44d186d91b37255e055ecf1bc87974b8d618351323cf0336e53e8d2c2bb",
+      "executors/src/external_bundler/send_security_tests.rs": "10c53dfb01f76f223694a1b0df2faa8da62a9bfd2f7b2ea5385d8017128027c7",
+      "executors/src/finality.rs": "cc8918774c0355a07f16fb143b584831ad232ce2a1ea3a9f7665141ed519cb78",
+      "executors/src/finality_tests.rs": "b12fbfee8e11097d5f94936b4563bc57ec3d4adb549f349df3c1906fd77d4341",
+      "executors/src/lib.rs": "fbf2ed1cfed128c415dda41d134222f1f7052888eb009ac49e67a6ae88cf7c7a",
+      "executors/src/recovery.rs": "ad36d80717697f3695c31bdd753009992a33636ccd4e24ae239dc04899e03039",
+      "executors/src/recovery_tests.rs": "978c1b9df0b6775f89104511b1641c910ac3e326e7b000ba112a29c88584a9af",
+      "executors/src/solana_executor/recovery_tests.rs": "09c5d4149598e0dae329d938ce090b2f8c4ea7d6f70616044870b77ccf0e223c",
+      "executors/src/solana_executor/rpc_cache.rs": "ea37a1527c49a77c7b28eaa9df72568ee42f15699dfed119b927ee68b88b5d11",
+      "executors/src/solana_executor/rpc_cache_tests.rs": "11dcd4f3fc492495deafba0a9a3478c3c9d0d09ae8fad9b7b27e6800f2395b4c",
+      "executors/src/solana_executor/storage.rs": "a8700a8c7736737b5a6c8c3e618eb7dee39f2868b08e17fc6448c5f77a179b91",
+      "executors/src/solana_executor/worker.rs": "2767f382da839ebc3a45b2234d83a625ab0cfaad25a6c5c8121b3dc7d1af70bb",
+      "scripts/capacity_faults.py": "59e2bc4d90bceca2682c27e35c5871ee538d4878a795f990fa90e6d5f90afa13",
+      "scripts/local_eoa_recovery.py": "e044c9495ce18375772fca3edac92a7e5d675f95001f876afe48928163e20584",
+      "scripts/local_eoa_reorg.py": "9db7b030ac5bcdb626b7f42a4669603963d222e6cea6ea09faa59935e62f2e32",
+      "scripts/local_redis_disaster.py": "bff0e95aea7ab0039d9d5ba395d9627858020d95ddb5be991882db7d8b77901b",
+      "scripts/local_solana_recovery.py": "0394f281e25d4a289bd3db3e190adf24bee7ed28d087fa5291a9fe3e375face2",
+      "scripts/test_local_eoa_reorg.py": "04fdc9c368ecab32a29b320be87d17f0fd4f98249137829658c06ff0f9938ce3",
+      "server/src/bin/engine-recovery.rs": "61e8e345bd4c987188138d98166f1193cb3880e09c19985770eaf638cfceeaa7",
+      "server/src/chains.rs": "cd1390acf370862aaf6dd86e4cb0e2bd4bc796fdf8fbbb728ec6f9a0eab45e82",
+      "server/src/chains_tests.rs": "bccf7a5677b71e4dfa0f0dc3a961515dcde99bcb852f75508a6bf8a45fde1c01",
+      "server/src/config.rs": "e1e671b87cd1a31f8ecc750ddeeb3041d007b787aa41051020920d2185eb68d5",
+      "server/src/execution_router/mod.rs": "570c5284aa5f7005ef027aedc0f7eb397184c18b7fc6b4370c86c554a2b549c4",
+      "server/src/http/routes/admin/eoa_diagnostics.rs": "137fedd8cf297c9718e8cf5084ca49f3e9db11081fd56b6dea805deba527603e",
+      "server/src/http/routes/admin/queue.rs": "35e9ec4bd381d4225e3fbb80d6fa76614b16e6cab2b6c52160b35112dce88678",
+      "server/src/http/server.rs": "1ede68cd3e6e390a0762820b771a611c227fc0becaf59de5aa97f378daed3240",
+      "server/src/http/server_tests.rs": "76c9b9eb507caf21b6b303080d102614992c2e416f571acf80bf4e5140801156",
+      "server/src/lib.rs": "00c234516c2327a6d2e6ba2453e03f674708c7b23a2b4c017a2175cfc171e02f",
+      "server/src/main.rs": "5d24cddbc8de2dd120d12d4f7541ad044eb4780e32221a86ebdea4d85840ecae",
+      "server/src/queue/manager.rs": "ccca5fa04f028476807f82c8b7353c25373604bb605fe57d74ab2aa38a2c199a",
+      "server/src/recovery.rs": "827eeb571f7f46061d42b66c4b58ffd81a4849f6fec52048b8467b08e2814af8",
+      "server/src/solana_admission.rs": "90feede76d416fde5c02617ebd37b373cd4c75e79d2a9c07a1bf61de51829d3a",
+      "server/src/solana_admission_tests.rs": "fa03eb98e10f61c064463b0bd843c17d62a9851b6317fd08a0fe445ec13f046f",
+      "server/tests/api_safety.rs": "1cc6ccc9ba7fcefe4787b41eb1ac52a9b93fc383616ded300048760e4ed835da",
+      "twmq/src/diagnostic_tests.rs": "69f2c27fa363fefb3b51102787dc5b8527a88ab28d5f11374c1ed207cf797cee",
+      "twmq/src/diagnostics.rs": "4deced248ddbf94a1b97b6635afa8269b30f2dd69a10d3af206e2c22891440a8",
+      "twmq/src/lease_tests.rs": "5d7d1967870e81b60ad338cb4637369d25ed693608a584011bd0e16fd129fb8e",
+      "twmq/src/lib.rs": "f6ae29909445a9f1ead10abe3debfed9c56aa379f3cbb696aa7c6a69092ce22e",
+      "twmq/src/multilane.rs": "0c904b73cb7ee068e0cfa182341b753fd75dbb8d3bcda876cfd1a7b3471ecdda",
+      "twmq/src/multilane_diagnostic_tests.rs": "fa1a36455db6c9b899a7a0bf96d7c567882aa38843615a86348361460c3a04b8",
+      "twmq/src/multilane_lease_tests.rs": "13c28e2f25f6a12871872fd1e7b869f15487ed6c88515f059abf1bf3154af60b",
+      "twmq/src/transaction.rs": "ec2c93b75b9d3d21ae5fc1a4e93461c21898fb52a08fff5602754a77f2788c0a",
+      "core/src/recovery/cancellation_tests.rs": "6c1d94ed0cd8bd35918878a9222bf89a5ce1661033896f970d677f536b1a24c8",
+      "server/src/shutdown.rs": "21ebd4b9aac7fd380d612ac80eba9c05b15af9f780613020a8f55f4aca370fd3",
+      "core/src/error.rs": "fd8eebfe284c32dd73c1351980e32aaca9acb4ceebc1d5a1f36635d11f2496a3",
+      "core/src/recovery/projection.rs": "87c9c9c8938fdfc41eeaa75694a16d4e0dc7732e704dcc5c28bd098058b07998",
+      "core/src/recovery/projection_tests.rs": "4f18ecbca278d0352bbde7b913f24cbbc8afe05cd6841ecb66c1fb97ea0648ef",
+      "core/src/recovery/projection_transport_tests.rs": "039c1f453044f9d3128727676d543638a78a211b53a15ccbf9bbeded95eac145",
+      "core/src/recovery/fairness.rs": "1ea5fdcfb0cf48c592b05804762b17b06228b68212cd7224f7b52b60bfec8b96",
+      "test-support/redis_reply_loss.rs": "798c8ea293da5d0b322856d6f8339edeb2b08a9715e44ef6f18d6b5618b5459a",
+      "executors/src/solana_executor/status_batcher.rs": "5f9c70904f30668da5a248a4bf34aa98206b6486bb345d203b043d1bcdb6c745",
+      "executors/src/solana_executor/status_batcher_tests.rs": "8fbe78e6c7da0aac317f0dbe4e81770c201170d079821af788428d1a2053ecb4",
+      "server/src/http/error.rs": "2f6dc401112a9f419b37c0612ba35e7d58bdbd293a736974dcea7deb3831d17a",
+      "twmq/src/shutdown_tests.rs": "6a1fd3884a599bf3789fa5155fc80434d9e45d0153ab7d5fc99f531dacee2625",
+      "core/src/recovery/solana_projection.rs": "f2847b03ee8a5d60fb4753163dbc11228346f39b7bd45991fc9f4fc20dd83c6e",
+      "core/src/recovery/solana_projection_tests.rs": "1532ade53c1130266e6f73b49f86262974ff5a474ec02002b27c85468e75e4a9",
+      "core/src/recovery/projection_reattach_tests.rs": "d26c506a82e05af0453c6364c52a02ee5a7e33b7daa64d2825c46631701a8237"
+    }
+  },
+  "fees": {
+    "production_harnesses_proved": 5,
+    "mutation_counterexamples": 2,
+    "kani_version": "0.68.0",
+    "source_sha256": {
+      "executors/src/eoa/worker/fee_math.rs": "98a27d1919e073ccf8d3ce66ce665bd03a6e6a14671fe371e7c1e2b7006db6f0",
+      "formal/fees/src/lib.rs": "cccdc619cfee272693cd81917ddc1e469e292160c1be963cc4df8d76b315d6d7",
+      "formal/fees/check.py": "4f0d088260e48ff2f46579e835c9b67a256115f7da4cf34fb936c3da5ac8c86e"
+    },
+    "summary_sha256": "2bc2d07087d2aff1021d9151fef064c3090e38447316c38facd932a5009068e7",
+    "harnesses": [
+      {
+        "name": "proofs::actual_dynamic_bump_preserves_valid_order_and_values",
+        "status": "Success",
+        "checks": 24
+      },
+      {
+        "name": "proofs::division_parts_reconstruct_all_inputs",
+        "status": "Success",
+        "checks": 16
+      },
+      {
+        "name": "proofs::actual_parts_match_mathematical_saturation_threshold",
+        "status": "Success",
+        "checks": 30
+      },
+      {
+        "name": "proofs::all_increases_are_nondecreasing_when_cap_permits",
+        "status": "Success",
+        "checks": 22
+      },
+      {
+        "name": "proofs::all_multipliers_respect_caps_and_priority",
+        "status": "Success",
+        "checks": 24
+      }
+    ],
+    "mutations": [
+      {
+        "name": "removed_cap",
+        "expected_assertion": "new_fee <= fee_cap.unwrap_or(u128::MAX)"
+      },
+      {
+        "name": "wrapping_multiply",
+        "expected_assertion": "fee_math::capped_increase(value, multiplier, Some(cap)) >= value"
+      }
+    ]
+  },
+  "artifacts": [
+    {
+      "name": "protocol-model-results",
+      "id": 11804324538,
+      "digest": "sha256:84fe0e74e0b69e82fe50f03531cb71de417e3a80e5b3d5420d0056e9ad569876",
+      "size_in_bytes": 452497,
+      "expired": false,
+      "downloaded_archive_digest_verified": true
+    },
+    {
+      "name": "rust-fee-proof-results",
+      "id": 11803754992,
+      "digest": "sha256:a5823d63ab238dd153904e2946808954080134486fef5c8ca4e0ee15d8ae64ab",
+      "size_in_bytes": 11425,
+      "expired": false,
+      "downloaded_archive_digest_verified": true
+    }
+  ],
+  "scope": "Bounded model outcomes and production fee arithmetic. Source hash checking is not a refinement or composition proof."
+}
