@@ -1,8 +1,8 @@
 # Local testing on Alfonso's Mac
 
-Last updated: **October 12, 2026**. These instructions run disposable local
-fixtures. They do not qualify public RPC capacity, rollup settlement or production
-readiness.
+Last updated: **October 13, 2026**. Sections 1–5 use disposable local
+fixtures. Section 6 describes the separately budgeted public-testnet harnesses.
+Neither establishes public RPC capacity, rollup settlement or production readiness.
 
 ## What is saved
 
@@ -11,16 +11,20 @@ readiness.
 | Main checkout | `/Users/alfongj/Code/engine-core` |
 | PR #1 baseline | Merged into `main` at `154b0ac`; preserved branch `production-hardening` at `8741b88` |
 | PR #2 baseline | Merged into `main` at `918d7d9`; preserved branch `crash-recovery-and-chain-fairness` |
-| [PR #3](https://github.com/alfongj-com/engine-core/pull/3) | Branch `recover-retained-transactions`; implementation checkout `/Users/alfongj/Code/engine-core-review-stack` |
+| [PR #3](https://github.com/alfongj-com/engine-core/pull/3) baseline | Merged into `main` at `8fa866e`; executable implementation `04d15d8` |
+| Active cleanup | `/Users/alfongj/Code/engine-core-review-stack`, branch `cleanup-recovery-paths`, runtime `835c7c2` |
 | Full historical evidence in Git | Local and remote branch `load-tests`; use its current head for new evidence |
 | Browsable local evidence | `/Users/alfongj/.local/share/engine-core/evidence/load-tests-603c228/LOAD_TESTS.md` |
 | Installed test tools and checksum manifest | `/Users/alfongj/.local/share/engine-core/tools/` |
 | Private retained incident data; leave untouched | `/Users/alfongj/.local/share/engine-core-custody/` |
 
-PRs #1 and #2 are merged. The current follow-up adds schema-3 retained Solana
-recovery and offline reattachment of pending targets. Read [WORK_IN_PROGRESS.md](WORK_IN_PROGRESS.md)
-for exact validation and remaining limits. Historical reports apply to their
-recorded source hashes, not automatically to the current checkout.
+PRs #1–3 are merged. The active cleanup separates offline recovery operations
+and Solana transaction lifecycle code. At `835c7c2`, the full local Rust suite
+(including 181 Redis/API tests), 10 process scenarios and 100 bounded model cases
+passed, with 92 matching source guards. Public Solana Devnet runs passed on both
+baseline and cleanup binaries: six finalized effects each, no duplicates. Public
+EVM qualification is pending. Read [WORK_IN_PROGRESS.md](WORK_IN_PROGRESS.md) for
+scope and remaining work. Historical results apply only to their recorded source.
 
 The tools formerly under `/tmp/engine-*` were removed by temporary-file cleanup.
 Use the persistent paths below. The old release binary is preserved as
@@ -60,9 +64,9 @@ another agent's work. These commands create detached test checkouts when absent:
 ```sh
 cd /Users/alfongj/Code/engine-core
 git status --short --branch
-git worktree add --detach /Users/alfongj/Code/engine-core-test-baseline 918d7d9
-git worktree add --detach /Users/alfongj/Code/engine-core-test-wip recover-retained-transactions
-cd /Users/alfongj/Code/engine-core-test-baseline
+git worktree add --detach /Users/alfongj/Code/engine-core-test-pr3-baseline 8fa866e
+git worktree add --detach /Users/alfongj/Code/engine-core-test-cleanup-835c7c2 835c7c2
+cd /Users/alfongj/Code/engine-core-test-pr3-baseline
 source /Users/alfongj/.local/share/engine-core/tools/env.sh
 unset CARGO_TARGET_DIR
 ```
@@ -174,10 +178,11 @@ Run sequentially after the build succeeds:
   --rust-log debug --report "$ENGINE_TEST_REPORTS/solana.json"
 ```
 
-On PR #3, the Solana command runs both variants and writes `solana.json` and
-`solana-projection-loss.json`. The baseline runs only the retained-Redis case.
-On PR #3, use `--keep-attempts-on-restart` or `--drop-attempts-on-restart` to run
-one variant; those flags are unavailable in the baseline.
+Both the merged PR #3 baseline and cleanup runtime run both Solana variants,
+writing `solana.json` and `solana-projection-loss.json`. Use
+`--keep-attempts-on-restart` or `--drop-attempts-on-restart` for one variant.
+The older PR #2 baseline `918d7d9` supports only the default retained-Redis case
+and does not accept these two flags.
 
 These check actual signed identities, duplicate admission, reverted execution,
 provisional reorgs, ambiguous responses and quarantine. A refusal to restart or
@@ -214,6 +219,80 @@ separate. Confirm owned processes stopped; retain all unresolved state. Do not
 change or resume `/Users/alfongj/.local/share/engine-core-custody/` or the old
 `engine-nitro` VM/container.
 
+## 6. Bounded public-testnet correctness runs
+
+Use these only for the authorized, capped testnet campaign. They require the
+existing loopback budget gateway at `127.0.0.1:8788` and dedicated testnet custody
+under `~/.config/engine-core`. They do not accept wallet keys in CLI arguments.
+Keep the gateway's shared spending ledger and unresolved-run locks intact.
+
+The harness checkout may change independently of the tested executable. Pin the
+binary explicitly; its hash is checked before every launch. The source argument
+records the declared binary commit separately from the harness commit/hash.
+These saved binaries correspond to the current comparison:
+
+| Binary under `/Users/alfongj/.local/share/engine-core/runs/testnet-cleanup-2026-10-13/` | Declared source |
+| --- | --- |
+| `engine-baseline-04d15d8` | `04d15d86ad960f40345d7dddb8c84505ba3e96ba` (merged in PR #3) |
+| `engine-candidate-835c7c2` | `835c7c2905d3ed59b81c67b6338e2320c6646b79` |
+
+For a **new** bounded run, choose one binary/source pair and a new private output
+directory. The following example selects the baseline and exercises lost send
+responses, restart and retries using the original request IDs:
+
+```sh
+cd /Users/alfongj/Code/engine-core-review-stack
+source /Users/alfongj/.local/share/engine-core/tools/env.sh
+umask 077
+ENGINE_PUBLIC_BIN=/Users/alfongj/.local/share/engine-core/runs/testnet-cleanup-2026-10-13/engine-baseline-04d15d8
+ENGINE_PUBLIC_SOURCE=04d15d86ad960f40345d7dddb8c84505ba3e96ba
+ENGINE_PUBLIC_RUN="$(mktemp -d /Users/alfongj/.local/share/engine-core/runs/public-check.XXXXXX)"
+
+"$PYTHON_BIN" scripts/testnet_evm_write.py \
+  --engine-bin "$ENGINE_PUBLIC_BIN" --engine-source-commit "$ENGINE_PUBLIC_SOURCE" \
+  --chain 11155111 --transactions 6 --rate 1 --crash --timeout 3600 \
+  --report "$ENGINE_PUBLIC_RUN/evm.json"
+"$PYTHON_BIN" scripts/testnet_solana_write.py \
+  --engine-bin "$ENGINE_PUBLIC_BIN" --engine-source-commit "$ENGINE_PUBLIC_SOURCE" \
+  --execute --transactions 6 --rate 1 --crash --timeout 600 \
+  --run-dir "$ENGINE_PUBLIC_RUN/solana"
+```
+
+Run one campaign at a time per signer and chain. EVM choices are Sepolia
+`11155111`, Arbitrum Sepolia `421614`, Optimism Sepolia `11155420`, and Base Sepolia
+`84532`. The EVM harness requires finalized terminal state, matching retained
+Redis evidence, and an independent canonical/finalized provider check. It never
+falls back to a depth policy. Allow for testnet finality delays rather than
+interpreting a timeout as an absent transaction. `--revert-to` accepts only an
+existing reverting contract, zero value and empty calldata; public revert
+qualification is still pending.
+
+Solana uses Devnet and checks finalized receipts, exact balance changes and
+recipient signature history. Its first rent-bearing transfer finalizes before
+the other transfers. `--crash` drops send responses and kills Engine; EVM also
+restarts Redis and requires exact-checkpoint reattachment.
+
+### Retained state and resume
+
+Each run keeps its original IDs, signed wires, journal, Redis AOF and private
+report. Do not remove a lock, replace a journal, invent new request IDs, or start
+a new funded run to work around an uncertain outcome. EVM has no automatic
+resume mode: inspect and reconcile its original retained state first.
+
+Solana can resume **only the same incomplete run**, with its matching binary,
+retained journal and AOF. Do not pass `--run-dir` or create new payloads:
+
+```sh
+"$PYTHON_BIN" scripts/testnet_solana_write.py \
+  --engine-bin "$ENGINE_PUBLIC_BIN" --engine-source-commit "$ENGINE_PUBLIC_SOURCE" \
+  --execute --resume "$ENGINE_PUBLIC_RUN/solana" --timeout 600
+```
+
+Reports on stdout contain aggregate results; private files may contain addresses,
+signed bytes and process credentials. Publish only reviewed, sanitized aggregates
+on `load-tests`, keeping baseline and candidate provenance separate. These small
+runs test correctness and recovery, not maximum throughput or provider capacity.
+
 ## Prompt for another local agent
 
 ```text
@@ -221,13 +300,14 @@ Test Engine Core locally on this Mac.
 
 Repository: /Users/alfongj/Code/engine-core
 Read README.md and LOCAL_TESTING.md first. Read the saved WIP notes with:
-  git show recover-retained-transactions:WORK_IN_PROGRESS.md
+  git show cleanup-recovery-paths:WORK_IN_PROGRESS.md
 Load tools with:
   source /Users/alfongj/.local/share/engine-core/tools/env.sh
 
 Use isolated test checkouts as documented; do not switch or reset the main
-checkout. Compare baseline 918d7d9 (merged PR #2) and recover-retained-transactions
-in separate checkouts. Inspect existing test directories
+checkout. Compare baseline 8fa866e (merged PR #3) and cleanup runtime 835c7c2
+in separate checkouts. Active work is in /Users/alfongj/Code/engine-core-review-stack
+on cleanup-recovery-paths; preserve its edits. Inspect existing test directories
 before reusing them. Build each checkout's own target/debug/thirdweb-engine.
 
 Run the fast harness checks, compile, Rust/Redis regressions and local EVM/Solana
@@ -236,7 +316,8 @@ loopback endpoints and generated test keys. No paid/public RPCs, existing wallet
 keys, faucets, old incident journals or the retained Nitro VM. Preserve failed
 reports and runtime data. Do not clear safety fences or suppress failed tests.
 
-The follow-up restores exact retained Solana attempts and reattaches pending targets.
+The cleanup separates offline recovery operations and Solana lifecycle code.
+The baseline already includes exact retained Solana recovery and pending-target reattachment.
 Read WORK_IN_PROGRESS.md for the latest qualification results and remaining limits.
 Verify the exact commit you build; historical test passes do not qualify later code.
 Do not implement features or refresh proof hashes merely to make testing pass.

@@ -6,19 +6,28 @@ Rust transaction infrastructure forked from [thirdweb-dev/engine-core](https://g
 
 ## Run and test locally on Alfonso's Mac
 
-The repository is at **`/Users/alfongj/Code/engine-core`**. Start with
+The main checkout is **`/Users/alfongj/Code/engine-core`**. Current cleanup work is
+in **`/Users/alfongj/Code/engine-core-review-stack`**, branch
+`cleanup-recovery-paths`. Start with
 **[LOCAL_TESTING.md](LOCAL_TESTING.md)** for the installed tool paths, isolated
 checkouts, exact test commands, local recovery scenarios and a
 [copyable prompt for another agent](LOCAL_TESTING.md#prompt-for-another-local-agent).
 
-Branch layout on October 12, 2026:
+Branch layout on October 13, 2026:
 
 | Branch | Status |
 | --- | --- |
 | `production-hardening` / [PR #1](https://github.com/alfongj-com/engine-core/pull/1) | Merged into `main` at `154b0ac`; preserved baseline. |
 | `crash-recovery-and-chain-fairness` / [PR #2](https://github.com/alfongj-com/engine-core/pull/2) | Merged into `main` at `918d7d9`: recoverable checkpoint publication, journal fairness and bounded Solana polling. |
-| `recover-retained-transactions` / [PR #3](https://github.com/alfongj-com/engine-core/pull/3) | Follow-up: exact signed Solana projection restoration and offline reattachment of pending checkpoint targets. See [implementation and validation status](WORK_IN_PROGRESS.md). |
+| `recover-retained-transactions` / [PR #3](https://github.com/alfongj-com/engine-core/pull/3) | Merged into `main` at `8fa866e`: exact signed Solana restoration and pending-target checkpoint reattachment. |
+| `cleanup-recovery-paths` | Active cleanup; runtime `835c7c2`. See [validation and remaining work](WORK_IN_PROGRESS.md). |
 | `load-tests` | Historical reports and generated evidence, including failed runs. |
+
+At `835c7c2`, the local Rust suite (including 181 explicit Redis/API tests),
+10 process scenarios, and 100 bounded model cases passed; 92 source guards match.
+Small Solana Devnet crash runs passed on the baseline and cleanup binary, with
+six finalized effects each and no duplicates. Public EVM qualification is still
+pending. These results do not establish public-chain capacity.
 
 The tools and a read-only copy of the evidence are now in
 `/Users/alfongj/.local/share/engine-core/`, outside temporary storage. Load the
@@ -94,4 +103,4 @@ Webhooks are disabled unless `ENGINE_WEBHOOK_ALLOWED_ORIGINS` lists exact HTTPS 
 
 ## Verification scope
 
-Queue jobs per second are not blockchain transactions per second. [Latest measurements](https://github.com/alfongj-com/engine-core/blob/load-tests/docs/baselines/pr2-2026-10-12/README.md) exercise the real server, independent durable journal, Redis AOF, and local EVM/Solana nodes. They report admission, inclusion and finalization separately. Production qualification still needs the intended RPC, signer, transaction workload, public-chain finality window and concurrent-chain load. Finite models and tests do not certify whole-program correctness. See the handoff for results and remaining work.
+Queue jobs per second are not blockchain transactions per second. [Latest measurements](https://github.com/alfongj-com/engine-core/blob/load-tests/docs/baselines/pr2-2026-10-12/README.md) exercise the real server, independent durable journal, Redis AOF, and local EVM/Solana nodes. They report admission, inclusion and finalization separately. Production qualification still needs the intended RPC, signer, transaction workload, public-chain finality window and concurrent-chain load. Finite models and tests do not certify whole-program correctness. See [current validation](WORK_IN_PROGRESS.md) and the handoff for results and remaining work. Public-testnet reports and other generated evidence are kept on the separate `load-tests` branch; private wallets, wires, journals and raw reports stay outside Git.

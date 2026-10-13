@@ -41,11 +41,20 @@
     },
     {
       "path": "core/src/recovery.rs",
-      "sha256": "4b30e9c4f0aa463f196b01d2324d934a36089b3137423742d29567af23977ceb",
+      "sha256": "4b3349ef5afe100eebc4ab61616ff685315e185265258b1fa29cd36172e17c21",
       "models": [
         "DisasterRecovery",
         "Finality",
         "EoaRecovery",
+        "DisasterRecoveryProjection",
+        "SolanaRetainedAttempt"
+      ]
+    },
+    {
+      "path": "core/src/recovery/operations.rs",
+      "sha256": "3a115e52f3467288c9b9fbfcb1e3c9bdfcbe76dc10f7f7e34361ed0506b6bb31",
+      "models": [
+        "DisasterRecovery",
         "DisasterRecoveryProjection",
         "SolanaRetainedAttempt"
       ]
@@ -369,7 +378,7 @@
     },
     {
       "path": "executors/src/solana_executor/worker.rs",
-      "sha256": "413d3796c7c1b5c77b48c423da43b099203bae3c74c132ebf1f09a661e0a51f3",
+      "sha256": "2767f382da839ebc3a45b2234d83a625ab0cfaad25a6c5c8121b3dc7d1af70bb",
       "models": [
         "DisasterRecovery",
         "SolanaRecovery",
@@ -918,6 +927,17 @@
         "core/src/recovery/projection_reattach_tests.rs"
       ],
       "reason": "Schema3 retains recovery mode and cumulative grant count/time in the independent authority. A missing Redis Solana attempt is restored only from a unique canonical retained row after immutable admission, digest, binding, cryptographic wire, blockhash and fee-payer checks; storage-token SET NX never overwrites conflicting data. Restoration grants no send permission. Recovered sends consume a FULL-committed grant through the existing pending-token publication/acknowledgement protocol and recheck Redis ownership before dispatch; cancellation and lost replies burn grants. Durable mode rejects ordinary authorization despite a rolled-back Redis flag. Only the extra20 grants are independently bounded; the conditional20+20 model assumes the original Redis counter is retained before mode activation, and a named boundary shows that assumption failing. The Redis-only Solana model retains its loss boundary; the new retained model and projection model are separate abstractions with no composition theorem. Offline reattach accepts only a primary observation of the exact target, atomically acknowledges pending state and adopts the process identity, then reobserves. Predecessor/missing/foreign markers, unrelated halts and authority loss remain fail-closed. Schema1/2 upgrade, historical schema2 pending repair, serialization, SQL/Redis error behavior, cryptography, filesystem durability, polling costs, wall-clock spacing and throughput require implementation checks. Historical missing-projection-parks notes describe earlier behavior and are superseded only by this supported exact-record restoration path. The existing CI harness invocation now runs retained-Redis and missing-projection scenarios in separate disposable fixtures by default; explicit flags select one case. Reports stay separate and no workflow permission change is needed."
+    },
+    "recovery_readability_followup": {
+      "date": "2026-10-13",
+      "base_commit": "8fa866ebf2cbb3d877be0d9487abcee0d598717f",
+      "status": "Behavior-preserving source correspondence reviewed; execution evidence is recorded separately.",
+      "paths": [
+        "core/src/recovery.rs",
+        "core/src/recovery/operations.rs",
+        "executors/src/solana_executor/worker.rs"
+      ],
+      "reason": "The five offline administration methods move verbatim into operations.rs, preserving owner-lock and transaction scopes, all ten awaits, exact-target acknowledgement/adoption and fresh post-observation. Solana execute_transaction retains admission, storage and journal-binding gates, then directly awaits either retained-attempt reconciliation or initial build/sign/persist/send. Extracted bodies preserve operation order, finality-before-expiry and the second history observation after expiry. No task, permission, new signature path, RPC, grant, schema or durability policy is introduced. Models and bounds remain unchanged; source hashes are a change-review guard, not a refinement proof. Existing crash/cancellation/recovery tests and matched load remain the executable regression checks."
     }
   }
 }
