@@ -1,0 +1,145 @@
+{
+  "runtime_source_commit": "835c7c2905d3ed59b81c67b6338e2320c6646b79",
+  "runtime_binary_sha256": "c0809d09b4eecea9a4e302e151104133b1362459efa147f1c35ab9177ba88365",
+  "all_passed": true,
+  "redis_api_tests": 181,
+  "steps": [
+    {
+      "command": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--check"
+      ],
+      "exit": 0,
+      "seconds": 0.5822630829643458
+    },
+    {
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--workspace",
+        "--",
+        "--test-threads=1"
+      ],
+      "exit": 0,
+      "seconds": 151.45625070796814
+    },
+    {
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "engine-core",
+        "--lib",
+        "recovery",
+        "--",
+        "--ignored",
+        "--test-threads=1"
+      ],
+      "exit": 0,
+      "seconds": 19.886372666922398
+    },
+    {
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "engine-executors",
+        "--lib",
+        "--",
+        "--ignored",
+        "--test-threads=1"
+      ],
+      "exit": 0,
+      "seconds": 31.1059797500493
+    },
+    {
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "thirdweb-engine",
+        "--lib",
+        "solana_admission::tests",
+        "--",
+        "--ignored",
+        "--test-threads=1"
+      ],
+      "exit": 0,
+      "seconds": 13.436191000044346
+    },
+    {
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "thirdweb-engine",
+        "--test",
+        "api_safety",
+        "--",
+        "--ignored",
+        "--test-threads=1"
+      ],
+      "exit": 0,
+      "seconds": 12.351206041057594
+    },
+    {
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "twmq",
+        "--lib",
+        "--",
+        "--ignored",
+        "--test-threads=1"
+      ],
+      "exit": 0,
+      "seconds": 1.6360639160266146
+    },
+    {
+      "command": [
+        "cargo",
+        "build",
+        "--locked",
+        "--bin",
+        "thirdweb-engine",
+        "--bin",
+        "engine-recovery"
+      ],
+      "exit": 0,
+      "seconds": 0.6825219580205157
+    },
+    {
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "capacity_metrics_test"
+      ],
+      "exit": 0,
+      "seconds": 0.1090035840170458
+    },
+    {
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "formal",
+        "-p",
+        "test_*.py"
+      ],
+      "exit": 0,
+      "seconds": 0.051269999938085675
+    }
+  ]
+}

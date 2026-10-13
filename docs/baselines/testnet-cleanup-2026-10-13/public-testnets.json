@@ -1,0 +1,534 @@
+{
+  "scope": "Small funded testnet correctness runs. Provider finalized tags/canonical receipts are checked; no independent consensus or throughput qualification.",
+  "results": [
+    {
+      "label": "public-11155420-baseline",
+      "outcome": "fail",
+      "chain_id": 11155420,
+      "transactions": 6,
+      "offered_rate_tps": 1.0,
+      "finality_timeout_seconds": 2400,
+      "elapsed_seconds": 1449.304,
+      "rpc_calls": 1981,
+      "estimated_rpc_cost_usd": 0.011886,
+      "provenance": {
+        "engine_binary_sha256": "26a05c8f2ce303a8eb40d41f8b3b295befe273e098b4a16b1a9177c55d410dc3",
+        "declared_binary_source_commit": "04d15d86ad960f40345d7dddb8c84505ba3e96ba",
+        "harness_source_commit": "835c7c2905d3ed59b81c67b6338e2320c6646b79",
+        "harness_sha256": "b7c99b79b284ad6b6e0ae24ba15cc4803700d27d996525a262775ed5c22d9fc6",
+        "process_helper_sha256": "db1b04301905b1f2330396474fd66e7a1dbc3c12dc257e5ebd4b3cadbc5e6f88"
+      },
+      "raw_report_sha256": "092800a0b575b9e3fe342a9c47596b09a9c17067b9c7d3b8b9f6b36a16dd9471",
+      "guard_error_count": 0,
+      "rpc_methods": {
+        "11155420:eth_chainId": {
+          "count": 1,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 156.22912500007078
+        },
+        "11155420:eth_getBalance": {
+          "count": 7,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 426.93816700042225
+        },
+        "11155420:eth_getTransactionCount": {
+          "count": 1699,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 83126.62482799985
+        },
+        "11155420:eth_getBlockByNumber": {
+          "count": 178,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 9116.156420002808
+        },
+        "11155420:eth_getCode": {
+          "count": 7,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 689.9645849997178
+        },
+        "11155420:eth_maxPriorityFeePerGas": {
+          "count": 1,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 51.80749999999534
+        },
+        "11155420:eth_estimateGas": {
+          "count": 7,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 754.5804579999531
+        },
+        "11155420:eth_sendRawTransaction": {
+          "count": 27,
+          "httpErrors": 0,
+          "rpcErrors": 21,
+          "totalMs": 10234.28116800019
+        },
+        "11155420:eth_getTransactionReceipt": {
+          "count": 48,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 5768.2874989981065
+        },
+        "11155420:eth_getTransactionByHash": {
+          "count": 6,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 377.2220829995349
+        }
+      }
+    },
+    {
+      "label": "public-421614-baseline",
+      "outcome": "pass",
+      "chain_id": 421614,
+      "transactions": 6,
+      "offered_rate_tps": 1.0,
+      "finality_timeout_seconds": 2400,
+      "unique_chain_effects": 6,
+      "successful_transfers": 6,
+      "finalized_reverted_executions": 0,
+      "unknown_outcome_same_id_retries": 6,
+      "duplicate_chain_effects": 0,
+      "duplicate_requests": 6,
+      "duplicate_rpc_sends": 0,
+      "actual_fees_wei": 2648814000000,
+      "receipt_execution_fees_wei": 2648814000000,
+      "receipt_l1_fees_wei": 0,
+      "other_fee_components_wei": 0,
+      "additional_chain_fee_reserve_wei": 0,
+      "total_debit_allocation_wei": 9653805000006,
+      "gas_limit": 26250,
+      "max_fee_per_gas": 61294000,
+      "admission_seconds": 5.033,
+      "completion_seconds": 1237.229,
+      "batch_completion_tps": 0.005,
+      "maximum_schedule_lag_ms": 10.015,
+      "discarded_send_responses": 6,
+      "unique_upstream_accepted_sends": 6,
+      "actual_rpc_sends": 21,
+      "unique_signed_wires": 6,
+      "elapsed_seconds": 1246.421,
+      "rpc_calls": 1550,
+      "estimated_rpc_cost_usd": 0.009300000000000001,
+      "provenance": {
+        "engine_binary_sha256": "26a05c8f2ce303a8eb40d41f8b3b295befe273e098b4a16b1a9177c55d410dc3",
+        "declared_binary_source_commit": "04d15d86ad960f40345d7dddb8c84505ba3e96ba",
+        "harness_source_commit": "835c7c2905d3ed59b81c67b6338e2320c6646b79",
+        "harness_sha256": "b7c99b79b284ad6b6e0ae24ba15cc4803700d27d996525a262775ed5c22d9fc6",
+        "process_helper_sha256": "db1b04301905b1f2330396474fd66e7a1dbc3c12dc257e5ebd4b3cadbc5e6f88"
+      },
+      "raw_report_sha256": "9261eb4bddc45af21bf3d75215adc288fd1f8ea40023762fbe3145a67f902396",
+      "guard_error_count": 0,
+      "rpc_methods": {
+        "421614:eth_chainId": {
+          "count": 1,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 36.09966700000223
+        },
+        "421614:eth_getBalance": {
+          "count": 7,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 296.4937490002485
+        },
+        "421614:eth_getTransactionCount": {
+          "count": 1424,
+          "httpErrors": 0,
+          "rpcErrors": 4,
+          "totalMs": 93509.93751700222
+        },
+        "421614:eth_getBlockByNumber": {
+          "count": 58,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 3866.5538310003467
+        },
+        "421614:eth_getCode": {
+          "count": 7,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 577.3747080002213
+        },
+        "421614:eth_maxPriorityFeePerGas": {
+          "count": 1,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 70.93679200008046
+        },
+        "421614:eth_estimateGas": {
+          "count": 7,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 309.26070799981244
+        },
+        "421614:eth_sendRawTransaction": {
+          "count": 21,
+          "httpErrors": 0,
+          "rpcErrors": 15,
+          "totalMs": 3862.3396229998907
+        },
+        "421614:eth_getTransactionReceipt": {
+          "count": 18,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 2167.7872099995147
+        },
+        "421614:eth_getTransactionByHash": {
+          "count": 6,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 392.4241259996779
+        }
+      }
+    },
+    {
+      "label": "public-84532-baseline",
+      "outcome": "pass",
+      "chain_id": 84532,
+      "transactions": 6,
+      "offered_rate_tps": 1.0,
+      "finality_timeout_seconds": 2400,
+      "unique_chain_effects": 6,
+      "successful_transfers": 6,
+      "finalized_reverted_executions": 0,
+      "unknown_outcome_same_id_retries": 6,
+      "duplicate_chain_effects": 0,
+      "duplicate_requests": 6,
+      "duplicate_rpc_sends": 0,
+      "actual_fees_wei": 756000000990,
+      "receipt_execution_fees_wei": 756000000000,
+      "receipt_l1_fees_wei": 990,
+      "other_fee_components_wei": 0,
+      "additional_chain_fee_reserve_wei": 6000000000000,
+      "total_debit_allocation_wei": 8520000000006,
+      "gas_limit": 26250,
+      "max_fee_per_gas": 16000000,
+      "admission_seconds": 5.035,
+      "completion_seconds": 1277.46,
+      "batch_completion_tps": 0.005,
+      "maximum_schedule_lag_ms": 10.023,
+      "discarded_send_responses": 6,
+      "unique_upstream_accepted_sends": 6,
+      "actual_rpc_sends": 24,
+      "unique_signed_wires": 6,
+      "elapsed_seconds": 1286.033,
+      "rpc_calls": 1642,
+      "estimated_rpc_cost_usd": 0.009852,
+      "provenance": {
+        "engine_binary_sha256": "26a05c8f2ce303a8eb40d41f8b3b295befe273e098b4a16b1a9177c55d410dc3",
+        "declared_binary_source_commit": "04d15d86ad960f40345d7dddb8c84505ba3e96ba",
+        "harness_source_commit": "835c7c2905d3ed59b81c67b6338e2320c6646b79",
+        "harness_sha256": "b7c99b79b284ad6b6e0ae24ba15cc4803700d27d996525a262775ed5c22d9fc6",
+        "process_helper_sha256": "db1b04301905b1f2330396474fd66e7a1dbc3c12dc257e5ebd4b3cadbc5e6f88"
+      },
+      "raw_report_sha256": "68a2d7aac63bc228077ea73f0d7d5018d9f60aeadd6fe8e8bc9c38d10e10da7d",
+      "guard_error_count": 0,
+      "rpc_methods": {
+        "84532:eth_chainId": {
+          "count": 1,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 149.37670899997465
+        },
+        "84532:eth_getBalance": {
+          "count": 7,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 585.507415
+        },
+        "84532:eth_getTransactionCount": {
+          "count": 1507,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 76659.8615640027
+        },
+        "84532:eth_getBlockByNumber": {
+          "count": 50,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 3028.5277879995992
+        },
+        "84532:eth_getCode": {
+          "count": 7,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 697.3125000001164
+        },
+        "84532:eth_maxPriorityFeePerGas": {
+          "count": 1,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 59.55074999993667
+        },
+        "84532:eth_estimateGas": {
+          "count": 7,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 653.4150830000872
+        },
+        "84532:eth_sendRawTransaction": {
+          "count": 24,
+          "httpErrors": 0,
+          "rpcErrors": 18,
+          "totalMs": 6538.06691799988
+        },
+        "84532:eth_getTransactionReceipt": {
+          "count": 32,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 3612.3376239995705
+        },
+        "84532:eth_getTransactionByHash": {
+          "count": 6,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 489.95950100012124
+        }
+      }
+    },
+    {
+      "label": "public-sepolia-baseline",
+      "outcome": "pass",
+      "chain_id": 11155111,
+      "transactions": 6,
+      "offered_rate_tps": 1.0,
+      "finality_timeout_seconds": 2400,
+      "unique_chain_effects": 6,
+      "successful_transfers": 6,
+      "finalized_reverted_executions": 0,
+      "unknown_outcome_same_id_retries": 6,
+      "duplicate_chain_effects": 0,
+      "duplicate_requests": 6,
+      "duplicate_rpc_sends": 0,
+      "actual_fees_wei": 309605882400,
+      "receipt_execution_fees_wei": 309605882400,
+      "receipt_l1_fees_wei": 0,
+      "other_fee_components_wei": 0,
+      "additional_chain_fee_reserve_wei": 0,
+      "total_debit_allocation_wei": 1555516659402,
+      "gas_limit": 259238,
+      "max_fee_per_gas": 1000057,
+      "admission_seconds": 5.028,
+      "completion_seconds": 804.796,
+      "batch_completion_tps": 0.007,
+      "maximum_schedule_lag_ms": 10.016,
+      "discarded_send_responses": 6,
+      "unique_upstream_accepted_sends": 6,
+      "actual_rpc_sends": 28,
+      "unique_signed_wires": 6,
+      "elapsed_seconds": 812.89,
+      "rpc_calls": 1023,
+      "estimated_rpc_cost_usd": 0.006138,
+      "provenance": {
+        "engine_binary_sha256": "26a05c8f2ce303a8eb40d41f8b3b295befe273e098b4a16b1a9177c55d410dc3",
+        "declared_binary_source_commit": "04d15d86ad960f40345d7dddb8c84505ba3e96ba",
+        "harness_source_commit": "835c7c2905d3ed59b81c67b6338e2320c6646b79",
+        "harness_sha256": "7d746a225c764d2dd9a569da321916a0e6b918c462432f2bdc3f46a474af853c",
+        "process_helper_sha256": "db1b04301905b1f2330396474fd66e7a1dbc3c12dc257e5ebd4b3cadbc5e6f88"
+      },
+      "raw_report_sha256": "ec57b104eb37d09eb673fd8617f76ae9032290c1c5db9994c03403d1df59aaf9",
+      "guard_error_count": 0,
+      "rpc_methods": {
+        "11155111:eth_chainId": {
+          "count": 1,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 36.96208399999887
+        },
+        "11155111:eth_getBalance": {
+          "count": 7,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 454.73870899993926
+        },
+        "11155111:eth_getTransactionCount": {
+          "count": 927,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 72068.49455700163
+        },
+        "11155111:eth_getBlockByNumber": {
+          "count": 11,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 575.0643339999951
+        },
+        "11155111:eth_getCode": {
+          "count": 5,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 625.5267920001643
+        },
+        "11155111:eth_maxPriorityFeePerGas": {
+          "count": 1,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 123.37525000004098
+        },
+        "11155111:eth_estimateGas": {
+          "count": 7,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 897.5215850000968
+        },
+        "11155111:eth_sendRawTransaction": {
+          "count": 28,
+          "httpErrors": 0,
+          "rpcErrors": 22,
+          "totalMs": 16575.24483099999
+        },
+        "11155111:eth_getTransactionReceipt": {
+          "count": 30,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 3282.5528349993983
+        },
+        "11155111:eth_getTransactionByHash": {
+          "count": 6,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 314.87437399988994
+        }
+      }
+    },
+    {
+      "label": "public-solana-baseline",
+      "outcome": "pass",
+      "transactions": 6,
+      "engine_local_concurrency": 6,
+      "unique_finalized_effects": 6,
+      "duplicate_effects": 0,
+      "duplicate_replay_extra_broadcasts": 0,
+      "transferred_lamports": 650245,
+      "fees_lamports": 30000,
+      "crash_mode": true,
+      "discarded_send_responses": 6,
+      "wire_retransmissions": 7,
+      "crash_recovered_intents": 5,
+      "unknown_outcome_same_id_retries": 5,
+      "rpc_reserved": 66,
+      "elapsed_seconds": 379.461,
+      "requested_post_bootstrap_admissions_per_second": 1.0,
+      "paced_admissions": 5,
+      "paced_admission_elapsed_seconds": 4.002,
+      "observed_admission_spacing_per_second": 1.0,
+      "bootstrap_admission_to_finalized_observed_seconds": 359.029,
+      "free_official_rpc_calls": 1,
+      "provenance": {
+        "engine_binary_sha256": "26a05c8f2ce303a8eb40d41f8b3b295befe273e098b4a16b1a9177c55d410dc3",
+        "declared_binary_source_commit": "04d15d86ad960f40345d7dddb8c84505ba3e96ba",
+        "harness_source_commit": "835c7c2905d3ed59b81c67b6338e2320c6646b79",
+        "harness_sha256": "311d439d531d9b39ca2e360936fff766552375fed0b29cdec7decb62ddfdcfd2",
+        "process_helper_sha256": "db1b04301905b1f2330396474fd66e7a1dbc3c12dc257e5ebd4b3cadbc5e6f88"
+      },
+      "raw_report_sha256": "eda9845bb424c87572fa00600eeaaa08e01becca8745acd16b02f76f0f24513e",
+      "rpc_methods": {
+        "getGenesisHash": 4,
+        "getBalance": 4,
+        "getLatestBlockhash": 6,
+        "getFeeForMessage": 6,
+        "sendTransaction": 13,
+        "getSignatureStatuses": 6,
+        "getTransaction": 12,
+        "getBlockHeight": 14,
+        "getSignaturesForAddress": 1
+      },
+      "estimated_rpc_cost_usd": 0.000396
+    },
+    {
+      "label": "public-solana-candidate",
+      "outcome": "pass",
+      "transactions": 6,
+      "engine_local_concurrency": 6,
+      "unique_finalized_effects": 6,
+      "duplicate_effects": 0,
+      "duplicate_replay_extra_broadcasts": 0,
+      "transferred_lamports": 650245,
+      "fees_lamports": 30000,
+      "crash_mode": true,
+      "discarded_send_responses": 5,
+      "wire_retransmissions": 7,
+      "crash_recovered_intents": 5,
+      "unknown_outcome_same_id_retries": 5,
+      "rpc_reserved": 62,
+      "elapsed_seconds": 21.283,
+      "requested_post_bootstrap_admissions_per_second": 1.0,
+      "paced_admissions": 5,
+      "paced_admission_elapsed_seconds": 4.005,
+      "observed_admission_spacing_per_second": 0.999,
+      "bootstrap_admission_to_finalized_observed_seconds": 1.577,
+      "free_official_rpc_calls": 1,
+      "provenance": {
+        "engine_binary_sha256": "c0809d09b4eecea9a4e302e151104133b1362459efa147f1c35ab9177ba88365",
+        "declared_binary_source_commit": "835c7c2905d3ed59b81c67b6338e2320c6646b79",
+        "harness_source_commit": "835c7c2905d3ed59b81c67b6338e2320c6646b79",
+        "harness_sha256": "d13696507a8026c72c5509b231f9d0fec3236fe614d8e5c14009790b9c0ef8f2",
+        "process_helper_sha256": "db1b04301905b1f2330396474fd66e7a1dbc3c12dc257e5ebd4b3cadbc5e6f88"
+      },
+      "raw_report_sha256": "4131c8e1928d2deb357534c5c90936bf6e73c8a7a4035cc8e01098d432328629",
+      "rpc_methods": {
+        "getGenesisHash": 3,
+        "getBalance": 4,
+        "getLatestBlockhash": 6,
+        "getFeeForMessage": 6,
+        "sendTransaction": 13,
+        "getSignatureStatuses": 6,
+        "getTransaction": 12,
+        "getBlockHeight": 11,
+        "getSignaturesForAddress": 1
+      },
+      "estimated_rpc_cost_usd": 0.000372
+    },
+    {
+      "label": "public-solana-candidate-final",
+      "outcome": "pass",
+      "transactions": 6,
+      "engine_local_concurrency": 6,
+      "unique_finalized_effects": 6,
+      "duplicate_effects": 0,
+      "duplicate_replay_extra_broadcasts": 0,
+      "transferred_lamports": 650245,
+      "fees_lamports": 30000,
+      "crash_mode": true,
+      "discarded_send_responses": 6,
+      "wire_retransmissions": 8,
+      "crash_recovered_intents": 5,
+      "unknown_outcome_same_id_retries": 5,
+      "rpc_reserved": 69,
+      "elapsed_seconds": 22.121,
+      "requested_post_bootstrap_admissions_per_second": 1.0,
+      "paced_admissions": 5,
+      "paced_admission_elapsed_seconds": 4.0,
+      "observed_admission_spacing_per_second": 1.0,
+      "bootstrap_admission_to_finalized_observed_seconds": 1.601,
+      "free_official_rpc_calls": 1,
+      "provenance": {
+        "engine_binary_sha256": "c0809d09b4eecea9a4e302e151104133b1362459efa147f1c35ab9177ba88365",
+        "declared_binary_source_commit": "835c7c2905d3ed59b81c67b6338e2320c6646b79",
+        "harness_source_commit": "835c7c2905d3ed59b81c67b6338e2320c6646b79",
+        "harness_sha256": "596ccf0f8db38c6c087b84ccb66a75ce24871e22ddc21c7e8bf76e5d57bac82b",
+        "process_helper_sha256": "db1b04301905b1f2330396474fd66e7a1dbc3c12dc257e5ebd4b3cadbc5e6f88"
+      },
+      "raw_report_sha256": "2258aff3a9228cd81a155e0469e29622fa8b68be30fe0afb0c2350b0a5618e60",
+      "rpc_methods": {
+        "getGenesisHash": 3,
+        "getBalance": 4,
+        "getLatestBlockhash": 6,
+        "getFeeForMessage": 6,
+        "sendTransaction": 14,
+        "getSignatureStatuses": 6,
+        "getTransaction": 12,
+        "getBlockHeight": 17,
+        "getSignaturesForAddress": 1
+      },
+      "estimated_rpc_cost_usd": 0.000414
+    }
+  ]
+}

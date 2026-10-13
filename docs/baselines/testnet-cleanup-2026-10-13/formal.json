@@ -1,0 +1,18 @@
+{
+  "runtime_source_commit": "835c7c2905d3ed59b81c67b6338e2320c6646b79",
+  "runtime_binary_sha256": "c0809d09b4eecea9a4e302e151104133b1362459efa147f1c35ab9177ba88365",
+  "status": "pass",
+  "cases": 100,
+  "kinds": {
+    "positive": 22,
+    "fault": 49,
+    "boundary": 12,
+    "witness": 17
+  },
+  "source_guards": 92,
+  "tlc_version": "1.7.4",
+  "report_sha256": "5de35c49fd3de5ad09ddeda9a4cc913fa26576f68681798a3f8dbc73d3991c70",
+  "source_map_sha256": "b0e4a77686e867dac8a37f625eb1de1b5d551e1600f2ea02b9b22b35a6b0e451",
+  "manifest_sha256": "f5df91a56e80835db24588d1e1e40a3aea0ff7b30757409e546cef0d456ce869",
+  "scope": "Bounded protocol models and source-change guards; not whole-program verification or a refinement proof."
+}
