@@ -11,6 +11,14 @@ recovery operations and Solana transaction lifecycle code. The public harnesses
 select frozen binaries explicitly, so ongoing harness edits do not change the
 runtime under test.
 
+The lockfile also updates disabled `quinn-proto` from 0.11.15 to 0.11.18 to
+resolve five October 12 RustSec advisories. It is not in the enabled workspace
+dependency graph; the locked local build remains byte-identical to the frozen
+`835c7c2` executable. One protocol CI run hit its 15-minute job limit after all
+100 cases passed and their report was uploaded. A 25-minute workflow allowance
+is saved on local branch `cleanup-ci-timeout-local`; publishing it requires a
+GitHub credential with workflow permission. Model bounds and checks are unchanged.
+
 ## Verified results
 
 | Scope | Result |
