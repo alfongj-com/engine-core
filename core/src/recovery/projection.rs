@@ -39,10 +39,12 @@ impl PendingUpdate {
         } else {
             false
         };
-        let mut legacy = current.clone();
-        legacy.schema = 1;
-        let migration = self.previous_token == legacy.token();
-        if current.schema != SCHEMA
+        let migration = (1..current.schema).any(|schema| {
+            let mut legacy = current.clone();
+            legacy.schema = schema;
+            self.previous_token == legacy.token()
+        });
+        if !(2..=SCHEMA).contains(&current.schema)
             || self.target_token != current.token()
             || self.redis_key != current.key()
             || self.run_id != current.run_id
@@ -99,13 +101,16 @@ pub(super) fn migrate(conn: &mut Connection) -> Result<()> {
     if old.schema == SCHEMA {
         return Ok(());
     }
-    if old.schema != 1 || old.halted {
+    if !matches!(old.schema, 1 | 2) || old.halted || load(conn, &old)?.is_some() {
         return Err(RecoveryError::RecoveryRequired(
             "legacy journal is not healthy",
         ));
     }
     let tx = conn.transaction()?;
-    tx.execute_batch(TABLE_SQL)?;
+    if old.schema == 1 {
+        tx.execute_batch(TABLE_SQL)?;
+    }
+    tx.execute_batch(super::solana_projection::TABLE_SQL)?;
     tx.execute(
         "UPDATE control SET schema_version=? WHERE singleton=1",
         [SCHEMA],
@@ -127,12 +132,18 @@ pub(super) fn acknowledge(conn: &mut Connection, expected: &PendingUpdate) -> Re
             "pending checkpoint changed before acknowledgement",
         ));
     }
-    let changed = tx.execute(
+    remove_exact(&tx, expected)?;
+    commit_transaction(tx)
+}
+
+/// Caller revalidates the pending record and owns the surrounding transaction.
+pub(super) fn remove_exact(conn: &Connection, expected: &PendingUpdate) -> Result<()> {
+    let changed = conn.execute(
         "DELETE FROM projection_pending WHERE singleton=1 AND previous_token=? AND target_token=? AND redis_key=? AND run_id=?",
         params![expected.previous_token, expected.target_token, expected.redis_key, expected.run_id],
     )?;
     if changed != 1 {
         return Err(RecoveryError::Storage);
     }
-    commit_transaction(tx)
+    Ok(())
 }

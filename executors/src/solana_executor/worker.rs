@@ -645,7 +645,7 @@ impl SolanaExecutorJobHandler {
             SolanaTransactionInput::Instructions(_) => CommitmentConfig::finalized(),
         };
         self.verify_lock(lock, transaction_id).await?;
-        let stored_attempt = self
+        let mut stored_attempt = self
             .storage
             .get_attempt(transaction_id, lock)
             .await
@@ -667,6 +667,12 @@ impl SolanaExecutorJobHandler {
                     }.nack(Some(RECOVERY_PARK_DELAY), RequeuePosition::Last));
                 }
                 if let Some(binding) = admission.replay_key {
+                    if stored_attempt.is_none() {
+                        stored_attempt = Some(
+                            self.restore_retained_attempt(&journal, job_data, &binding, lock)
+                                .await?,
+                        );
+                    }
                     let matches = stored_attempt.as_ref().is_some_and(|attempt| {
                         binding == format!("solana:{}:{}", chain_id_str.as_str(), attempt.signature)
                     });
@@ -925,8 +931,8 @@ impl SolanaExecutorJobHandler {
             submission_attempt_number,
             base64::engine::general_purpose::STANDARD.encode(bytes),
         );
-        // The external reservation must precede the Redis projection. A crash
-        // here may park missing Redis state, but cannot authorize a different wire.
+        // The external reservation precedes Redis. If this projection is lost,
+        // restore only these retained bytes through the separate recovery budget.
         self.authorize_attempt(job_data, &attempt).await?;
         if !self
             .storage
@@ -1094,33 +1100,63 @@ impl SolanaExecutorJobHandler {
             }
             .nack(Some(self.confirmation_poll_interval), RequeuePosition::Last));
         }
-        let wire = attempt
-            .signed_transaction
-            .as_ref()
-            .ok_or_else(|| Self::park(&attempt, "missing signed bytes"))?;
-        let bytes = base64::engine::general_purpose::STANDARD
-            .decode(wire)
-            .map_err(|_| Self::park(&attempt, "invalid persisted wire encoding"))?;
-        let decoded = decode_transaction_wire(&bytes)
-            .map_err(|_| Self::park(&attempt, "invalid persisted transaction"))?;
-        if decoded.signatures.first() != Some(&attempt.signature)
-            || decoded.message.recent_blockhash() != &attempt.blockhash
-            || decoded.verify_and_hash_message().is_err()
-        {
-            return Err(Self::park(
-                &attempt,
-                "persisted transaction identity does not match its attempt",
-            ));
+        let wire = Self::validated_attempt_wire(job_data, &attempt)?;
+        if attempt.restored_from_journal {
+            let Some(journal) = engine_core::recovery::global() else {
+                return Err(Self::park(
+                    &attempt,
+                    "restored attempt requires its recovery journal",
+                ));
+            };
+            let payload = serde_json::to_value(job_data)
+                .map_err(|_| Self::park(&attempt, "cannot encode retained recovery payload"))?;
+            // A grant is durable before dispatch. Lost replies, cancellation, or
+            // losing the Redis owner burn credit; repeated restoration cannot
+            // replenish this allowance or shorten its two-second spacing.
+            let grant = journal
+                .before_solana_recovery_broadcast(
+                    &job_data.transaction_id,
+                    &payload,
+                    &Self::durable_attempt_payload(job_data, &attempt),
+                )
+                .await
+                .map_err(crate::recovery::from_journal_error)
+                .map_err(Self::recovery_nack)?;
+            match grant {
+                engine_core::recovery::SolanaRecoveryBroadcast::Granted { broadcasts, at_ms } => {
+                    attempt.broadcast_attempts = broadcasts;
+                    attempt.last_broadcast_at = at_ms;
+                }
+                engine_core::recovery::SolanaRecoveryBroadcast::Wait { retry_after_ms } => {
+                    return Err(SolanaExecutorError::NotYetConfirmed {
+                        signature: attempt.signature.to_string(),
+                    }
+                    .nack(
+                        Some(Duration::from_millis(retry_after_ms)),
+                        RequeuePosition::Last,
+                    ));
+                }
+                engine_core::recovery::SolanaRecoveryBroadcast::Exhausted => {
+                    return Err(SolanaExecutorError::NotYetConfirmed {
+                        signature: attempt.signature.to_string(),
+                    }
+                    .nack(Some(self.confirmation_poll_interval), RequeuePosition::Last));
+                }
+            }
+        } else {
+            // Original sends count before I/O. Their Redis allowance is never
+            // reused after the durable journal activates recovery mode.
+            attempt.broadcast_attempts += 1;
+            attempt.last_broadcast_at = now;
         }
-        let wire = wire.clone();
-        // Count before I/O: a crash can consume a send allowance, never make it unbounded.
-        attempt.broadcast_attempts += 1;
-        attempt.last_broadcast_at = now;
         self.storage
             .update_attempt(&job_data.transaction_id, &attempt, lock)
             .await
             .map_err(|e| self.handle_redis_error(e, &job_data.transaction_id))?;
         self.verify_lock(lock, &job_data.transaction_id).await?;
+        if !attempt.restored_from_journal {
+            self.authorize_attempt(job_data, &attempt).await?;
+        }
         let config = RpcSendTransactionConfig {
             skip_preflight: false,
             preflight_commitment: Some(commitment),
@@ -1128,7 +1164,6 @@ impl SolanaExecutorJobHandler {
             max_retries: Some(0),
             ..Default::default()
         };
-        self.authorize_attempt(job_data, &attempt).await?;
         let sent: Result<String, _> = rpc_client
             .send(RpcRequest::SendTransaction, json!([wire, config]))
             .await;
@@ -1168,11 +1203,125 @@ impl SolanaExecutorJobHandler {
         })
     }
 
+    fn durable_attempt_payload(
+        job_data: &SolanaExecutorJobData,
+        attempt: &SolanaTransactionAttempt,
+    ) -> serde_json::Value {
+        let mut durable_attempt = attempt.clone();
+        durable_attempt.broadcast_attempts = 0;
+        durable_attempt.last_broadcast_at = 0;
+        durable_attempt.reconciliation_checks = 0;
+        durable_attempt.restored_from_journal = false;
+        json!({"chainId":job_data.transaction.execution_options.chain_id.as_str(),
+            "signature":attempt.signature.to_string(), "attempt":durable_attempt})
+    }
+
+    fn validated_attempt_wire(
+        job_data: &SolanaExecutorJobData,
+        attempt: &SolanaTransactionAttempt,
+    ) -> JobResult<String, SolanaExecutorError> {
+        let wire = attempt
+            .signed_transaction
+            .as_ref()
+            .ok_or_else(|| Self::park(attempt, "missing signed bytes"))?;
+        let bytes = base64::engine::general_purpose::STANDARD
+            .decode(wire)
+            .map_err(|_| Self::park(attempt, "invalid persisted wire encoding"))?;
+        let decoded = decode_transaction_wire(&bytes)
+            .map_err(|_| Self::park(attempt, "invalid persisted transaction"))?;
+        if decoded.signatures.first() != Some(&attempt.signature)
+            || decoded.message.recent_blockhash() != &attempt.blockhash
+            || decoded.message.static_account_keys().first()
+                != Some(&job_data.transaction.execution_options.signer_address)
+            || decoded.uses_durable_nonce()
+            || decoded.verify_and_hash_message().is_err()
+            || encode_transaction_wire(&decoded).ok().as_deref() != Some(bytes.as_slice())
+        {
+            return Err(Self::park(
+                attempt,
+                "persisted transaction identity does not match its attempt or signer",
+            ));
+        }
+        Ok(wire.clone())
+    }
+
+    async fn restore_retained_attempt(
+        &self,
+        journal: &Arc<engine_core::recovery::RecoveryJournal>,
+        job_data: &SolanaExecutorJobData,
+        binding: &str,
+        lock: &TransactionLock,
+    ) -> JobResult<SolanaTransactionAttempt, SolanaExecutorError> {
+        let invalid = || {
+            SolanaExecutorError::InternalError {
+            message: "Retained Solana attempt is missing, inconsistent or unsupported; reconcile before execution".into(),
+        }.nack(Some(RECOVERY_PARK_DELAY), RequeuePosition::Last)
+        };
+        let payload = serde_json::to_value(job_data).map_err(|_| invalid())?;
+        // This verifies immutable admission and activates the durable recovery
+        // mode. It returns data, never network permission. Cancellation may leave
+        // that safe mode active; the next owner can repeat this exact restoration.
+        let retained = journal
+            .prepare_solana_restore(&job_data.transaction_id, &payload)
+            .await
+            .map_err(crate::recovery::from_journal_error)
+            .map_err(Self::recovery_nack)?
+            .ok_or_else(invalid)?;
+        let mut attempt: SolanaTransactionAttempt = serde_json::from_value(
+            retained
+                .payload
+                .get("attempt")
+                .cloned()
+                .ok_or_else(invalid)?,
+        )
+        .map_err(|_| invalid())?;
+        if retained.replay_key != binding
+            || binding
+                != format!(
+                    "solana:{}:{}",
+                    job_data.transaction.execution_options.chain_id.as_str(),
+                    attempt.signature
+                )
+            || Self::durable_attempt_payload(job_data, &attempt) != retained.payload
+            || retained.recovery_broadcasts > MAX_BROADCASTS_PER_ATTEMPT
+        {
+            return Err(invalid());
+        }
+        Self::validated_attempt_wire(job_data, &attempt)?;
+        // Redis counters cannot establish how much of the original allowance was
+        // spent. Restored sends use the separate cumulative journal allowance.
+        attempt.restored_from_journal = true;
+        attempt.broadcast_attempts = retained.recovery_broadcasts;
+        attempt.last_broadcast_at = retained.last_recovery_broadcast_at;
+        attempt.reconciliation_checks = 0;
+        if !self
+            .storage
+            .restore_attempt_if_absent(&job_data.transaction_id, &attempt, lock)
+            .await
+            .map_err(|e| self.handle_redis_error(e, &job_data.transaction_id))?
+        {
+            return Err(SolanaExecutorError::InternalError {
+                message:
+                    "Solana attempt appeared during restoration; retry under its existing identity"
+                        .into(),
+            }
+            .nack(Some(NETWORK_ERROR_RETRY_DELAY), RequeuePosition::Last));
+        }
+        self.verify_lock(lock, &job_data.transaction_id).await?;
+        Ok(attempt)
+    }
+
     async fn authorize_attempt(
         &self,
         job_data: &SolanaExecutorJobData,
         attempt: &SolanaTransactionAttempt,
     ) -> JobResult<(), SolanaExecutorError> {
+        if attempt.restored_from_journal {
+            return Err(Self::park(
+                attempt,
+                "restored attempts require a durable recovery send grant",
+            ));
+        }
         if let Some(journal) = engine_core::recovery::global() {
             crate::recovery::validate("solana", &job_data.transaction_id, job_data)
                 .await
@@ -1182,19 +1331,12 @@ impl SolanaExecutorJobHandler {
                 job_data.transaction.execution_options.chain_id.as_str(),
                 attempt.signature
             );
-            // Persist wire identity, not changing polling/send counters. The
-            // pre-Redis reservation and every later authorization are identical.
-            let mut durable_attempt = attempt.clone();
-            durable_attempt.broadcast_attempts = 0;
-            durable_attempt.last_broadcast_at = 0;
-            durable_attempt.reconciliation_checks = 0;
             journal
                 .before_broadcast(
                     "solana",
                     &job_data.transaction_id,
                     &replay_key,
-                    json!({"chainId":job_data.transaction.execution_options.chain_id.as_str(),
-                "signature":attempt.signature.to_string(), "attempt":durable_attempt}),
+                    Self::durable_attempt_payload(job_data, attempt),
                 )
                 .await
                 .map_err(crate::recovery::from_journal_error)

@@ -69,8 +69,14 @@ The first admission initializes schema marker `twmq:{queue_name}:solana_admissio
 | Signature absent and finalized height exceeds the recorded last-valid height | Query history again, then park if still absent. Provider absence is insufficient proof to create a new signature. |
 | Serialized hash becomes invalid without a trustworthy expiry height | Park for reconciliation. Never invent a height or rewrite the message. |
 | Legacy attempt lacks signed bytes | Reconcile its signature; otherwise park. |
+| Redis attempt missing, exact signed attempt retained in healthy journal | Restore under the storage lock and reconcile the same signature with a durable recovery-send budget. |
+| Redis attempt conflicts with the retained journal identity | Block; do not overwrite it or sign again. |
 
-Each attempt permits at most 20 broadcasts, spaced by at least two seconds. A processing call has a 90-second deadline, shorter than the storage lock. After 500 reconciliation checks the job parks with `RECOVERY_REQUIRED`; periodic wakeups perform no RPC or signing. The lock-protected storage resume method resets the check budget while preserving the signature and broadcast count. An authenticated operator HTTP resume endpoint is **not yet implemented**.
+The original attempt permits at most 20 broadcasts, spaced by at least two seconds.
+If its Redis projection is lost, schema 3 permits at most 20 additional recovery
+broadcasts for that identity, durably counted across all restorations. The original
+authorization path cannot bypass recovery mode. See [retained-attempt recovery](retained-solana-recovery.md).
+A processing call has a 90-second deadline, shorter than the storage lock. After 500 reconciliation checks the job parks with `RECOVERY_REQUIRED`; periodic wakeups perform no RPC or signing. The lock-protected storage resume method resets the check budget while preserving the signature and broadcast count. An authenticated operator HTTP resume endpoint is **not yet implemented**.
 
 Serialized admission and preflight use `processed` so a caller-provided recent hash need not already exist in the finalized bank. A hash absent from the RPC node retries before Engine signs or stores an attempt, within the existing unsigned-job retry budget. This does not lower settlement: terminal results still require finalized status and a matching receipt. A preflight error, including the first Engine send, does not prove global non-execution; the caller may already have broadcast a fully signed input.
 
@@ -82,7 +88,14 @@ Attempt records have no expiry TTL. Successful completion and known on-chain fai
 
 A load-balanced RPC may serve a finalized height from one node and incomplete history from another. Recovery therefore does not re-sign an expired transaction based on an absent status. New submissions reject `maxBlockhashRetries > 0` until a complete-history policy is qualified. Existing queued attempts still reconcile and can park. Separate-provider comparison, stronger finality policy and an operator resolution procedure remain release work.
 
-This handles Engine process restarts while Redis retains its data. It assumes healthy queue transitions after schema initialization, no old/new worker overlap and no arbitrary Redis mutation. It does not establish durability across Redis power loss or failover. Missing legacy fingerprints or already-expired records cannot be reconstructed. Unresolved records may remain indefinitely; reconciliation alerts, storage capacity and operator recovery need production procedures.
+This handles Engine process restarts and missing signed-attempt projections when
+the independent journal retains exact evidence. It assumes healthy queue transitions
+after schema initialization, no old/new worker overlap and no arbitrary Redis mutation.
+Redis process changes still require the [offline continuity procedure](redis-disaster-recovery.md).
+Missing queue/admission projections, legacy fingerprints or authoritative journal
+records are not reconstructed by this feature. Unresolved records may remain
+indefinitely; reconciliation alerts, storage capacity and operator recovery need
+production procedures.
 
 ## Verification
 

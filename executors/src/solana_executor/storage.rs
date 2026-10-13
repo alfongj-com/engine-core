@@ -49,6 +49,10 @@ pub struct SolanaTransactionAttempt {
     pub last_broadcast_at: u64,
     #[serde(default)]
     pub reconciliation_checks: u32,
+    /// Restored projections dispatch only through the cumulative journal budget.
+    /// Omit false to preserve the canonical payload of older journaled attempts.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub restored_from_journal: bool,
     /// Timestamp when the transaction was sent (milliseconds)
     pub sent_at: u64,
     /// Resubmission attempt number (1 = first submission, 2 = first resubmission, etc.)
@@ -71,6 +75,7 @@ impl SolanaTransactionAttempt {
             broadcast_attempts: 0,
             last_broadcast_at: 0,
             reconciliation_checks: 0,
+            restored_from_journal: false,
             sent_at: crate::metrics::current_timestamp_ms(),
             submission_attempt_number,
         }
@@ -338,6 +343,25 @@ impl SolanaTransactionStorage {
                 }
             }
         }
+    }
+
+    /// Install an independently validated retained wire only while this exact
+    /// transaction lock is owned. A concurrently present value always wins:
+    /// restoration must never overwrite it, even if it looks malformed.
+    pub async fn restore_attempt_if_absent(
+        &self,
+        transaction_id: &str,
+        attempt: &SolanaTransactionAttempt,
+        lock: &TransactionLock,
+    ) -> Result<bool, redis::RedisError> {
+        if lock.lock_key != self.lock_key(transaction_id) || !attempt.restored_from_journal {
+            return Err(redis::RedisError::from((
+                redis::ErrorKind::TypeError,
+                "Invalid retained-attempt restoration ownership",
+            )));
+        }
+        self.store_attempt_if_not_exists(transaction_id, attempt, lock)
+            .await
     }
 
     /// Get the current attempt for a transaction (must hold lock)

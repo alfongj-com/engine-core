@@ -1,88 +1,64 @@
-# PR #2 status
+# Retained transaction recovery
 
-Updated October 12, 2026. [PR #1](https://github.com/alfongj-com/engine-core/pull/1)
-merged into `main`; [PR #2](https://github.com/alfongj-com/engine-core/pull/2)
-implements the follow-up against `main`.
+Updated October 12, 2026. PRs [#1](https://github.com/alfongj-com/engine-core/pull/1)
+and [#2](https://github.com/alfongj-com/engine-core/pull/2) are merged.
+[PR #3](https://github.com/alfongj-com/engine-core/pull/3) contains both follow-ups
+on `recover-retained-transactions`, based on `918d7d9`.
 
-## Delivered
+## Implemented
 
-- **Crash-recoverable checkpoints.** Schema 2 records the exact journal-to-Redis
-  transition in the authority commit. Startup or health repair can finish it after
-  a crash or lost reply. A second FULL SQLite commit acknowledges publication
-  before permission returns; a fresh observation still rejects rollback afterward.
-- **Unchanged safety boundaries.** Wrong tokens, Redis process/role changes,
-  corrupt records and durable halts stop execution. Healthy schema-1 journals
-  migrate under exclusive ownership. Old binaries reject schema 2; status/export
-  stay read-only. Missing signed Redis attempts still require reconciliation.
-- **Shared-chain scheduling.** One contender per chain reaches the journal mutex.
-  Health checks take their chain lane before shared health capacity, preventing a
-  busy chain's waiting polls from reserving all 32 slots. Metrics separate lane,
-  capacity, mutex, SQLite and Redis waits.
-- **Bounded Solana polling.** Eligible history lookups coalesce per cached
-  cluster/endpoint, with at most 256 outstanding polls, 32 signatures per batch,
-  four HTTP batches and a 5 ms collection window. Invalid entries fail only their
-  matching callers; a config switch disables coalescing. Finalized receipt and
-  signed-identity checks remain.
-- **Shutdown under Redis outage.** Stalled queue acquisition is cancellable.
-  Already-running handlers and owned journal repairs still drain before exit.
+- Restore a missing Solana Redis attempt from its exact signed journal record.
+  Validate the full admitted request, signature, blockhash and signer. Preserve
+  storage ownership and finalized-receipt checks; never sign a replacement.
+- Retain a separate allowance of at most 20 recovery grants across all repeated
+  projection losses and restarts. Lost replies consume grants. Schema 3 prevents
+  older binaries from bypassing this rule. Normal execution adds no durable commit.
+- Reattach a pending checkpoint only when its exact target survives on the Redis
+  primary. Acknowledge it and adopt the process identity in one FULL commit, then
+  observe Redis again. Predecessor/missing/foreign markers and unrelated halts
+  remain blocked; namespace, epoch and replay identities stay unchanged.
 
-## Review follow-up
+The [Solana design](docs/design/retained-solana-recovery.md) and
+[restart/upgrade runbook](docs/design/redis-disaster-recovery.md) describe the
+protocol and operator actions. Healthy schema-1/2 journals migrate to schema 3;
+old binaries reject the upgraded state. No in-place downgrade is supported.
 
-Unscoped HTTP/health checks have separate bounded scheduling capacity; 4337 and
-7702 workers now carry their chain scope. Idle EVM lanes can be reclaimed without
-splitting live overflow work across lanes. Registration fails promptly when a
-shutdown drain is waiting, avoiding the health/mutation lock-order deadlock.
-The final shutdown barrier permanently closes registration, including delayed
-health probes that outlive their HTTP requests.
-Queue and executor metrics initialize before any startup work.
+## Verified runtime: `04d15d8`
 
-The [restart and rollback runbook](docs/design/redis-disaster-recovery.md#redis-restart-with-intact-data)
-now covers pending transitions after Redis restart and one-way schema migration.
-Exact-target pending reattachment remains refused; this is a documented recovery
-limit, not a relaxed fence. Earlier measurements below predate these review fixes;
-their source hashes identify what was measured.
+- All 10 local Rust workflow steps pass, including 181 explicit Redis/API tests.
+- All 10 local process scenarios pass: Engine/Redis crashes, live outage,
+  rollback, quarantine, reorgs and both Solana recovery variants.
+- The new Solana process scenario restores 12 deleted projections, retransmits
+  identical bytes, finalizes all 12 original effects and produces no duplicates.
+- Actual old/new binary upgrade succeeds; the old binary then rejects schema 3
+  without changing the journal.
+- All 100 bounded protocol cases pass locally and in CI; 91 source guards match.
+  Five fee proofs and both deliberate mutation checks pass in CI.
+- Full Rust correctness CI passes, including both default Solana harness cases
+  and dependency audit. These checks validate this runtime revision; later
+  documentation changes do not change the executable.
 
-The [review validation record](https://github.com/alfongj-com/engine-core/blob/load-tests/docs/baselines/pr2-review-2026-10-12/README.md)
-keeps new tests, load and crash results separate from the original PR measurements.
+For matched load measurements, crash-campaign results and exact provenance, see
+[PR #3 evidence](https://github.com/alfongj-com/engine-core/blob/load-tests/docs/baselines/retained-recovery-2026-10-12/README.md).
+Generated reports stay on `load-tests`. Local private data is under
+`/Users/alfongj/.local/share/engine-core/runs/pr3-retained-recovery-oct12/`.
+The fixtures use disposable local Redis, Anvil and Agave, without paid RPCs.
 
-## Validation and measurements
+## Remaining limits
 
-[Versioned results and failures](https://github.com/alfongj-com/engine-core/blob/load-tests/docs/baselines/pr2-2026-10-12/README.md)
-are kept on `load-tests`, outside this implementation PR. They include binary/source
-provenance, baseline comparisons, latency/backlog, exact effect reconciliation,
-model outcomes and CI links. The PR checks qualify their own source commit.
+One process on one Unix host must retain the latest authoritative journal.
+Restoration does not reconstruct missing queue jobs, release quarantined unknown
+outcomes, choose among ambiguous legacy attempts, or repair lost/rolled-back
+journal authority. Expiry and absent history never authorize a replacement.
 
-The local checks cover the workspace suite, 49 journal regressions, 73 executor
-regressions, 36 queue regressions, HTTP/admission tests, real HTTP batching, process
-crashes, Redis data loss, reorgs and the live-outage shutdown regression. The formal
-suite has 73 bounded configurations, including deliberate faults that must produce
-specific counterexamples; fee arithmetic is checked separately with Kani.
+Only the recovery grant pool is independently durable. The original Redis-only
+send counter can roll back; a combined 40-send bound assumes that original
+counter survived until recovery mode. Reconstructing Redis also resets its local
+reconciliation-read counter, so it is not a lifetime RPC-read quota.
 
-The schema-2 acknowledgement adds real disk cost. The first corrected 10/10/20 TPS
-shared run passed its finite-run gates, but the journal was nearly fully occupied
-and Solana latency increased. This does **not** establish 50 TPS per chain or a
-sustainable maximum. See the evidence for repeats, overload and chaos outcomes;
-no baseline capacity figure transfers automatically to the new protocol.
+Production storage, public RPC capacity, real rollup settlement, sustained
+throughput and KMS integration still need qualification. No whole-service proof,
+sustainable maximum or 50 TPS-per-chain guarantee is claimed.
 
-All new experiments use disposable local Redis, Anvil and Agave fixtures. No paid
-RPC calls are needed. Raw reports and fixture data stay private under
-`/Users/alfongj/.local/share/engine-core/runs/pr2-oct12/`.
-
-## Remaining production work
-
-- Qualify sustained capacity on the intended storage, RPC and actual chain stack.
-  Further journal throughput work needs fewer durable commits per batch or faster
-  durable storage, with the same crash and rollback guarantees.
-- Add an explicit recovery procedure for missing signed Redis projections. Marker
-  repair alone cannot recreate them or resolve quarantined unknown transactions.
-- Keep the existing one-host, one-owner authority assumption. Lost or rolled-back
-  authority, filesystem guarantees, provider honesty and actual rollup settlement
-  remain outside these local tests and finite models.
-
-Fairness allocates journal operations, not equal TPS. Global admission capacity
-and overflow lanes can still delay peers. No whole-service proof is claimed.
-
-See [local commands and agent prompt](LOCAL_TESTING.md), the
-[checkpoint protocol](docs/design/recoverable-projection.md),
-[Solana polling design](docs/design/solana-status-batching.md), and
-[formal correspondence](formal/disaster-recovery.md).
+See [local test commands and agent prompt](LOCAL_TESTING.md). The active checkout
+is `/Users/alfongj/Code/engine-core-review-stack`.

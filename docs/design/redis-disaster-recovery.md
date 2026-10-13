@@ -103,9 +103,12 @@ loss from authorizing a different effect; missing projection work may require an
 explicit original-request retry or offline recovery. Arbitrary selective Redis
 corruption and hostile modification of the journal are outside the continuity
 claim. In particular, the first Solana attempt can be bound in SQLite before its
-Redis attempt is stored. Checkpoint repair then succeeds but the job still parks;
-it cannot regenerate the signed record. A retained attempt can resume terminal
-reconciliation after a lost publication response. See the [two failure cases](recoverable-projection.md#checkpoint-repair-versus-transaction-recovery).
+Redis attempt is stored. The worker can reconstruct that missing attempt from
+the exact retained journal record under its storage lock. It validates the signed
+bytes and durably bounds recovery sends; it never rebuilds or re-signs the request.
+Conflicting or quarantined records remain blocked. Missing queue jobs and unknown
+chain outcomes still require separate reconciliation. See
+[retained Solana recovery](retained-solana-recovery.md).
 Ordinary Redis persistence remains necessary for availability.
 
 SQLite WAL requires all database users on the same host. FULL synchronization is
@@ -169,47 +172,53 @@ ledger, explicitly reattach:
 engine-recovery reattach --path data/recovery.sqlite --namespace engine_v1
 ```
 
-Reattach only updates Redis process identity. It requires the same deployment,
+Reattach requires the same deployment,
 epoch, checkpoint, namespace and primary role. It may clear only Redis process
-change, unavailable-continuity or primary-role-change halts. Reattach refuses every unacknowledged pending transition. A network outage
+change, unavailable-continuity or primary-role-change halts. If a validated pending
+transition exists and Redis contains its exact target, one FULL SQLite transaction
+acknowledges it and updates the process identity. A network outage
 without a pending transition still latches execution; stop Engine before reattaching.
 It cannot override a checkpoint mismatch, storage failure, manual quarantine
 or terminal-evidence conflict. Unknown attempts remain bound to their original
 identity and must still follow the normal confirmation/replay rules.
 
 An **unplanned restart during load** can interrupt an unacknowledged transition.
-Reattach refuses it even when Redis retained the exact target token. This version
-requires `recover` into a fresh namespace, which quarantines attempted nonterminal
-requests. Automatic checkpoint repair requires the original Redis process; it does
-not provide automatic recovery across Redis restarts. The live-restart test below
-covers intact, idle reattachment, not this pending-under-load case.
+Reattach accepts only the recorded target on the current writable primary. The
+predecessor, a missing marker, a foreign token or a prohibited durable halt still
+requires investigation and, where applicable, `recover` into a fresh namespace.
+A post-commit continuity check must succeed before the command reports success.
+Re-running after a lost response checks the exact checkpoint again; it creates no
+send permission or new transaction identity. Automatic checkpoint repair still
+requires the original Redis process; cross-process adoption is an offline action.
 
 ### Schema upgrade and rollback
 
-Opening a healthy schema-1 journal with this version automatically migrates it to
-schema 2. This is a one-way maintenance-window upgrade; the old binary rejects
-the upgraded journal. Qualify the additional FULL commit cost on disposable state
-before upgrading production. `status` and `export` do not migrate the journal.
+Opening a healthy schema-1 or schema-2 journal with this version automatically
+migrates it to schema 3. A validated schema-2 pending update must finish first.
+Schema 3 retains the Solana recovery-send budget independently of Redis; older
+binaries reject it. This is a one-way maintenance-window upgrade. Qualify the
+new binary on disposable state first. `status`, `export` and offline `reattach`
+do not migrate the journal.
 
 Before cutover, stop admission and drain/reconcile existing work, stop Engine,
 and preserve the stopped binary, configuration and consistent journal/Redis
 backups. Keep the original authority intact. After migration, a binary rollback
-requires a schema-2-compatible build with the same checkpoint protocol. There is
-no supported in-place downgrade to schema 1.
+requires a schema-3-compatible build with the same checkpoint and recovery-budget
+protocols. There is no supported in-place downgrade.
 
 Only if migration was the sole post-snapshot authority change, with no newer
 admission, signature, execution, finality evidence or safety halt, may an operator
-abandon the new deployment and restore the stopped, matching schema-1 journal
+abandon the new deployment and restore the stopped, matching pre-upgrade journal
 and Redis snapshot together. Keep all newer processes stopped. A restored Redis
-has a new process ID: perform exact-checkpoint `reattach` with a schema-1-capable
+has a new process ID: perform exact-checkpoint `reattach` with a compatible
 CLI before starting the preserved old binary. The current standalone
-`engine-recovery reattach` accepts schema 1 without migrating it.
+`engine-recovery reattach` accepts schemas 1 and 2 without migrating them.
 
 This is a deployment rollback, never an automatic journal restore. If any newer
-effect, request or safety evidence is possible, retain the latest schema-2 authority and fix forward;
+effect, request, recovery allowance or safety evidence is possible, retain the latest authority and fix forward;
 restoring the old snapshot can discard replay ownership and allow duplicate effects.
 Unknown outcomes block rollback. Do not lower the schema number or remove the
-pending table to make an old binary start.
+pending or recovery-budget tables to make an old binary start.
 
 ### Redis loss or stale snapshot
 

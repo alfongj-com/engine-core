@@ -292,9 +292,7 @@ async fn finish(server: tokio::task::JoinHandle<()>) {
         .unwrap()
         .unwrap();
 }
-fn assert_nack(
-    result: JobResult<SolanaExecutorResult, SolanaExecutorError>,
-) -> SolanaExecutorError {
+fn assert_nack<T>(result: JobResult<T, SolanaExecutorError>) -> SolanaExecutorError {
     match result {
         Err(JobError::Nack { error, .. }) => error,
         Err(JobError::Fail(e)) => panic!("unexpected permanent failure: {e}"),
@@ -1416,7 +1414,7 @@ async fn terminal_journal_resumes_cleanup_and_missing_projection_never_signs() {
             "solana",
             "intent",
             &key,
-            json!({"signature":f.attempt.signature.to_string(),"attempt":f.attempt}),
+            SolanaExecutorJobHandler::durable_attempt_payload(&f.data, &f.attempt),
         )
         .await
         .unwrap();
@@ -1426,7 +1424,13 @@ async fn terminal_journal_resumes_cleanup_and_missing_projection_never_signs() {
         .await
         .unwrap();
     recovery::install(journal.clone()).unwrap();
-    let (rpc, seen, server) = rpc(vec![status(finalized()), details(&f.attempt)]).await;
+    let (rpc, seen, server) = rpc(vec![
+        status(finalized()),
+        details(&f.attempt),
+        status(finalized()),
+        details(&f.attempt),
+    ])
+    .await;
     assert!(
         f.handler
             .execute_transaction(&rpc, &f.data, &lock, 1000)
@@ -1434,7 +1438,6 @@ async fn terminal_journal_resumes_cleanup_and_missing_projection_never_signs() {
             .is_ok(),
         "terminal proof must not block projection cleanup even after old polling budget"
     );
-    finish(server).await;
     // Simulate partial Redis loss with the current external journal marker.
     let _: () = f
         .redis
@@ -1442,15 +1445,23 @@ async fn terminal_journal_resumes_cleanup_and_missing_projection_never_signs() {
         .del(format!("{}:solana_tx_attempt:intent", f.namespace))
         .await
         .unwrap();
-    assert!(matches!(
-        assert_nack(f.handler.execute_transaction(&rpc, &f.data, &lock, 1).await),
-        SolanaExecutorError::InternalError { .. }
-    ));
+    assert!(
+        f.handler
+            .execute_transaction(&rpc, &f.data, &lock, 1)
+            .await
+            .is_ok()
+    );
+    finish(server).await;
+    let restored = f.stored(&lock).await;
+    assert!(restored.restored_from_journal);
+    assert_eq!(restored.signed_transaction, f.attempt.signed_transaction);
+    assert_eq!(restored.broadcast_attempts, 0);
     assert_eq!(
         seen.lock().unwrap().len(),
-        2,
-        "no new blockhash, fee query, signature or broadcast is allowed"
+        4,
+        "terminal restoration only reads finality evidence; no build/sign/send"
     );
+    assert_eq!(RecoveryJournal::status(&path).unwrap().attempts, 1);
     lock.release().await.unwrap();
     let _: () = f
         .redis
@@ -1504,7 +1515,29 @@ async fn sql_attempt_precedes_redis_and_unbound_substitution_never_broadcasts() 
         .unwrap();
     recovery::install(journal.clone()).unwrap();
     let lock = f.seed().await; // simulate a valid signed wire injected before durable assignment
-    let (rpc, seen, server) = rpc(vec![]).await;
+    let (rpc, seen, server) = rpc(vec![
+        Reply {
+            method: "getSignatureStatuses",
+            body: Some(json!({"__stall":true})),
+        },
+        status(Value::Null),
+        reply("getBlockHeight", json!(90)),
+        Reply {
+            method: "sendTransaction",
+            body: None,
+        },
+        status(Value::Null),
+        reply("getBlockHeight", json!(90)),
+        status(Value::Null),
+        reply("getBlockHeight", json!(90)),
+        reply("sendTransaction", json!(f.attempt.signature.to_string())),
+        status(Value::Null),
+        reply("getBlockHeight", json!(101)),
+        status(Value::Null),
+        status(finalized()),
+        details(&f.attempt),
+    ])
+    .await;
     assert_nack(f.handler.execute_transaction(&rpc, &f.data, &lock, 1).await);
     assert!(seen.lock().unwrap().is_empty());
     assert!(
@@ -1541,12 +1574,7 @@ async fn sql_attempt_precedes_redis_and_unbound_substitution_never_broadcasts() 
             .unwrap()
             .is_none()
     );
-    assert_nack(f.handler.execute_transaction(&rpc, &f.data, &lock, 1).await);
-    assert!(
-        seen.lock().unwrap().is_empty(),
-        "SQL-before-Redis crash must not fetch a new blockhash/sign"
-    );
-
+    // Mutable Redis counters do not change the independently retained wire.
     let mut retried = f.attempt.clone();
     retried.broadcast_attempts = 3;
     retried.last_broadcast_at = 123456;
@@ -1554,15 +1582,137 @@ async fn sql_attempt_precedes_redis_and_unbound_substitution_never_broadcasts() 
     f.handler
         .authorize_attempt(&f.data, &retried)
         .await
-        .unwrap_or_else(|_| panic!("same wire retry remains authorized"));
+        .unwrap_or_else(|_| panic!("same original wire remains authorized"));
+
+    // Cancellation after SET NX but before status returns retains exact bytes
+    // without granting a send. The next owner can continue with that projection.
+    {
+        let execution = f.handler.execute_transaction(&rpc, &f.data, &lock, 1);
+        tokio::pin!(execution);
+        tokio::select! {
+            _ = &mut execution => panic!("execution returned before the cancellation boundary"),
+            _ = async {
+                tokio::time::timeout(Duration::from_secs(5), async {
+                    while seen.lock().unwrap().is_empty() {
+                        tokio::time::sleep(Duration::from_millis(1)).await;
+                    }
+                }).await.expect("restoration must reach status before cancellation");
+            } => {}
+        }
+    }
+    let cancelled = f.stored(&lock).await;
+    assert!(cancelled.restored_from_journal);
+    assert_eq!(cancelled.broadcast_attempts, 0);
+    assert_eq!(cancelled.signed_transaction, f.attempt.signed_transaction);
+    let _: () = f.redis.clone().del(&attempt_key).await.unwrap();
+
+    // Simulate process death after durable reservation and before the first
+    // Redis write. The deliberately unusable signing credential proves recovery
+    // does not rebuild/re-sign; the RPC accepts the wire but drops its reply.
+    assert!(matches!(
+        assert_nack(f.handler.execute_transaction(&rpc, &f.data, &lock, 1).await),
+        SolanaExecutorError::SendFailed { .. }
+    ));
+    let first = f.stored(&lock).await;
+    assert!(first.restored_from_journal);
+    assert_eq!(first.broadcast_attempts, 1);
+    assert_eq!(first.signed_transaction, f.attempt.signed_transaction);
+    assert_eq!(
+        seen.lock().unwrap()[3]["params"][0],
+        f.attempt.signed_transaction.as_ref().unwrap().as_str()
+    );
+
+    // Another projection loss must preserve the consumed grant and pacing.
+    let _: () = f.redis.clone().del(&attempt_key).await.unwrap();
+    assert!(matches!(
+        assert_nack(f.handler.execute_transaction(&rpc, &f.data, &lock, 2).await),
+        SolanaExecutorError::NotYetConfirmed { .. }
+    ));
+    let restored = f.stored(&lock).await;
+    assert_eq!(restored.broadcast_attempts, 1);
+    assert_eq!(restored.last_broadcast_at, first.last_broadcast_at);
+    assert_eq!(
+        seen.lock().unwrap().len(),
+        6,
+        "lost Redis cannot bypass durable spacing"
+    );
+
+    // Neither clearing the Redis mode nor changing an immutable job field can
+    // regain the original allowance or consume a recovery grant for another job.
+    assert_nack(f.handler.authorize_attempt(&f.data, &retried).await);
+    let mut changed_job = f.data.clone();
+    changed_job.transaction.execution_options.compute_unit_limit = Some(99);
+    let mut restored_without_clock = restored.clone();
+    restored_without_clock.last_broadcast_at = 0;
+    restored_without_clock.broadcast_attempts = 0;
+    assert_nack(
+        f.handler
+            .broadcast_attempt(
+                &rpc,
+                &changed_job,
+                restored_without_clock.clone(),
+                &lock,
+                CommitmentLevel::Finalized,
+            )
+            .await,
+    );
+    assert_eq!(seen.lock().unwrap().len(), 6);
+    // Force the core Wait branch instead of trusting the Redis timestamp.
+    assert!(matches!(
+        assert_nack(
+            f.handler
+                .broadcast_attempt(
+                    &rpc,
+                    &f.data,
+                    restored_without_clock,
+                    &lock,
+                    CommitmentLevel::Finalized
+                )
+                .await
+        ),
+        SolanaExecutorError::NotYetConfirmed { .. }
+    ));
+    assert_eq!(seen.lock().unwrap().len(), 6);
+
+    tokio::time::sleep(Duration::from_millis(2050)).await;
+    let _: () = f.redis.clone().del(&attempt_key).await.unwrap();
+    assert!(matches!(
+        assert_nack(f.handler.execute_transaction(&rpc, &f.data, &lock, 3).await),
+        SolanaExecutorError::TransactionSent { .. }
+    ));
+    let twice = f.stored(&lock).await;
+    assert_eq!(twice.broadcast_attempts, 2);
+    assert_eq!(twice.signature, first.signature);
+    assert_eq!(twice.signed_transaction, first.signed_transaction);
+    assert_eq!(
+        seen.lock().unwrap()[8]["params"][0],
+        f.attempt.signed_transaction.as_ref().unwrap().as_str()
+    );
+
+    // Expiry and null history cannot authorize replacement. A later finalized
+    // receipt still resolves the same retained transaction.
+    let _: () = f.redis.clone().del(&attempt_key).await.unwrap();
+    assert!(matches!(
+        assert_nack(f.handler.execute_transaction(&rpc, &f.data, &lock, 4).await),
+        SolanaExecutorError::RecoveryRequired { .. }
+    ));
+    assert_eq!(f.stored(&lock).await.broadcast_attempts, 2);
+    assert!(
+        f.handler
+            .execute_transaction(&rpc, &f.data, &lock, 5)
+            .await
+            .is_ok()
+    );
     assert_eq!(
         RecoveryJournal::status(&path).unwrap().attempts,
         1,
-        "mutable counters must not duplicate durable wire records"
+        "restoration never creates another durable wire record"
     );
+    finish(server).await;
 
     // Another fully valid signed transaction still cannot replace the reservation.
     let other = Fixture::new().await;
+    let _: () = f.redis.clone().del(&attempt_key).await.unwrap();
     assert!(
         f.handler
             .storage
@@ -1571,7 +1721,12 @@ async fn sql_attempt_precedes_redis_and_unbound_substitution_never_broadcasts() 
             .unwrap()
     );
     assert_nack(f.handler.execute_transaction(&rpc, &f.data, &lock, 1).await);
-    assert!(seen.lock().unwrap().is_empty());
+    assert_eq!(seen.lock().unwrap().len(), 14);
+    assert_eq!(
+        f.stored(&lock).await.signature,
+        other.attempt.signature,
+        "a changed Redis value is not overwritten by journal restoration"
+    );
     let original = journal
         .admission("solana", "intent")
         .await
@@ -1580,7 +1735,6 @@ async fn sql_attempt_precedes_redis_and_unbound_substitution_never_broadcasts() 
         .replay_key
         .unwrap();
     assert!(original.ends_with(&f.attempt.signature.to_string()));
-    finish(server).await;
     lock.release().await.unwrap();
     other.cleanup().await;
     let _: () = f
@@ -1911,4 +2065,183 @@ async fn lost_terminal_publication_reply_retries_original_signature_without_sign
         .unwrap();
     f.cleanup().await;
     std::fs::remove_dir_all(directory).unwrap();
+}
+
+#[tokio::test]
+#[ignore = "requires disposable Redis in TEST_REDIS_URL"]
+async fn restoration_is_insert_only_and_rejects_stale_or_unrelated_owner() {
+    let f = Fixture::new().await;
+    let lock = f.handler.storage.try_acquire_lock("intent").await.unwrap();
+    let other_lock = f.handler.storage.try_acquire_lock("other").await.unwrap();
+    let mut retained = f.attempt.clone();
+    retained.restored_from_journal = true;
+    assert!(
+        f.handler
+            .storage
+            .restore_attempt_if_absent("intent", &retained, &other_lock)
+            .await
+            .is_err()
+    );
+    assert!(!f.handler.storage.has_attempt("intent").await.unwrap());
+    let (first, second) = tokio::join!(
+        f.handler
+            .storage
+            .restore_attempt_if_absent("intent", &retained, &lock),
+        f.handler
+            .storage
+            .restore_attempt_if_absent("intent", &retained, &lock),
+    );
+    assert_ne!(
+        first.unwrap(),
+        second.unwrap(),
+        "exactly one SET NX can win"
+    );
+    assert_eq!(
+        f.stored(&lock).await.signed_transaction,
+        retained.signed_transaction
+    );
+    let attempt_key = format!("{}:solana_tx_attempt:intent", f.namespace);
+    // A malformed present projection is evidence requiring reconciliation, not
+    // an invitation to overwrite. SET NX preserves even an unexpected Redis type.
+    let _: () = f.redis.clone().del(&attempt_key).await.unwrap();
+    let _: () = f
+        .redis
+        .clone()
+        .lpush(&attempt_key, "unexpected-data")
+        .await
+        .unwrap();
+    assert!(
+        !f.handler
+            .storage
+            .restore_attempt_if_absent("intent", &retained, &lock)
+            .await
+            .unwrap()
+    );
+    assert_eq!(
+        f.redis
+            .clone()
+            .lrange::<_, Vec<String>>(&attempt_key, 0, -1)
+            .await
+            .unwrap(),
+        vec!["unexpected-data"]
+    );
+    let _: () = f.redis.clone().del(&attempt_key).await.unwrap();
+    let _: () = f
+        .redis
+        .clone()
+        .del(format!("{}:solana_tx_lock:intent", f.namespace))
+        .await
+        .unwrap();
+    let replacement = f.handler.storage.try_acquire_lock("intent").await.unwrap();
+    assert!(
+        f.handler
+            .storage
+            .restore_attempt_if_absent("intent", &retained, &lock)
+            .await
+            .is_err()
+    );
+    assert!(!f.handler.storage.has_attempt("intent").await.unwrap());
+    lock.release().await.unwrap();
+    assert!(replacement.still_held().await.unwrap());
+    assert!(
+        f.handler
+            .storage
+            .restore_attempt_if_absent("intent", &retained, &replacement)
+            .await
+            .unwrap()
+    );
+    replacement.release().await.unwrap();
+    other_lock.release().await.unwrap();
+    f.cleanup().await;
+}
+
+#[test]
+fn retained_wire_validation_rejects_changed_identity_crypto_and_encoding() {
+    let key = Keypair::new();
+    let hash = Hash::new_unique();
+    let signed = VersionedTransaction::try_new(
+        VersionedMessage::V0(v0::Message::try_compile(&key.pubkey(), &[], &[], hash).unwrap()),
+        &[&key],
+    )
+    .unwrap();
+    let bytes = encode_transaction_wire(&signed).unwrap();
+    let wire = base64::engine::general_purpose::STANDARD.encode(&bytes);
+    let attempt = SolanaTransactionAttempt::new(signed.signatures[0], hash, Some(100), 1, wire);
+    let data = SolanaExecutorJobData {
+        transaction_id: "intent".into(),
+        transaction: SolanaTransactionOptions {
+            input: SolanaTransactionInput::new_with_instructions(vec![]),
+            execution_options: SolanaExecutionOptions {
+                signer_address: key.pubkey(),
+                chain_id: SolanaChainId::SolanaLocal,
+                max_blockhash_retries: 0,
+                commitment: ExecutionCommitment::Finalized,
+                priority_fee: None,
+                compute_unit_limit: None,
+            },
+        },
+        signing_credential: SigningCredential::Environment {
+            address: alloy::primitives::Address::ZERO,
+        },
+        webhook_options: vec![],
+    };
+    assert!(SolanaExecutorJobHandler::validated_attempt_wire(&data, &attempt).is_ok());
+    let mut cases = vec![];
+    let mut bad = attempt.clone();
+    bad.signed_transaction = None;
+    cases.push(bad);
+    let mut bad = attempt.clone();
+    bad.signed_transaction = Some("!".into());
+    cases.push(bad);
+    let mut bad = attempt.clone();
+    bad.blockhash = Hash::new_unique();
+    cases.push(bad);
+    let mut bad = attempt.clone();
+    bad.signature = solana_sdk::signature::Signature::default();
+    cases.push(bad);
+    let mut bad = attempt.clone();
+    let mut invalid_crypto = signed.clone();
+    invalid_crypto.signatures[0] = solana_sdk::signature::Signature::default();
+    bad.signature = invalid_crypto.signatures[0];
+    bad.signed_transaction = Some(
+        base64::engine::general_purpose::STANDARD
+            .encode(encode_transaction_wire(&invalid_crypto).unwrap()),
+    );
+    cases.push(bad);
+    let mut bad = attempt.clone();
+    let mut trailing = bytes;
+    trailing.push(0);
+    bad.signed_transaction = Some(base64::engine::general_purpose::STANDARD.encode(trailing));
+    cases.push(bad);
+    for bad in cases {
+        assert!(matches!(
+            assert_nack(SolanaExecutorJobHandler::validated_attempt_wire(
+                &data, &bad
+            )),
+            SolanaExecutorError::RecoveryRequired { .. }
+        ));
+    }
+    let mut other_payer = data.clone();
+    other_payer.transaction.execution_options.signer_address = Pubkey::new_unique();
+    assert!(matches!(
+        assert_nack(SolanaExecutorJobHandler::validated_attempt_wire(
+            &other_payer,
+            &attempt
+        )),
+        SolanaExecutorError::RecoveryRequired { .. }
+    ));
+    let original = serde_json::to_value(&attempt).unwrap();
+    assert!(
+        original.get("restored_from_journal").is_none(),
+        "false flag preserves older journal bytes"
+    );
+    let mut restored = attempt.clone();
+    restored.restored_from_journal = true;
+    restored.broadcast_attempts = 7;
+    restored.last_broadcast_at = 123;
+    restored.reconciliation_checks = 5;
+    assert_eq!(
+        SolanaExecutorJobHandler::durable_attempt_payload(&data, &restored),
+        SolanaExecutorJobHandler::durable_attempt_payload(&data, &attempt)
+    );
 }

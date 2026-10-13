@@ -10,15 +10,15 @@ readiness.
 | --- | --- |
 | Main checkout | `/Users/alfongj/Code/engine-core` |
 | PR #1 baseline | Merged into `main` at `154b0ac`; preserved branch `production-hardening` at `8741b88` |
-| PR #2 | Local and remote branch `crash-recovery-and-chain-fairness`; active implementation checkout `/Users/alfongj/Code/engine-core-review-stack` |
-| PR #2 resume notes | `git show crash-recovery-and-chain-fairness:WORK_IN_PROGRESS.md` |
+| PR #2 baseline | Merged into `main` at `918d7d9`; preserved branch `crash-recovery-and-chain-fairness` |
+| [PR #3](https://github.com/alfongj-com/engine-core/pull/3) | Branch `recover-retained-transactions`; implementation checkout `/Users/alfongj/Code/engine-core-review-stack` |
 | Full historical evidence in Git | Local and remote branch `load-tests`; use its current head for new evidence |
 | Browsable local evidence | `/Users/alfongj/.local/share/engine-core/evidence/load-tests-603c228/LOAD_TESTS.md` |
 | Installed test tools and checksum manifest | `/Users/alfongj/.local/share/engine-core/tools/` |
 | Private retained incident data; leave untouched | `/Users/alfongj/.local/share/engine-core-custody/` |
 
-PR #1 is merged. PR #2 targets `main`; its schema2 recovery, fairness and polling
-changes are wired into production. Read [WORK_IN_PROGRESS.md](WORK_IN_PROGRESS.md)
+PRs #1 and #2 are merged. The current follow-up adds schema-3 retained Solana
+recovery and offline reattachment of pending targets. Read [WORK_IN_PROGRESS.md](WORK_IN_PROGRESS.md)
 for exact validation and remaining limits. Historical reports apply to their
 recorded source hashes, not automatically to the current checkout.
 
@@ -60,8 +60,8 @@ another agent's work. These commands create detached test checkouts when absent:
 ```sh
 cd /Users/alfongj/Code/engine-core
 git status --short --branch
-git worktree add --detach /Users/alfongj/Code/engine-core-test-baseline production-hardening
-git worktree add --detach /Users/alfongj/Code/engine-core-test-wip crash-recovery-and-chain-fairness
+git worktree add --detach /Users/alfongj/Code/engine-core-test-baseline 918d7d9
+git worktree add --detach /Users/alfongj/Code/engine-core-test-wip recover-retained-transactions
 cd /Users/alfongj/Code/engine-core-test-baseline
 source /Users/alfongj/.local/share/engine-core/tools/env.sh
 unset CARGO_TARGET_DIR
@@ -174,6 +174,11 @@ Run sequentially after the build succeeds:
   --rust-log debug --report "$ENGINE_TEST_REPORTS/solana.json"
 ```
 
+On PR #3, the Solana command runs both variants and writes `solana.json` and
+`solana-projection-loss.json`. The baseline runs only the retained-Redis case.
+On PR #3, use `--keep-attempts-on-restart` or `--drop-attempts-on-restart` to run
+one variant; those flags are unavailable in the baseline.
+
 These check actual signed identities, duplicate admission, reverted execution,
 provisional reorgs, ambiguous responses and quarantine. A refusal to restart or
 an unresolved transaction is a result to investigate, not permission to clear a
@@ -216,13 +221,13 @@ Test Engine Core locally on this Mac.
 
 Repository: /Users/alfongj/Code/engine-core
 Read README.md and LOCAL_TESTING.md first. Read the saved WIP notes with:
-  git show crash-recovery-and-chain-fairness:WORK_IN_PROGRESS.md
+  git show recover-retained-transactions:WORK_IN_PROGRESS.md
 Load tools with:
   source /Users/alfongj/.local/share/engine-core/tools/env.sh
 
 Use isolated test checkouts as documented; do not switch or reset the main
-checkout. Test main (merged PR #1) and crash-recovery-and-chain-fairness (PR #2)
-in separate checkouts when comparing behavior. Inspect existing test directories
+checkout. Compare baseline 918d7d9 (merged PR #2) and recover-retained-transactions
+in separate checkouts. Inspect existing test directories
 before reusing them. Build each checkout's own target/debug/thirdweb-engine.
 
 Run the fast harness checks, compile, Rust/Redis regressions and local EVM/Solana
@@ -231,7 +236,7 @@ loopback endpoints and generated test keys. No paid/public RPCs, existing wallet
 keys, faucets, old incident journals or the retained Nitro VM. Preserve failed
 reports and runtime data. Do not clear safety fences or suppress failed tests.
 
-PR #2 implements checkpoint repair, journal scheduling and Solana polling batches.
+The follow-up restores exact retained Solana attempts and reattaches pending targets.
 Read WORK_IN_PROGRESS.md for the latest qualification results and remaining limits.
 Verify the exact commit you build; historical test passes do not qualify later code.
 Do not implement features or refresh proof hashes merely to make testing pass.

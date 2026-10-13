@@ -3,7 +3,7 @@ use std::{
     io,
     sync::{
         Arc,
-        atomic::{AtomicBool, Ordering},
+        atomic::{AtomicBool, AtomicUsize, Ordering},
     },
 };
 use tokio::{
@@ -25,7 +25,18 @@ impl Drop for ReplyLossProxy {
     }
 }
 impl ReplyLossProxy {
+    #[allow(dead_code)] // The helper is also included by observation-only tests.
     pub(crate) async fn start(upstream: &str) -> Self {
+        Self::start_at(upstream, None).await
+    }
+    /// Lose the selected complete INFO/INFO/GET observation reply. Earlier
+    /// observations are forwarded unchanged, so ordinal two cuts after ACK.
+    #[allow(dead_code)] // The helper is also included by CAS-only test modules.
+    pub(crate) async fn observation_loss(upstream: &str, ordinal: usize) -> Self {
+        assert!(ordinal > 0);
+        Self::start_at(upstream, Some(ordinal)).await
+    }
+    async fn start_at(upstream: &str, observation_ordinal: Option<usize>) -> Self {
         let client = redis::Client::open(upstream).unwrap();
         let database = client.get_connection_info().redis.db;
         let redis::ConnectionAddr::Tcp(host, port) = client.get_connection_info().addr.clone()
@@ -37,6 +48,7 @@ impl ReplyLossProxy {
         let port_here = listener.local_addr().unwrap().port();
         let armed = Arc::new(AtomicBool::new(false));
         let dropped = Arc::new(AtomicBool::new(false));
+        let observations = Arc::new(AtomicUsize::new(0));
         let arm = armed.clone();
         let drop_notice = dropped.clone();
         let task = tokio::spawn(async move {
@@ -48,6 +60,7 @@ impl ReplyLossProxy {
                         let address = (host.clone(), port);
                         let armed = arm.clone();
                         let dropped = drop_notice.clone();
+                        let observations = observations.clone();
                         connections.spawn(async move {
                             let server = TcpStream::connect(address).await?;
                             let (client_read, mut client_write) = client.into_split();
@@ -60,9 +73,15 @@ impl ReplyLossProxy {
                                 let response = frame(&mut server_read).await?;
                                 // EVALSHA's NOSCRIPT response must be forwarded;
                                 // lose only a successful applied transition.
-                                if command.windows(4).any(|part| part == b"EVAL")
-                                    && response == b":1\r\n"
-                                    && armed.swap(false, Ordering::SeqCst)
+                                let selected_reply = match observation_ordinal {
+                                    None => command.windows(4).any(|part| part == b"EVAL")
+                                        && response == b":1\r\n",
+                                    Some(ordinal) => command == b"*1\r\n$4\r\nEXEC\r\n"
+                                        && response.windows(7).any(|part| part == b"run_id:")
+                                        && armed.load(Ordering::SeqCst)
+                                        && observations.fetch_add(1, Ordering::SeqCst) + 1 == ordinal,
+                                };
+                                if selected_reply && armed.swap(false, Ordering::SeqCst)
                                 {
                                     dropped.store(true, Ordering::SeqCst);
                                     return Ok::<(), io::Error>(());

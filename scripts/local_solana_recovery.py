@@ -6,6 +6,9 @@ and restarted against the same Redis; recovery must retransmit identical bytes,
 then complete once historical statuses become visible. Only loopback RPCs are
 used. Requires a built Engine, redis-server/redis-cli, and Solana CLI/validator.
 Fresh keys and ledger live in a private temporary directory outside the repo.
+Runs both retained-Redis and missing-projection recovery by default. The latter
+removes only signed Redis projections while Engine is stopped; the independent
+journal must reconstruct the original wires. Use either scenario flag to run one.
 """
 import argparse
 import base64
@@ -17,6 +20,7 @@ import os
 from pathlib import Path
 import signal
 import socket
+import sqlite3
 import struct
 import subprocess
 import tempfile
@@ -160,9 +164,24 @@ def main():
     parser.add_argument("--transactions", type=int, default=12)
     parser.add_argument("--report", type=Path)
     parser.add_argument("--rust-log", default="info", help="Engine log filter; use debug to verify credential redaction")
+    scenario = parser.add_mutually_exclusive_group()
+    scenario.add_argument("--drop-attempts-on-restart", action="store_true",
+                          help="Run only missing-projection recovery from the exact retained journal wire")
+    scenario.add_argument("--keep-attempts-on-restart", action="store_true",
+                          help="Run only response-loss recovery with Redis attempts retained")
     parser.add_argument("--solana-bin-dir", type=Path, default=os.environ.get("SOLANA_BIN_DIR"))
     args = parser.parse_args()
     assert 1 <= args.transactions <= 40
+    modes = [True] if args.drop_attempts_on_restart else [False] if args.keep_attempts_on_restart else [False, True]
+    for drop in modes:
+        case = argparse.Namespace(**vars(args))
+        case.drop_attempts_on_restart = drop
+        if drop and len(modes) == 2 and args.report:
+            case.report = args.report.with_name(args.report.stem + "-projection-loss" + args.report.suffix)
+        run_scenario(case)
+
+
+def run_scenario(args):
     bindir = args.solana_bin_dir
     def solana_bin(name):
         return str(bindir / name) if bindir else name
@@ -175,7 +194,8 @@ def main():
     os.chmod(keydir, 0o700)
     children, streams, proxy = [], [], None
     report = {"scenario": "Solana accepted-send response loss, Engine crash/restart, identical-byte retransmission, duplicate admission",
-              "transactions": args.transactions, "log_directory": str(logs)}
+              "transactions": args.transactions, "log_directory": str(logs),
+              "drop_attempts_on_restart": args.drop_attempts_on_restart}
     started = time.monotonic()
     rpc_port, redis_port, server_port, proxy_port, faucet_port = port(True), port(), port(), port(), port()
     gossip_port = port()
@@ -276,6 +296,23 @@ def main():
             assert attempt["signature"] == proxy.messages[attempt["signed_transaction"]]["signature"]
             attempts[txid] = attempt
         assert len({a["signature"] for a in attempts.values()}) == args.transactions
+        if args.drop_attempts_on_restart:
+            # Only the stopped, disposable fixture is altered. Verify the retained
+            # authority first; a marker alone is not signed-transaction evidence.
+            with sqlite3.connect(f"file:{logs / 'recovery.sqlite'}?mode=ro", uri=True) as journal:
+                for txid, attempt in attempts.items():
+                    row = journal.execute(
+                        "SELECT payload FROM attempts WHERE id=? ORDER BY sequence DESC LIMIT 1",
+                        (txid,),
+                    ).fetchone()
+                    assert row is not None, "signed attempt absent from retained authority"
+                    durable = json.loads(row[0])
+                    assert durable["signature"] == attempt["signature"]
+                    assert durable["attempt"]["signed_transaction"] == attempt["signed_transaction"]
+            removed = redis("DEL", *[f"{run_id}:solana_tx_attempt:{txid}" for txid in attempts])
+            assert removed == args.transactions
+            assert not redis("KEYS", f"{run_id}:solana_tx_attempt:*")
+            report["signed_projections_removed"] = removed
         with proxy.lock:
             before_counts = {wire: item["calls"] for wire, item in proxy.messages.items()}
             proxy.drop_responses = False
@@ -285,6 +322,12 @@ def main():
                 assert set(proxy.messages) == set(before_counts), "recovery changed a signed message"
                 return all(proxy.messages[wire]["calls"] > count for wire, count in before_counts.items())
         until(replayed_all, label="identical-byte retransmission after restart")
+        if args.drop_attempts_on_restart:
+            for txid, original in attempts.items():
+                restored = json.loads(redis("GET", f"{run_id}:solana_tx_attempt:{txid}"))
+                assert restored["signature"] == original["signature"]
+                assert restored["signed_transaction"] == original["signed_transaction"]
+            report["exact_signed_projections_restored"] = args.transactions
         with proxy.lock:
             proxy.hide_statuses = False
         queue = f"twmq:{run_id}_solana_executor"

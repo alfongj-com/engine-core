@@ -106,11 +106,18 @@ Accessed September 26, 2026:
 The throughput/security revision calls the independent journal before storing a
 new Redis attempt, and again before transmission with an identical wire identity
 (poll/send counters are excluded from that identity). A crash after SQL commit
-but before Redis storage retains the signature binding; reconciliation parks
-missing or substituted Redis state. The test
+but before Redis storage retains the signature binding. Missing Redis state can
+now be restored from that exact retained wire; substituted state remains fenced. The test
 `sql_attempt_precedes_redis_and_unbound_substitution_never_broadcasts` exercises
 that actual cut. Terminal signature/chain membership is rechecked inside the
 journal transaction. These strengthen the runtime; the older Redis-only model
 continues to assume its persisted identity is authentic. The DisasterRecovery
 model separates authority and projection but does not mechanically compose the
 wire-validation, lease and journal models.
+
+Schema3 adds an irreversible durable recovery mode and a separate cumulative
+20-grant recovery pool. The combined 20 original plus 20 recovered bound assumes
+the original Redis counter survives until recovery mode; only the recovery pool
+is independently durable. The [retained-attempt model](retained-solana.md) covers that
+extension and its named mutations. The Redis-only loss boundary above remains
+intentional; it does not represent the independent authority.
