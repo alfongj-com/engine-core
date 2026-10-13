@@ -11,7 +11,11 @@
 - Six finalized effects each on Sepolia, Arbitrum Sepolia and Base Sepolia after Engine/Redis crashes. The earlier harness did not drain late proxy failures before its final outcome; recorded chain effects remain verified, while the final harness is used for the next cases.
 - Solana Devnet: baseline and cleanup each finalized six effects. A third cleanup run also passed with the final guard-draining harness; duplicate replay produced no additional broadcasts.
 
-Optimism retained six durable terminal outcomes but its independent check received a finalized head below the receipt height. Its original identities and failed report remain preserved for reconciliation; no pass is claimed yet. Matched local load comparisons, bounded EVM reverted-call checks and final-head CI are running.
+Optimism initially failed its independent check because the provider returned a finalized head below the receipt height. Read-only reconciliation verified all six original outcomes and stored checkpoints against the canonical chain. Replaying the saved IDs with every broadcast denied left queue identities, attempts, balances and nonces unchanged. Original failure evidence is preserved; 45 read-only RPC calls were used.
+
+The matched local comparison is complete: both binaries finalized all 9,600 offered transfers and drained every queue. Admission and terminal timings are broadly similar; journal commit means are nearly unchanged. Solana HTTP calls per intent rose 3.0% in this one pair. See [measurements and limits](performance.md) and [numeric comparison](comparison.json). No sustainable capacity or statistical equivalence claim is made.
+
+Bounded EVM reverted-call checks and final-head CI are still running.
 
 ## Harness findings and scope
 

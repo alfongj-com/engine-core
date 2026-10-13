@@ -19,6 +19,7 @@
         "process_helper_sha256": "db1b04301905b1f2330396474fd66e7a1dbc3c12dc257e5ebd4b3cadbc5e6f88"
       },
       "raw_report_sha256": "092800a0b575b9e3fe342a9c47596b09a9c17067b9c7d3b8b9f6b36a16dd9471",
+      "binary_sha256": "26a05c8f2ce303a8eb40d41f8b3b295befe273e098b4a16b1a9177c55d410dc3",
       "guard_error_count": 0,
       "rpc_methods": {
         "11155420:eth_chainId": {
@@ -124,6 +125,7 @@
         "process_helper_sha256": "db1b04301905b1f2330396474fd66e7a1dbc3c12dc257e5ebd4b3cadbc5e6f88"
       },
       "raw_report_sha256": "9261eb4bddc45af21bf3d75215adc288fd1f8ea40023762fbe3145a67f902396",
+      "binary_sha256": "26a05c8f2ce303a8eb40d41f8b3b295befe273e098b4a16b1a9177c55d410dc3",
       "guard_error_count": 0,
       "rpc_methods": {
         "421614:eth_chainId": {
@@ -229,6 +231,7 @@
         "process_helper_sha256": "db1b04301905b1f2330396474fd66e7a1dbc3c12dc257e5ebd4b3cadbc5e6f88"
       },
       "raw_report_sha256": "68a2d7aac63bc228077ea73f0d7d5018d9f60aeadd6fe8e8bc9c38d10e10da7d",
+      "binary_sha256": "26a05c8f2ce303a8eb40d41f8b3b295befe273e098b4a16b1a9177c55d410dc3",
       "guard_error_count": 0,
       "rpc_methods": {
         "84532:eth_chainId": {
@@ -334,6 +337,7 @@
         "process_helper_sha256": "db1b04301905b1f2330396474fd66e7a1dbc3c12dc257e5ebd4b3cadbc5e6f88"
       },
       "raw_report_sha256": "ec57b104eb37d09eb673fd8617f76ae9032290c1c5db9994c03403d1df59aaf9",
+      "binary_sha256": "26a05c8f2ce303a8eb40d41f8b3b295befe273e098b4a16b1a9177c55d410dc3",
       "guard_error_count": 0,
       "rpc_methods": {
         "11155111:eth_chainId": {
@@ -397,6 +401,35 @@
           "totalMs": 314.87437399988994
         }
       }
+    },
+    {
+      "label": "public-11155420-reconciled",
+      "outcome": "pass",
+      "transactions": 6,
+      "chain_id": 11155420,
+      "rpc_read_limit": 1000,
+      "actual_fees_wei": 126031501902,
+      "receipt_execution_fees_wei": 126031500000,
+      "receipt_l1_fees_wei": 1902,
+      "other_fee_components_wei": 0,
+      "unique_chain_effects": 6,
+      "duplicate_requests": 6,
+      "rpc_sends": 0,
+      "duplicate_chain_effects": 0,
+      "retained_terminal_records": 6,
+      "queue_and_attempt_identities_unchanged": true,
+      "refused_broadcasts": 0,
+      "original_failure_evidence_unchanged": true,
+      "owned_processes_stopped": true,
+      "rpc_calls": 45,
+      "elapsed_seconds": 8.55,
+      "lock_release_authorized": true,
+      "provenance": {},
+      "raw_report_sha256": "0aa91db8f8db53126e2cf53c19491504a7b2359b2fa739a070f5d61f4e24c898",
+      "binary_sha256": "26a05c8f2ce303a8eb40d41f8b3b295befe273e098b4a16b1a9177c55d410dc3",
+      "helper_sha256": "e545217389d5312639a0c8b6d7e006629e855e855a6df4fd25726bb61812a560",
+      "original_report_sha256": "092800a0b575b9e3fe342a9c47596b09a9c17067b9c7d3b8b9f6b36a16dd9471",
+      "guard_error_count": 0
     },
     {
       "label": "public-solana-baseline",

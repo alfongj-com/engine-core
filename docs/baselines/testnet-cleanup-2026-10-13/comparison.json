@@ -1,0 +1,794 @@
+{
+  "scope": "One baseline-then-candidate local regression pair; transfer-only workload on three concurrent local chains. No statistical equivalence, sustainable throughput, or public-chain capacity claim.",
+  "conclusion": "No clear material end-to-end or journal service regression in this pair. Small Solana attempt-observation and RPC-cost increases warrant a reversed-order repeat if those signals need attribution; no source change is justified by this pair alone.",
+  "matched_settings": {
+    "command_except_binary_and_report": true,
+    "duration_seconds": true,
+    "warmup_seconds": true,
+    "minimum_late_window_seconds": true,
+    "mixed": true,
+    "chaos": true,
+    "durability": true,
+    "profiles": true,
+    "http_concurrency": true,
+    "rpc_proxy_concurrency": true,
+    "eoa_broadcast_concurrency": true,
+    "eoa_max_inflight_per_wallet": true,
+    "solana_workers": true,
+    "solana_confirmation_poll_seconds": true,
+    "arrival_phase_seconds": true,
+    "harness_sha256": true,
+    "timing_source_sha256": true,
+    "queue_except_random_namespace": true,
+    "same_summarizer": true,
+    "same_strict_analyzer": true
+  },
+  "settings": {
+    "offered_rates_tps": {
+      "evm025": 8.0,
+      "evm2": 8.0,
+      "solana": 16.0
+    },
+    "load_seconds": 300.0,
+    "warmup_seconds": 60.0,
+    "late_window_seconds": 120.0,
+    "mixed_success_and_revert": false,
+    "chaos": "none",
+    "durability": {
+      "redis_appendfsync": "everysec",
+      "sqlite": "WAL synchronous=FULL/fullfsync=ON"
+    },
+    "queue": {
+      "APP__QUEUE__EOA_BROADCAST_CONCURRENCY": "32",
+      "APP__QUEUE__EOA_EXECUTOR_WORKERS": "2",
+      "APP__QUEUE__EOA_MAX_INFLIGHT": "4096",
+      "APP__QUEUE__EXTERNAL_BUNDLER_SEND_WORKERS": "1",
+      "APP__QUEUE__LEASE_DURATION_SECONDS": "600",
+      "APP__QUEUE__LOCAL_CONCURRENCY": "4",
+      "APP__QUEUE__POLLING_INTERVAL_MS": "20",
+      "APP__QUEUE__SOLANA_CONFIRMATION_POLL_INTERVAL_SECONDS": "1",
+      "APP__QUEUE__SOLANA_EXECUTOR_WORKERS": "100",
+      "APP__QUEUE__USEROP_CONFIRM_WORKERS": "1",
+      "APP__QUEUE__WEBHOOK_WORKERS": "1"
+    },
+    "evm_terminal_policy": "depth 2 on Anvil with 0.25s Ethereum and 2s OP execution block cadence",
+    "solana_terminal_policy": "finalized on a local Agave validator"
+  },
+  "provenance": {
+    "baseline": {
+      "runtime_source_commit": "04d15d86ad960f40345d7dddb8c84505ba3e96ba",
+      "runtime_source_dirty": false,
+      "runtime_binary_sha256": "26a05c8f2ce303a8eb40d41f8b3b295befe273e098b4a16b1a9177c55d410dc3",
+      "captured_checkout_commit": "835c7c2905d3ed59b81c67b6338e2320c6646b79",
+      "captured_checkout_dirty": true,
+      "raw_report_sha256": "6b3675bc56f4a0c1c2c8bc2c61033e65863af58eeb3f75cb00db4c340ae79c05",
+      "harness_sha256": {
+        "capacity_campaign.py": "c3af22b49a72617c0f3deaccc938abd3cd41012ab776b59f57431a3bee2c37f6",
+        "capacity_faults.py": "59e2bc4d90bceca2682c27e35c5871ee538d4878a795f990fa90e6d5f90afa13",
+        "capacity_resource_guard.py": "bbfda4901f49600cdff9fa907b73e2a64e8df534496083994fd4717c55979bb6"
+      },
+      "timing_source_sha256": "3c7321093f3f69721624a028991e1c27a2cf83b28c4b2ecfd5dedc693615f6c2",
+      "summarizer_sha256": "328824804e23d683d004934ae807f02464d57b8e13793f0c6e22390d2cc259c0",
+      "note": "The separately supplied executable is identified by its binary manifest and matching hash. Checkout metadata captured by the harness is not substituted for runtime provenance."
+    },
+    "candidate": {
+      "runtime_source_commit": "835c7c2905d3ed59b81c67b6338e2320c6646b79",
+      "runtime_source_dirty": false,
+      "runtime_binary_sha256": "c0809d09b4eecea9a4e302e151104133b1362459efa147f1c35ab9177ba88365",
+      "captured_checkout_commit": "9b3b8519a953d6bc25b0aeba4c9fb4c3c14ac9c4",
+      "captured_checkout_dirty": false,
+      "raw_report_sha256": "9c95644f5d6d98390ba5e70e92ed63c1a19b6909a3e33d284049e7b2b270ac31",
+      "harness_sha256": {
+        "capacity_campaign.py": "c3af22b49a72617c0f3deaccc938abd3cd41012ab776b59f57431a3bee2c37f6",
+        "capacity_faults.py": "59e2bc4d90bceca2682c27e35c5871ee538d4878a795f990fa90e6d5f90afa13",
+        "capacity_resource_guard.py": "bbfda4901f49600cdff9fa907b73e2a64e8df534496083994fd4717c55979bb6"
+      },
+      "timing_source_sha256": "3c7321093f3f69721624a028991e1c27a2cf83b28c4b2ecfd5dedc693615f6c2",
+      "summarizer_sha256": "328824804e23d683d004934ae807f02464d57b8e13793f0c6e22390d2cc259c0",
+      "note": "The separately supplied executable is identified by its binary manifest and matching hash. Checkout metadata captured by the harness is not substituted for runtime provenance."
+    }
+  },
+  "oracles": {
+    "baseline": {
+      "supervisor_exit": 0,
+      "supervisor_elapsed_seconds": 357.5198534169467,
+      "safety_pass": true,
+      "liveness_pass": true,
+      "offered_intents": 9600,
+      "observed_intents": 9600,
+      "drain_remaining": {
+        "client_pending": 0,
+        "http_inflight": 0,
+        "journal_unresolved": 0,
+        "node_pending": 0,
+        "redis_active": 0,
+        "redis_borrowed": 0,
+        "redis_delayed": 0,
+        "redis_pending": 0,
+        "redis_submitted": 0
+      },
+      "journal_halted": false,
+      "operator_recovery_required": false,
+      "owned_children_stopped": true,
+      "reported_error_count": 0,
+      "client_worker_failure_count": 0,
+      "duplicate_retries_total": 4,
+      "duplicate_send_delta": {
+        "evm025": 0,
+        "evm2": 0,
+        "solana": 0
+      },
+      "load_end_to_first_drain_seconds": 20.16540908405733
+    },
+    "candidate": {
+      "supervisor_exit": 0,
+      "supervisor_elapsed_seconds": 357.6991288330173,
+      "safety_pass": true,
+      "liveness_pass": true,
+      "offered_intents": 9600,
+      "observed_intents": 9600,
+      "drain_remaining": {
+        "client_pending": 0,
+        "http_inflight": 0,
+        "journal_unresolved": 0,
+        "node_pending": 0,
+        "redis_active": 0,
+        "redis_borrowed": 0,
+        "redis_delayed": 0,
+        "redis_pending": 0,
+        "redis_submitted": 0
+      },
+      "journal_halted": false,
+      "operator_recovery_required": false,
+      "owned_children_stopped": true,
+      "reported_error_count": 0,
+      "client_worker_failure_count": 0,
+      "duplicate_retries_total": 4,
+      "duplicate_send_delta": {
+        "evm025": 0,
+        "evm2": 0,
+        "solana": 0
+      },
+      "load_end_to_first_drain_seconds": 20.449391291949894
+    }
+  },
+  "per_chain": {
+    "evm025": {
+      "offered_tps": 8.0,
+      "intake": {
+        "baseline": {
+          "offered": 2400,
+          "dispatched": 2400,
+          "dropped_client_capacity": 0,
+          "accepted_initial_requests": 2400,
+          "all_initial_http_responses_202": true,
+          "rpc_method_error_count": 0,
+          "rpc_proxy_overloads": 0,
+          "rpc_proxy_failure_count": 0
+        },
+        "candidate": {
+          "offered": 2400,
+          "dispatched": 2400,
+          "dropped_client_capacity": 0,
+          "accepted_initial_requests": 2400,
+          "all_initial_http_responses_202": true,
+          "rpc_method_error_count": 0,
+          "rpc_proxy_overloads": 0,
+          "rpc_proxy_failure_count": 0
+        }
+      },
+      "latency_ms": {
+        "p99_scheduled_to_response_ms": {
+          "baseline": 64.986,
+          "candidate": 54.114,
+          "delta": -10.872000000000007,
+          "delta_percent": -16.729757178469217
+        },
+        "p99_http_service_ms": {
+          "baseline": 59.676,
+          "candidate": 50.766,
+          "delta": -8.910000000000004,
+          "delta_percent": -14.930625377036
+        },
+        "p99_attempt_observed_upper_ms": {
+          "baseline": 6009.353,
+          "candidate": 6127.125,
+          "delta": 117.77199999999993,
+          "delta_percent": 1.9598116469443427
+        },
+        "p99_terminal_observed_upper_ms": {
+          "baseline": 11007.663,
+          "candidate": 11139.621,
+          "delta": 131.95799999999872,
+          "delta_percent": 1.1987830659423215
+        }
+      },
+      "late_terminal_tps": {
+        "baseline": 8.151,
+        "candidate": 7.867,
+        "delta": -0.2839999999999998,
+        "delta_percent": -3.484235063182428
+      },
+      "strict_screen": {
+        "baseline": {
+          "classification": "unconfirmed_growth_or_cadence_ambiguity",
+          "reasons": [
+            "stage_rate_below_offered_beyond_one_transaction",
+            "terminal_backlog_endpoint_growth",
+            "terminal_backlog_positive_aligned_mean_trend"
+          ],
+          "backlog_endpoints": {
+            "unsigned": {
+              "start": 9.0,
+              "end": 3.0,
+              "growth": -6.0
+            },
+            "terminal": {
+              "start": 13.0,
+              "end": 27.0,
+              "growth": 14.0
+            }
+          },
+          "aligned_mean_slopes_tps": {
+            "unsigned": -0.008265486249888888,
+            "terminal": 0.05217058071269927
+          },
+          "persistent_growth_stages": []
+        },
+        "candidate": {
+          "classification": "unconfirmed_growth_or_cadence_ambiguity",
+          "reasons": [
+            "terminal_backlog_positive_aligned_mean_trend"
+          ],
+          "backlog_endpoints": {
+            "unsigned": {
+              "start": 0.0,
+              "end": 1.0,
+              "growth": 1.0
+            },
+            "terminal": {
+              "start": 42.0,
+              "end": 42.0,
+              "growth": 0.0
+            }
+          },
+          "aligned_mean_slopes_tps": {
+            "unsigned": 0.003273770391075617,
+            "terminal": 0.012762211709329658
+          },
+          "persistent_growth_stages": []
+        }
+      }
+    },
+    "evm2": {
+      "offered_tps": 8.0,
+      "intake": {
+        "baseline": {
+          "offered": 2400,
+          "dispatched": 2400,
+          "dropped_client_capacity": 0,
+          "accepted_initial_requests": 2400,
+          "all_initial_http_responses_202": true,
+          "rpc_method_error_count": 0,
+          "rpc_proxy_overloads": 0,
+          "rpc_proxy_failure_count": 0
+        },
+        "candidate": {
+          "offered": 2400,
+          "dispatched": 2400,
+          "dropped_client_capacity": 0,
+          "accepted_initial_requests": 2400,
+          "all_initial_http_responses_202": true,
+          "rpc_method_error_count": 0,
+          "rpc_proxy_overloads": 0,
+          "rpc_proxy_failure_count": 0
+        }
+      },
+      "latency_ms": {
+        "p99_scheduled_to_response_ms": {
+          "baseline": 58.098,
+          "candidate": 50.401,
+          "delta": -7.696999999999996,
+          "delta_percent": -13.248304588798232
+        },
+        "p99_http_service_ms": {
+          "baseline": 51.151,
+          "candidate": 45.971,
+          "delta": -5.180000000000007,
+          "delta_percent": -10.126879239897569
+        },
+        "p99_attempt_observed_upper_ms": {
+          "baseline": 5841.462,
+          "candidate": 5963.093,
+          "delta": 121.6309999999994,
+          "delta_percent": 2.0822013393222427
+        },
+        "p99_terminal_observed_upper_ms": {
+          "baseline": 15968.131,
+          "candidate": 15095.403,
+          "delta": -872.7279999999992,
+          "delta_percent": -5.465436123989709
+        }
+      },
+      "late_terminal_tps": {
+        "baseline": 7.743,
+        "candidate": 8.001,
+        "delta": 0.2579999999999991,
+        "delta_percent": 3.332041844246403
+      },
+      "strict_screen": {
+        "baseline": {
+          "classification": "unconfirmed_growth_or_cadence_ambiguity",
+          "reasons": [
+            "stage_rate_below_offered_beyond_one_transaction",
+            "terminal_backlog_endpoint_growth",
+            "terminal_backlog_positive_aligned_mean_trend"
+          ],
+          "backlog_endpoints": {
+            "unsigned": {
+              "start": 3.0,
+              "end": 3.0,
+              "growth": 0.0
+            },
+            "terminal": {
+              "start": 65.0,
+              "end": 91.0,
+              "growth": 26.0
+            }
+          },
+          "aligned_mean_slopes_tps": {
+            "unsigned": -0.0023200007299178853,
+            "terminal": 0.04305269415970567
+          },
+          "persistent_growth_stages": []
+        },
+        "candidate": {
+          "classification": "unconfirmed",
+          "reasons": [
+            "stage_rate_below_offered_beyond_one_transaction"
+          ],
+          "backlog_endpoints": {
+            "unsigned": {
+              "start": 1.0,
+              "end": 2.0,
+              "growth": 1.0
+            },
+            "terminal": {
+              "start": 66.0,
+              "end": 45.0,
+              "growth": -21.0
+            }
+          },
+          "aligned_mean_slopes_tps": {
+            "unsigned": -0.004798211146495026,
+            "terminal": -0.015237187391496012
+          },
+          "persistent_growth_stages": []
+        }
+      }
+    },
+    "solana": {
+      "offered_tps": 16.0,
+      "intake": {
+        "baseline": {
+          "offered": 4800,
+          "dispatched": 4800,
+          "dropped_client_capacity": 0,
+          "accepted_initial_requests": 4800,
+          "all_initial_http_responses_202": true,
+          "rpc_method_error_count": 0,
+          "rpc_proxy_overloads": 0,
+          "rpc_proxy_failure_count": 0
+        },
+        "candidate": {
+          "offered": 4800,
+          "dispatched": 4800,
+          "dropped_client_capacity": 0,
+          "accepted_initial_requests": 4800,
+          "all_initial_http_responses_202": true,
+          "rpc_method_error_count": 0,
+          "rpc_proxy_overloads": 0,
+          "rpc_proxy_failure_count": 0
+        }
+      },
+      "latency_ms": {
+        "p99_scheduled_to_response_ms": {
+          "baseline": 648.446,
+          "candidate": 634.753,
+          "delta": -13.692999999999984,
+          "delta_percent": -2.111663885658943
+        },
+        "p99_http_service_ms": {
+          "baseline": 642.665,
+          "candidate": 627.34,
+          "delta": -15.324999999999932,
+          "delta_percent": -2.3846016198174724
+        },
+        "p99_attempt_observed_upper_ms": {
+          "baseline": 5525.714,
+          "candidate": 6037.705,
+          "delta": 511.991,
+          "delta_percent": 9.26560802821137
+        },
+        "p99_terminal_observed_upper_ms": {
+          "baseline": 23522.611,
+          "candidate": 23275.286,
+          "delta": -247.32500000000073,
+          "delta_percent": -1.0514351489296914
+        }
+      },
+      "late_terminal_tps": {
+        "baseline": 16.077,
+        "candidate": 15.801,
+        "delta": -0.2760000000000016,
+        "delta_percent": -1.7167381974249052
+      },
+      "strict_screen": {
+        "baseline": {
+          "classification": "unconfirmed",
+          "reasons": [
+            "stage_rate_below_offered_beyond_one_transaction"
+          ],
+          "backlog_endpoints": {
+            "unsigned": {
+              "start": 7.0,
+              "end": 8.0,
+              "growth": 1.0
+            },
+            "terminal": {
+              "start": 295.0,
+              "end": 270.0,
+              "growth": -25.0
+            }
+          },
+          "aligned_mean_slopes_tps": {
+            "unsigned": 0.0006306511863990797,
+            "terminal": -0.010475769226404866
+          },
+          "persistent_growth_stages": []
+        },
+        "candidate": {
+          "classification": "unconfirmed_growth_or_cadence_ambiguity",
+          "reasons": [
+            "stage_rate_below_offered_beyond_one_transaction",
+            "unsigned_backlog_endpoint_growth",
+            "terminal_backlog_endpoint_growth"
+          ],
+          "backlog_endpoints": {
+            "unsigned": {
+              "start": 1.0,
+              "end": 6.0,
+              "growth": 5.0
+            },
+            "terminal": {
+              "start": 282.0,
+              "end": 297.0,
+              "growth": 15.0
+            }
+          },
+          "aligned_mean_slopes_tps": {
+            "unsigned": 0.005527270442215939,
+            "terminal": 0.0034685836864695773
+          },
+          "persistent_growth_stages": []
+        }
+      }
+    }
+  },
+  "timing_windows": {
+    "baseline": {
+      "from_seconds": 60.02419112494681,
+      "to_seconds": 300.011883249972,
+      "scrape_mean_seconds": 0.010746832490347477,
+      "duration_seconds": 239.9876921250252
+    },
+    "candidate": {
+      "from_seconds": 60.02345049998257,
+      "to_seconds": 300.00988425000105,
+      "scrape_mean_seconds": 0.01076571428578119,
+      "duration_seconds": 239.98643375001848
+    }
+  },
+  "journal_phases": {
+    "serial_hold": {
+      "mean_ms": {
+        "baseline": 1.46057203069983,
+        "candidate": 1.4583259138641473,
+        "delta": -0.0022461168356826544,
+        "delta_percent": -0.15378336627509537
+      },
+      "observations": {
+        "baseline": 141206.0,
+        "candidate": 142461.0
+      }
+    },
+    "serial_wait": {
+      "mean_ms": {
+        "baseline": 1.634265687626567,
+        "candidate": 1.5670727837162326,
+        "delta": -0.0671929039103345,
+        "delta_percent": -4.111504293277934
+      },
+      "observations": {
+        "baseline": 141206.0,
+        "candidate": 142461.0
+      }
+    },
+    "lane_wait": {
+      "mean_ms": {
+        "baseline": 105.41776767888697,
+        "candidate": 106.28569002531961,
+        "delta": 0.8679223464326355,
+        "delta_percent": 0.8233169469841206
+      },
+      "observations": {
+        "baseline": 141205.0,
+        "candidate": 142460.0
+      }
+    },
+    "health_capacity_wait": {
+      "mean_ms": {
+        "baseline": 0.00026529592506815264,
+        "candidate": 0.000290440735295813,
+        "delta": 2.5144810227660356e-05,
+        "delta_percent": 9.47802353963818
+      },
+      "observations": {
+        "baseline": 109646.0,
+        "candidate": 110867.0
+      }
+    },
+    "sql_commit": {
+      "mean_ms": {
+        "baseline": 3.5002882318057136,
+        "candidate": 3.4973613443937563,
+        "delta": -0.0029268874119572352,
+        "delta_percent": -0.08361846848387033
+      },
+      "observations": {
+        "baseline": 46237.0,
+        "candidate": 46261.0
+      }
+    },
+    "sql_ack": {
+      "mean_ms": {
+        "baseline": 3.6081212790345307,
+        "candidate": 3.6029976116899567,
+        "delta": -0.005123667344574034,
+        "delta_percent": -0.14200374511649239
+      },
+      "observations": {
+        "baseline": 23119.0,
+        "candidate": 23131.0
+      }
+    },
+    "redis_observation": {
+      "mean_ms": {
+        "baseline": 0.11182827329502272,
+        "candidate": 0.11668347231558407,
+        "delta": 0.004855199020561349,
+        "delta_percent": 4.3416560745353605
+      },
+      "observations": {
+        "baseline": 210560.0,
+        "candidate": 211852.0
+      }
+    },
+    "redis_mirror": {
+      "mean_ms": {
+        "baseline": 0.08570554827407156,
+        "candidate": 0.08920224496325152,
+        "delta": 0.0034966966891799567,
+        "delta_percent": 4.079895362197705
+      },
+      "observations": {
+        "baseline": 23118.0,
+        "candidate": 23130.0
+      }
+    },
+    "blocking_queue": {
+      "mean_ms": {
+        "baseline": 0.011681104850149985,
+        "candidate": 0.01194756915037263,
+        "delta": 0.0002664643002226446,
+        "delta_percent": 2.2811566511983017
+      },
+      "observations": {
+        "baseline": 410977.0,
+        "candidate": 414676.0
+      }
+    },
+    "db_execution": {
+      "mean_ms": {
+        "baseline": 0.43312466206378064,
+        "candidate": 0.4296073496922766,
+        "delta": -0.0035173123715040444,
+        "delta_percent": -0.8120785260170904
+      },
+      "observations": {
+        "baseline": 410977.0,
+        "candidate": 414676.0
+      }
+    },
+    "db_mutex_wait": {
+      "mean_ms": {
+        "baseline": 0.09374296594479103,
+        "candidate": 0.0974183522198159,
+        "delta": 0.0036753862750248667,
+        "delta_percent": 3.920706196974222
+      },
+      "observations": {
+        "baseline": 410977.0,
+        "candidate": 414676.0
+      }
+    }
+  },
+  "solana_operation_phases": {
+    "handler/requeue": {
+      "mean_ms": {
+        "baseline": 202.4579491433414,
+        "candidate": 203.1760332700275,
+        "delta": 0.7180841266860796,
+        "delta_percent": 0.3546830982554594
+      },
+      "observations": {
+        "baseline": 66276.0,
+        "candidate": 67378.0
+      }
+    },
+    "handler/success": {
+      "mean_ms": {
+        "baseline": 342.5620805526513,
+        "candidate": 351.3310062916878,
+        "delta": 8.76892573903649,
+        "delta_percent": 2.55980630573287
+      },
+      "observations": {
+        "baseline": 3865.0,
+        "candidate": 3826.0
+      }
+    },
+    "rpc_get_block_height/success": {
+      "mean_ms": {
+        "baseline": 0.7573962444444439,
+        "candidate": 1.0354818947368416,
+        "delta": 0.27808565029239773,
+        "delta_percent": 36.716005965460766
+      },
+      "observations": {
+        "baseline": 45.0,
+        "candidate": 76.0
+      }
+    },
+    "rpc_get_latest_blockhash/success": {
+      "mean_ms": {
+        "baseline": 0.5117805376400112,
+        "candidate": 0.5296497171138326,
+        "delta": 0.017869179473821384,
+        "delta_percent": 3.491570733858307
+      },
+      "observations": {
+        "baseline": 3839.0,
+        "candidate": 3839.0
+      }
+    },
+    "rpc_get_signature_statuses/success": {
+      "mean_ms": {
+        "baseline": 0.5154481042087552,
+        "candidate": 0.5226749289842453,
+        "delta": 0.007226824775490082,
+        "delta_percent": 1.4020470182121825
+      },
+      "observations": {
+        "baseline": 11880.0,
+        "candidate": 12631.0
+      }
+    },
+    "rpc_get_transaction/success": {
+      "mean_ms": {
+        "baseline": 2.9620315842173266,
+        "candidate": 2.4080130281249934,
+        "delta": -0.5540185560923332,
+        "delta_percent": -18.70400569137498
+      },
+      "observations": {
+        "baseline": 3865.0,
+        "candidate": 3840.0
+      }
+    },
+    "rpc_send_transaction/success": {
+      "mean_ms": {
+        "baseline": 1.2772806478102197,
+        "candidate": 1.315956352510458,
+        "delta": 0.0386757047002384,
+        "delta_percent": 3.027972338463303
+      },
+      "observations": {
+        "baseline": 3836.0,
+        "candidate": 3824.0
+      }
+    },
+    "status_coordinator_wait/success": {
+      "mean_ms": {
+        "baseline": 3.666403918346978,
+        "candidate": 3.745874520906931,
+        "delta": 0.0794706025599532,
+        "delta_percent": 2.1675353924393237
+      },
+      "observations": {
+        "baseline": 66305.0,
+        "candidate": 67394.0
+      }
+    },
+    "status_logical_poll/success": {
+      "mean_ms": {
+        "baseline": 4.461187492858669,
+        "candidate": 4.55361979855772,
+        "delta": 0.09243230569905059,
+        "delta_percent": 2.071921564538881
+      },
+      "observations": {
+        "baseline": 66305.0,
+        "candidate": 67394.0
+      }
+    }
+  },
+  "solana_rpc": {
+    "postwarm_load_http_per_new_admission": {
+      "baseline": 6.110416666666667,
+      "candidate": 6.3046875,
+      "delta": 0.1942708333333334,
+      "delta_percent": 3.17933856120014
+    },
+    "postwarm_load_status_http_per_new_admission": {
+      "baseline": 3.093489583333333,
+      "candidate": 3.289322916666667,
+      "delta": 0.19583333333333375,
+      "delta_percent": 6.330499200269402
+    },
+    "whole_campaign_http_requests": {
+      "baseline": 29115,
+      "candidate": 30000,
+      "delta": 885,
+      "delta_percent": 3.0396702730551173
+    },
+    "whole_campaign_http_per_offered_intent": {
+      "baseline": 6.065625,
+      "candidate": 6.25,
+      "delta": 0.18437500000000018,
+      "delta_percent": 3.0396702730551395
+    },
+    "whole_campaign_status_http_per_offered_intent": {
+      "baseline": 3.044583333333333,
+      "candidate": 3.2158333333333333,
+      "delta": 0.17125000000000012,
+      "delta_percent": 5.6247433967428595
+    }
+  },
+  "solana_status_batch_size": {
+    "baseline": {
+      "http_requests": 11880.0,
+      "signatures": 66305.0,
+      "mean_signatures_per_request": 5.581228956228956
+    },
+    "candidate": {
+      "http_requests": 12631.0,
+      "signatures": 67394.0,
+      "mean_signatures_per_request": 5.335602881798749
+    }
+  },
+  "watch_items": [
+    "Solana sampled scheduled-to-attempt p99 rose from 5525.714ms to 6037.705ms (+511.991ms, 9.3%). Observations are sampled upper bounds with 5s telemetry cadence; terminal p99 improved slightly.",
+    "Solana whole-campaign HTTP/intent rose from 6.065625 to 6.25 (+3.0%); post-warmup status batch mean fell from 5.58 to 5.34. Timing/confirmation cohorts and batch alignment differ between single runs.",
+    "Neither strict posthoc screen qualifies sustained capacity; neither detects persistent growth. Window endpoints and stage deficits vary across the pair."
+  ],
+  "limitations": [
+    "One ordered pair cannot establish equivalence or isolate host scheduling, node cadence, temperature, and time-order effects.",
+    "The operator reports the same bounded background fixture polling (about one read per five seconds per chain), no public Engine process and no builds during either run; this is contextual evidence, not an independent host-process audit.",
+    "Four duplicate requests were sampled in each run, not every admitted identity; both produced zero additional RPC sends.",
+    "No chaos was injected in this pair. Separate recovery/chaos evidence must be assessed separately.",
+    "Durable latency percentiles include drain and are sampled upper bounds. Admission percentiles cover dispatched requests; no offers were dropped here.",
+    "Journal phases overlap, and accumulated waits across concurrent jobs are not wall-time utilization; SQL acknowledgement includes a commit already counted by sql_commit.",
+    "Local EVM depth confirmation does not test a sequencer, derivation, L1 settlement or public finality. Local Solana does not qualify a distributed public cluster."
+  ]
+}
