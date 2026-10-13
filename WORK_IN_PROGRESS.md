@@ -5,7 +5,7 @@ Updated October 13, 2026. PRs [#1](https://github.com/alfongj-com/engine-core/pu
 [#3](https://github.com/alfongj-com/engine-core/pull/3) are merged. PR #3 merged at
 `8fa866e`; its executable implementation is `04d15d8`.
 
-Current work is on `cleanup-recovery-paths` in
+[PR #4](https://github.com/alfongj-com/engine-core/pull/4) is on `cleanup-recovery-paths` in
 `/Users/alfongj/Code/engine-core-review-stack`. Runtime `835c7c2` separates offline
 recovery operations and Solana transaction lifecycle code. The public harnesses
 select frozen binaries explicitly, so ongoing harness edits do not change the
@@ -18,19 +18,19 @@ runtime under test.
 | Local Rust, `835c7c2` | All 10 workflow steps passed, including 181 explicit Redis/API tests. |
 | Local process scenarios, `835c7c2` | All 10 passed: crashes, live Redis outage, rollback/quarantine, reorgs and both Solana recovery variants. |
 | Bounded protocol models, `835c7c2` | All 100 expected outcomes passed; 92 source guards match. These guards are not a Rust refinement proof. |
-| Public Solana Devnet, baseline `04d15d8` | Six finalized effects; no duplicates. Lost send responses, restart and original-ID retries checked. |
-| Public Solana Devnet, cleanup `835c7c2` | Six finalized effects; no duplicates. The same recovery checks passed. |
-| Public EVM chains | Pending. No public EVM pass or revert qualification is claimed yet. |
+| Public harness guards | All 39 offline tests passed, including late proxy failures, finalized evidence, fixed fixture limits and private signer input. |
 
-The Solana results check finalized receipts, balances and signature history.
-These small correctness runs do not measure sustainable throughput or RPC
-capacity. Their reports retain the exact binary and harness provenance; later
-changes require their own qualification.
+Public-testnet, matched-load and CI results are maintained in the
+[qualification report](https://github.com/alfongj-com/engine-core/blob/load-tests/docs/baselines/testnet-cleanup-2026-10-13/README.md) with separate
+runtime, binary and harness provenance. Small funded correctness checks do not
+establish sustainable throughput or RPC capacity. Provider-based finality checks
+are not independent consensus proofs.
 
-Local fixture testing also exposed an existing EOA contract-creation defect:
-`to: null` is admitted but transaction preparation omits the explicit creation
-kind. The bounded revert-fixture deployment cannot complete through that path.
-No public contract-deployment or reverted-execution pass is claimed.
+Local testing exposed an existing EOA contract-creation defect: an absent `to`
+is admitted, but preparation omits the explicit creation kind and never signs.
+Fixing that path needs a separate behavior change and a creation regression test.
+The reverted-call harness uses a separately signed, fixed fixture; its deployment
+does not qualify Engine contract creation.
 
 ## Evidence and reproduction
 

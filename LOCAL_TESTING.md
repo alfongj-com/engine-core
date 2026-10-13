@@ -22,9 +22,11 @@ PRs #1–3 are merged. The active cleanup separates offline recovery operations
 and Solana transaction lifecycle code. At `835c7c2`, the full local Rust suite
 (including 181 Redis/API tests), 10 process scenarios and 100 bounded model cases
 passed, with 92 matching source guards. Public Solana Devnet runs passed on both
-baseline and cleanup binaries: six finalized effects each, no duplicates. Public
-EVM qualification is pending. Read [WORK_IN_PROGRESS.md](WORK_IN_PROGRESS.md) for
-scope and remaining work. Historical results apply only to their recorded source.
+baseline and cleanup binaries: six finalized effects each, no duplicates. See the
+[qualification report](https://github.com/alfongj-com/engine-core/blob/load-tests/docs/baselines/testnet-cleanup-2026-10-13/README.md)
+for public-chain outcomes, harness chronology and matched-load results. Read
+[WORK_IN_PROGRESS.md](WORK_IN_PROGRESS.md) for remaining limits. Historical results
+apply only to their recorded source.
 
 The tools formerly under `/tmp/engine-*` were removed by temporary-file cleanup.
 Use the persistent paths below. The old release binary is preserved as
@@ -264,8 +266,10 @@ Run one campaign at a time per signer and chain. EVM choices are Sepolia
 Redis evidence, and an independent canonical/finalized provider check. It never
 falls back to a depth policy. Allow for testnet finality delays rather than
 interpreting a timeout as an absent transaction. `--revert-to` accepts only an
-existing reverting contract, zero value and empty calldata; public revert
-qualification is still pending.
+existing reverting contract, zero value and empty calldata. The separate
+`testnet_evm_fixture.py` creates only a fixed revert-only contract using Cast;
+its signed bytes are retained before dispatch, and it does not exercise Engine
+contract creation. Both harnesses preserve a failed run’s per-chain lock.
 
 Solana uses Devnet and checks finalized receipts, exact balance changes and
 recipient signature history. Its first rent-bearing transfer finalizes before

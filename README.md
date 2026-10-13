@@ -26,8 +26,9 @@ Branch layout on October 13, 2026:
 At `835c7c2`, the local Rust suite (including 181 explicit Redis/API tests),
 10 process scenarios, and 100 bounded model cases passed; 92 source guards match.
 Small Solana Devnet crash runs passed on the baseline and cleanup binary, with
-six finalized effects each and no duplicates. Public EVM qualification is still
-pending. These results do not establish public-chain capacity.
+six finalized effects each and no duplicates. Public-chain outcomes and matched-load results are recorded in the
+[qualification report](https://github.com/alfongj-com/engine-core/blob/load-tests/docs/baselines/testnet-cleanup-2026-10-13/README.md).
+These results do not establish public-chain capacity.
 
 The tools and a read-only copy of the evidence are now in
 `/Users/alfongj/.local/share/engine-core/`, outside temporary storage. Load the
@@ -103,4 +104,4 @@ Webhooks are disabled unless `ENGINE_WEBHOOK_ALLOWED_ORIGINS` lists exact HTTPS 
 
 ## Verification scope
 
-Queue jobs per second are not blockchain transactions per second. [Latest measurements](https://github.com/alfongj-com/engine-core/blob/load-tests/docs/baselines/pr2-2026-10-12/README.md) exercise the real server, independent durable journal, Redis AOF, and local EVM/Solana nodes. They report admission, inclusion and finalization separately. Production qualification still needs the intended RPC, signer, transaction workload, public-chain finality window and concurrent-chain load. Finite models and tests do not certify whole-program correctness. See [current validation](WORK_IN_PROGRESS.md) and the handoff for results and remaining work. Public-testnet reports and other generated evidence are kept on the separate `load-tests` branch; private wallets, wires, journals and raw reports stay outside Git.
+Queue jobs per second are not blockchain transactions per second. [Latest measurements](https://github.com/alfongj-com/engine-core/blob/load-tests/docs/baselines/testnet-cleanup-2026-10-13/README.md) exercise the real server, independent durable journal, Redis AOF, and local EVM/Solana nodes. They report admission, inclusion and finalization separately. Production qualification still needs the intended RPC, signer, transaction workload, public-chain finality window and concurrent-chain load. Finite models and tests do not certify whole-program correctness. See [current validation](WORK_IN_PROGRESS.md) and the handoff for results and remaining work. Public-testnet reports and other generated evidence are kept on the separate `load-tests` branch; private wallets, wires, journals and raw reports stay outside Git.
