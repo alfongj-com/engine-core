@@ -24,6 +24,8 @@ import urllib.error
 import urllib.request
 import uuid
 
+from testnet_engine import pinned_binary, prepare_recovery, provenance as engine_provenance
+
 ROOT = Path(__file__).resolve().parents[1]
 STATE = Path.home() / ".config/engine-core"
 PAYER = "BymPLiErFxJBV47sc31B7VnMoePFnACshrMx3VxkjC69"
@@ -233,12 +235,15 @@ class Run:
     def wait(self, check, label, interval=0.5):
         while True:
             self.check_deadline()
-            if self.manifest.get("proxy_failure"):
-                raise RuntimeError(self.manifest["proxy_failure"])
+            self.check_proxy()
             self.observe_completions()
             if check():
                 return
             time.sleep(interval)
+
+    def check_proxy(self):
+        require(not self.manifest.get("proxy_failure"),
+                "Policy proxy failed; inspect retained evidence")
 
     def spawn(self, args, name, env=None, cwd=None):
         log = (self.directory / name).open("a")
@@ -270,11 +275,12 @@ class Run:
         require(self.redis("CONFIG", "GET", "appendonly")["appendonly"] == "yes", "Redis AOF required")
         require(self.redis("CONFIG", "GET", "appendfsync")["appendfsync"] == "always", "Redis synchronous AOF required")
 
-    def start_engine(self, log="engine.log"):
+    def engine_environment(self):
         env = {key: value for key, value in os.environ.items()
                if not key.startswith(("APP__", "ENGINE_"))}
         env.update({"APP_ENVIRONMENT": "production", "RUST_LOG": "info", "ENGINE_SOLANA_KEYPAIR_FILE": str(KEYPAIR),
-                    "ENGINE_SIGNING_TOKEN": self.manifest["token"], "APP__SERVER__HOST": "127.0.0.1",
+                    "ENGINE_SIGNING_TOKEN": self.manifest["token"],
+                    "APP__RECOVERY__JOURNAL_PATH": str(self.directory / "recovery.sqlite"), "APP__SERVER__HOST": "127.0.0.1",
                     "APP__SERVER__PORT": str(self.engine_port), "APP__REDIS__URL": f"redis://127.0.0.1:{self.redis_port}/",
                     "APP__SERVER__DIAGNOSTIC_ACCESS_PASSWORD": uuid.uuid4().hex,
                     "APP__QUEUE__EXECUTION_NAMESPACE": self.manifest["run_id"],
@@ -285,7 +291,14 @@ class Run:
             env[f"APP__SOLANA__{network}__WS_URL"] = "ws://127.0.0.1:1"
         for worker in ("WEBHOOK_WORKERS", "EXTERNAL_BUNDLER_SEND_WORKERS", "USEROP_CONFIRM_WORKERS", "EOA_EXECUTOR_WORKERS", "SOLANA_EXECUTOR_WORKERS"):
             env[f"APP__QUEUE__{worker}"] = "1"
-        self.engine = self.spawn([str(ROOT / "target/debug/thirdweb-engine")], log, env, ROOT / "server")
+        return env
+
+    def prepare_journal(self, resume=False):
+        prepare_recovery(self.manifest["provenance"], self.directory, self.engine_environment(), resume=resume)
+
+    def start_engine(self, log="engine.log"):
+        env = self.engine_environment()
+        self.engine = self.spawn([pinned_binary(self.manifest["provenance"])], log, env, ROOT / "server")
         def ready():
             require(self.engine.poll() is None, "Engine exited during startup")
             try:
@@ -337,6 +350,10 @@ class PolicyProxy:
         owner = self
 
         class Handler(BaseHTTPRequestHandler):
+            def setup(self):
+                super().setup()
+                self.connection.settimeout(20)
+
             def log_message(self, *_args):
                 pass
 
@@ -354,9 +371,15 @@ class PolicyProxy:
                     body = json.loads(self.rfile.read(length))
                     require(isinstance(body, dict) and body.get("jsonrpc") == "2.0", "Single RPC required")
                     method, params = body["method"], body["params"]
-                    require(method in {"getLatestBlockhash", "getSignatureStatuses", "getBlockHeight", "getTransaction", "sendTransaction", "isBlockhashValid", "getVersion"}, "Engine method outside harness policy")
+                    require(method in {"getLatestBlockhash", "getSignatureStatuses", "getBlockHeight", "getTransaction", "sendTransaction", "isBlockhashValid", "getVersion", "getGenesisHash"}, "Engine method outside harness policy")
                     if method == "getSignatureStatuses" and owner.hide:
                         result = {"context": {"slot": 0}, "value": [None] * len(params[0])}
+                    elif method == "getGenesisHash":
+                        # The pinned SDK sends null for no-argument methods. Use
+                        # the same budgeted request as the harness preflight.
+                        require(params is None or params == [], "Genesis hash takes no parameters")
+                        result = run.rpc(method, [])
+                        require(result == DEVNET_GENESIS, "Only Solana Devnet is allowed")
                     elif method == "sendTransaction":
                         result, drop = owner.broadcast(params)
                         if drop:
@@ -388,7 +411,8 @@ class PolicyProxy:
                     self.close_connection = True
 
         self.server = ThreadingHTTPServer(("127.0.0.1", run.proxy_port), Handler)
-        self.server.daemon_threads = True
+        # close() must drain handlers before a provisional success is published.
+        self.server.daemon_threads = False
         self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
         self.thread.start()
 
@@ -471,15 +495,8 @@ def validate_manifest(manifest):
                 "Invalid persisted broadcast evidence")
 
 
-def provenance():
-    binary = ROOT / "target/debug/thirdweb-engine"
-    digest = hashlib.sha256()
-    with binary.open("rb") as stream:
-        for block in iter(lambda: stream.read(1024 * 1024), b""):
-            digest.update(block)
-    return {"source_commit": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(),
-            "engine_binary_sha256": digest.hexdigest(),
-            "harness_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest()}
+def provenance(binary, source_commit=None):
+    return engine_provenance(binary, source_commit, __file__)
 
 
 def gateway_counters():
@@ -527,6 +544,7 @@ def verify_effects(run):
         run.submit(item)
         time.sleep(1)
     time.sleep(2)
+    run.check_proxy()
     require(sum(item["broadcasts"] for item in manifest["wires"].values()) == broadcasts, "Duplicate IDs triggered more broadcasts")
     require(not run.redis("KEYS", f"{manifest['run_id']}:solana_tx_attempt:*"), "Terminal attempts remain")
     payer_balance = run.rpc("getBalance", [PAYER, {"commitment": "finalized"}])["value"]
@@ -545,6 +563,7 @@ def verify_effects(run):
             "receipts": receipts, "crash_mode": manifest["crash"], "discarded_send_responses": manifest.get("discarded_send_responses", 0),
             "wire_retransmissions": sum(item["broadcasts"] - 1 for item in manifest["wires"].values()),
             "crash_recovered_intents": count - 1 if manifest.get("crash_completed") else 0,
+            "unknown_outcome_same_id_retries": manifest.get("unknown_outcome_same_id_retries", 0),
             "crash_scope": "Engine SIGKILL after response loss; rent bootstrap already finalized; Redis remains running",
             "rpc_reserved": manifest["rpc_reserved"], "rpc_methods": manifest["rpc_methods"],
             "provenance": manifest["provenance"], "elapsed_seconds": round(time.time() - manifest["created_at_unix"], 3),
@@ -557,9 +576,21 @@ def verify_effects(run):
             "redis_persistence": "appendonly yes; appendfsync always; Redis not deliberately crashed", "run_directory": str(run.directory)}
 
 
+def finish_run(run, report):
+    """Drain Engine/proxy work before declaring success or clearing its pointer."""
+    run.stop()
+    if run.manifest.get("proxy_failure"):
+        report.update(outcome="unknown", reason="Policy proxy failed; inspect retained evidence",
+                      proxy_failure=run.manifest["proxy_failure"])
+    run.manifest["outcome"] = report["outcome"]
+    run.save()
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--execute", action="store_true")
+    parser.add_argument("--engine-bin", type=Path, required=True)
+    parser.add_argument("--engine-source-commit", help="Declared full commit of the frozen binary")
     parser.add_argument("--transactions", type=int, default=10)
     parser.add_argument("--timeout", type=int, default=300)
     parser.add_argument("--rate", type=float, default=1, help="Post-bootstrap admissions per second (maximum5)")
@@ -574,8 +605,9 @@ def main():
         print(json.dumps({"dry_run": True, "network": "solana-devnet", "transactions": args.transactions, "rate_per_second": args.rate,
                           "maximum_rent_lamports": MAX_RENT, "maximum_fee_per_transaction_lamports": MAX_FEE,
                           "maximum_rpc_calls": MAX_RPC_CALLS, "maximum_broadcasts_per_intent": MAX_BROADCASTS,
-                          "payer": PAYER, "gateway": RPC, "crash": args.crash}, indent=2))
+                          "crash": args.crash}, indent=2))
         return
+    current_provenance = provenance(args.engine_bin, args.engine_source_commit)
     STATE.mkdir(mode=0o700, exist_ok=True)
     wallet_lock = (STATE / "solana-write.lock").open("a")
     os.chmod(STATE / "solana-write.lock", 0o600)
@@ -600,6 +632,7 @@ def main():
                 continue
             raise RuntimeError("Prior child PID is alive; inspect and stop it before resume")
         require((directory / "redis/appendonlydir").exists(), "Missing AOF; recovery cannot safely recreate queue state")
+        require((directory / "recovery.sqlite").exists(), "Missing journal; retained authority cannot be recreated")
         manifest.pop("proxy_failure", None)
     else:
         directory = (args.run_dir or (STATE / "runs" / ("solana-devnet-" + uuid.uuid4().hex))).expanduser().resolve()
@@ -622,7 +655,6 @@ def main():
                     "rent_exempt_minimum_lamports": rent, "rent_source": "https://api.devnet.solana.com", "free_rpc_calls": 1,
                     "total_transfer_lamports": sum(amounts), "wires": {}, "rpc_reserved": 0}
     validate_manifest(manifest)
-    current_provenance = provenance()
     if "provenance" in manifest:
         require(manifest["provenance"]["engine_binary_sha256"] == current_provenance["engine_binary_sha256"],
                 "Engine binary changed; inspect recovery compatibility before resuming")
@@ -647,6 +679,7 @@ def main():
             require(manifest["initial_payer_lamports"] >= manifest["total_transfer_lamports"] + len(manifest["payloads"]) * MAX_FEE + MAX_RENT, "Insufficient balance within reserved spending bound")
             run.save()
         run.start_redis()
+        run.prepare_journal(resume=args.resume is not None)
         run.proxy = PolicyProxy(run)
         run.start_engine()
         queue = f"twmq:{manifest['run_id']}_solana_executor"
@@ -674,6 +707,10 @@ def main():
             stop_process(run.engine, crash=True)
             run.proxy.drop = False
             run.start_engine("engine-after-crash.log")
+            for saved_payload in manifest["payloads"][1:]:
+                run.submit(saved_payload)
+            manifest["unknown_outcome_same_id_retries"] = len(manifest["payloads"]) - 1
+            run.save()
             run.wait(lambda: all(manifest["wires"][identity]["broadcasts"] > count for identity, count in before_counts.items()), "same-wire retransmissions")
             manifest["after_restart_broadcast_counts"] = {identity: manifest["wires"][identity]["broadcasts"] for identity in before_counts}
             run.proxy.hide = False
@@ -684,18 +721,21 @@ def main():
         report["gateway_solana_method_deltas"] = {key: value - before["methods"].get(key, 0) for key, value in after["methods"].items()}
         report["gateway_delta_scope"] = "Solana network only; includes any concurrent Solana users of gateway"
         report["free_official_rpc_calls"] = manifest["free_rpc_calls"]
-        manifest["outcome"] = "pass"
     except Exception as error:
         report.update({"outcome": "unknown", "reason": f"{type(error).__name__}: {error}", "recovery": "Stop and inspect retained manifest/AOF. Resume only this run; never recreate identities."})
-        manifest["outcome"] = "unknown"
-        raise
+        raise RuntimeError("Public run incomplete; inspect private report and retain original identities") from None
     finally:
-        run.stop()
+        finish_run(run, report)
         durable_json(directory / "report.json", report)
         if report["outcome"] == "pass":
             active_path.unlink()
-        print(json.dumps(report, indent=2))
+        print(json.dumps({key: report[key] for key in ("outcome", "network", "transactions",
+              "unique_finalized_effects", "duplicate_effects", "duplicate_replay_extra_broadcasts",
+              "discarded_send_responses", "unknown_outcome_same_id_retries", "rpc_reserved",
+              "elapsed_seconds") if key in report}, indent=2))
         wallet_lock.close()
+        if report["outcome"] != "pass":
+            raise RuntimeError("Public run incomplete; inspect private report and retain original identities") from None
 
 
 if __name__ == "__main__":

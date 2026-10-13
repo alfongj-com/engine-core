@@ -1,64 +1,79 @@
-# Retained transaction recovery
+# Recovery cleanup and public-testnet checks
 
-Updated October 12, 2026. PRs [#1](https://github.com/alfongj-com/engine-core/pull/1)
-and [#2](https://github.com/alfongj-com/engine-core/pull/2) are merged.
-[PR #3](https://github.com/alfongj-com/engine-core/pull/3) contains both follow-ups
-on `recover-retained-transactions`, based on `918d7d9`.
+Updated October 13, 2026. PRs [#1](https://github.com/alfongj-com/engine-core/pull/1),
+[#2](https://github.com/alfongj-com/engine-core/pull/2), and
+[#3](https://github.com/alfongj-com/engine-core/pull/3) are merged. PR #3 merged at
+`8fa866e`; its executable implementation is `04d15d8`.
 
-## Implemented
+[PR #4](https://github.com/alfongj-com/engine-core/pull/4) is on `cleanup-recovery-paths` in
+`/Users/alfongj/Code/engine-core-review-stack`. Runtime `835c7c2` separates offline
+recovery operations and Solana transaction lifecycle code. The public harnesses
+select frozen binaries explicitly, so ongoing harness edits do not change the
+runtime under test.
 
-- Restore a missing Solana Redis attempt from its exact signed journal record.
-  Validate the full admitted request, signature, blockhash and signer. Preserve
-  storage ownership and finalized-receipt checks; never sign a replacement.
-- Retain a separate allowance of at most 20 recovery grants across all repeated
-  projection losses and restarts. Lost replies consume grants. Schema 3 prevents
-  older binaries from bypassing this rule. Normal execution adds no durable commit.
-- Reattach a pending checkpoint only when its exact target survives on the Redis
-  primary. Acknowledge it and adopt the process identity in one FULL commit, then
-  observe Redis again. Predecessor/missing/foreign markers and unrelated halts
-  remain blocked; namespace, epoch and replay identities stay unchanged.
+The lockfile also updates disabled `quinn-proto` from 0.11.15 to 0.11.18 to
+resolve five October 12 RustSec advisories. It is not in the enabled workspace
+dependency graph; the locked local build remains byte-identical to the frozen
+`835c7c2` executable. One protocol CI run hit its 15-minute job limit after all
+100 cases passed and their report was uploaded. A 25-minute workflow allowance
+is saved on local branch `cleanup-ci-timeout-local`; publishing it requires a
+GitHub credential with workflow permission. Model bounds and checks are unchanged.
 
-The [Solana design](docs/design/retained-solana-recovery.md) and
-[restart/upgrade runbook](docs/design/redis-disaster-recovery.md) describe the
-protocol and operator actions. Healthy schema-1/2 journals migrate to schema 3;
-old binaries reject the upgraded state. No in-place downgrade is supported.
+## Verified results
 
-## Verified runtime: `04d15d8`
+| Scope | Result |
+| --- | --- |
+| Local Rust, `835c7c2` | All 10 workflow steps passed, including 181 explicit Redis/API tests. |
+| Local process scenarios, `835c7c2` | All 10 passed: crashes, live Redis outage, rollback/quarantine, reorgs and both Solana recovery variants. |
+| Bounded protocol models, `835c7c2` | All 100 expected outcomes passed; 92 source guards match. These guards are not a Rust refinement proof. |
+| Public harness guards | All 39 offline tests passed, including late proxy failures, finalized evidence, fixed fixture limits and private signer input. |
 
-- All 10 local Rust workflow steps pass, including 181 explicit Redis/API tests.
-- All 10 local process scenarios pass: Engine/Redis crashes, live outage,
-  rollback, quarantine, reorgs and both Solana recovery variants.
-- The new Solana process scenario restores 12 deleted projections, retransmits
-  identical bytes, finalizes all 12 original effects and produces no duplicates.
-- Actual old/new binary upgrade succeeds; the old binary then rejects schema 3
-  without changing the journal.
-- All 100 bounded protocol cases pass locally and in CI; 91 source guards match.
-  Five fee proofs and both deliberate mutation checks pass in CI.
-- Full Rust correctness CI passes, including both default Solana harness cases
-  and dependency audit. These checks validate this runtime revision; later
-  documentation changes do not change the executable.
+Public-testnet, matched-load and CI results are maintained in the
+[qualification report](https://github.com/alfongj-com/engine-core/blob/load-tests/docs/baselines/testnet-cleanup-2026-10-13/README.md) with separate
+runtime, binary and harness provenance. Small funded correctness checks do not
+establish sustainable throughput or RPC capacity. Provider-based finality checks
+are not independent consensus proofs.
 
-For matched load measurements, crash-campaign results and exact provenance, see
-[PR #3 evidence](https://github.com/alfongj-com/engine-core/blob/load-tests/docs/baselines/retained-recovery-2026-10-12/README.md).
-Generated reports stay on `load-tests`. Local private data is under
-`/Users/alfongj/.local/share/engine-core/runs/pr3-retained-recovery-oct12/`.
-The fixtures use disposable local Redis, Anvil and Agave, without paid RPCs.
+Local testing exposed an existing EOA contract-creation defect: an absent `to`
+is admitted, but preparation omits the explicit creation kind and never signs.
+Fixing that path needs a separate behavior change and a creation regression test.
+The reverted-call harness uses a separately signed, fixed fixture; its deployment
+does not qualify Engine contract creation.
 
-## Remaining limits
+## Evidence and reproduction
+
+Use [LOCAL_TESTING.md](LOCAL_TESTING.md) for local checks and
+[bounded public harness commands](LOCAL_TESTING.md#6-bounded-public-testnet-correctness-runs).
+Private data for this campaign is under
+`/Users/alfongj/.local/share/engine-core/runs/testnet-cleanup-2026-10-13/`.
+Keep failed runs, original identities, journals and signed bytes intact.
+
+Reviewed public-testnet aggregates and generated reports belong on the separate
+[`load-tests` branch](https://github.com/alfongj-com/engine-core/tree/load-tests).
+Raw custody files, addresses, signed wires and credentials stay outside Git.
+[PR #3's prior evidence](https://github.com/alfongj-com/engine-core/blob/load-tests/docs/baselines/retained-recovery-2026-10-12/README.md)
+remains historical evidence for its recorded source, not a result for this cleanup.
+
+## Recovery contract and remaining limits
+
+Schema 3 restores only one exact retained Solana wire; it never signs a
+replacement. Recovery grants have a separate durable allowance of 20, and lost
+replies consume grants. A combined original-plus-recovery allowance of 40 assumes
+the original Redis send counter survived until recovery mode. Redis restoration
+also resets its local reconciliation-read counter, so it is not a lifetime
+RPC-read quota.
+
+Offline reattachment accepts only an intact exact checkpoint target, acknowledges
+it and adopts the Redis process identity in one FULL commit, then observes Redis
+again. It does not restore old send permission. See the
+[Solana design](docs/design/retained-solana-recovery.md) and
+[restart/upgrade runbook](docs/design/redis-disaster-recovery.md).
 
 One process on one Unix host must retain the latest authoritative journal.
-Restoration does not reconstruct missing queue jobs, release quarantined unknown
-outcomes, choose among ambiguous legacy attempts, or repair lost/rolled-back
-journal authority. Expiry and absent history never authorize a replacement.
-
-Only the recovery grant pool is independently durable. The original Redis-only
-send counter can roll back; a combined 40-send bound assumes that original
-counter survived until recovery mode. Reconstructing Redis also resets its local
-reconciliation-read counter, so it is not a lifetime RPC-read quota.
+Restoration does not rebuild missing queue jobs, release quarantined unknown
+outcomes, choose among ambiguous legacy attempts, or repair lost journal
+authority. Expiry and absent history never authorize a replacement.
 
 Production storage, public RPC capacity, real rollup settlement, sustained
-throughput and KMS integration still need qualification. No whole-service proof,
-sustainable maximum or 50 TPS-per-chain guarantee is claimed.
-
-See [local test commands and agent prompt](LOCAL_TESTING.md). The active checkout
-is `/Users/alfongj/Code/engine-core-review-stack`.
+throughput and KMS integration remain unqualified. No whole-service proof or
+50 TPS-per-chain guarantee is claimed.
