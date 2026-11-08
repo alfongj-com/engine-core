@@ -11,7 +11,7 @@ use crate::{
 };
 use alloy::{
     consensus::{SignableTransaction, Transaction, TxEnvelope, TxLegacy, TypedTransaction},
-    eips::eip2718::Decodable2718,
+    eips::eip2718::{Decodable2718, Encodable2718},
     primitives::{Address, Bytes, TxKind, U256},
     providers::ProviderBuilder,
     signers::{SignerSync, local::PrivateKeySigner},
@@ -97,6 +97,8 @@ struct Observed {
     active: usize,
     peak: usize,
     reject: BTreeSet<usize>,
+    estimated_gas: Option<u64>,
+    preparation_methods: Vec<String>,
 }
 
 struct Fixture {
@@ -318,9 +320,24 @@ impl Fixture {
                             sent_nonce = Some(nonce);
                         }
                         "eth_getTransactionReceipt" => response["result"] = Value::Null,
-                        "eth_estimateGas" => response["result"] = json!("0x5208"),
-                        "eth_gasPrice" => response["result"] = json!("0x1"),
+                        "eth_estimateGas" => {
+                            let gas = state.lock().unwrap().estimated_gas.unwrap_or(21000);
+                            response["result"] = json!(format!("0x{gas:x}"));
+                        }
+                        "eth_gasPrice" => {
+                            state
+                                .lock()
+                                .unwrap()
+                                .preparation_methods
+                                .push("eth_gasPrice".into());
+                            response["result"] = json!("0x1");
+                        }
                         "eth_feeHistory" => {
+                            state
+                                .lock()
+                                .unwrap()
+                                .preparation_methods
+                                .push("eth_feeHistory".into());
                             response["error"] =
                                 json!({"code": -32601, "message": "unsupported fixture method"})
                         }
@@ -455,6 +472,123 @@ impl Fixture {
         }
         std::fs::remove_dir_all(&self.directory).unwrap();
     }
+}
+
+#[tokio::test]
+#[ignore = "requires disposable Redis in TEST_REDIS_URL; isolated journal/signing subprocess"]
+async fn creation_preserves_envelope_and_legacy_estimation_never_probes_dynamic_fees() {
+    if !child("creation_preserves_envelope_and_legacy_estimation_never_probes_dynamic_fees") {
+        return;
+    }
+    let fixture = Fixture::new(1, 1).await;
+    let mut request = fixture.prepared[0].user_request.clone();
+    request.transaction_id = "creation-envelope".into();
+    request.to = None;
+    request.data = hex::decode("600160005260206000f3").unwrap().into();
+    request.gas_limit = None;
+    request.transaction_type_data = Some(TransactionTypeData::Legacy(TransactionLegacyData {
+        gas_price: None,
+    }));
+    let payload = serde_json::to_value(&request).unwrap();
+    fixture
+        .journal
+        .reserve_admission(
+            "eoa",
+            &request.transaction_id,
+            &recovery::admission_fingerprint("eoa", &payload).unwrap(),
+            payload,
+        )
+        .await
+        .unwrap();
+    let transaction = fixture
+        .worker
+        .build_typed_transaction(&request, 7)
+        .await
+        .unwrap();
+    assert!(matches!(transaction, TypedTransaction::Legacy(_)));
+    assert_eq!(transaction.kind(), TxKind::Create);
+    assert_eq!(transaction.nonce(), 7);
+    assert_eq!(transaction.chain_id(), Some(31337));
+    assert_eq!(transaction.value(), request.value);
+    assert_eq!(transaction.input(), &request.data);
+    assert_eq!(
+        fixture.state.lock().unwrap().preparation_methods,
+        ["eth_gasPrice"]
+    );
+    let signed = fixture
+        .worker
+        .sign_transaction(transaction, &request.signing_credential)
+        .await
+        .unwrap();
+    let envelope: TxEnvelope = signed.into();
+    let wire = envelope.encoded_2718();
+    let decoded = TxEnvelope::decode_2718(&mut wire.as_slice()).unwrap();
+    assert_eq!(decoded.kind(), TxKind::Create);
+    assert_eq!(
+        decoded
+            .signature()
+            .recover_address_from_prehash(&decoded.signature_hash())
+            .unwrap(),
+        request.from
+    );
+    assert_eq!(decoded.input(), &request.data);
+    assert_eq!(
+        RecoveryJournal::status(fixture.directory.join("journal.sqlite"))
+            .unwrap()
+            .attempts,
+        0
+    );
+    fixture.cleanup().await;
+}
+
+#[tokio::test]
+#[ignore = "requires disposable Redis in TEST_REDIS_URL; isolated journal/signing subprocess"]
+async fn oversized_rpc_gas_estimate_is_rejected_without_nonce_or_wire_reservation() {
+    if !child("oversized_rpc_gas_estimate_is_rejected_without_nonce_or_wire_reservation") {
+        return;
+    }
+    let fixture = Fixture::new(1, 1).await;
+    let mut request = fixture.prepared[0].user_request.clone();
+    request.transaction_id = "gas-overflow".into();
+    request.gas_limit = None;
+    let payload = serde_json::to_value(&request).unwrap();
+    fixture
+        .journal
+        .reserve_admission(
+            "eoa",
+            &request.transaction_id,
+            &recovery::admission_fingerprint("eoa", &payload).unwrap(),
+            payload,
+        )
+        .await
+        .unwrap();
+    fixture.state.lock().unwrap().estimated_gas = Some(u64::MAX);
+    let error = fixture
+        .worker
+        .build_typed_transaction(&request, 0)
+        .await
+        .unwrap_err();
+    assert!(
+        matches!(error, EoaExecutorWorkerError::TransactionBuildFailed { .. }),
+        "unexpected preparation error: {error}"
+    );
+    assert!(fixture.state.lock().unwrap().wires.is_empty());
+    assert!(
+        fixture
+            .worker
+            .store
+            .peek_borrowed_transactions()
+            .await
+            .unwrap()
+            .is_empty()
+    );
+    assert_eq!(
+        RecoveryJournal::status(fixture.directory.join("journal.sqlite"))
+            .unwrap()
+            .attempts,
+        0
+    );
+    fixture.cleanup().await;
 }
 
 async fn actual_send(fixture: &Fixture, borrowed: &BorrowedTransaction) -> SubmissionResult {
