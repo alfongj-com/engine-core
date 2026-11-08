@@ -598,5 +598,23 @@
     "config": "DisasterRecoveryProjection_reattach_retry_witness.cfg",
     "expected": "invariant:CommittedReattachRetryNotReached",
     "kind": "witness"
+  },
+  {
+    "module": "IntentCancellation",
+    "config": "IntentCancellation.cfg",
+    "expected": "pass",
+    "kind": "positive"
+  },
+  {
+    "module": "IntentCancellation",
+    "config": "IntentCancellation_cached_read.cfg",
+    "expected": "invariant:CancellationExcludesAttempt",
+    "kind": "fault"
+  },
+  {
+    "module": "IntentCancellation",
+    "config": "IntentCancellation_success_witness.cfg",
+    "expected": "invariant:SuccessfulCancellationNotReached",
+    "kind": "witness"
   }
 ]

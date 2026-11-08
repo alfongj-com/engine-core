@@ -42,6 +42,12 @@ overflowing gas estimates and preserves legacy gas-price estimation. The prior
 public reverted-call fixture used a separate signer and remains historical setup
 evidence, not Engine creation coverage.
 
+Cancellation now revokes an unsigned ERC-4337 admission in the journal before
+changing Redis tracking. It competes atomically with broadcast reservation;
+already-reserved operations retain reconciliation. A cancelled ID uses the
+existing quarantined no-execution state and cannot be submitted again. No new
+journal schema, Redis tombstone or signing identity is introduced.
+
 ## Evidence and reproduction
 
 Use [LOCAL_TESTING.md](LOCAL_TESTING.md) for local checks and
