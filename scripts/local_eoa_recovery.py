@@ -7,6 +7,7 @@ public test key 1, funded only in the disposable local node. Never contacts a pu
 import argparse
 import concurrent.futures
 import contextlib
+import hashlib
 import json
 import os
 import re
@@ -82,8 +83,14 @@ def main():
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--revert", action="store_true", help="Use a reverting local contract; prove terminal failure and no duplicate retry")
     mode.add_argument("--create", action="store_true", help="Deploy fixed contracts through Engine; verify predicted addresses, runtime, value and duplicate retries")
+    parser.add_argument("--engine-bin", type=Path, default=ROOT / "target/debug/thirdweb-engine")
+    parser.add_argument("--restart-engine-bin", type=Path, help="Restart with a different binary against the same journal and Redis state")
     parser.add_argument("--report", type=Path)
     args = parser.parse_args()
+    args.engine_bin = args.engine_bin.resolve(strict=True)
+    args.restart_engine_bin = (args.restart_engine_bin or args.engine_bin).resolve(strict=True)
+    for binary in (args.engine_bin, args.restart_engine_bin):
+        assert binary.is_file() and os.access(binary, os.X_OK), "Engine binary must be an executable file"
     args.redis_crash = args.redis_crash or args.live_redis_restart
     assert 1 <= args.transactions <= 40
     redis_port, server_port, anvil_port = ports(3)
@@ -115,8 +122,8 @@ def main():
         proc = subprocess.Popen(command, cwd=cwd, env=child_env, stdout=stream, stderr=subprocess.STDOUT)
         children.append(proc)
         return proc
-    def engine(name):
-        proc = spawn([str(ROOT / "target/debug/thirdweb-engine")], name, ROOT / "server", env)
+    def engine(name, binary):
+        proc = spawn([str(binary)], name, ROOT / "server", env)
         until(lambda: request(base + "/health")[0] == 200)
         return proc
     redis_dir = logs / "redis"
@@ -126,7 +133,10 @@ def main():
             "--dir", str(redis_dir), "--save", "", "--appendonly", "yes" if args.redis_crash else "no",
             "--appendfsync", "always"], name)
     report = {"scenario": "local EOA HTTP admission, crash with pending transactions, restart, mine, duplicate admission", "transactions": args.transactions, "log_directory": str(logs),
-              "configured_rpc": True, "redis_crash": args.redis_crash, "live_redis_restart": args.live_redis_restart, "reverted_execution": args.revert, "contract_creation": args.create}
+              "configured_rpc": True, "redis_crash": args.redis_crash, "live_redis_restart": args.live_redis_restart, "reverted_execution": args.revert, "contract_creation": args.create,
+              "binary_upgrade": args.engine_bin != args.restart_engine_bin,
+              "engine_binary_sha256": hashlib.sha256(args.engine_bin.read_bytes()).hexdigest(),
+              "restart_engine_binary_sha256": hashlib.sha256(args.restart_engine_bin.read_bytes()).hexdigest()}
     started = time.monotonic()
     try:
         redis_process = start_redis("redis-before.log")
@@ -138,9 +148,9 @@ def main():
             # gas but rolls back the value transfer.
             rpc(rpc_url, "anvil_setCode", [TO, "0x60006000fd"])
         initial_balance = int(rpc(rpc_url, "eth_getBalance", [TO, "latest"]), 16)
-        subprocess.run([str(ROOT / "target/debug/thirdweb-engine"), "--initialize-recovery"],
+        subprocess.run([str(args.engine_bin), "--initialize-recovery"],
             cwd=ROOT / "server", env=env, check=True, capture_output=True)
-        process = engine("engine-before.log")
+        process = engine("engine-before.log", args.engine_bin)
         payloads = [{"executionOptions": {"chainId": 31337, "type": "EOA", "from": FROM, "idempotencyKey": f"{run_id}-{i}"},
             "params": [{"to": TO, "value": "0x1", "data": "0x", "gasLimit": 40000 if args.revert else 21000}]} for i in range(args.transactions)]
         created_addresses = []
@@ -178,6 +188,11 @@ def main():
             list(pool.map(send, payloads))
         until(lambda: int(rpc(rpc_url, "eth_getTransactionCount", [FROM, "pending"]), 16) == args.transactions)
         assert int(rpc(rpc_url, "eth_getTransactionCount", [FROM, "latest"]), 16) == 0
+        prior_hashes = None
+        if report["binary_upgrade"]:
+            pending = rpc(rpc_url, "eth_getBlockByNumber", ["pending", True])
+            prior_hashes = {tx["hash"].lower() for tx in pending["transactions"]}
+            assert len(prior_hashes) == args.transactions
         if args.live_redis_restart:
             stop(redis_process, crash=True)
             def live_halted():
@@ -202,9 +217,9 @@ def main():
                 stop(redis_process, crash=True)
             redis_process = start_redis("redis-after.log")
             until(lambda: subprocess.run([os.environ.get("REDIS_CLI_BIN", "redis-cli"), "-p", str(redis_port), "PING"], capture_output=True, text=True).stdout.strip() == "PONG")
-            subprocess.run([str(ROOT / "target/debug/thirdweb-engine"), "--reattach-recovery"],
+            subprocess.run([str(args.restart_engine_bin), "--reattach-recovery"],
                 cwd=ROOT / "server", env=env, check=True, capture_output=True)
-        process = engine("engine-after.log")
+        process = engine("engine-after.log", args.restart_engine_bin)
         if args.live_redis_restart:
             with sqlite3.connect(f"file:{logs / 'recovery.sqlite'}?mode=ro", uri=True) as db:
                 assert db.execute("SELECT count(*) FROM admissions WHERE state='quarantined'").fetchone() == (0,)
@@ -223,6 +238,8 @@ def main():
                 data = body.get("result", {}).get("transactionData")
                 if data and data.get("receipt"):
                     assert data["receipt"]["status"] == ("0x0" if args.revert else "0x1"), data["receipt"]
+                    if prior_hashes is not None:
+                        assert data["receipt"]["transactionHash"].lower() in prior_hashes, "Upgrade replaced an original signed transaction"
                     if args.create:
                         # Concurrent admissions need not receive nonces in
                         # caller order. Derive the expected address from the
@@ -243,6 +260,8 @@ def main():
                     found += 1
             return found == args.transactions
         until(confirmations)
+        if prior_hashes is not None:
+            report["retained_transaction_hashes_verified"] = True
         with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
             list(pool.map(send, payloads))
         time.sleep(2)

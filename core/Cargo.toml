@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-alloy = { workspace = true, features = ["serde", "json-rpc"] }
+alloy = { workspace = true, features = ["serde", "json-rpc", "secp256k1"] }
 engine-aa-types = { path = "../aa-types" }
 schemars = { workspace = true }
 serde = { workspace = true }
