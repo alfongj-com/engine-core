@@ -14,6 +14,7 @@ async fn cancelled_mutations_finish_mirroring_and_retain_owner_and_serialization
         "terminal",
         "checkpoint",
         "chain_halt",
+        "cancellation",
     ] {
         let f = Fixture::fresh();
         f.initialize().await;
@@ -21,7 +22,17 @@ async fn cancelled_mutations_finish_mirroring_and_retain_owner_and_serialization
         let replay = "evm:31337:0x1111111111111111111111111111111111111111:0";
         let hash = alloy::primitives::B256::repeat_byte(1);
         if operation != "admission" {
-            admit(&j, "eoa", "a", request("a")).await;
+            admit(
+                &j,
+                if operation == "cancellation" {
+                    "erc4337"
+                } else {
+                    "eoa"
+                },
+                "a",
+                request("a"),
+            )
+            .await;
         }
         if operation == "terminal" {
             j.before_broadcast(
@@ -49,6 +60,7 @@ async fn cancelled_mutations_finish_mirroring_and_retain_owner_and_serialization
                     policy:crate::finality::FinalityPolicy::Finalized,
                 }).await.map(|_| ()),
                 "chain_halt" => caller_journal.halt_chain(31337, "fixture").await,
+                "cancellation" => caller_journal.cancel_unbroadcast("a").await.map(|cancelled| assert!(cancelled)),
                 _ => unreachable!(),
             }
         });
@@ -118,7 +130,100 @@ async fn cancelled_mutations_finish_mirroring_and_retain_owner_and_serialization
         if operation == "chain_halt" {
             assert!(reopened.check_chain_healthy(31337).await.is_err());
         }
+        if operation == "cancellation" {
+            assert_eq!(
+                reopened.admission_state("erc4337", "a").await.unwrap(),
+                Some(AdmissionState::Quarantined)
+            );
+        }
         drop(reopened);
+        f.cleanup(&[]).await;
+    }
+}
+
+#[tokio::test]
+#[ignore = "requires disposable Redis in TEST_REDIS_URL"]
+async fn cancellation_and_broadcast_have_one_durable_winner_across_restart() {
+    const REPLAY: &str = "erc4337:31337:0x1111111111111111111111111111111111111111:0x2222222222222222222222222222222222222222:0";
+    for cancel_first in [true, false] {
+        let f = Fixture::fresh();
+        f.initialize().await;
+        let j = f.open().await;
+        admit(&j, "erc4337", "race", request("race")).await;
+        let prior = RecoveryJournal::status(&f.path).unwrap().checkpoint;
+        let (entered, entering) = tokio::sync::oneshot::channel();
+        let (resume, resuming) = tokio::sync::oneshot::channel();
+        *j.before_mirror.lock().unwrap() = Some((entered, resuming));
+        let operation = |journal: Arc<RecoveryJournal>, cancel| async move {
+            if cancel {
+                journal.cancel_unbroadcast("race").await
+            } else {
+                journal
+                    .before_broadcast("erc4337", "race", REPLAY, json!({"wire":"original"}))
+                    .await
+                    .map(|()| false)
+            }
+        };
+        let first = tokio::spawn(operation(j.clone(), cancel_first));
+        tokio::time::timeout(Duration::from_secs(5), entering)
+            .await
+            .unwrap()
+            .unwrap();
+        // First authority mutation is FULL-committed but Redis publication is
+        // deliberately blocked. The competing action cannot use a stale read.
+        let second = tokio::spawn(operation(j.clone(), !cancel_first));
+        assert!(!second.is_finished());
+        resume.send(()).unwrap();
+        let first = first.await.unwrap();
+        let second = second.await.unwrap();
+        if cancel_first {
+            assert!(first.unwrap());
+            assert!(matches!(second, Err(RecoveryError::RecoveryRequired(_))));
+        } else {
+            assert!(!first.unwrap());
+            assert!(
+                !second.unwrap(),
+                "broadcast must prevent queue cancellation"
+            );
+        }
+        assert_eq!(
+            RecoveryJournal::status(&f.path).unwrap().checkpoint,
+            prior + 1
+        );
+        drop(j);
+        let j = f.open().await;
+        let record = j.admission("erc4337", "race").await.unwrap().unwrap();
+        assert_eq!(
+            record.state,
+            if cancel_first {
+                AdmissionState::Quarantined
+            } else {
+                AdmissionState::Admitted
+            }
+        );
+        assert_eq!(record.replay_key.is_some(), !cancel_first);
+        assert_eq!(
+            RecoveryJournal::status(&f.path).unwrap().attempts,
+            u64::from(!cancel_first)
+        );
+        assert_eq!(j.cancel_unbroadcast("race").await.unwrap(), cancel_first);
+        assert_eq!(
+            RecoveryJournal::status(&f.path).unwrap().checkpoint,
+            prior + 1,
+            "retry must not mutate authority"
+        );
+        assert!(
+            j.reserve_admission(
+                "erc4337",
+                "race",
+                &admission_fingerprint("erc4337", &request("race")).unwrap(),
+                request("race")
+            )
+            .await
+            .is_ok()
+                != cancel_first
+        );
+        drop(j);
         f.cleanup(&[]).await;
     }
 }

@@ -319,23 +319,26 @@ async fn public_routes_reject_unauthorized_mutations_and_invalid_execution() {
                 .is_none()
         );
     }
-    assert!(
-        http.post(format!("{base_url}/v1/transactions/protected-job/cancel"))
-            .header("x-diagnostic-access-password", "test-admin-password")
-            .send()
-            .await
-            .unwrap()
-            .status()
-            .is_success()
-    );
-    assert_eq!(queue.count(JobStatus::Pending).await.unwrap(), 0);
+    let response = http
+        .post(format!("{base_url}/v1/transactions/protected-job/cancel"))
+        .header("x-diagnostic-access-password", "test-admin-password")
+        .send()
+        .await
+        .unwrap();
+    assert!(response.status().is_success());
+    assert!(response.text().await.unwrap().contains("CANNOT_CANCEL"));
+    assert_eq!(queue.count(JobStatus::Pending).await.unwrap(), 1);
     assert!(
         registry
             .get_transaction_queue("protected-job")
             .await
             .unwrap()
-            .is_none()
+            .is_some()
     );
+    // No journal is installed in this authorization fixture. The HTTP path
+    // must retain tracking; clean up the generic queue fixture explicitly.
+    queue.cancel_job("protected-job").await.unwrap();
+    registry.remove_transaction("protected-job").await.unwrap();
     assert!(
         http.post(format!(
             "{base_url}/v1/admin/queue/external_bundler_send/empty-idempotency-set"
@@ -864,6 +867,69 @@ async fn legacy_signers_require_operator_access_before_admission_and_preserve_ba
                 .as_deref(),
             Some("external_bundler_send")
         );
+        // Cancellation must revoke the authoritative unsigned intent before
+        // dropping queue tracking. A stale worker with the original job cannot
+        // reserve a broadcast after this HTTP response, including on ID retry.
+        let unsigned = queue.get_job("kms").await.unwrap().unwrap();
+        let response = http
+            .post(format!("{base}/v1/transactions/kms/cancel"))
+            .header("x-diagnostic-access-password", "test-admin-password")
+            .send()
+            .await
+            .unwrap();
+        assert!(response.status().is_success());
+        assert!(
+            response
+                .text()
+                .await
+                .unwrap()
+                .contains("CANCELLED_IMMEDIATELY")
+        );
+        assert_eq!(
+            journal.admission_state("erc4337", "kms").await.unwrap(),
+            Some(recovery::AdmissionState::Quarantined)
+        );
+        assert!(
+            registry
+                .get_transaction_queue("kms")
+                .await
+                .unwrap()
+                .is_none()
+        );
+        let stale_replay = format!(
+            "erc4337:31337:{:#x}:{:#x}:{}",
+            unsigned
+                .data
+                .execution_options
+                .entrypoint_details
+                .entrypoint_address,
+            unsigned.data.execution_options.signer_address,
+            unsigned.data.pregenerated_nonce.unwrap()
+        );
+        assert!(
+            journal
+                .before_broadcast(
+                    "erc4337",
+                    "kms",
+                    &stale_replay,
+                    json!({"wire":"stale-worker"})
+                )
+                .await
+                .is_err()
+        );
+        let mut cancelled = body.clone();
+        cancelled["executionOptions"]["idempotencyKey"] = json!("kms");
+        let response = http
+            .post(format!("{base}/v1/write/transaction"))
+            .headers(headers("kms"))
+            .header("x-engine-access-token", TOKEN)
+            .json(&cancelled)
+            .send()
+            .await
+            .unwrap();
+        assert_eq!(response.status(), reqwest::StatusCode::SERVICE_UNAVAILABLE);
+        assert_eq!(queue.count(JobStatus::Pending).await.unwrap(), 1);
+        assert_eq!(RecoveryJournal::status(&path).unwrap().attempts, 1);
     } else {
         assert_eq!(RecoveryJournal::status(&path).unwrap().admissions, 0);
     }

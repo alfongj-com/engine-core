@@ -1030,6 +1030,17 @@ impl RecoveryJournal {
         id: &str,
         fingerprint: &str,
     ) -> Result<()> {
+        self.admitted_record(kind, id, fingerprint)
+            .await
+            .map(|_| ())
+    }
+
+    async fn admitted_record(
+        self: &Arc<Self>,
+        kind: &str,
+        id: &str,
+        fingerprint: &str,
+    ) -> Result<AdmissionRecord> {
         self.ensure_healthy().await?;
         let record = self
             .admission(kind, id)
@@ -1043,7 +1054,7 @@ impl RecoveryJournal {
                 "transaction is terminal or quarantined",
             ));
         }
-        Ok(())
+        Ok(record)
     }
     pub async fn validate_payload(
         self: &Arc<Self>,
@@ -1052,15 +1063,70 @@ impl RecoveryJournal {
         payload: &Value,
     ) -> Result<()> {
         let fingerprint = admission_fingerprint(kind, payload)?;
-        self.validate_admission(kind, id, &fingerprint).await?;
-        let record = self
-            .admission(kind, id)
-            .await?
-            .ok_or(RecoveryError::RecoveryRequired("untracked transaction"))?;
+        let record = self.admitted_record(kind, id, &fingerprint).await?;
         if canonical(&record.payload)? != canonical(payload)? {
             return Err(RecoveryError::Conflict);
         }
         Ok(())
+    }
+
+    /// Revoke an unsigned ERC-4337 intent before touching its queue projection.
+    /// Competes with before_broadcast under the same serial guard/SQL authority:
+    /// once a replay identity exists, cancellation cannot discard reconciliation.
+    /// Quarantined is the existing durable no-execution state; no schema or new
+    /// Redis tombstone is needed. An exact retry of cancellation is idempotent.
+    pub async fn cancel_unbroadcast(self: &Arc<Self>, id: &str) -> Result<bool> {
+        identity("erc4337", id)?;
+        let id = id.to_owned();
+        self.run_owned(move |journal| async move {
+            let _guard = journal.serial_guard("cancellation").await;
+            journal.healthy_locked().await?;
+            let result = journal
+                .db(move |conn| {
+                    let tx = conn.transaction()?;
+                    let Some(record) = lookup(&tx, &id)? else {
+                        return Ok((false, None));
+                    };
+                    if record.kind != "erc4337" {
+                        return Err(RecoveryError::Conflict);
+                    }
+                    let attempted: bool = tx.query_row(
+                        "SELECT EXISTS(SELECT 1 FROM attempts WHERE id=?)",
+                        [&id],
+                        |row| row.get(0),
+                    )?;
+                    if record.state == AdmissionState::Terminal
+                        || record.replay_key.is_some()
+                        || attempted
+                    {
+                        return Ok((false, None));
+                    }
+                    if record.state == AdmissionState::Quarantined {
+                        return Ok((true, None));
+                    }
+                    tx.execute(
+                        "UPDATE admissions SET state='quarantined' WHERE id=?",
+                        [&id],
+                    )?;
+                    tx.execute(
+                        "INSERT INTO recovery_events(event) VALUES(?)",
+                        [
+                            serde_json::json!({"action":"cancel_before_broadcast","id":id})
+                                .to_string(),
+                        ],
+                    )?;
+                    let old = advance(&tx)?;
+                    commit_transaction(tx)?;
+                    Ok((true, Some(old)))
+                })
+                .await;
+            let (cancelled, old) = journal.storage_result(result).await?;
+            if let Some(old) = old {
+                journal.mirror(old).await?;
+            }
+            Ok(cancelled)
+        })
+        .await
     }
     /// Read-only pre-sign check. Network emission still requires before_broadcast,
     /// which atomically binds the identity and commits the exact attempted wire.

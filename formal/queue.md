@@ -225,3 +225,21 @@ faster timing does not provide the corrected retention guarantee for reused IDs.
 Before increasing retention or targeting high completion rates, replace repeated
 history scans with a durable reference index, specify its migration and atomic
 update rules, and extend the model and Redis regressions before benchmarking it.
+
+## Cancellation and broadcast authority
+
+`IntentCancellation` models one admitted ERC-4337 intent, a worker already
+building it, and a competing cancellation request. The fixed cancellation and
+broadcast reservation share the journal's serialized FULL transaction boundary.
+Cancellation wins by moving the admission to the existing quarantined state;
+broadcast wins by retaining its replay binding and refusing cancellation.
+Queue removal follows the durable revocation and cannot restore permission.
+
+The cached-read fault reproduces the old API race. The positive case exhausts
+the interleavings; a required witness proves cancellation is actually reachable.
+Real Redis tests force both FULL-commit orders, restart the journal, and cancel
+a caller while publication is blocked. HTTP tests check queue removal, retained
+broadcast tracking, and rejection of a stale worker and repeated admission.
+
+This is a finite protocol check, not a Rust/Redis refinement proof. It assumes
+the existing journal durability, exclusive ownership and checkpoint gates.

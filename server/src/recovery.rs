@@ -73,7 +73,7 @@ fn internal(message: &str) -> EngineError {
     }
 }
 
-fn recovery_error(error: recovery::RecoveryError) -> EngineError {
+pub(crate) fn recovery_error(error: recovery::RecoveryError) -> EngineError {
     if matches!(error, recovery::RecoveryError::PublicationPending) {
         EngineError::RecoveryPending {
             message: error.to_string(),
