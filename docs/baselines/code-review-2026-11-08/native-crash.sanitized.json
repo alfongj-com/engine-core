@@ -1,0 +1,92 @@
+{
+  "supervisor_exit": 1,
+  "all_chain_capacity_candidate": false,
+  "runtime_source_commit": "5ae3601802bfea3e7a074497300dc786e45bf43d",
+  "runtime_binary_sha256": "703005aa010d12d4f150e9eb7484d0115a4e9c9a5f7d4adb622862ccda11ccac",
+  "captured_checkout_commit": "1e62dd7291bc66a36117ba9a00dc4cd80996eafe",
+  "raw_report_sha256": "54a626b4e0d378a0d42fe075e5c39b98e7ed197be5d0018ba9800a154ec23d4a",
+  "harness_sha256": {
+    "capacity_campaign.py": "c3af22b49a72617c0f3deaccc938abd3cd41012ab776b59f57431a3bee2c37f6",
+    "capacity_faults.py": "59e2bc4d90bceca2682c27e35c5871ee538d4878a795f990fa90e6d5f90afa13",
+    "capacity_resource_guard.py": "bbfda4901f49600cdff9fa907b73e2a64e8df534496083994fd4717c55979bb6"
+  },
+  "outcome": "infrastructure_stop",
+  "chaos": "engine-crash",
+  "duration_seconds": 90.0,
+  "offered_total": 2880,
+  "offered_tps": {
+    "evm025": 8.0,
+    "evm2": 8.0,
+    "solana": 16.0
+  },
+  "queue_lease_seconds": 10,
+  "safety_pass": null,
+  "liveness_pass": false,
+  "oracle_outcome": "incomplete",
+  "safety_failure_count": 0,
+  "liveness_failure_count": 1,
+  "requested_fault_validated": null,
+  "drain_remaining_total": null,
+  "journal_halted": false,
+  "owned_children_stopped": true,
+  "reported_error_count": 0,
+  "events": [
+    {
+      "event": "chaos_trigger",
+      "campaign_elapsed_seconds": 46.301052,
+      "load_elapsed_seconds": 12.659023,
+      "accepted": 200
+    },
+    {
+      "event": "engine_sigkill",
+      "campaign_elapsed_seconds": 46.304932,
+      "load_elapsed_seconds": 12.662903
+    },
+    {
+      "event": "chaos_recovered",
+      "campaign_elapsed_seconds": 46.413015,
+      "load_elapsed_seconds": 12.770987
+    },
+    {
+      "event": "client_drained",
+      "campaign_elapsed_seconds": 123.802375,
+      "load_elapsed_seconds": 90.160346
+    },
+    {
+      "event": "drain_deadline_reached",
+      "campaign_elapsed_seconds": 303.810989,
+      "load_elapsed_seconds": 270.168964
+    },
+    {
+      "event": "same_id_retry_started",
+      "campaign_elapsed_seconds": 303.827585,
+      "load_elapsed_seconds": 270.185558,
+      "count": 6
+    },
+    {
+      "event": "same_id_retry_completed",
+      "campaign_elapsed_seconds": 303.858942,
+      "load_elapsed_seconds": 270.216913,
+      "send_delta": {
+        "evm025": 0,
+        "evm2": 0,
+        "solana": 0
+      }
+    },
+    {
+      "event": "infrastructure_stop",
+      "campaign_elapsed_seconds": 420.11661,
+      "load_elapsed_seconds": 386.474582
+    }
+  ],
+  "scope": "Disposable local three-chain transfer workload. Null safety means reconciliation was not completed; zero recorded safety failures is not a passing result.",
+  "infrastructure_stop": {
+    "campaign_elapsed_seconds": 420.1165886251256,
+    "load_seconds": 386.4745574169792,
+    "reason": "resource_reserve_insufficient",
+    "details": [
+      "host_bytes:insufficient_projected_reserve"
+    ]
+  },
+  "diagnosis": "Logs retain three jobs repeatedly refused by a dead worker processing lock, followed by an expired-blockhash unknown outcome. The run later hit its projected disk reserve guard. Its journal and validator ledger remain untouched."
+}

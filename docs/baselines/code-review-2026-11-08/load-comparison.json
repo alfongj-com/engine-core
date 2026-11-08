@@ -1,0 +1,442 @@
+{
+  "scope": "One matched sequential pair on one local host. Five-minute transfer load at 32 TPS combined, no chaos, 60-second warmup. This tests regressions at one offered rate; it does not establish equivalence, production capacity, public RPC limits, actual L2 settlement or maximum throughput. Durable latency percentiles are sampled upper bounds including drain.",
+  "environment": {
+    "cpu": "Apple M4",
+    "physical_cores": 10,
+    "memory_bytes": 17179869184,
+    "os_version": "26.6.2",
+    "architecture": "arm64",
+    "concurrent_local_build_or_model_during_matched_load": false,
+    "profile": "debug build with local debug symbols disabled",
+    "load_seconds": 300,
+    "warmup_seconds": 60,
+    "late_window_seconds": 120,
+    "evm_block_intervals_seconds": [
+      0.25,
+      2
+    ],
+    "offered_tps": {
+      "evm025": 8,
+      "evm2": 8,
+      "solana": 16
+    },
+    "sqlite_full": true,
+    "redis_fsync": "everysec",
+    "paid_rpc_calls": 0,
+    "estimated_public_rpc_cost_usd": 0,
+    "scope": "One local Apple M4 host, local EVM/Agave execution and transfer-only workload. No public RPC capacity or actual L2 settlement qualification."
+  },
+  "baseline_provenance": {
+    "runtime_source_commit": "4e262c80e9e3866d055c87c43cf9c7d6b377af2a",
+    "runtime_source_dirty": false,
+    "runtime_binary_sha256": "c0809d09b4eecea9a4e302e151104133b1362459efa147f1c35ab9177ba88365",
+    "captured_checkout_commit": "883d7d2874477fa2aafa09258f72201a387727b0",
+    "captured_checkout_dirty": false,
+    "raw_report_sha256": "90231c6f0802ec80686c360c9ae7e0bf696725b9b7aa967d6b8e9a95f0179822",
+    "harness_sha256": {
+      "capacity_campaign.py": "c3af22b49a72617c0f3deaccc938abd3cd41012ab776b59f57431a3bee2c37f6",
+      "capacity_faults.py": "59e2bc4d90bceca2682c27e35c5871ee538d4878a795f990fa90e6d5f90afa13",
+      "capacity_resource_guard.py": "bbfda4901f49600cdff9fa907b73e2a64e8df534496083994fd4717c55979bb6"
+    },
+    "timing_source_sha256": "3c7321093f3f69721624a028991e1c27a2cf83b28c4b2ecfd5dedc693615f6c2",
+    "summarizer_sha256": "328824804e23d683d004934ae807f02464d57b8e13793f0c6e22390d2cc259c0",
+    "note": "The separately supplied executable is identified by its binary manifest and matching hash. Checkout metadata captured by the harness is not substituted for runtime provenance."
+  },
+  "candidate_provenance": {
+    "runtime_source_commit": "883d7d2874477fa2aafa09258f72201a387727b0",
+    "runtime_source_dirty": false,
+    "runtime_binary_sha256": "8ab3bb668fbe0658cf03d044b772b18f3d059abd3df9829e6e744b2fc0880614",
+    "captured_checkout_commit": "883d7d2874477fa2aafa09258f72201a387727b0",
+    "captured_checkout_dirty": false,
+    "raw_report_sha256": "f1975f6a8f85ee2bc7e9d0b192f9525c48d5e5c075a52bc8e270c6892f0f96c2",
+    "harness_sha256": {
+      "capacity_campaign.py": "c3af22b49a72617c0f3deaccc938abd3cd41012ab776b59f57431a3bee2c37f6",
+      "capacity_faults.py": "59e2bc4d90bceca2682c27e35c5871ee538d4878a795f990fa90e6d5f90afa13",
+      "capacity_resource_guard.py": "bbfda4901f49600cdff9fa907b73e2a64e8df534496083994fd4717c55979bb6"
+    },
+    "timing_source_sha256": "3c7321093f3f69721624a028991e1c27a2cf83b28c4b2ecfd5dedc693615f6c2",
+    "summarizer_sha256": "328824804e23d683d004934ae807f02464d57b8e13793f0c6e22390d2cc259c0",
+    "note": "The separately supplied executable is identified by its binary manifest and matching hash. Checkout metadata captured by the harness is not substituted for runtime provenance."
+  },
+  "all_9600_intents_accepted_and_drained_each_run": true,
+  "safety_pass_both": true,
+  "reported_errors_both": 0,
+  "per_chain": {
+    "evm025": {
+      "offered_tps": 8.0,
+      "intents_per_run": 2400,
+      "late_rates_tps": {
+        "admitted": {
+          "baseline": 8.001,
+          "candidate": 7.992,
+          "delta_percent": -0.11
+        },
+        "attempted": {
+          "baseline": 7.967,
+          "candidate": 7.95,
+          "delta_percent": -0.21
+        },
+        "included": {
+          "baseline": 7.892,
+          "candidate": 7.95,
+          "delta_percent": 0.73
+        },
+        "terminal": {
+          "baseline": 8.276,
+          "candidate": 8.092,
+          "delta_percent": -2.22
+        }
+      },
+      "latency_ms": {
+        "p99_scheduled_to_response_ms": {
+          "baseline": 83.718,
+          "candidate": 92.687,
+          "delta_percent": 10.71
+        },
+        "p99_http_service_ms": {
+          "baseline": 80.241,
+          "candidate": 86.776,
+          "delta_percent": 8.14
+        },
+        "p99_attempt_observed_upper_ms": {
+          "baseline": 6390.609,
+          "candidate": 5766.596,
+          "delta_percent": -9.76
+        },
+        "p99_terminal_observed_upper_ms": {
+          "baseline": 23134.258,
+          "candidate": 21640.805,
+          "delta_percent": -6.46
+        }
+      },
+      "strict_classification": {
+        "baseline": "unconfirmed_growth_or_cadence_ambiguity",
+        "candidate": "unconfirmed_growth_or_cadence_ambiguity"
+      },
+      "terminal_backlog_late_end": {
+        "baseline": 16,
+        "candidate": 19,
+        "delta_percent": 18.75
+      }
+    },
+    "evm2": {
+      "offered_tps": 8.0,
+      "intents_per_run": 2400,
+      "late_rates_tps": {
+        "admitted": {
+          "baseline": 8.001,
+          "candidate": 8.0,
+          "delta_percent": -0.01
+        },
+        "attempted": {
+          "baseline": 7.967,
+          "candidate": 7.992,
+          "delta_percent": 0.31
+        },
+        "included": {
+          "baseline": 7.942,
+          "candidate": 7.992,
+          "delta_percent": 0.63
+        },
+        "terminal": {
+          "baseline": 8.034,
+          "candidate": 8.0,
+          "delta_percent": -0.42
+        }
+      },
+      "latency_ms": {
+        "p99_scheduled_to_response_ms": {
+          "baseline": 61.537,
+          "candidate": 77.112,
+          "delta_percent": 25.31
+        },
+        "p99_http_service_ms": {
+          "baseline": 57.408,
+          "candidate": 74.121,
+          "delta_percent": 29.11
+        },
+        "p99_attempt_observed_upper_ms": {
+          "baseline": 5969.413,
+          "candidate": 6340.982,
+          "delta_percent": 6.22
+        },
+        "p99_terminal_observed_upper_ms": {
+          "baseline": 16600.673,
+          "candidate": 16222.101,
+          "delta_percent": -2.28
+        }
+      },
+      "strict_classification": {
+        "baseline": "unconfirmed_growth_or_cadence_ambiguity",
+        "candidate": "unconfirmed_growth_or_cadence_ambiguity"
+      },
+      "terminal_backlog_late_end": {
+        "baseline": 66,
+        "candidate": 86,
+        "delta_percent": 30.3
+      }
+    },
+    "solana": {
+      "offered_tps": 16.0,
+      "intents_per_run": 4800,
+      "late_rates_tps": {
+        "admitted": {
+          "baseline": 15.993,
+          "candidate": 15.934,
+          "delta_percent": -0.37
+        },
+        "attempted": {
+          "baseline": 15.876,
+          "candidate": 15.859,
+          "delta_percent": -0.11
+        },
+        "included": {
+          "baseline": 16.034,
+          "candidate": 15.701,
+          "delta_percent": -2.08
+        },
+        "terminal": {
+          "baseline": 16.143,
+          "candidate": 15.918,
+          "delta_percent": -1.39
+        }
+      },
+      "latency_ms": {
+        "p99_scheduled_to_response_ms": {
+          "baseline": 606.994,
+          "candidate": 989.44,
+          "delta_percent": 63.01
+        },
+        "p99_http_service_ms": {
+          "baseline": 601.362,
+          "candidate": 986.62,
+          "delta_percent": 64.06
+        },
+        "p99_attempt_observed_upper_ms": {
+          "baseline": 5962.947,
+          "candidate": 7276.274,
+          "delta_percent": 22.02
+        },
+        "p99_terminal_observed_upper_ms": {
+          "baseline": 23529.191,
+          "candidate": 26154.181,
+          "delta_percent": 11.16
+        }
+      },
+      "strict_classification": {
+        "baseline": "unconfirmed_growth_or_cadence_ambiguity",
+        "candidate": "unconfirmed_growth_or_cadence_ambiguity"
+      },
+      "terminal_backlog_late_end": {
+        "baseline": 289,
+        "candidate": 281,
+        "delta_percent": -2.77
+      }
+    }
+  },
+  "journal_timing_comparison": {
+    "serial_hold": {
+      "observations": {
+        "baseline": 142181.0,
+        "candidate": 138214.0,
+        "delta_percent": -2.79
+      },
+      "sum_seconds": {
+        "baseline": 195.5231,
+        "candidate": 204.6174,
+        "delta_percent": 4.65
+      },
+      "mean_ms": {
+        "baseline": 1.3752,
+        "candidate": 1.4804,
+        "delta_percent": 7.65
+      }
+    },
+    "serial_wait": {
+      "observations": {
+        "baseline": 142181.0,
+        "candidate": 138215.0,
+        "delta_percent": -2.79
+      },
+      "sum_seconds": {
+        "baseline": 221.0104,
+        "candidate": 241.4551,
+        "delta_percent": 9.25
+      },
+      "mean_ms": {
+        "baseline": 1.5544,
+        "candidate": 1.747,
+        "delta_percent": 12.39
+      }
+    },
+    "lane_wait": {
+      "observations": {
+        "baseline": 142182.0,
+        "candidate": 138217.0,
+        "delta_percent": -2.79
+      },
+      "sum_seconds": {
+        "baseline": 14114.926,
+        "candidate": 15617.8649,
+        "delta_percent": 10.65
+      },
+      "mean_ms": {
+        "baseline": 99.2736,
+        "candidate": 112.9953,
+        "delta_percent": 13.82
+      }
+    },
+    "health_capacity_wait": {
+      "observations": {
+        "baseline": 110493.0,
+        "candidate": 106615.0,
+        "delta_percent": -3.51
+      },
+      "sum_seconds": {
+        "baseline": 0.0301,
+        "candidate": 0.0292,
+        "delta_percent": -2.81
+      },
+      "mean_ms": {
+        "baseline": 0.0003,
+        "candidate": 0.0003,
+        "delta_percent": 0.72
+      }
+    },
+    "sql_commit": {
+      "observations": {
+        "baseline": 46328.0,
+        "candidate": 46236.0,
+        "delta_percent": -0.2
+      },
+      "sum_seconds": {
+        "baseline": 152.4748,
+        "candidate": 162.5132,
+        "delta_percent": 6.58
+      },
+      "mean_ms": {
+        "baseline": 3.2912,
+        "candidate": 3.5149,
+        "delta_percent": 6.8
+      }
+    },
+    "sql_ack": {
+      "observations": {
+        "baseline": 23164.0,
+        "candidate": 23118.0,
+        "delta_percent": -0.2
+      },
+      "sum_seconds": {
+        "baseline": 78.1533,
+        "candidate": 83.2105,
+        "delta_percent": 6.47
+      },
+      "mean_ms": {
+        "baseline": 3.3739,
+        "candidate": 3.5994,
+        "delta_percent": 6.68
+      }
+    },
+    "redis_observation": {
+      "observations": {
+        "baseline": 211673.0,
+        "candidate": 207569.0,
+        "delta_percent": -1.94
+      },
+      "sum_seconds": {
+        "baseline": 22.6235,
+        "candidate": 22.0337,
+        "delta_percent": -2.61
+      },
+      "mean_ms": {
+        "baseline": 0.1069,
+        "candidate": 0.1062,
+        "delta_percent": -0.68
+      }
+    },
+    "redis_mirror": {
+      "observations": {
+        "baseline": 23164.0,
+        "candidate": 23118.0,
+        "delta_percent": -0.2
+      },
+      "sum_seconds": {
+        "baseline": 1.836,
+        "candidate": 1.7991,
+        "delta_percent": -2.01
+      },
+      "mean_ms": {
+        "baseline": 0.0793,
+        "candidate": 0.0778,
+        "delta_percent": -1.82
+      }
+    },
+    "blocking_queue": {
+      "observations": {
+        "baseline": 413793.0,
+        "candidate": 382761.0,
+        "delta_percent": -7.5
+      },
+      "sum_seconds": {
+        "baseline": 4.7036,
+        "candidate": 4.3887,
+        "delta_percent": -6.69
+      },
+      "mean_ms": {
+        "baseline": 0.0114,
+        "candidate": 0.0115,
+        "delta_percent": 0.87
+      }
+    },
+    "db_execution": {
+      "observations": {
+        "baseline": 413793.0,
+        "candidate": 382760.0,
+        "delta_percent": -7.5
+      },
+      "sum_seconds": {
+        "baseline": 168.4403,
+        "candidate": 177.6069,
+        "delta_percent": 5.44
+      },
+      "mean_ms": {
+        "baseline": 0.4071,
+        "candidate": 0.464,
+        "delta_percent": 13.99
+      }
+    },
+    "db_mutex_wait": {
+      "observations": {
+        "baseline": 413793.0,
+        "candidate": 382761.0,
+        "delta_percent": -7.5
+      },
+      "sum_seconds": {
+        "baseline": 37.6717,
+        "candidate": 38.3722,
+        "delta_percent": 1.86
+      },
+      "mean_ms": {
+        "baseline": 0.091,
+        "candidate": 0.1003,
+        "delta_percent": 10.12
+      }
+    }
+  },
+  "solana_rpc_per_new_postwarm_admission": {
+    "baseline": 6.2094,
+    "candidate": 6.0478,
+    "delta_percent": -2.6
+  },
+  "solana_status_mean_signatures_per_http": {
+    "baseline": 5.4743,
+    "candidate": 5.4569,
+    "delta_percent": -0.32
+  },
+  "notes": [
+    "Stage rates use the late load window and exclude drain.",
+    "Mean phase timings include overlapping work and cannot be added as wall-time utilization. SQL acknowledgement includes a commit counted by sql_commit.",
+    "Read each strict posthoc classification; the original capacity-candidate screen is not sufficient for a sustainable capacity claim.",
+    "A single pair cannot establish a statistical performance improvement or rule out tail regressions in other workloads."
+  ]
+}

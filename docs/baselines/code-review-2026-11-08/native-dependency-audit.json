@@ -1,0 +1,23 @@
+{
+  "commit": "5ae3601802bfea3e7a074497300dc786e45bf43d",
+  "raw_report_sha256": "730e7b18f55824ecf6a9b82ccc4715dcf7d5a0a0e2170d4a55cd1e0f31288cd7",
+  "database": {
+    "advisory-count": 1422,
+    "last-commit": "309392b18f6b17022f82c701f300433126901068",
+    "last-updated": "2026-11-06T16:34:32+01:00"
+  },
+  "vulnerabilities": [
+    {
+      "package": "crypto-bigint",
+      "version": "0.5.5",
+      "id": "RUSTSEC-2026-0387"
+    }
+  ],
+  "warning_counts": {
+    "unmaintained": 5,
+    "unsound": 1
+  },
+  "ignored_advisories": [],
+  "optional_yubihsm_normal_graph_empty": true,
+  "scope": "The environment signing path uses native secp256k1. Transitive crypto-bigint remains reported; this is not a clean dependency audit."
+}

@@ -1,0 +1,162 @@
+{
+  "pr": 9,
+  "head_sha": "1e62dd7291bc66a36117ba9a00dc4cd80996eafe",
+  "formal": {
+    "run_id": 42527530908,
+    "url": "https://github.com/alfongj-com/engine-core/actions/runs/42527530908",
+    "conclusion": "success",
+    "model_cases": 103,
+    "kinds": {
+      "positive": 23,
+      "fault": 50,
+      "boundary": 12,
+      "witness": 18
+    },
+    "source_hashes_verified": 94,
+    "tlc_version": "1.7.4",
+    "tlc_sha256": "936a262061c914694dfd669a543be24573c45d5aa0ff20a8b96b23d01e050e88",
+    "report_sha256": "3285ca76ff4de5df07cfeee7bfdabdf34ae2765cbdd527e5364ce1f5b518a3fa",
+    "production_fee_harnesses": 5,
+    "fee_mutation_counterexamples": 2,
+    "kani_version": "0.68.0"
+  },
+  "rust": {
+    "run_id": 42527530921,
+    "url": "https://github.com/alfongj-com/engine-core/actions/runs/42527530921",
+    "conclusion": "failure",
+    "failed_steps": [
+      "Dependency advisories"
+    ],
+    "required_functional_steps_passed": [
+      "Actual server crash recovery and duplicate admission",
+      "Compile every test and binary",
+      "EOA and Solana Redis, RPC and deployment regressions",
+      "Formatting",
+      "HTTP authorization and admission integration",
+      "Independent journal crash and rollback regressions",
+      "Pre-finality reorg and same-nonce recovery",
+      "Queue lease and acknowledgement race regressions",
+      "Redis AOF crash recovery",
+      "Redis data loss and stale-backup quarantine",
+      "Reverted execution and Redis crash recovery",
+      "Single payer Solana load and finality drain (local debug build)",
+      "Single signer EVM load and finality drain (local debug build)",
+      "Solana accepted-send response loss and process recovery",
+      "Solana request retention across queue pruning",
+      "Unit and hermetic integration suites"
+    ],
+    "local_chain_reports": [
+      {
+        "name": "local-eoa-recovery.json",
+        "sha256": "e15f0ffb3cc29a395d9c32f5329fa541bd079e3dcf3bfebb188bc25564aab385",
+        "outcome": "pass",
+        "transactions": 24,
+        "unique_chain_effects": 24,
+        "duplicate_chain_effects": 0
+      },
+      {
+        "name": "local-eoa-redis-crash.json",
+        "sha256": "3319a6341d32c88d0e462303e65ff33fbb4ce7be228dbff4f3c0440aff337c6f",
+        "outcome": "pass",
+        "transactions": 24,
+        "unique_chain_effects": 24,
+        "duplicate_chain_effects": 0
+      },
+      {
+        "name": "local-eoa-reorg-reverted.json",
+        "sha256": "d7e5fa8163b59db529291f19f27220ad1157766b69319f97f26f4ca998f9bfba",
+        "outcome": "pass",
+        "unique_chain_effects": 1,
+        "duplicate_effects": 0
+      },
+      {
+        "name": "local-eoa-reorg.json",
+        "sha256": "4bdd16fe30961fe333ea3b082c3a12fa3f33d44542de62012b7da9dcbf677477",
+        "outcome": "pass",
+        "unique_chain_effects": 1,
+        "duplicate_effects": 0
+      },
+      {
+        "name": "local-eoa-reverted-recovery.json",
+        "sha256": "42fb9134c49ae1c91ade6f3902b159eb9a7fa8fd0487c0dc7f1d90f3fd23f7bd",
+        "outcome": "pass",
+        "transactions": 8,
+        "unique_chain_effects": 8,
+        "duplicate_chain_effects": 0
+      },
+      {
+        "name": "local-eoa-throughput.json",
+        "sha256": "d5b77905146794af3254a75c2d257fb56209f18985157b49c41a0bf0cbf17125",
+        "outcome": "pass"
+      },
+      {
+        "name": "local-redis-loss.json",
+        "sha256": "43b7fb756fd68b4d13b4679ddd03ae339691a2fab23a62bd12a3fa947598a405",
+        "outcome": "pass",
+        "duplicate_effects": 0
+      },
+      {
+        "name": "local-redis-rollback.json",
+        "sha256": "3946cea3847731a5fefc70bf8b69770dbc5f5c0ea42c4c285bae3322592f20ca",
+        "outcome": "pass",
+        "duplicate_effects": 0
+      },
+      {
+        "name": "local-solana-recovery-projection-loss.json",
+        "sha256": "648273bcb2104249add64d5abf11d60f601475be3bc922a41e19a11c2c3f3d54",
+        "outcome": "pass",
+        "transactions": 12,
+        "unique_chain_effects": 12,
+        "duplicate_chain_effects": 0
+      },
+      {
+        "name": "local-solana-recovery.json",
+        "sha256": "484005c14659c99a5ac8e2d3dd00b88b811562364955b085d7b222dbbe2087f1",
+        "outcome": "pass",
+        "transactions": 12,
+        "unique_chain_effects": 12,
+        "duplicate_chain_effects": 0
+      },
+      {
+        "name": "local-solana-throughput.json",
+        "sha256": "9c7ed475150a46516c7946b1ff11623683fa567dca34be82a1fca16c2cce02e3",
+        "outcome": "pass"
+      }
+    ],
+    "dependency_audit_verification": {
+      "reported_vulnerabilities": 1,
+      "advisory_ids_in_failed_step": [
+        "RUSTSEC-2024-0388",
+        "RUSTSEC-2024-0436",
+        "RUSTSEC-2025-0141",
+        "RUSTSEC-2026-0253",
+        "RUSTSEC-2026-0387",
+        "RUSTSEC-2026-0441"
+      ],
+      "failed_log_sha256": "f6459b2b920110ad324968f722cded19ae9f4aa44ecf183ca12ffba34038ca41",
+      "actual_advisory_finding_confirmed": true
+    }
+  },
+  "artifacts": [
+    {
+      "name": "protocol-model-results",
+      "id": 13636670360,
+      "digest": "sha256:45472f655ebbc6e43d4360b710ea5adde1e0f8eec54d2fc6762eda1380c7ca5e",
+      "size_in_bytes": 458382
+    },
+    {
+      "name": "rust-fee-proof-results",
+      "id": 13635906864,
+      "digest": "sha256:3de340f8fc3543c0ab997b3f13af2a5c082f5cb18ba44a68ab01eb363eae6f65",
+      "size_in_bytes": 11392
+    },
+    {
+      "name": "local-chain-recovery-reports",
+      "id": 13636736556,
+      "digest": "sha256:0e5137fcccbaad6f929374af88edfe0ba1a5bbd85cb46ccf996a7d2de4196457",
+      "size_in_bytes": 10485
+    }
+  ],
+  "archive_digests_verified": true,
+  "scope": "Exact-head CI. Functional gates and finite model outcomes passed; overall Rust workflow remains failed on known dependency advisories. Hash correspondence is not a refinement proof."
+}

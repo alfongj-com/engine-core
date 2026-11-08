@@ -1,0 +1,320 @@
+{
+  "before": {
+    "raw_report_sha256": "313e6d98bc1f3b8c67314f6fca28a4f40117143df10ba21206f8c783cae34083",
+    "database": {
+      "advisory-count": 1422,
+      "last-commit": "309392b18f6b17022f82c701f300433126901068",
+      "last-updated": "2026-11-06T16:34:32+01:00"
+    },
+    "vulnerabilities": [
+      {
+        "package": "crypto-bigint",
+        "version": "0.5.5",
+        "advisory": "RUSTSEC-2026-0387",
+        "patched": [
+          ">=0.7.6"
+        ]
+      },
+      {
+        "package": "ctutils",
+        "version": "0.4.2",
+        "advisory": "RUSTSEC-2026-0385",
+        "patched": [
+          ">=0.4.4"
+        ]
+      },
+      {
+        "package": "rustls",
+        "version": "0.23.45",
+        "advisory": "RUSTSEC-2026-0346",
+        "patched": [
+          ">=0.23.46"
+        ]
+      },
+      {
+        "package": "rustls",
+        "version": "0.23.45",
+        "advisory": "RUSTSEC-2026-0347",
+        "patched": [
+          ">=0.23.46"
+        ]
+      },
+      {
+        "package": "rustls",
+        "version": "0.23.45",
+        "advisory": "RUSTSEC-2026-0348",
+        "patched": [
+          ">=0.23.46"
+        ]
+      },
+      {
+        "package": "rustls",
+        "version": "0.23.45",
+        "advisory": "RUSTSEC-2026-0349",
+        "patched": [
+          ">=0.23.46"
+        ]
+      },
+      {
+        "package": "rustls-webpki",
+        "version": "0.103.15",
+        "advisory": "RUSTSEC-2026-0382",
+        "patched": [
+          ">=0.103.16, <0.104.0-alpha.1",
+          ">=0.104.0-alpha.8"
+        ]
+      },
+      {
+        "package": "webpki-roots",
+        "version": "1.0.1",
+        "advisory": "RUSTSEC-2026-0381",
+        "patched": [
+          ">=1.0.10"
+        ]
+      },
+      {
+        "package": "zstd",
+        "version": "0.13.3",
+        "advisory": "RUSTSEC-2026-0391",
+        "patched": [
+          "^0.13.4",
+          ">=0.14.3"
+        ]
+      },
+      {
+        "package": "zstd-safe",
+        "version": "7.2.4",
+        "advisory": "RUSTSEC-2026-0403",
+        "patched": [
+          "^7.4.0",
+          ">=8.2.0"
+        ]
+      },
+      {
+        "package": "zstd-safe",
+        "version": "7.2.4",
+        "advisory": "RUSTSEC-2026-0398",
+        "patched": [
+          "^7.4.0",
+          ">=8.2.0"
+        ]
+      },
+      {
+        "package": "zstd-sys",
+        "version": "2.0.16+zstd.1.5.7",
+        "advisory": "RUSTSEC-2026-0410",
+        "patched": [
+          ">=2.1.2"
+        ]
+      }
+    ],
+    "warnings": {
+      "unmaintained": [
+        {
+          "package": "bincode",
+          "version": "1.3.3",
+          "advisory": "RUSTSEC-2025-0141",
+          "patched": []
+        },
+        {
+          "package": "bincode",
+          "version": "2.0.1",
+          "advisory": "RUSTSEC-2025-0141",
+          "patched": []
+        },
+        {
+          "package": "derivative",
+          "version": "2.2.0",
+          "advisory": "RUSTSEC-2024-0388",
+          "patched": []
+        },
+        {
+          "package": "paste",
+          "version": "1.0.15",
+          "advisory": "RUSTSEC-2024-0436",
+          "patched": []
+        },
+        {
+          "package": "pin-utils",
+          "version": "0.1.0",
+          "advisory": "RUSTSEC-2026-0441",
+          "patched": []
+        }
+      ],
+      "unsound": [
+        {
+          "package": "lru",
+          "version": "0.16.4",
+          "advisory": "RUSTSEC-2026-0253",
+          "patched": [
+            ">=0.18.2"
+          ]
+        },
+        {
+          "package": "tokio",
+          "version": "1.50.0",
+          "advisory": "RUSTSEC-2026-0386",
+          "patched": [
+            ">=1.51.6, <1.52.0",
+            ">=1.53.3"
+          ]
+        },
+        {
+          "package": "zstd-safe",
+          "version": "7.2.4",
+          "advisory": "RUSTSEC-2026-0395",
+          "patched": [
+            "^7.4.0",
+            ">=8.2.0"
+          ]
+        },
+        {
+          "package": "zstd-safe",
+          "version": "7.2.4",
+          "advisory": "RUSTSEC-2026-0402",
+          "patched": [
+            "^7.4.0",
+            ">=8.2.0"
+          ]
+        },
+        {
+          "package": "zstd-safe",
+          "version": "7.2.4",
+          "advisory": "RUSTSEC-2026-0406",
+          "patched": [
+            "^7.4.0",
+            ">=8.2.0"
+          ]
+        },
+        {
+          "package": "zstd-safe",
+          "version": "7.2.4",
+          "advisory": "RUSTSEC-2026-0404",
+          "patched": [
+            "^7.4.0",
+            ">=8.2.0"
+          ]
+        },
+        {
+          "package": "zstd-safe",
+          "version": "7.2.4",
+          "advisory": "RUSTSEC-2026-0400",
+          "patched": [
+            "^7.4.0",
+            ">=8.2.0"
+          ]
+        },
+        {
+          "package": "zstd-safe",
+          "version": "7.2.4",
+          "advisory": "RUSTSEC-2026-0399",
+          "patched": [
+            "^7.4.0",
+            ">=8.2.0"
+          ]
+        },
+        {
+          "package": "zstd-safe",
+          "version": "7.2.4",
+          "advisory": "RUSTSEC-2026-0401",
+          "patched": [
+            "^7.4.0",
+            ">=8.2.0"
+          ]
+        },
+        {
+          "package": "zstd-safe",
+          "version": "7.2.4",
+          "advisory": "RUSTSEC-2026-0405",
+          "patched": [
+            "^7.4.0",
+            ">=8.2.0"
+          ]
+        },
+        {
+          "package": "zstd-safe",
+          "version": "7.2.4",
+          "advisory": "RUSTSEC-2026-0397",
+          "patched": [
+            "^7.4.0",
+            ">=8.2.0"
+          ]
+        },
+        {
+          "package": "zstd-safe",
+          "version": "7.2.4",
+          "advisory": "RUSTSEC-2026-0396",
+          "patched": [
+            "^7.4.0",
+            ">=8.2.0"
+          ]
+        }
+      ]
+    }
+  },
+  "after": {
+    "raw_report_sha256": "e048c2708a89a444cb381746df580cdd8adec3023afbf57d79668ff971910dbb",
+    "database": {
+      "advisory-count": 1422,
+      "last-commit": "309392b18f6b17022f82c701f300433126901068",
+      "last-updated": "2026-11-06T16:34:32+01:00"
+    },
+    "vulnerabilities": [
+      {
+        "package": "crypto-bigint",
+        "version": "0.5.5",
+        "advisory": "RUSTSEC-2026-0387",
+        "patched": [
+          ">=0.7.6"
+        ]
+      }
+    ],
+    "warnings": {
+      "unmaintained": [
+        {
+          "package": "bincode",
+          "version": "1.3.3",
+          "advisory": "RUSTSEC-2025-0141",
+          "patched": []
+        },
+        {
+          "package": "bincode",
+          "version": "2.0.1",
+          "advisory": "RUSTSEC-2025-0141",
+          "patched": []
+        },
+        {
+          "package": "derivative",
+          "version": "2.2.0",
+          "advisory": "RUSTSEC-2024-0388",
+          "patched": []
+        },
+        {
+          "package": "paste",
+          "version": "1.0.15",
+          "advisory": "RUSTSEC-2024-0436",
+          "patched": []
+        },
+        {
+          "package": "pin-utils",
+          "version": "0.1.0",
+          "advisory": "RUSTSEC-2026-0441",
+          "patched": []
+        }
+      ],
+      "unsound": [
+        {
+          "package": "lru",
+          "version": "0.16.4",
+          "advisory": "RUSTSEC-2026-0253",
+          "patched": [
+            ">=0.18.2"
+          ]
+        }
+      ]
+    }
+  },
+  "status": "failed: crypto-bigint timing advisory remains enabled through Alloy/k256",
+  "ignored_advisories": [],
+  "scope": "Published advisory matches, not a claim of exploitability or cryptographic assurance."
+}

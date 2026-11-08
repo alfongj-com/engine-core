@@ -1,0 +1,18 @@
+{
+  "commit": "883d7d2874477fa2aafa09258f72201a387727b0",
+  "source_dirty": false,
+  "compiler": "rustc 1.98.1 (48a229cea 2026-09-01)",
+  "cargo_lock_sha256": "31f911876df179ae47a8417fde5f6dadbb03c965a857fdc228949c00ff9b4d1a",
+  "profile": "dev; debug symbols disabled by local tool environment",
+  "script_sha256": {
+    "scripts/local_eoa_recovery.py": "afdaf82c35f5f2ddd169d384b973df3379b45ddca4319841eff320ecaefaa941",
+    "scripts/local_eoa_reorg.py": "9db7b030ac5bcdb626b7f42a4669603963d222e6cea6ea09faa59935e62f2e32",
+    "scripts/local_solana_recovery.py": "0394f281e25d4a289bd3db3e190adf24bee7ed28d087fa5291a9fe3e375face2",
+    "scripts/local_redis_disaster.py": "bff0e95aea7ab0039d9d5ba395d9627858020d95ddb5be991882db7d8b77901b",
+    "scripts/capacity_metrics.py": "3c7321093f3f69721624a028991e1c27a2cf83b28c4b2ecfd5dedc693615f6c2",
+    "scripts/capacity_campaign.py": "c3af22b49a72617c0f3deaccc938abd3cd41012ab776b59f57431a3bee2c37f6"
+  },
+  "sha256": "8ab3bb668fbe0658cf03d044b772b18f3d059abd3df9829e6e744b2fc0880614",
+  "baseline_commit": "4e262c80e9e3866d055c87c43cf9c7d6b377af2a",
+  "baseline_binary_sha256": "c0809d09b4eecea9a4e302e151104133b1362459efa147f1c35ab9177ba88365"
+}

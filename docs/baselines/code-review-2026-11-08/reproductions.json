@@ -1,0 +1,18 @@
+{
+  "baseline_commit": "4e262c80e9e3866d055c87c43cf9c7d6b377af2a",
+  "cases": [
+    {
+      "finding": "unchecked RPC gas buffer arithmetic",
+      "original_result": "panic: attempt to multiply with overflow",
+      "raw_log_sha256": "0742626cafdbd8eb546d9d0288320504084e68917c4628d140c019298749ee51",
+      "regression": "executors/src/eoa/worker/send_dispatch_tests.rs::oversized_rpc_gas_estimate_is_rejected_without_nonce_or_wire_reservation"
+    },
+    {
+      "finding": "queue cancellation without revoking broadcast authority",
+      "original_result": "new HTTP regression expected quarantined admission but observed admitted",
+      "raw_log_sha256": "e162b344036c22f313834b2d71590be112062e234a82a25006ce8bf3f0be7216",
+      "regression": "server/tests/api_safety.rs::legacy_signers_require_operator_access_before_admission_and_preserve_backend"
+    }
+  ],
+  "note": "Original failing runs and temporary source/binary material are retained privately. Final fixed regressions are included in CI and the local workflow. Harness preparation failures are not counted as runtime defects."
+}

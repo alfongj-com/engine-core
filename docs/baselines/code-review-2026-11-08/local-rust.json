@@ -1,0 +1,176 @@
+{
+  "context": {
+    "commit": "883d7d2874477fa2aafa09258f72201a387727b0",
+    "source_dirty": false,
+    "compiler": "rustc 1.98.1 (48a229cea 2026-09-01)",
+    "cargo_lock_sha256": "31f911876df179ae47a8417fde5f6dadbb03c965a857fdc228949c00ff9b4d1a",
+    "profile": "dev; debug symbols disabled by local tool environment",
+    "script_sha256": {
+      "scripts/local_eoa_recovery.py": "afdaf82c35f5f2ddd169d384b973df3379b45ddca4319841eff320ecaefaa941",
+      "scripts/local_eoa_reorg.py": "9db7b030ac5bcdb626b7f42a4669603963d222e6cea6ea09faa59935e62f2e32",
+      "scripts/local_solana_recovery.py": "0394f281e25d4a289bd3db3e190adf24bee7ed28d087fa5291a9fe3e375face2",
+      "scripts/local_redis_disaster.py": "bff0e95aea7ab0039d9d5ba395d9627858020d95ddb5be991882db7d8b77901b",
+      "scripts/capacity_metrics.py": "3c7321093f3f69721624a028991e1c27a2cf83b28c4b2ecfd5dedc693615f6c2",
+      "scripts/capacity_campaign.py": "c3af22b49a72617c0f3deaccc938abd3cd41012ab776b59f57431a3bee2c37f6"
+    }
+  },
+  "workflow_steps": [
+    {
+      "command": [
+        "cargo",
+        "fmt",
+        "--all",
+        "--check"
+      ],
+      "exit": 0,
+      "seconds": 0.4167123748920858,
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "--workspace",
+        "--",
+        "--test-threads=1"
+      ],
+      "exit": 0,
+      "seconds": 225.51346408296376,
+      "log_sha256": "7100b02c5aff56b6dd5891a36223b5799e128eaaf46a78914c3e92f1868afd0a"
+    },
+    {
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "engine-core",
+        "--lib",
+        "recovery",
+        "--",
+        "--ignored",
+        "--test-threads=1"
+      ],
+      "exit": 0,
+      "seconds": 41.83496758295223,
+      "log_sha256": "358e319ed7f213b610270b8a7e27586f00c15ff190f118c9c1700167648e615c"
+    },
+    {
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "engine-executors",
+        "--lib",
+        "--",
+        "--ignored",
+        "--test-threads=1"
+      ],
+      "exit": 0,
+      "seconds": 42.026144250296056,
+      "log_sha256": "f72f6c3ac755b361c25e536c3fbacb5a891d0229eed4ac686017ac32e5587287"
+    },
+    {
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "thirdweb-engine",
+        "--lib",
+        "solana_admission::tests",
+        "--",
+        "--ignored",
+        "--test-threads=1"
+      ],
+      "exit": 0,
+      "seconds": 14.357954875100404,
+      "log_sha256": "203072ff0889b3a2238ce32d162c7c4476bf12fcb355147e88a6f1738fc5e982"
+    },
+    {
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "thirdweb-engine",
+        "--test",
+        "api_safety",
+        "--",
+        "--ignored",
+        "--test-threads=1"
+      ],
+      "exit": 0,
+      "seconds": 11.934747082646936,
+      "log_sha256": "c42704322dad6b2b52d33ecef1bef0b3b8cb9f8c501319d58062ad9aa3f1666b"
+    },
+    {
+      "command": [
+        "cargo",
+        "test",
+        "--locked",
+        "-p",
+        "twmq",
+        "--lib",
+        "--",
+        "--ignored",
+        "--test-threads=1"
+      ],
+      "exit": 0,
+      "seconds": 8.651825124863535,
+      "log_sha256": "b27a39c2cad005177d0301f25c049018f40f77c9af48de122ba9aa3cecc1e46b"
+    },
+    {
+      "command": [
+        "cargo",
+        "build",
+        "--locked",
+        "--bin",
+        "thirdweb-engine",
+        "--bin",
+        "engine-recovery"
+      ],
+      "exit": 0,
+      "seconds": 0.6597560001537204,
+      "log_sha256": "e044439277e94567aefbb236231f11f25f54fbff842b9dc39f9c1ac704d91375"
+    },
+    {
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "capacity_metrics_test"
+      ],
+      "exit": 0,
+      "seconds": 0.08568441728129983,
+      "log_sha256": "fe836cbecd3b6b4f70bec51b58d30c3e45ad72ae7fb3cb63421a0f7337e651ae"
+    },
+    {
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "formal",
+        "-p",
+        "test_*.py"
+      ],
+      "exit": 0,
+      "seconds": 0.04701908305287361,
+      "log_sha256": "33060fd73862c5e1af97335504d5b45211fce6d229657f556d8deceeadc52ce4"
+    }
+  ],
+  "explicit_redis_api_test_groups": [
+    65,
+    76,
+    4,
+    3,
+    36
+  ],
+  "explicit_redis_api_tests": 184,
+  "all_passed": true,
+  "raw_results_sha256": "e5f1b49f90eb658d36d691497a82eb868e22950e12b3f6a8cbbae01b971f4387"
+}

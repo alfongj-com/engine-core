@@ -1,0 +1,73 @@
+{
+  "supervisor_exit": 2,
+  "all_chain_capacity_candidate": false,
+  "runtime_source_commit": "4dadaf5995ad22468fd32e37074a7f5f51602f1f",
+  "runtime_binary_sha256": "1ba58eb5d47a7772046fc85fdcd6ad744ab1b197cf03de56454bc57df89e111c",
+  "captured_checkout_commit": "4dadaf5995ad22468fd32e37074a7f5f51602f1f",
+  "raw_report_sha256": "c6920433f868655a66bbfc0bfe748ac36c07ee4c94e871f0d4eeb2a94d7204b5",
+  "harness_sha256": {
+    "capacity_campaign.py": "c3af22b49a72617c0f3deaccc938abd3cd41012ab776b59f57431a3bee2c37f6",
+    "capacity_faults.py": "59e2bc4d90bceca2682c27e35c5871ee538d4878a795f990fa90e6d5f90afa13",
+    "capacity_resource_guard.py": "bbfda4901f49600cdff9fa907b73e2a64e8df534496083994fd4717c55979bb6"
+  },
+  "outcome": "pass",
+  "chaos": "engine-crash",
+  "duration_seconds": 90.0,
+  "offered_total": 2880,
+  "offered_tps": {
+    "evm025": 8.0,
+    "evm2": 8.0,
+    "solana": 16.0
+  },
+  "queue_lease_seconds": 10,
+  "safety_pass": true,
+  "liveness_pass": true,
+  "oracle_outcome": "pass",
+  "safety_failure_count": 0,
+  "liveness_failure_count": 0,
+  "requested_fault_validated": true,
+  "drain_remaining_total": 0,
+  "journal_halted": false,
+  "owned_children_stopped": true,
+  "reported_error_count": 0,
+  "events": [
+    {
+      "event": "chaos_trigger",
+      "campaign_elapsed_seconds": 46.326411,
+      "load_elapsed_seconds": 12.857923,
+      "accepted": 200
+    },
+    {
+      "event": "engine_sigkill",
+      "campaign_elapsed_seconds": 46.329474,
+      "load_elapsed_seconds": 12.860986
+    },
+    {
+      "event": "chaos_recovered",
+      "campaign_elapsed_seconds": 46.443174,
+      "load_elapsed_seconds": 12.974688
+    },
+    {
+      "event": "client_drained",
+      "campaign_elapsed_seconds": 123.751705,
+      "load_elapsed_seconds": 90.283218
+    },
+    {
+      "event": "same_id_retry_started",
+      "campaign_elapsed_seconds": 143.865521,
+      "load_elapsed_seconds": 110.397033,
+      "count": 6
+    },
+    {
+      "event": "same_id_retry_completed",
+      "campaign_elapsed_seconds": 143.892452,
+      "load_elapsed_seconds": 110.423964,
+      "send_delta": {
+        "evm025": 0,
+        "evm2": 0,
+        "solana": 0
+      }
+    }
+  ],
+  "scope": "Disposable local three-chain transfer workload. Null safety means reconciliation was not completed; zero recorded safety failures is not a passing result."
+}

@@ -1,0 +1,19 @@
+{
+  "commit": "5ae3601802bfea3e7a074497300dc786e45bf43d",
+  "focused_tests": 3,
+  "all_passed": true,
+  "log_sha256": "84ad67708bc233a2e4f99b4e0a58974ac2a4f7e3494cdd961afffda2cc98a995",
+  "independent_wire_fixture": "https://eips.ethereum.org/EIPS/eip-155",
+  "checks": [
+    "published signed wire and public identity",
+    "wrong configured chain refused",
+    "configured development chain ID preserved",
+    "canonical hash and personal signature compatibility",
+    "curve-order prehash boundaries n-1, n, n+1 and maximum recover the correct identity"
+  ],
+  "initial_test_observation": {
+    "log_sha256": "972cd58b3e5f1f37167d2e311d7f4c75b34f76167523ca846d7ba439dc517633",
+    "finding": "Universal byte equality was an invalid assumption: native nonce seeding reduces prehashes modulo the curve order, while k256 0.13 uses unreduced bytes. Both signatures remain valid; the boundary tests require the correct signer identity."
+  },
+  "scope": "Executable signature/protocol compatibility; not a constant-time or whole-cryptosystem proof."
+}

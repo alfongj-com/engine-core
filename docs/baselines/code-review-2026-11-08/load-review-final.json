@@ -1,0 +1,1017 @@
+{
+  "scope": "Ten sequential five-minute local transfer-only shared-chain runs; original exits and strict capacity screens retained. No public-chain qualification.",
+  "environment": {
+    "cpu": "Apple M4",
+    "physical_cores": 10,
+    "memory_bytes": 17179869184,
+    "os_version": "26.6.2",
+    "architecture": "arm64",
+    "concurrent_local_build_or_model_during_matched_load": false,
+    "profile": "debug build with local debug symbols disabled",
+    "load_seconds": 300,
+    "warmup_seconds": 60,
+    "late_window_seconds": 120,
+    "evm_block_intervals_seconds": [
+      0.25,
+      2
+    ],
+    "offered_tps": {
+      "evm025": 8,
+      "evm2": 8,
+      "solana": 16
+    },
+    "sqlite_full": true,
+    "redis_fsync": "everysec",
+    "paid_rpc_calls": 0,
+    "estimated_public_rpc_cost_usd": 0,
+    "scope": "One local Apple M4 host, local EVM/Agave execution and transfer-only workload. No public RPC capacity or actual L2 settlement qualification."
+  },
+  "review_head": "8039b2dde5a89ef43847f77b29ae0dd7875aa2a2",
+  "runs": [
+    {
+      "label": "baseline-steady",
+      "runtime_commit": "4e262c80e9e3866d055c87c43cf9c7d6b377af2a",
+      "binary_sha256": "c0809d09b4eecea9a4e302e151104133b1362459efa147f1c35ab9177ba88365",
+      "raw_report_sha256": "90231c6f0802ec80686c360c9ae7e0bf696725b9b7aa967d6b8e9a95f0179822",
+      "captured_checkout_commit": "883d7d2874477fa2aafa09258f72201a387727b0",
+      "supervisor_exit": 0,
+      "all_offers_accepted_and_drained": true,
+      "original_capacity_candidate": true,
+      "per_chain": {
+        "evm025": {
+          "offered_tps": 8.0,
+          "offers": 2400,
+          "admission_p99_ms": 83.718,
+          "http_p99_ms": 80.241,
+          "attempt_p99_observed_upper_ms": 6390.609,
+          "terminal_p99_observed_upper_ms": 23134.258,
+          "late_rates_tps": {
+            "admitted": 8.001,
+            "attempted": 7.967,
+            "included": 7.892,
+            "terminal": 8.276
+          },
+          "late_backlogs": {
+            "from_seconds": 180.011,
+            "to_seconds": 300.003,
+            "window_seconds": 119.99199999999999,
+            "terminal_backlog_start": 49,
+            "terminal_backlog_end": 16,
+            "terminal_backlog_growth_per_second": -0.275,
+            "unsigned_backlog_start": 1,
+            "unsigned_backlog_end": 5,
+            "unsigned_backlog_linear_trend_per_second": -0.021,
+            "capacity_candidate": true
+          },
+          "strict_capacity": "unconfirmed_growth_or_cadence_ambiguity"
+        },
+        "evm2": {
+          "offered_tps": 8.0,
+          "offers": 2400,
+          "admission_p99_ms": 61.537,
+          "http_p99_ms": 57.408,
+          "attempt_p99_observed_upper_ms": 5969.413,
+          "terminal_p99_observed_upper_ms": 16600.673,
+          "late_rates_tps": {
+            "admitted": 8.001,
+            "attempted": 7.967,
+            "included": 7.942,
+            "terminal": 8.034
+          },
+          "late_backlogs": {
+            "from_seconds": 180.011,
+            "to_seconds": 300.003,
+            "window_seconds": 119.99199999999999,
+            "terminal_backlog_start": 70,
+            "terminal_backlog_end": 66,
+            "terminal_backlog_growth_per_second": -0.033,
+            "unsigned_backlog_start": 1,
+            "unsigned_backlog_end": 5,
+            "unsigned_backlog_linear_trend_per_second": -0.007,
+            "capacity_candidate": true
+          },
+          "strict_capacity": "unconfirmed_growth_or_cadence_ambiguity"
+        },
+        "solana": {
+          "offered_tps": 16.0,
+          "offers": 4800,
+          "admission_p99_ms": 606.994,
+          "http_p99_ms": 601.362,
+          "attempt_p99_observed_upper_ms": 5962.947,
+          "terminal_p99_observed_upper_ms": 23529.191,
+          "late_rates_tps": {
+            "admitted": 15.993,
+            "attempted": 15.876,
+            "included": 16.034,
+            "terminal": 16.143
+          },
+          "late_backlogs": {
+            "from_seconds": 180.011,
+            "to_seconds": 300.003,
+            "window_seconds": 119.99199999999999,
+            "terminal_backlog_start": 307,
+            "terminal_backlog_end": 289,
+            "terminal_backlog_growth_per_second": -0.15,
+            "unsigned_backlog_start": 4,
+            "unsigned_backlog_end": 18,
+            "unsigned_backlog_linear_trend_per_second": -0.042,
+            "capacity_candidate": true
+          },
+          "strict_capacity": "unconfirmed_growth_or_cadence_ambiguity"
+        }
+      },
+      "sql_commit_mean_ms": 3.2912026423760685,
+      "redis_observation_mean_ms": 0.10687949650168169,
+      "redis_mirror_mean_ms": 0.07926000755482646,
+      "solana_rpc_per_new_postwarm_admission": 6.209375,
+      "solana_status_mean_signatures_per_request": 5.474318014254116
+    },
+    {
+      "label": "candidate-steady",
+      "runtime_commit": "883d7d2874477fa2aafa09258f72201a387727b0",
+      "binary_sha256": "8ab3bb668fbe0658cf03d044b772b18f3d059abd3df9829e6e744b2fc0880614",
+      "raw_report_sha256": "f1975f6a8f85ee2bc7e9d0b192f9525c48d5e5c075a52bc8e270c6892f0f96c2",
+      "captured_checkout_commit": "883d7d2874477fa2aafa09258f72201a387727b0",
+      "supervisor_exit": 2,
+      "all_offers_accepted_and_drained": true,
+      "original_capacity_candidate": false,
+      "per_chain": {
+        "evm025": {
+          "offered_tps": 8.0,
+          "offers": 2400,
+          "admission_p99_ms": 92.687,
+          "http_p99_ms": 86.776,
+          "attempt_p99_observed_upper_ms": 5766.596,
+          "terminal_p99_observed_upper_ms": 21640.805,
+          "late_rates_tps": {
+            "admitted": 7.992,
+            "attempted": 7.95,
+            "included": 7.95,
+            "terminal": 8.092
+          },
+          "late_backlogs": {
+            "from_seconds": 180.008,
+            "to_seconds": 300.001,
+            "window_seconds": 119.99299999999997,
+            "terminal_backlog_start": 31,
+            "terminal_backlog_end": 19,
+            "terminal_backlog_growth_per_second": -0.1,
+            "unsigned_backlog_start": 7,
+            "unsigned_backlog_end": 12,
+            "unsigned_backlog_linear_trend_per_second": -0.014,
+            "capacity_candidate": true
+          },
+          "strict_capacity": "unconfirmed_growth_or_cadence_ambiguity"
+        },
+        "evm2": {
+          "offered_tps": 8.0,
+          "offers": 2400,
+          "admission_p99_ms": 77.112,
+          "http_p99_ms": 74.121,
+          "attempt_p99_observed_upper_ms": 6340.982,
+          "terminal_p99_observed_upper_ms": 16222.101,
+          "late_rates_tps": {
+            "admitted": 8.0,
+            "attempted": 7.992,
+            "included": 7.992,
+            "terminal": 8.0
+          },
+          "late_backlogs": {
+            "from_seconds": 180.008,
+            "to_seconds": 300.001,
+            "window_seconds": 119.99299999999997,
+            "terminal_backlog_start": 86,
+            "terminal_backlog_end": 86,
+            "terminal_backlog_growth_per_second": 0.0,
+            "unsigned_backlog_start": 5,
+            "unsigned_backlog_end": 6,
+            "unsigned_backlog_linear_trend_per_second": 0.025,
+            "capacity_candidate": true
+          },
+          "strict_capacity": "unconfirmed_growth_or_cadence_ambiguity"
+        },
+        "solana": {
+          "offered_tps": 16.0,
+          "offers": 4800,
+          "admission_p99_ms": 989.44,
+          "http_p99_ms": 986.62,
+          "attempt_p99_observed_upper_ms": 7276.274,
+          "terminal_p99_observed_upper_ms": 26154.181,
+          "late_rates_tps": {
+            "admitted": 15.934,
+            "attempted": 15.859,
+            "included": 15.701,
+            "terminal": 15.918
+          },
+          "late_backlogs": {
+            "from_seconds": 180.008,
+            "to_seconds": 300.001,
+            "window_seconds": 119.99299999999997,
+            "terminal_backlog_start": 279,
+            "terminal_backlog_end": 281,
+            "terminal_backlog_growth_per_second": 0.017,
+            "unsigned_backlog_start": 1,
+            "unsigned_backlog_end": 10,
+            "unsigned_backlog_linear_trend_per_second": 0.271,
+            "capacity_candidate": false
+          },
+          "strict_capacity": "unconfirmed_growth_or_cadence_ambiguity"
+        }
+      },
+      "sql_commit_mean_ms": 3.514863587550833,
+      "redis_observation_mean_ms": 0.10615142219213962,
+      "redis_mirror_mean_ms": 0.07782075780776879,
+      "solana_rpc_per_new_postwarm_admission": 6.047755741127348,
+      "solana_status_mean_signatures_per_request": 5.456935316499481
+    },
+    {
+      "label": "candidate-repeat",
+      "runtime_commit": "883d7d2874477fa2aafa09258f72201a387727b0",
+      "binary_sha256": "8ab3bb668fbe0658cf03d044b772b18f3d059abd3df9829e6e744b2fc0880614",
+      "raw_report_sha256": "7b7bf15cc0749cfffbb25b8ca5e4d3937f038936d60b8f747ce9ab4791a32de5",
+      "captured_checkout_commit": "883d7d2874477fa2aafa09258f72201a387727b0",
+      "supervisor_exit": 0,
+      "all_offers_accepted_and_drained": true,
+      "original_capacity_candidate": true,
+      "per_chain": {
+        "evm025": {
+          "offered_tps": 8.0,
+          "offers": 2400,
+          "admission_p99_ms": 54.134,
+          "http_p99_ms": 51.789,
+          "attempt_p99_observed_upper_ms": 5636.296,
+          "terminal_p99_observed_upper_ms": 11136.297,
+          "late_rates_tps": {
+            "admitted": 8.001,
+            "attempted": 8.059,
+            "included": 8.059,
+            "terminal": 8.259
+          },
+          "late_backlogs": {
+            "from_seconds": 180.014,
+            "to_seconds": 300.006,
+            "window_seconds": 119.99199999999996,
+            "terminal_backlog_start": 45,
+            "terminal_backlog_end": 14,
+            "terminal_backlog_growth_per_second": -0.258,
+            "unsigned_backlog_start": 8,
+            "unsigned_backlog_end": 1,
+            "unsigned_backlog_linear_trend_per_second": -0.01,
+            "capacity_candidate": true
+          },
+          "strict_capacity": "steady_window_evidence_requires_repetition"
+        },
+        "evm2": {
+          "offered_tps": 8.0,
+          "offers": 2400,
+          "admission_p99_ms": 57.856,
+          "http_p99_ms": 50.123,
+          "attempt_p99_observed_upper_ms": 5715.957,
+          "terminal_p99_observed_upper_ms": 16467.311,
+          "late_rates_tps": {
+            "admitted": 8.001,
+            "attempted": 8.001,
+            "included": 8.017,
+            "terminal": 7.976
+          },
+          "late_backlogs": {
+            "from_seconds": 180.014,
+            "to_seconds": 300.006,
+            "window_seconds": 119.99199999999996,
+            "terminal_backlog_start": 77,
+            "terminal_backlog_end": 80,
+            "terminal_backlog_growth_per_second": 0.025,
+            "unsigned_backlog_start": 1,
+            "unsigned_backlog_end": 1,
+            "unsigned_backlog_linear_trend_per_second": -0.001,
+            "capacity_candidate": true
+          },
+          "strict_capacity": "steady_window_evidence_requires_repetition"
+        },
+        "solana": {
+          "offered_tps": 16.0,
+          "offers": 4800,
+          "admission_p99_ms": 629.206,
+          "http_p99_ms": 622.332,
+          "attempt_p99_observed_upper_ms": 5343.03,
+          "terminal_p99_observed_upper_ms": 23849.034,
+          "late_rates_tps": {
+            "admitted": 16.009,
+            "attempted": 15.984,
+            "included": 15.893,
+            "terminal": 16.018
+          },
+          "late_backlogs": {
+            "from_seconds": 180.014,
+            "to_seconds": 300.006,
+            "window_seconds": 119.99199999999996,
+            "terminal_backlog_start": 285,
+            "terminal_backlog_end": 284,
+            "terminal_backlog_growth_per_second": -0.008,
+            "unsigned_backlog_start": 1,
+            "unsigned_backlog_end": 4,
+            "unsigned_backlog_linear_trend_per_second": -0.005,
+            "capacity_candidate": true
+          },
+          "strict_capacity": "unconfirmed_growth_or_cadence_ambiguity"
+        }
+      },
+      "sql_commit_mean_ms": 3.3978758627082417,
+      "redis_observation_mean_ms": 0.10643041975326421,
+      "redis_mirror_mean_ms": 0.07854807022471882,
+      "solana_rpc_per_new_postwarm_admission": 6.186930486852382,
+      "solana_status_mean_signatures_per_request": 5.5112188707158705
+    },
+    {
+      "label": "baseline-repeat",
+      "runtime_commit": "4e262c80e9e3866d055c87c43cf9c7d6b377af2a",
+      "binary_sha256": "c0809d09b4eecea9a4e302e151104133b1362459efa147f1c35ab9177ba88365",
+      "raw_report_sha256": "a89cbc1457c592ecfc21eb66f14c540121a0665937a628f9b4c6314e76134084",
+      "captured_checkout_commit": "883d7d2874477fa2aafa09258f72201a387727b0",
+      "supervisor_exit": 0,
+      "all_offers_accepted_and_drained": true,
+      "original_capacity_candidate": true,
+      "per_chain": {
+        "evm025": {
+          "offered_tps": 8.0,
+          "offers": 2400,
+          "admission_p99_ms": 66.912,
+          "http_p99_ms": 60.314,
+          "attempt_p99_observed_upper_ms": 6008.672,
+          "terminal_p99_observed_upper_ms": 19637.534,
+          "late_rates_tps": {
+            "admitted": 8.0,
+            "attempted": 8.0,
+            "included": 8.017,
+            "terminal": 7.734
+          },
+          "late_backlogs": {
+            "from_seconds": 180.011,
+            "to_seconds": 300.005,
+            "window_seconds": 119.994,
+            "terminal_backlog_start": 17,
+            "terminal_backlog_end": 49,
+            "terminal_backlog_growth_per_second": 0.267,
+            "unsigned_backlog_start": 0,
+            "unsigned_backlog_end": 0,
+            "unsigned_backlog_linear_trend_per_second": -0.015,
+            "capacity_candidate": true
+          },
+          "strict_capacity": "unconfirmed_growth_or_cadence_ambiguity"
+        },
+        "evm2": {
+          "offered_tps": 8.0,
+          "offers": 2400,
+          "admission_p99_ms": 58.023,
+          "http_p99_ms": 50.766,
+          "attempt_p99_observed_upper_ms": 5840.36,
+          "terminal_p99_observed_upper_ms": 16454.18,
+          "late_rates_tps": {
+            "admitted": 8.0,
+            "attempted": 8.0,
+            "included": 8.0,
+            "terminal": 7.934
+          },
+          "late_backlogs": {
+            "from_seconds": 180.011,
+            "to_seconds": 300.005,
+            "window_seconds": 119.994,
+            "terminal_backlog_start": 83,
+            "terminal_backlog_end": 91,
+            "terminal_backlog_growth_per_second": 0.067,
+            "unsigned_backlog_start": 1,
+            "unsigned_backlog_end": 1,
+            "unsigned_backlog_linear_trend_per_second": 0.013,
+            "capacity_candidate": true
+          },
+          "strict_capacity": "unconfirmed_growth_or_cadence_ambiguity"
+        },
+        "solana": {
+          "offered_tps": 16.0,
+          "offers": 4800,
+          "admission_p99_ms": 657.355,
+          "http_p99_ms": 651.253,
+          "attempt_p99_observed_upper_ms": 6023.714,
+          "terminal_p99_observed_upper_ms": 23595.946,
+          "late_rates_tps": {
+            "admitted": 16.009,
+            "attempted": 16.017,
+            "included": 16.076,
+            "terminal": 16.167
+          },
+          "late_backlogs": {
+            "from_seconds": 180.011,
+            "to_seconds": 300.005,
+            "window_seconds": 119.994,
+            "terminal_backlog_start": 295,
+            "terminal_backlog_end": 276,
+            "terminal_backlog_growth_per_second": -0.158,
+            "unsigned_backlog_start": 4,
+            "unsigned_backlog_end": 3,
+            "unsigned_backlog_linear_trend_per_second": 0.079,
+            "capacity_candidate": true
+          },
+          "strict_capacity": "unconfirmed_growth_or_cadence_ambiguity"
+        }
+      },
+      "sql_commit_mean_ms": 3.4678095259939337,
+      "redis_observation_mean_ms": 0.10666396747034616,
+      "redis_mirror_mean_ms": 0.07605223759723426,
+      "solana_rpc_per_new_postwarm_admission": 6.147579385736596,
+      "solana_status_mean_signatures_per_request": 5.5364160883016975
+    },
+    {
+      "label": "native-steady",
+      "runtime_commit": "5ae3601802bfea3e7a074497300dc786e45bf43d",
+      "binary_sha256": "703005aa010d12d4f150e9eb7484d0115a4e9c9a5f7d4adb622862ccda11ccac",
+      "raw_report_sha256": "3bcd15ec48113b86947703bfdf292e677035575f0bf3600dffc718f3c130d6ff",
+      "captured_checkout_commit": "1e62dd7291bc66a36117ba9a00dc4cd80996eafe",
+      "supervisor_exit": 2,
+      "all_offers_accepted_and_drained": true,
+      "original_capacity_candidate": false,
+      "per_chain": {
+        "evm025": {
+          "offered_tps": 8.0,
+          "offers": 2400,
+          "admission_p99_ms": 124.772,
+          "http_p99_ms": 119.193,
+          "attempt_p99_observed_upper_ms": 6505.699,
+          "terminal_p99_observed_upper_ms": 14258.751,
+          "late_rates_tps": {
+            "admitted": 8.001,
+            "attempted": 7.992,
+            "included": 7.967,
+            "terminal": 8.059
+          },
+          "late_backlogs": {
+            "from_seconds": 180.01,
+            "to_seconds": 300.001,
+            "window_seconds": 119.99099999999999,
+            "terminal_backlog_start": 29,
+            "terminal_backlog_end": 22,
+            "terminal_backlog_growth_per_second": -0.058,
+            "unsigned_backlog_start": 8,
+            "unsigned_backlog_end": 9,
+            "unsigned_backlog_linear_trend_per_second": -0.007,
+            "capacity_candidate": true
+          },
+          "strict_capacity": "unconfirmed_growth_or_cadence_ambiguity"
+        },
+        "evm2": {
+          "offered_tps": 8.0,
+          "offers": 2400,
+          "admission_p99_ms": 101.936,
+          "http_p99_ms": 93.81,
+          "attempt_p99_observed_upper_ms": 6215.332,
+          "terminal_p99_observed_upper_ms": 16722.761,
+          "late_rates_tps": {
+            "admitted": 8.001,
+            "attempted": 8.001,
+            "included": 7.942,
+            "terminal": 8.034
+          },
+          "late_backlogs": {
+            "from_seconds": 180.01,
+            "to_seconds": 300.001,
+            "window_seconds": 119.99099999999999,
+            "terminal_backlog_start": 71,
+            "terminal_backlog_end": 67,
+            "terminal_backlog_growth_per_second": -0.033,
+            "unsigned_backlog_start": 7,
+            "unsigned_backlog_end": 7,
+            "unsigned_backlog_linear_trend_per_second": 0.001,
+            "capacity_candidate": true
+          },
+          "strict_capacity": "unconfirmed"
+        },
+        "solana": {
+          "offered_tps": 16.0,
+          "offers": 4800,
+          "admission_p99_ms": 1033.616,
+          "http_p99_ms": 1029.043,
+          "attempt_p99_observed_upper_ms": 8772.619,
+          "terminal_p99_observed_upper_ms": 26591.52,
+          "late_rates_tps": {
+            "admitted": 15.926,
+            "attempted": 15.735,
+            "included": 15.76,
+            "terminal": 16.11
+          },
+          "late_backlogs": {
+            "from_seconds": 180.01,
+            "to_seconds": 300.001,
+            "window_seconds": 119.99099999999999,
+            "terminal_backlog_start": 317,
+            "terminal_backlog_end": 295,
+            "terminal_backlog_growth_per_second": -0.183,
+            "unsigned_backlog_start": 0,
+            "unsigned_backlog_end": 23,
+            "unsigned_backlog_linear_trend_per_second": 0.02,
+            "capacity_candidate": false
+          },
+          "strict_capacity": "unconfirmed_growth_or_cadence_ambiguity"
+        }
+      },
+      "sql_commit_mean_ms": 4.006347797910766,
+      "redis_observation_mean_ms": 0.10393799717978158,
+      "redis_mirror_mean_ms": 0.07561600229248622,
+      "solana_rpc_per_new_postwarm_admission": 6.016179540709812,
+      "solana_status_mean_signatures_per_request": 4.827559327905768
+    },
+    {
+      "label": "baseline-control",
+      "runtime_commit": "4e262c80e9e3866d055c87c43cf9c7d6b377af2a",
+      "binary_sha256": "c0809d09b4eecea9a4e302e151104133b1362459efa147f1c35ab9177ba88365",
+      "raw_report_sha256": "f833f58d623dc1e15e0f3b183eb0edfaad1bb4887a4a5a3728fca1837c101e7f",
+      "captured_checkout_commit": "1e62dd7291bc66a36117ba9a00dc4cd80996eafe",
+      "supervisor_exit": 0,
+      "all_offers_accepted_and_drained": true,
+      "original_capacity_candidate": true,
+      "per_chain": {
+        "evm025": {
+          "offered_tps": 8.0,
+          "offers": 2400,
+          "admission_p99_ms": 103.733,
+          "http_p99_ms": 98.682,
+          "attempt_p99_observed_upper_ms": 6259.894,
+          "terminal_p99_observed_upper_ms": 18757.538,
+          "late_rates_tps": {
+            "admitted": 8.001,
+            "attempted": 7.992,
+            "included": 7.992,
+            "terminal": 7.801
+          },
+          "late_backlogs": {
+            "from_seconds": 180.009,
+            "to_seconds": 300.001,
+            "window_seconds": 119.99199999999999,
+            "terminal_backlog_start": 26,
+            "terminal_backlog_end": 50,
+            "terminal_backlog_growth_per_second": 0.2,
+            "unsigned_backlog_start": 1,
+            "unsigned_backlog_end": 2,
+            "unsigned_backlog_linear_trend_per_second": 0.009,
+            "capacity_candidate": true
+          },
+          "strict_capacity": "unconfirmed_growth_or_cadence_ambiguity"
+        },
+        "evm2": {
+          "offered_tps": 8.0,
+          "offers": 2400,
+          "admission_p99_ms": 77.817,
+          "http_p99_ms": 72.776,
+          "attempt_p99_observed_upper_ms": 5961.887,
+          "terminal_p99_observed_upper_ms": 15973.937,
+          "late_rates_tps": {
+            "admitted": 8.001,
+            "attempted": 8.042,
+            "included": 8.042,
+            "terminal": 8.042
+          },
+          "late_backlogs": {
+            "from_seconds": 180.009,
+            "to_seconds": 300.001,
+            "window_seconds": 119.99199999999999,
+            "terminal_backlog_start": 80,
+            "terminal_backlog_end": 75,
+            "terminal_backlog_growth_per_second": -0.042,
+            "unsigned_backlog_start": 7,
+            "unsigned_backlog_end": 2,
+            "unsigned_backlog_linear_trend_per_second": -0.022,
+            "capacity_candidate": true
+          },
+          "strict_capacity": "unconfirmed_growth_or_cadence_ambiguity"
+        },
+        "solana": {
+          "offered_tps": 16.0,
+          "offers": 4800,
+          "admission_p99_ms": 783.117,
+          "http_p99_ms": 777.103,
+          "attempt_p99_observed_upper_ms": 6468.358,
+          "terminal_p99_observed_upper_ms": 24279.642,
+          "late_rates_tps": {
+            "admitted": 16.051,
+            "attempted": 16.018,
+            "included": 16.134,
+            "terminal": 16.034
+          },
+          "late_backlogs": {
+            "from_seconds": 180.009,
+            "to_seconds": 300.001,
+            "window_seconds": 119.99199999999999,
+            "terminal_backlog_start": 276,
+            "terminal_backlog_end": 278,
+            "terminal_backlog_growth_per_second": 0.017,
+            "unsigned_backlog_start": 2,
+            "unsigned_backlog_end": 6,
+            "unsigned_backlog_linear_trend_per_second": 0.004,
+            "capacity_candidate": true
+          },
+          "strict_capacity": "steady_window_evidence_requires_repetition"
+        }
+      },
+      "sql_commit_mean_ms": 3.6208133352055354,
+      "redis_observation_mean_ms": 0.1071304226012975,
+      "redis_mirror_mean_ms": 0.0769097370922448,
+      "solana_rpc_per_new_postwarm_admission": 6.16853055916775,
+      "solana_status_mean_signatures_per_request": 5.300066039293379
+    },
+    {
+      "label": "native-repeat",
+      "runtime_commit": "5ae3601802bfea3e7a074497300dc786e45bf43d",
+      "binary_sha256": "703005aa010d12d4f150e9eb7484d0115a4e9c9a5f7d4adb622862ccda11ccac",
+      "raw_report_sha256": "a675239153a12e380088eff787c9576a9b6ace0e42d689dca8953d2b30a9c25b",
+      "captured_checkout_commit": "1e62dd7291bc66a36117ba9a00dc4cd80996eafe",
+      "supervisor_exit": 0,
+      "all_offers_accepted_and_drained": true,
+      "original_capacity_candidate": true,
+      "per_chain": {
+        "evm025": {
+          "offered_tps": 8.0,
+          "offers": 2400,
+          "admission_p99_ms": 54.443,
+          "http_p99_ms": 51.582,
+          "attempt_p99_observed_upper_ms": 6259.631,
+          "terminal_p99_observed_upper_ms": 11139.032,
+          "late_rates_tps": {
+            "admitted": 8.0,
+            "attempted": 7.992,
+            "included": 8.017,
+            "terminal": 8.0
+          },
+          "late_backlogs": {
+            "from_seconds": 180.006,
+            "to_seconds": 300.002,
+            "window_seconds": 119.99600000000001,
+            "terminal_backlog_start": 41,
+            "terminal_backlog_end": 41,
+            "terminal_backlog_growth_per_second": 0.0,
+            "unsigned_backlog_start": 0,
+            "unsigned_backlog_end": 1,
+            "unsigned_backlog_linear_trend_per_second": 0.022,
+            "capacity_candidate": true
+          },
+          "strict_capacity": "unconfirmed_growth_or_cadence_ambiguity"
+        },
+        "evm2": {
+          "offered_tps": 8.0,
+          "offers": 2400,
+          "admission_p99_ms": 65.779,
+          "http_p99_ms": 61.367,
+          "attempt_p99_observed_upper_ms": 6337.902,
+          "terminal_p99_observed_upper_ms": 16716.14,
+          "late_rates_tps": {
+            "admitted": 8.0,
+            "attempted": 8.0,
+            "included": 7.992,
+            "terminal": 8.017
+          },
+          "late_backlogs": {
+            "from_seconds": 180.006,
+            "to_seconds": 300.002,
+            "window_seconds": 119.99600000000001,
+            "terminal_backlog_start": 81,
+            "terminal_backlog_end": 79,
+            "terminal_backlog_growth_per_second": -0.017,
+            "unsigned_backlog_start": 1,
+            "unsigned_backlog_end": 1,
+            "unsigned_backlog_linear_trend_per_second": 0.023,
+            "capacity_candidate": true
+          },
+          "strict_capacity": "unconfirmed_growth_or_cadence_ambiguity"
+        },
+        "solana": {
+          "offered_tps": 16.0,
+          "offers": 4800,
+          "admission_p99_ms": 749.372,
+          "http_p99_ms": 744.198,
+          "attempt_p99_observed_upper_ms": 5968.837,
+          "terminal_p99_observed_upper_ms": 23837.988,
+          "late_rates_tps": {
+            "admitted": 16.009,
+            "attempted": 16.001,
+            "included": 15.876,
+            "terminal": 16.101
+          },
+          "late_backlogs": {
+            "from_seconds": 180.006,
+            "to_seconds": 300.002,
+            "window_seconds": 119.99600000000001,
+            "terminal_backlog_start": 285,
+            "terminal_backlog_end": 274,
+            "terminal_backlog_growth_per_second": -0.092,
+            "unsigned_backlog_start": 1,
+            "unsigned_backlog_end": 2,
+            "unsigned_backlog_linear_trend_per_second": -0.018,
+            "capacity_candidate": true
+          },
+          "strict_capacity": "unconfirmed"
+        }
+      },
+      "sql_commit_mean_ms": 3.4629156546706343,
+      "redis_observation_mean_ms": 0.10396655657273399,
+      "redis_mirror_mean_ms": 0.07682997707253819,
+      "solana_rpc_per_new_postwarm_admission": 6.041655818797188,
+      "solana_status_mean_signatures_per_request": 5.567544312510756
+    },
+    {
+      "label": "processing-steady",
+      "runtime_commit": "4dadaf5995ad22468fd32e37074a7f5f51602f1f",
+      "binary_sha256": "1ba58eb5d47a7772046fc85fdcd6ad744ab1b197cf03de56454bc57df89e111c",
+      "raw_report_sha256": "3b126c30d157e2fc7c2627d2c03466ca84d86d29605d90f34454f3f29418d6f0",
+      "captured_checkout_commit": "4dadaf5995ad22468fd32e37074a7f5f51602f1f",
+      "supervisor_exit": 0,
+      "all_offers_accepted_and_drained": true,
+      "original_capacity_candidate": true,
+      "per_chain": {
+        "evm025": {
+          "offered_tps": 8.0,
+          "offers": 2400,
+          "admission_p99_ms": 87.109,
+          "http_p99_ms": 85.038,
+          "attempt_p99_observed_upper_ms": 6137.761,
+          "terminal_p99_observed_upper_ms": 27891.448,
+          "late_rates_tps": {
+            "admitted": 8.001,
+            "attempted": 8.001,
+            "included": 8.018,
+            "terminal": 8.143
+          },
+          "late_backlogs": {
+            "from_seconds": 180.016,
+            "to_seconds": 300.001,
+            "window_seconds": 119.98499999999999,
+            "terminal_backlog_start": 65,
+            "terminal_backlog_end": 48,
+            "terminal_backlog_growth_per_second": -0.142,
+            "unsigned_backlog_start": 0,
+            "unsigned_backlog_end": 0,
+            "unsigned_backlog_linear_trend_per_second": 0.012,
+            "capacity_candidate": true
+          },
+          "strict_capacity": "unconfirmed_growth_or_cadence_ambiguity"
+        },
+        "evm2": {
+          "offered_tps": 8.0,
+          "offers": 2400,
+          "admission_p99_ms": 91.775,
+          "http_p99_ms": 85.083,
+          "attempt_p99_observed_upper_ms": 6343.0,
+          "terminal_p99_observed_upper_ms": 16217.68,
+          "late_rates_tps": {
+            "admitted": 8.001,
+            "attempted": 7.984,
+            "included": 7.993,
+            "terminal": 8.051
+          },
+          "late_backlogs": {
+            "from_seconds": 180.016,
+            "to_seconds": 300.001,
+            "window_seconds": 119.98499999999999,
+            "terminal_backlog_start": 62,
+            "terminal_backlog_end": 56,
+            "terminal_backlog_growth_per_second": -0.05,
+            "unsigned_backlog_start": 1,
+            "unsigned_backlog_end": 3,
+            "unsigned_backlog_linear_trend_per_second": -0.027,
+            "capacity_candidate": true
+          },
+          "strict_capacity": "unconfirmed_growth_or_cadence_ambiguity"
+        },
+        "solana": {
+          "offered_tps": 16.0,
+          "offers": 4800,
+          "admission_p99_ms": 988.122,
+          "http_p99_ms": 983.161,
+          "attempt_p99_observed_upper_ms": 7275.704,
+          "terminal_p99_observed_upper_ms": 25150.286,
+          "late_rates_tps": {
+            "admitted": 15.994,
+            "attempted": 15.71,
+            "included": 15.694,
+            "terminal": 15.769
+          },
+          "late_backlogs": {
+            "from_seconds": 180.016,
+            "to_seconds": 300.001,
+            "window_seconds": 119.98499999999999,
+            "terminal_backlog_start": 273,
+            "terminal_backlog_end": 300,
+            "terminal_backlog_growth_per_second": 0.225,
+            "unsigned_backlog_start": 1,
+            "unsigned_backlog_end": 35,
+            "unsigned_backlog_linear_trend_per_second": 0.086,
+            "capacity_candidate": true
+          },
+          "strict_capacity": "unconfirmed_growth_or_cadence_ambiguity"
+        }
+      },
+      "sql_commit_mean_ms": 3.7760970710519373,
+      "redis_observation_mean_ms": 0.10750275972320596,
+      "redis_mirror_mean_ms": 0.07777947921168618,
+      "solana_rpc_per_new_postwarm_admission": 6.323261265954676,
+      "solana_status_mean_signatures_per_request": 4.5875245194193806
+    },
+    {
+      "label": "baseline-final-control",
+      "runtime_commit": "4e262c80e9e3866d055c87c43cf9c7d6b377af2a",
+      "binary_sha256": "c0809d09b4eecea9a4e302e151104133b1362459efa147f1c35ab9177ba88365",
+      "raw_report_sha256": "c02c22a4541b8d6f0553118246539adb4a9ba260b67a60338e5d1169b06d9e99",
+      "captured_checkout_commit": "8039b2dde5a89ef43847f77b29ae0dd7875aa2a2",
+      "supervisor_exit": 0,
+      "all_offers_accepted_and_drained": true,
+      "original_capacity_candidate": true,
+      "per_chain": {
+        "evm025": {
+          "offered_tps": 8.0,
+          "offers": 2400,
+          "admission_p99_ms": 71.937,
+          "http_p99_ms": 66.561,
+          "attempt_p99_observed_upper_ms": 6006.083,
+          "terminal_p99_observed_upper_ms": 18628.469,
+          "late_rates_tps": {
+            "admitted": 7.993,
+            "attempted": 7.993,
+            "included": 7.993,
+            "terminal": 8.068
+          },
+          "late_backlogs": {
+            "from_seconds": 180.015,
+            "to_seconds": 300.002,
+            "window_seconds": 119.98700000000002,
+            "terminal_backlog_start": 45,
+            "terminal_backlog_end": 36,
+            "terminal_backlog_growth_per_second": -0.075,
+            "unsigned_backlog_start": 4,
+            "unsigned_backlog_end": 4,
+            "unsigned_backlog_linear_trend_per_second": 0.012,
+            "capacity_candidate": true
+          },
+          "strict_capacity": "unconfirmed_growth_or_cadence_ambiguity"
+        },
+        "evm2": {
+          "offered_tps": 8.0,
+          "offers": 2400,
+          "admission_p99_ms": 65.621,
+          "http_p99_ms": 63.041,
+          "attempt_p99_observed_upper_ms": 6094.008,
+          "terminal_p99_observed_upper_ms": 16214.921,
+          "late_rates_tps": {
+            "admitted": 8.001,
+            "attempted": 7.993,
+            "included": 7.959,
+            "terminal": 8.184
+          },
+          "late_backlogs": {
+            "from_seconds": 180.015,
+            "to_seconds": 300.002,
+            "window_seconds": 119.98700000000002,
+            "terminal_backlog_start": 83,
+            "terminal_backlog_end": 61,
+            "terminal_backlog_growth_per_second": -0.183,
+            "unsigned_backlog_start": 4,
+            "unsigned_backlog_end": 5,
+            "unsigned_backlog_linear_trend_per_second": -0.007,
+            "capacity_candidate": true
+          },
+          "strict_capacity": "unconfirmed"
+        },
+        "solana": {
+          "offered_tps": 16.0,
+          "offers": 4800,
+          "admission_p99_ms": 658.93,
+          "http_p99_ms": 652.86,
+          "attempt_p99_observed_upper_ms": 5724.064,
+          "terminal_p99_observed_upper_ms": 23649.955,
+          "late_rates_tps": {
+            "admitted": 16.002,
+            "attempted": 16.002,
+            "included": 16.077,
+            "terminal": 15.877
+          },
+          "late_backlogs": {
+            "from_seconds": 180.015,
+            "to_seconds": 300.002,
+            "window_seconds": 119.98700000000002,
+            "terminal_backlog_start": 284,
+            "terminal_backlog_end": 299,
+            "terminal_backlog_growth_per_second": 0.125,
+            "unsigned_backlog_start": 1,
+            "unsigned_backlog_end": 1,
+            "unsigned_backlog_linear_trend_per_second": -0.017,
+            "capacity_candidate": true
+          },
+          "strict_capacity": "unconfirmed_growth_or_cadence_ambiguity"
+        }
+      },
+      "sql_commit_mean_ms": 3.4383738384362568,
+      "redis_observation_mean_ms": 0.10809190947629864,
+      "redis_mirror_mean_ms": 0.07724211866459142,
+      "solana_rpc_per_new_postwarm_admission": 6.102864583333333,
+      "solana_status_mean_signatures_per_request": 5.63381112984823
+    },
+    {
+      "label": "processing-repeat",
+      "runtime_commit": "4dadaf5995ad22468fd32e37074a7f5f51602f1f",
+      "binary_sha256": "1ba58eb5d47a7772046fc85fdcd6ad744ab1b197cf03de56454bc57df89e111c",
+      "raw_report_sha256": "6a2783c6120d393ff7e58f77550e2b2368f24b658a716ab20ef67bdde988fb2d",
+      "captured_checkout_commit": "8039b2dde5a89ef43847f77b29ae0dd7875aa2a2",
+      "supervisor_exit": 0,
+      "all_offers_accepted_and_drained": true,
+      "original_capacity_candidate": true,
+      "per_chain": {
+        "evm025": {
+          "offered_tps": 8.0,
+          "offers": 2400,
+          "admission_p99_ms": 51.217,
+          "http_p99_ms": 47.111,
+          "attempt_p99_observed_upper_ms": 6007.711,
+          "terminal_p99_observed_upper_ms": 12011.424,
+          "late_rates_tps": {
+            "admitted": 7.992,
+            "attempted": 7.992,
+            "included": 8.017,
+            "terminal": 8.067
+          },
+          "late_backlogs": {
+            "from_seconds": 180.01,
+            "to_seconds": 300.004,
+            "window_seconds": 119.99400000000003,
+            "terminal_backlog_start": 33,
+            "terminal_backlog_end": 24,
+            "terminal_backlog_growth_per_second": -0.075,
+            "unsigned_backlog_start": 1,
+            "unsigned_backlog_end": 1,
+            "unsigned_backlog_linear_trend_per_second": -0.016,
+            "capacity_candidate": true
+          },
+          "strict_capacity": "steady_window_evidence_requires_repetition"
+        },
+        "evm2": {
+          "offered_tps": 8.0,
+          "offers": 2400,
+          "admission_p99_ms": 59.511,
+          "http_p99_ms": 53.211,
+          "attempt_p99_observed_upper_ms": 5840.928,
+          "terminal_p99_observed_upper_ms": 15588.617,
+          "late_rates_tps": {
+            "admitted": 8.0,
+            "attempted": 8.067,
+            "included": 7.975,
+            "terminal": 7.984
+          },
+          "late_backlogs": {
+            "from_seconds": 180.01,
+            "to_seconds": 300.004,
+            "window_seconds": 119.99400000000003,
+            "terminal_backlog_start": 63,
+            "terminal_backlog_end": 65,
+            "terminal_backlog_growth_per_second": 0.017,
+            "unsigned_backlog_start": 8,
+            "unsigned_backlog_end": 0,
+            "unsigned_backlog_linear_trend_per_second": -0.036,
+            "capacity_candidate": true
+          },
+          "strict_capacity": "unconfirmed_growth_or_cadence_ambiguity"
+        },
+        "solana": {
+          "offered_tps": 16.0,
+          "offers": 4800,
+          "admission_p99_ms": 661.188,
+          "http_p99_ms": 655.199,
+          "attempt_p99_observed_upper_ms": 5960.412,
+          "terminal_p99_observed_upper_ms": 23784.315,
+          "late_rates_tps": {
+            "admitted": 16.017,
+            "attempted": 15.984,
+            "included": 15.817,
+            "terminal": 16.101
+          },
+          "late_backlogs": {
+            "from_seconds": 180.01,
+            "to_seconds": 300.004,
+            "window_seconds": 119.99400000000003,
+            "terminal_backlog_start": 289,
+            "terminal_backlog_end": 279,
+            "terminal_backlog_growth_per_second": -0.083,
+            "unsigned_backlog_start": 1,
+            "unsigned_backlog_end": 5,
+            "unsigned_backlog_linear_trend_per_second": 0.03,
+            "capacity_candidate": true
+          },
+          "strict_capacity": "unconfirmed_growth_or_cadence_ambiguity"
+        }
+      },
+      "sql_commit_mean_ms": 3.4626017790705785,
+      "redis_observation_mean_ms": 0.10770021266144204,
+      "redis_mirror_mean_ms": 0.07821508090489165,
+      "solana_rpc_per_new_postwarm_admission": 6.418792295679333,
+      "solana_status_mean_signatures_per_request": 5.092188814933823
+    }
+  ],
+  "all_functional_runs_passed": true,
+  "total_offered_transfers": 96000,
+  "interpretation": "All ten functional load runs pass. The final runtime was repeated with another unchanged baseline control; inspect all tails and storage waits. These finite local runs do not establish latency equivalence, sustainable maximum capacity, or public-chain performance.",
+  "latency_note": "Attempts and terminals use sampled observed upper bounds including drain; admission latencies are direct client measurements.",
+  "runtime_head": "4dadaf5995ad22468fd32e37074a7f5f51602f1f"
+}
