@@ -1,6 +1,6 @@
 # Local testing on Alfonso's Mac
 
-Last updated: **October 13, 2026**. Sections 1–5 use disposable local
+Last updated: **November 8, 2026**. Sections 1–5 use disposable local
 fixtures. Section 6 describes the separately budgeted public-testnet harnesses.
 Neither establishes public RPC capacity, rollup settlement or production readiness.
 
@@ -12,21 +12,13 @@ Neither establishes public RPC capacity, rollup settlement or production readine
 | PR #1 baseline | Merged into `main` at `154b0ac`; preserved branch `production-hardening` at `8741b88` |
 | PR #2 baseline | Merged into `main` at `918d7d9`; preserved branch `crash-recovery-and-chain-fairness` |
 | [PR #3](https://github.com/alfongj-com/engine-core/pull/3) baseline | Merged into `main` at `8fa866e`; executable implementation `04d15d8` |
-| Active cleanup | `/Users/alfongj/Code/engine-core-review-stack`, branch `cleanup-recovery-paths`, runtime `835c7c2` |
+| Active review | `/Users/alfongj/Code/engine-core-review-stack`, branch `native-environment-signer`, implementation `5ae3601` |
 | Full historical evidence in Git | Local and remote branch `load-tests`; use its current head for new evidence |
-| Browsable local evidence | `/Users/alfongj/.local/share/engine-core/evidence/load-tests-603c228/LOAD_TESTS.md` |
+| Browsable local evidence | `/Users/alfongj/Code/engine-core-review-evidence/LOAD_TESTS.md`; historical readonly snapshots remain under `.local/share/engine-core/evidence/` |
 | Installed test tools and checksum manifest | `/Users/alfongj/.local/share/engine-core/tools/` |
 | Private retained incident data; leave untouched | `/Users/alfongj/.local/share/engine-core-custody/` |
 
-PRs #1–3 are merged. The active cleanup separates offline recovery operations
-and Solana transaction lifecycle code. At `835c7c2`, the full local Rust suite
-(including 181 Redis/API tests), 10 process scenarios and 100 bounded model cases
-passed, with 92 matching source guards. Public Solana Devnet runs passed on both
-baseline and cleanup binaries: six finalized effects each, no duplicates. See the
-[qualification report](https://github.com/alfongj-com/engine-core/blob/load-tests/docs/baselines/testnet-cleanup-2026-10-13/README.md)
-for public-chain outcomes, harness chronology and matched-load results. Read
-[WORK_IN_PROGRESS.md](WORK_IN_PROGRESS.md) for remaining limits. Historical results
-apply only to their recorded source.
+PRs #1–3 are merged. PR #4 is the cleanup baseline. PRs #5–#9 add EOA creation/gas fixes, durable cancellation, bounded API work, dependency patches and native environment-key signing. See the [November review](https://github.com/alfongj-com/engine-core/blob/load-tests/docs/baselines/code-review-2026-11-08/README.md) for results tied to each source and binary. The [October public-chain campaign](https://github.com/alfongj-com/engine-core/blob/load-tests/docs/baselines/testnet-cleanup-2026-10-13/README.md) is historical evidence. Read [WORK_IN_PROGRESS.md](WORK_IN_PROGRESS.md) for current scope and limits.
 
 The tools formerly under `/tmp/engine-*` were removed by temporary-file cleanup.
 Use the persistent paths below. The old release binary is preserved as
@@ -66,9 +58,9 @@ another agent's work. These commands create detached test checkouts when absent:
 ```sh
 cd /Users/alfongj/Code/engine-core
 git status --short --branch
-git worktree add --detach /Users/alfongj/Code/engine-core-test-pr3-baseline 8fa866e
-git worktree add --detach /Users/alfongj/Code/engine-core-test-cleanup-835c7c2 835c7c2
-cd /Users/alfongj/Code/engine-core-test-pr3-baseline
+git worktree add --detach /Users/alfongj/Code/engine-core-test-pr4-baseline 4e262c8
+git worktree add --detach /Users/alfongj/Code/engine-core-test-review-native native-environment-signer
+cd /Users/alfongj/Code/engine-core-test-pr4-baseline
 source /Users/alfongj/.local/share/engine-core/tools/env.sh
 unset CARGO_TARGET_DIR
 ```
@@ -305,16 +297,16 @@ runs test correctness and recovery, not maximum throughput or provider capacity.
 ```text
 Test Engine Core locally on this Mac.
 
-Repository: /Users/alfongj/Code/engine-core
+Repository: /Users/alfongj/Code/engine-core-review-stack
 Read README.md and LOCAL_TESTING.md first. Read the saved WIP notes with:
-  git show cleanup-recovery-paths:WORK_IN_PROGRESS.md
+  git show native-environment-signer:WORK_IN_PROGRESS.md
 Load tools with:
   source /Users/alfongj/.local/share/engine-core/tools/env.sh
 
 Use isolated test checkouts as documented; do not switch or reset the main
-checkout. Compare baseline 8fa866e (merged PR #3) and cleanup runtime 835c7c2
-in separate checkouts. Active work is in /Users/alfongj/Code/engine-core-review-stack
-on cleanup-recovery-paths; preserve its edits. Inspect existing test directories
+checkout. Compare baseline 4e262c8 (PR #4) and the current native-environment-signer
+branch in separate checkouts. Active work is in
+/Users/alfongj/Code/engine-core-review-stack; preserve its edits. Inspect existing test directories
 before reusing them. Build each checkout's own target/debug/thirdweb-engine.
 
 Run the fast harness checks, compile, Rust/Redis regressions and local EVM/Solana
@@ -323,8 +315,9 @@ loopback endpoints and generated test keys. No paid/public RPCs, existing wallet
 keys, faucets, old incident journals or the retained Nitro VM. Preserve failed
 reports and runtime data. Do not clear safety fences or suppress failed tests.
 
-The cleanup separates offline recovery operations and Solana lifecycle code.
-The baseline already includes exact retained Solana recovery and pending-target reattachment.
+The review fixes EOA construction, cancellation authority and unbounded API batches,
+patches security dependencies and selects native environment-key signing. The baseline
+already includes retained Solana recovery and pending-target reattachment.
 Read WORK_IN_PROGRESS.md for the latest qualification results and remaining limits.
 Verify the exact commit you build; historical test passes do not qualify later code.
 Do not implement features or refresh proof hashes merely to make testing pass.
