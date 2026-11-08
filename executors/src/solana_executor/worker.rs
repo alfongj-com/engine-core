@@ -172,6 +172,7 @@ impl From<LockError> for SolanaExecutorError {
     fn from(e: LockError) -> Self {
         match e {
             LockError::AlreadyLocked => SolanaExecutorError::LockHeldByAnotherWorker,
+            LockError::QueueLeaseLost => SolanaExecutorError::LockLost,
             LockError::RedisError(msg) => SolanaExecutorError::InternalError { message: msg },
         }
     }
@@ -287,16 +288,22 @@ impl DurableExecution for SolanaExecutorJobHandler {
                 info!("Starting to process Solana transaction");
 
                 // Try to acquire lock - NACK if another worker has it
-                let lock = self
-            .storage
-            .try_acquire_lock(transaction_id)
-            .await
-            .map_err(|e| match e {
+                let acquired = match job.queue_lease() {
+                    Some(lease) => {
+                        self.storage
+                            .try_acquire_lock_with_lease(transaction_id, lease)
+                            .await
+                    }
+                    None => self.storage.try_acquire_lock(transaction_id).await,
+                };
+                let lock = acquired.map_err(|e| match e {
                 LockError::AlreadyLocked => {
                     info!(transaction_id = %transaction_id, "Another worker holds lock, nacking");
                     SolanaExecutorError::LockHeldByAnotherWorker
                         .nack(Some(CONFIRMATION_RETRY_DELAY), RequeuePosition::Last)
                 }
+                LockError::QueueLeaseLost => SolanaExecutorError::LockLost
+                    .nack(Some(CONFIRMATION_RETRY_DELAY), RequeuePosition::Last),
                 LockError::RedisError(msg) => {
                     // An unavailable store says nothing about a prior broadcast's outcome.
                     // Requeue before creating an RPC client or touching the chain.

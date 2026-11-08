@@ -860,7 +860,11 @@ impl<H: DurableExecution> Queue<H> {
                         finished_at: None, // Not finished yet
                     };
 
-                    jobs.push(BorrowedJob::new(job, lease_token));
+                    let metadata_key = self.job_meta_hash_name(&job.id);
+                    let lease_key = self.lease_key_name(&job.id, &lease_token);
+                    let borrowed =
+                        BorrowedJob::new(job, lease_token).with_lease_keys(metadata_key, lease_key);
+                    jobs.push(borrowed);
                 }
                 Err(e) => {
                     // Log error: failed to deserialize job data T for job_id_str

@@ -616,5 +616,29 @@
     "config": "IntentCancellation_success_witness.cfg",
     "expected": "invariant:SuccessfulCancellationNotReached",
     "kind": "witness"
+  },
+  {
+    "module": "SolanaProcessingLease",
+    "config": "SolanaProcessingLease.cfg",
+    "expected": "pass",
+    "kind": "positive"
+  },
+  {
+    "module": "SolanaProcessingLease",
+    "config": "SolanaProcessingLease_stale_mutation.cfg",
+    "expected": "invariant:AttemptMutationsHaveQueueOwner",
+    "kind": "fault"
+  },
+  {
+    "module": "SolanaProcessingLease",
+    "config": "SolanaProcessingLease_live_steal.cfg",
+    "expected": "invariant:LiveProcessingOwnerNotStolen",
+    "kind": "fault"
+  },
+  {
+    "module": "SolanaProcessingLease",
+    "config": "SolanaProcessingLease_reclaim_witness.cfg",
+    "expected": "invariant:DeadOwnerReclaimNotReached",
+    "kind": "witness"
   }
 ]
