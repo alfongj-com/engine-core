@@ -495,6 +495,28 @@ async fn public_routes_reject_unauthorized_mutations_and_invalid_execution() {
             .is_none()
     );
 
+    // The boundary remains usable. A supplied function signature keeps this
+    // successful 100-item encoding batch independent of external ABI services.
+    let response = http
+        .post(format!("{base_url}/v1/encode/contract"))
+        .json(
+            &json!({"encodeOptions":{"chainId":"31337"},"params":vec![json!({
+            "contractAddress":address,"method":"balanceOf(address)","params":[address]
+        });100]}),
+        )
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(response.status(), reqwest::StatusCode::OK);
+    let response: serde_json::Value = response.json().await.unwrap();
+    let results = response["result"].as_array().unwrap();
+    assert_eq!(results.len(), 100);
+    assert!(
+        results
+            .iter()
+            .all(|item| item["result"]["target"] == address)
+    );
+
     let eip_queue = state.queue_manager.eip7702_send_queue.clone();
     let eip_body = json!({
         "executionOptions": {"type":"EIP7702", "chainId":31337,
