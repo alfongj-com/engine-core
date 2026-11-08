@@ -24,7 +24,12 @@ import urllib.error
 import urllib.request
 import uuid
 
-from testnet_engine import pinned_binary, prepare_recovery, provenance as engine_provenance
+from testnet_engine import (
+    pinned_binary,
+    prepare_recovery,
+    provenance as engine_provenance,
+    require_resume_provenance,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 STATE = Path.home() / ".config/engine-core"
@@ -586,32 +591,8 @@ def finish_run(run, report):
     run.save()
 
 
-def main():
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--execute", action="store_true")
-    parser.add_argument("--engine-bin", type=Path, required=True)
-    parser.add_argument("--engine-source-commit", help="Declared full commit of the frozen binary")
-    parser.add_argument("--transactions", type=int, default=10)
-    parser.add_argument("--timeout", type=int, default=300)
-    parser.add_argument("--rate", type=float, default=1, help="Post-bootstrap admissions per second (maximum5)")
-    parser.add_argument("--crash", action="store_true")
-    parser.add_argument("--run-dir", type=Path)
-    parser.add_argument("--resume", type=Path)
-    args = parser.parse_args()
-    require(1 <= args.transactions <= MAX_TRANSACTIONS and 30 <= args.timeout <= 600, "Transaction/timeout limit out of range")
-    require(0 < args.rate <= 5, "Rate must be positive and at most5 per second")
-    require(not (args.run_dir and args.resume), "Choose a new run directory or resume")
-    if not args.execute:
-        print(json.dumps({"dry_run": True, "network": "solana-devnet", "transactions": args.transactions, "rate_per_second": args.rate,
-                          "maximum_rent_lamports": MAX_RENT, "maximum_fee_per_transaction_lamports": MAX_FEE,
-                          "maximum_rpc_calls": MAX_RPC_CALLS, "maximum_broadcasts_per_intent": MAX_BROADCASTS,
-                          "crash": args.crash}, indent=2))
-        return
-    current_provenance = provenance(args.engine_bin, args.engine_source_commit)
-    STATE.mkdir(mode=0o700, exist_ok=True)
-    wallet_lock = (STATE / "solana-write.lock").open("a")
-    os.chmod(STATE / "solana-write.lock", 0o600)
-    fcntl.flock(wallet_lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+def _run_locked(args, current_provenance):
+    """The caller retains the wallet lock through child shutdown and report save."""
     active_path = STATE / "solana-write-active.json"
     if active_path.exists():
         unresolved = json.loads(active_path.read_text())["run_directory"]
@@ -623,6 +604,7 @@ def main():
     if args.resume:
         directory = args.resume.expanduser().resolve()
         manifest = json.loads((directory / "manifest.json").read_text())
+        require_resume_provenance(manifest.get("provenance"), current_provenance)
         require(manifest["payer"] == PAYER and manifest["gateway"] == RPC and manifest["version"] == 1, "Unexpected saved run identity")
         require(manifest.get("outcome") != "pass", "This run already passed; do not repeat funded experiments")
         for prior in manifest.get("processes", []):
@@ -655,10 +637,7 @@ def main():
                     "rent_exempt_minimum_lamports": rent, "rent_source": "https://api.devnet.solana.com", "free_rpc_calls": 1,
                     "total_transfer_lamports": sum(amounts), "wires": {}, "rpc_reserved": 0}
     validate_manifest(manifest)
-    if "provenance" in manifest:
-        require(manifest["provenance"]["engine_binary_sha256"] == current_provenance["engine_binary_sha256"],
-                "Engine binary changed; inspect recovery compatibility before resuming")
-    else:
+    if not args.resume:
         manifest["provenance"] = current_provenance
     os.chmod(directory, 0o700)
     snapshot = directory / ("harness-" + current_provenance["harness_sha256"][:12] + ".py")
@@ -733,9 +712,37 @@ def main():
               "unique_finalized_effects", "duplicate_effects", "duplicate_replay_extra_broadcasts",
               "discarded_send_responses", "unknown_outcome_same_id_retries", "rpc_reserved",
               "elapsed_seconds") if key in report}, indent=2))
-        wallet_lock.close()
         if report["outcome"] != "pass":
             raise RuntimeError("Public run incomplete; inspect private report and retain original identities") from None
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--execute", action="store_true")
+    parser.add_argument("--engine-bin", type=Path, required=True)
+    parser.add_argument("--engine-source-commit", help="Declared full commit of the frozen binary")
+    parser.add_argument("--transactions", type=int, default=10)
+    parser.add_argument("--timeout", type=int, default=300)
+    parser.add_argument("--rate", type=float, default=1, help="Post-bootstrap admissions per second (maximum5)")
+    parser.add_argument("--crash", action="store_true")
+    parser.add_argument("--run-dir", type=Path)
+    parser.add_argument("--resume", type=Path)
+    args = parser.parse_args()
+    require(1 <= args.transactions <= MAX_TRANSACTIONS and 30 <= args.timeout <= 600, "Transaction/timeout limit out of range")
+    require(0 < args.rate <= 5, "Rate must be positive and at most5 per second")
+    require(not (args.run_dir and args.resume), "Choose a new run directory or resume")
+    if not args.execute:
+        print(json.dumps({"dry_run": True, "network": "solana-devnet", "transactions": args.transactions, "rate_per_second": args.rate,
+                          "maximum_rent_lamports": MAX_RENT, "maximum_fee_per_transaction_lamports": MAX_FEE,
+                          "maximum_rpc_calls": MAX_RPC_CALLS, "maximum_broadcasts_per_intent": MAX_BROADCASTS,
+                          "crash": args.crash}, indent=2))
+        return
+    current_provenance = provenance(args.engine_bin, args.engine_source_commit)
+    STATE.mkdir(mode=0o700, exist_ok=True)
+    with (STATE / "solana-write.lock").open("a") as wallet_lock:
+        os.chmod(STATE / "solana-write.lock", 0o600)
+        fcntl.flock(wallet_lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        _run_locked(args, current_provenance)
 
 
 if __name__ == "__main__":
