@@ -551,7 +551,7 @@
     },
     {
       "path": "server/tests/api_safety.rs",
-      "sha256": "775cfedb2593c3f2746e9cf3539f60f27f37b4d83410b6cca3238ef985f2da1c",
+      "sha256": "5e7fcd5c486e0d4050783f3724a96822d7b167e2c3bcd2f549efdadbc1116a61",
       "models": [
         "Admission",
         "DisasterRecovery",
