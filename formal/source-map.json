@@ -258,7 +258,7 @@
     },
     {
       "path": "executors/src/eoa/worker/send_dispatch_tests.rs",
-      "sha256": "3e9cbc5b29f1c1b88e25b3d3592544f62cb4c220c5bbcad2a01edb9020efb183",
+      "sha256": "ef81a7aeb94dd0ebb8a7f9ae5e46fcad2f3990bb18ed1a12f1fac22466a2000e",
       "models": [
         "EoaRecovery",
         "DisasterRecovery"
@@ -275,7 +275,7 @@
     },
     {
       "path": "executors/src/eoa/worker/transaction.rs",
-      "sha256": "5e54409bbfccdfbbcee6d76ca32f355bee9679cc36d9dd83505eb809d572f530",
+      "sha256": "94406d4682d3c920c122ae6a0347b635066e45312051abeb0e7536a9355837e9",
       "models": [
         "DisasterRecovery",
         "Fees"
@@ -397,7 +397,7 @@
     },
     {
       "path": "scripts/local_eoa_recovery.py",
-      "sha256": "e044c9495ce18375772fca3edac92a7e5d675f95001f876afe48928163e20584",
+      "sha256": "afdaf82c35f5f2ddd169d384b973df3379b45ddca4319841eff320ecaefaa941",
       "models": [
         "DisasterRecovery",
         "EoaRecovery"
@@ -938,6 +938,16 @@
         "executors/src/solana_executor/worker.rs"
       ],
       "reason": "The five offline administration methods move verbatim into operations.rs, preserving owner-lock and transaction scopes, all ten awaits, exact-target acknowledgement/adoption and fresh post-observation. Solana execute_transaction retains admission, storage and journal-binding gates, then directly awaits either retained-attempt reconciliation or initial build/sign/persist/send. Extracted bodies preserve operation order, finality-before-expiry and the second history observation after expiry. No task, permission, new signature path, RPC, grant, schema or durability policy is introduced. Models and bounds remain unchanged; source hashes are a change-review guard, not a refinement proof. Existing crash/cancellation/recovery tests and matched load remain the executable regression checks."
+    },
+    "eoa_envelope_review_nov08": {
+      "date": "2026-11-08",
+      "base_commit": "4e262c80e9e3866d055c87c43cf9c7d6b377af2a",
+      "paths": [
+        "executors/src/eoa/worker/send_dispatch_tests.rs",
+        "executors/src/eoa/worker/transaction.rs",
+        "scripts/local_eoa_recovery.py"
+      ],
+      "reason": "Preparation explicitly selects CREATE or CALL, preserves legacy estimation, and rejects out-of-range gas rather than overflowing. Durable replay keys, broadcast authorization, fee-bump arithmetic and finality are unchanged. Existing models and bounds are unchanged; they do not prove Alloy construction or RPC gas arithmetic. Executable regressions cover signed CREATE identity and hostile estimates. The local Engine/Redis/Anvil harness checks deployed runtime, predicted addresses, value, crash recovery and duplicate retries."
     }
   }
 }
