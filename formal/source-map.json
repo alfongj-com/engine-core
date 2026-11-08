@@ -469,7 +469,7 @@
     },
     {
       "path": "server/src/execution_router/mod.rs",
-      "sha256": "570c5284aa5f7005ef027aedc0f7eb397184c18b7fc6b4370c86c554a2b549c4",
+      "sha256": "528607360f044fca862b5055b1c4b932a17959f1d29c437e0c2ff4e1c2849166",
       "models": [
         "Admission",
         "DisasterRecovery",
@@ -506,7 +506,7 @@
     },
     {
       "path": "server/src/lib.rs",
-      "sha256": "00c234516c2327a6d2e6ba2453e03f674708c7b23a2b4c017a2175cfc171e02f",
+      "sha256": "d25ddc6fad1715a4c05af0262d8c4340f7426763f386b72d0fedea614b36d375",
       "models": [
         "DisasterRecovery"
       ]
@@ -551,7 +551,7 @@
     },
     {
       "path": "server/tests/api_safety.rs",
-      "sha256": "a1e4ea1b20f543a976090d27328a4c1e0b87541da2e5f97d45122ff16c489315",
+      "sha256": "775cfedb2593c3f2746e9cf3539f60f27f37b4d83410b6cca3238ef985f2da1c",
       "models": [
         "Admission",
         "DisasterRecovery",
@@ -971,6 +971,22 @@
         "server/tests/api_safety.rs"
       ],
       "reason": "Cancellation checks unsigned status and moves the intent to existing quarantined state in one FULL authority transaction before queue mutation. It shares serialization with before_broadcast; existing replay/attempt evidence prevents cancellation. The owned task retains publication through caller cancellation. No schema, counter, retained-wire or finality-policy changes. Payload validation reuses one admitted-record snapshot instead of two reads; broadcast still revalidates current authority. IntentCancellation checks this new linearization protocol and its old cached-read counterexample; it is not a refinement or composition proof. Existing crash/rollback/source guards and executable tests remain required."
+    },
+    "bounded_api_batches_nov08": {
+      "date": "2026-11-08",
+      "base_commit": "4684945",
+      "paths": [
+        "server/src/execution_router/mod.rs",
+        "server/src/http/routes/contract_encode.rs",
+        "server/src/http/routes/contract_read.rs",
+        "server/src/http/routes/contract_write.rs",
+        "server/src/http/routes/sign_message.rs",
+        "server/src/http/routes/sign_typed_data.rs",
+        "server/src/lib.rs",
+        "server/tests/api_safety.rs",
+        "server/src/batch.rs"
+      ],
+      "reason": "A shared preflight rejects batches above 100 items before dependency or admission effects. Five signing/ABI preparation paths use ordered Futures buffering capped at 16 in place of join_all. No tasks, signing changes, retry policy, journal identity, dispatch or finality transitions are added. Existing models and bounds are unchanged; per-request size/concurrency/order are executable HTTP and controlled-future obligations, not TLA claims."
     }
   }
 }
