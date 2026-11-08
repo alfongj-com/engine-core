@@ -398,7 +398,7 @@
     },
     {
       "path": "scripts/local_eoa_recovery.py",
-      "sha256": "afdaf82c35f5f2ddd169d384b973df3379b45ddca4319841eff320ecaefaa941",
+      "sha256": "0bc81dfcd4f404c5e238558218f6c13bd13dc8f10cbf3d23b18ffa1f01fd965c",
       "models": [
         "DisasterRecovery",
         "EoaRecovery"
@@ -735,6 +735,14 @@
         "IntentCancellation"
       ],
       "sha256": "5a05707eedab2d3aea3ecd03cffb979610eccdca2a283aaf254b527aeae54939"
+    },
+    {
+      "path": "core/src/credentials.rs",
+      "sha256": "8ca7792daac47d70aa20a2812616f3372cf89cd0e8d65ff6ceaccf0bfb038a49",
+      "models": [
+        "DisasterRecovery",
+        "EoaRecovery"
+      ]
     }
   ],
   "review": {
@@ -987,6 +995,16 @@
         "server/src/batch.rs"
       ],
       "reason": "A shared preflight rejects batches above 100 items before dependency or admission effects. Five signing/ABI preparation paths use ordered Futures buffering capped at 16 in place of join_all. No tasks, signing changes, retry policy, journal identity, dispatch or finality transitions are added. Existing models and bounds are unchanged; per-request size/concurrency/order are executable HTTP and controlled-future obligations, not TLA claims."
+    },
+    "native_environment_signer_nov08": {
+      "date": "2026-11-08",
+      "base_commit": "883d7d2874477fa2aafa09258f72201a387727b0",
+      "paths": [
+        "core/src/credentials.rs",
+        "core/Cargo.toml",
+        "scripts/local_eoa_recovery.py"
+      ],
+      "reason": "Environment-key derivation and local signing select Alloy native secp256k1 rather than k256 secret arithmetic. The development-only credential keeps its existing type and converts before signing, preserving configured chain ID. Public address validation, immutable admission, signed-wire reservation, queue serialization, nonce/finality and recovery authority are unchanged. EIP-155 fixed-wire and signature compatibility checks plus actual HTTP/Anvil process tests establish executable correspondence. The existing models/bounds are unchanged and abstract signing; hashes are a review guard, not a cryptographic, timing or Rust refinement proof. The transitive crypto-bigint advisory remains visible. Prehashes at/above the curve order may produce different valid signature bytes due to nonce preprocessing; curve-order boundary tests verify identity rather than universal byte equality. The upgrade harness starts the old binary and restarts the new one with the same state, requiring original mined transaction hashes and no duplicate effects."
     }
   }
 }
