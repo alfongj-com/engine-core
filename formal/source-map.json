@@ -347,11 +347,12 @@
     },
     {
       "path": "executors/src/solana_executor/recovery_tests.rs",
-      "sha256": "09c5d4149598e0dae329d938ce090b2f8c4ea7d6f70616044870b77ccf0e223c",
+      "sha256": "a1aaed191900e60b56797093d2cb948759f9b113ec206425f82dd9bb1d9bcddf",
       "models": [
         "DisasterRecovery",
         "SolanaRecovery",
-        "SolanaRetainedAttempt"
+        "SolanaRetainedAttempt",
+        "SolanaProcessingLease"
       ]
     },
     {
@@ -370,21 +371,23 @@
     },
     {
       "path": "executors/src/solana_executor/storage.rs",
-      "sha256": "a8700a8c7736737b5a6c8c3e618eb7dee39f2868b08e17fc6448c5f77a179b91",
+      "sha256": "830ebb13442d8b0e4d11c4cfc0ed8ce9f5aa9775cc36900e3021ab9ab229f1d8",
       "models": [
         "Admission",
         "SolanaRecovery",
-        "SolanaRetainedAttempt"
+        "SolanaRetainedAttempt",
+        "SolanaProcessingLease"
       ]
     },
     {
       "path": "executors/src/solana_executor/worker.rs",
-      "sha256": "2767f382da839ebc3a45b2234d83a625ab0cfaad25a6c5c8121b3dc7d1af70bb",
+      "sha256": "0d1d63d132626d26ccaedb9d95873de3c8eb4fb00ad82a9a32bdf73517acf136",
       "models": [
         "DisasterRecovery",
         "SolanaRecovery",
         "DisasterRecoveryProjection",
-        "SolanaRetainedAttempt"
+        "SolanaRetainedAttempt",
+        "SolanaProcessingLease"
       ]
     },
     {
@@ -582,16 +585,18 @@
     },
     {
       "path": "twmq/src/lib.rs",
-      "sha256": "f6ae29909445a9f1ead10abe3debfed9c56aa379f3cbb696aa7c6a69092ce22e",
+      "sha256": "fbf4c56acc65cb027e065cf0c6597648baded7e901a7c1486ad5a034561f750f",
       "models": [
-        "QueueLease"
+        "QueueLease",
+        "SolanaProcessingLease"
       ]
     },
     {
       "path": "twmq/src/multilane.rs",
-      "sha256": "0c904b73cb7ee068e0cfa182341b753fd75dbb8d3bcda876cfd1a7b3471ecdda",
+      "sha256": "ed71c63468f267d9b4f5034f3125184e8c069f5e2d704df0188733ccdf3c5b18",
       "models": [
-        "QueueLease"
+        "QueueLease",
+        "SolanaProcessingLease"
       ]
     },
     {
@@ -743,6 +748,13 @@
         "DisasterRecovery",
         "EoaRecovery"
       ]
+    },
+    {
+      "path": "twmq/src/job.rs",
+      "models": [
+        "SolanaProcessingLease"
+      ],
+      "sha256": "e4a41e9040af1606ee7987ae812e9ecde4e04f1bf92358e5801c735b4e03e8ee"
     }
   ],
   "review": {
@@ -1005,6 +1017,19 @@
         "scripts/local_eoa_recovery.py"
       ],
       "reason": "Environment-key derivation and local signing select Alloy native secp256k1 rather than k256 secret arithmetic. The development-only credential keeps its existing type and converts before signing, preserving configured chain ID. Public address validation, immutable admission, signed-wire reservation, queue serialization, nonce/finality and recovery authority are unchanged. EIP-155 fixed-wire and signature compatibility checks plus actual HTTP/Anvil process tests establish executable correspondence. The existing models/bounds are unchanged and abstract signing; hashes are a review guard, not a cryptographic, timing or Rust refinement proof. The transitive crypto-bigint advisory remains visible. Prehashes at/above the curve order may produce different valid signature bytes due to nonce preprocessing; curve-order boundary tests verify identity rather than universal byte equality. The upgrade harness starts the old binary and restarts the new one with the same state, requiring original mined transaction hashes and no duplicate effects."
+    },
+    "solana_processing_queue_lease_nov08": {
+      "date": "2026-11-08",
+      "base_commit": "1e62dd7291bc66a36117ba9a00dc4cd80996eafe",
+      "paths": [
+        "twmq/src/job.rs",
+        "twmq/src/lib.rs",
+        "twmq/src/multilane.rs",
+        "executors/src/solana_executor/storage.rs",
+        "executors/src/solana_executor/worker.rs",
+        "executors/src/solana_executor/recovery_tests.rs"
+      ],
+      "reason": "Queue pop attaches immutable lease key/token identity to BorrowedJob for regular and multilane queues. New Solana processing locks record that identity plus a distinct processing token. Atomic acquisition requires the current queue token and its expiring key; a known prior record may be replaced only after its queue owner is no longer live. Attempt reads/writes and final pre-RPC lock checks require both processing ownership and queue liveness, strengthening stale-worker refusal. Legacy UUID/opaque records retain conservative TTL behavior. Signed wire, admission, journal publication, grant budgets and finality/expiry policy are unchanged. Standard ERR lock-lost replies fix Redis error classification. SolanaProcessingLease abstracts the new-format conjunction of metadata and live lease key; positive invariants, two faults and an early-reclaim witness are checked. JSON/key construction, expiry timing, old-format compatibility and actual crash behavior remain executable obligations; no refinement/composition or wall-clock liveness proof is claimed."
     }
   }
 }

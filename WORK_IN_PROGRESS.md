@@ -1,8 +1,7 @@
 # Engine code review stack
 
-Updated November 8, 2026. Current branch: `native-environment-signer` in
-`/Users/alfongj/Code/engine-core-review-stack`. Its implementation is `5ae3601`;
-later documentation updates do not change that executable source.
+Updated November 8, 2026. Current branch: `reclaim-solana-processing-locks` in
+`/Users/alfongj/Code/engine-core-review-stack`. This extends PR #9 (`1e62dd7`) with queue-owned Solana processing locks.
 
 ## Changes
 
@@ -17,8 +16,13 @@ PRs #1–#3 are merged. These review PRs are stacked on the open
 | [#8](https://github.com/alfongj-com/engine-core/pull/8) | Compatible TLS, runtime, compression and constant-time utility patches. |
 | [#9](https://github.com/alfongj-com/engine-core/pull/9) | Native secp256k1 environment-key derivation/signing, signature boundary checks and binary-upgrade recovery test. |
 
-Merge order: **#4 → #5 → #6 → #7 → #8 → #9**. No schema or queue identity change
-is introduced by this review. Cancelled IDs remain consumed.
+The latest branch adds [Solana processing-lock recovery](docs/design/solana-processing-locks.md),
+found by killing Engine during a three-chain load run. A new worker may reclaim
+a lock only after its recorded queue owner loses its lease.
+
+Merge order: **#4 → #5 → #6 → #7 → #8 → #9 → processing-lock fix**. No journal
+schema or queue job identity change is introduced. Cancelled IDs remain consumed.
+The processing-lock value gains an owner record; legacy locks retain their TTL.
 
 ## Tests and evidence
 

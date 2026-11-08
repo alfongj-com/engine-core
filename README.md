@@ -8,7 +8,7 @@ Rust transaction infrastructure forked from [thirdweb-dev/engine-core](https://g
 
 The main checkout is **`/Users/alfongj/Code/engine-core`**. Current review work is
 in **`/Users/alfongj/Code/engine-core-review-stack`**, branch
-`native-environment-signer` (PRs #5–#9, stacked on #4). Start with
+`reclaim-solana-processing-locks` (review stack on #4). Start with
 **[LOCAL_TESTING.md](LOCAL_TESTING.md)** for the installed tool paths, isolated
 checkouts, exact test commands, local recovery scenarios and a
 [copyable prompt for another agent](LOCAL_TESTING.md#prompt-for-another-local-agent).
@@ -21,7 +21,7 @@ Branch layout on November 8, 2026:
 | `crash-recovery-and-chain-fairness` / [PR #2](https://github.com/alfongj-com/engine-core/pull/2) | Merged into `main` at `918d7d9`: recoverable checkpoint publication, journal fairness and bounded Solana polling. |
 | `recover-retained-transactions` / [PR #3](https://github.com/alfongj-com/engine-core/pull/3) | Merged into `main` at `8fa866e`: exact signed Solana restoration and pending-target checkpoint reattachment. |
 | `cleanup-recovery-paths` / [PR #4](https://github.com/alfongj-com/engine-core/pull/4) | Cleanup baseline for this review, commit `4e262c8`. |
-| `native-environment-signer` / [PR #9](https://github.com/alfongj-com/engine-core/pull/9) | Current review stack; implementation `5ae3601`. See [scope and remaining work](WORK_IN_PROGRESS.md). |
+| `reclaim-solana-processing-locks` | Current review stack, including Solana crash-lock recovery. See [scope and remaining work](WORK_IN_PROGRESS.md). |
 | `load-tests` | Historical reports and generated evidence, including failed runs. |
 
 Historical October 13 results: at `835c7c2`, the local Rust suite (including 181 explicit Redis/API tests),
@@ -51,6 +51,7 @@ retained incident journals or the old Nitro VM for these tests.
 - [Configured RPCs and Solana recovery](docs/design/rpc-and-solana-recovery.md): setup, authentication, retry rules and operational limits.
 - [Finality and reorg handling](docs/design/finality-and-recovery.md): completion policies and chain assumptions.
 - [Redis disaster recovery](docs/design/redis-disaster-recovery.md): required independent journal, initialization, restart and quarantine procedures.
+- [Solana processing locks](docs/design/solana-processing-locks.md): queue ownership, crash takeover and rolling upgrades.
 - [Retained Solana recovery](docs/design/retained-solana-recovery.md): exact-wire restoration, durable retry budgets and schema upgrade.
 - [50 TPS review](docs/design/throughput-50tps.md): chain constraints, bounded queues, RPC costs and measurement scope.
 - [Confirmation identity and authentication](docs/design/confirmation-identity.md): durable attempt binding, legacy access tokens and disabled bundled EIP-7702.
