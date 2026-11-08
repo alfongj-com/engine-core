@@ -62,6 +62,10 @@ retained incident journals or the old Nitro VM for these tests.
 
 ## Build
 
+HTTP transaction, contract, message-signing and typed-data batches accept at most
+100 items. Split larger requests. Signing and contract preparation poll at most
+16 operations per request and preserve result order.
+
 Install Rust through rustup; `rust-toolchain.toml` selects the tested toolchain.
 
 ```sh

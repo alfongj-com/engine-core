@@ -1,3 +1,4 @@
+mod batch;
 pub mod chains;
 pub mod config;
 pub mod execution_router;

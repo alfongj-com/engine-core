@@ -428,6 +428,73 @@ async fn public_routes_reject_unauthorized_mutations_and_invalid_execution() {
     );
     assert_eq!(queue.count(JobStatus::Pending).await.unwrap(), 1);
 
+    // A compact body must not fan out into unbounded signing, ABI or RPC work.
+    // The fixture's provider endpoints are unavailable: reject the whole batch
+    // before dependencies or durable admission, rather than per-item failures.
+    let address = "0x1111111111111111111111111111111111111111";
+    let signing = json!({"type":"EOA","from":address});
+    let execution =
+        json!({"type":"EOA","chainId":31337,"from":address,"idempotencyKey":"oversized-batch"});
+    let call = json!({"contractAddress":address,"method":"balanceOf(address)","params":[address]});
+    let typed = json!({"types":{"EIP712Domain":[],"Message":[{"name":"value","type":"uint256"}]},"domain":{},"primaryType":"Message","message":{"value":1}});
+    for (path, mut body, item) in [
+        (
+            "sign/message",
+            json!({"signingOptions":signing}),
+            json!({"message":"test"}),
+        ),
+        ("sign/typed-data", json!({"signingOptions":signing}), typed),
+        (
+            "encode/contract",
+            json!({"encodeOptions":{"chainId":"31337"}}),
+            call.clone(),
+        ),
+        (
+            "read/contract",
+            json!({"readOptions":{"chainId":"31337"}}),
+            call.clone(),
+        ),
+        (
+            "write/contract",
+            json!({"executionOptions":execution}),
+            call,
+        ),
+        (
+            "write/transaction",
+            json!({"executionOptions":execution}),
+            json!({"to":address}),
+        ),
+    ] {
+        body["params"] = json!(vec![item; 101]);
+        let response = http
+            .post(format!("{base_url}/v1/{path}"))
+            .header("x-thirdweb-client-id", "test")
+            .header("x-thirdweb-service-key", "test")
+            .header("x-wallet-access-token", "test")
+            .header("x-engine-access-token", TOKEN)
+            .json(&body)
+            .send()
+            .await
+            .unwrap();
+        assert_eq!(
+            response.status(),
+            reqwest::StatusCode::BAD_REQUEST,
+            "{path}"
+        );
+        assert!(
+            response.text().await.unwrap().contains("at most 100 items"),
+            "{path}"
+        );
+    }
+    assert_eq!(queue.count(JobStatus::Pending).await.unwrap(), 1);
+    assert!(
+        registry
+            .get_transaction_queue("oversized-batch")
+            .await
+            .unwrap()
+            .is_none()
+    );
+
     let eip_queue = state.queue_manager.eip7702_send_queue.clone();
     let eip_body = json!({
         "executionOptions": {"type":"EIP7702", "chainId":31337,

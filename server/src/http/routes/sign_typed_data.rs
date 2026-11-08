@@ -14,7 +14,6 @@ use engine_core::{
     error::EngineError,
     signer::{AccountSigner, SigningOptions},
 };
-use futures::future::join_all;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -115,7 +114,8 @@ pub async fn sign_typed_data(
     SigningCredentialsExtractor(signing_credential): SigningCredentialsExtractor,
     EngineJson(request): EngineJson<SignTypedDataRequest>,
 ) -> Result<impl IntoResponse, ApiEngineError> {
-    // Process all typed data in parallel
+    crate::batch::validate_size(request.params.len())?;
+    // Process a bounded batch in input order
     let sign_futures = request.params.iter().map(|typed_data| {
         sign_single_typed_data(
             &state,
@@ -125,7 +125,8 @@ pub async fn sign_typed_data(
         )
     });
 
-    let results: Vec<BatchResultItem<SignResultData>> = join_all(sign_futures).await;
+    let results: Vec<BatchResultItem<SignResultData>> =
+        crate::batch::collect(sign_futures.collect()).await;
 
     Ok((StatusCode::OK, Json(BatchResults { result: results })))
 }

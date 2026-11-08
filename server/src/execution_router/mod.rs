@@ -577,6 +577,7 @@ impl ExecutionRouter {
 
 /// Validate before any provider calls or durable queue writes.
 fn validate_execution_request(request: &SendTransactionRequest) -> Result<(), EngineError> {
+    crate::batch::validate_size(request.params.len())?;
     if request.params.is_empty() {
         return Err(EngineError::ValidationError {
             message: "At least one transaction is required.".to_string(),
