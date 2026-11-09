@@ -1,87 +1,55 @@
-# Recovery cleanup and public-testnet checks
+# Engine code review stack
 
-Updated October 13, 2026. PRs [#1](https://github.com/alfongj-com/engine-core/pull/1),
-[#2](https://github.com/alfongj-com/engine-core/pull/2), and
-[#3](https://github.com/alfongj-com/engine-core/pull/3) are merged. PR #3 merged at
-`8fa866e`; its executable implementation is `04d15d8`.
+Updated November 8, 2026. Current branch: `native-environment-signer` in
+`/Users/alfongj/Code/engine-core-review-stack`. Its implementation is `5ae3601`;
+later documentation updates do not change that executable source.
 
-[PR #4](https://github.com/alfongj-com/engine-core/pull/4) is on `cleanup-recovery-paths` in
-`/Users/alfongj/Code/engine-core-review-stack`. Runtime `835c7c2` separates offline
-recovery operations and Solana transaction lifecycle code. The public harnesses
-select frozen binaries explicitly, so ongoing harness edits do not change the
-runtime under test.
+## Changes
 
-The lockfile also updates disabled `quinn-proto` from 0.11.15 to 0.11.18 to
-resolve five October 12 RustSec advisories. It is not in the enabled workspace
-dependency graph; the locked local build remains byte-identical to the frozen
-`835c7c2` executable. One protocol CI run hit its 15-minute job limit after all
-100 cases passed and their report was uploaded. A 25-minute workflow allowance
-is saved on local branch `cleanup-ci-timeout-local`; publishing it requires a
-GitHub credential with workflow permission. Model bounds and checks are unchanged.
+PRs #1–#3 are merged. These review PRs are stacked on the open
+[cleanup PR #4](https://github.com/alfongj-com/engine-core/pull/4), commit `4e262c8`:
 
-## Verified results
-
-| Scope | Result |
+| PR | Change |
 | --- | --- |
-| Local Rust, `835c7c2` | All 10 workflow steps passed, including 181 explicit Redis/API tests. |
-| Local process scenarios, `835c7c2` | All 10 passed: crashes, live Redis outage, rollback/quarantine, reorgs and both Solana recovery variants. |
-| Bounded protocol models, `835c7c2` | All 100 expected outcomes passed; 92 source guards match. These guards are not a Rust refinement proof. |
-| Public harness guards | All 39 offline tests passed, including late proxy failures, finalized evidence, fixed fixture limits and private signer input. |
+| [#5](https://github.com/alfongj-com/engine-core/pull/5) | Explicit CREATE/CALL envelopes, legacy estimation and checked gas bounds. |
+| [#6](https://github.com/alfongj-com/engine-core/pull/6) | Journal cancellation competes atomically with broadcast reservation; reuse one payload snapshot. |
+| [#7](https://github.com/alfongj-com/engine-core/pull/7) | At most 100 batch items and 16 concurrent signing/ABI operations per request. |
+| [#8](https://github.com/alfongj-com/engine-core/pull/8) | Compatible TLS, runtime, compression and constant-time utility patches. |
+| [#9](https://github.com/alfongj-com/engine-core/pull/9) | Native secp256k1 environment-key derivation/signing, signature boundary checks and binary-upgrade recovery test. |
 
-Public-testnet, matched-load and CI results are maintained in the
-[qualification report](https://github.com/alfongj-com/engine-core/blob/load-tests/docs/baselines/testnet-cleanup-2026-10-13/README.md) with separate
-runtime, binary and harness provenance. Small funded correctness checks do not
-establish sustainable throughput or RPC capacity. Provider-based finality checks
-are not independent consensus proofs.
+Merge order: **#4 → #5 → #6 → #7 → #8 → #9**. No schema or queue identity change
+is introduced by this review. Cancelled IDs remain consumed.
 
-The November 8 code review fixes EOA contract creation by explicitly selecting
-CREATE when `to` is absent. The local `--create --redis-crash` regression deploys
-through Engine, checks predicted addresses, bytecode and value after restart,
-and retries the same IDs without extra creations. Preparation also rejects
-overflowing gas estimates and preserves legacy gas-price estimation. The prior
-public reverted-call fixture used a separate signer and remains historical setup
-evidence, not Engine creation coverage.
+## Tests and evidence
 
-Cancellation now revokes an unsigned ERC-4337 admission in the journal before
-changing Redis tracking. It competes atomically with broadcast reservation;
-already-reserved operations retain reconciliation. A cancelled ID uses the
-existing quarantined no-execution state and cannot be submitted again. No new
-journal schema, Redis tombstone or signing identity is introduced.
+Use [LOCAL_TESTING.md](LOCAL_TESTING.md) for tools, isolated checkouts, commands
+and another agent's prompt. It includes contract creation and an old/new binary
+restart against the same journal and Redis state.
 
-## Evidence and reproduction
+Generated results and the handoff are maintained on the separate
+[load-tests branch](https://github.com/alfongj-com/engine-core/tree/load-tests/docs/baselines/code-review-2026-11-08).
+Each report identifies its source, binary and harness. Failed runs are retained;
+finite models, source guards and fee proofs do not establish a whole-service or
+cryptographic proof. Historical public-testnet results qualify only their recorded binaries.
 
-Use [LOCAL_TESTING.md](LOCAL_TESTING.md) for local checks and
-[bounded public harness commands](LOCAL_TESTING.md#6-bounded-public-testnet-correctness-runs).
-Private data for this campaign is under
-`/Users/alfongj/.local/share/engine-core/runs/testnet-cleanup-2026-10-13/`.
-Keep failed runs, original identities, journals and signed bytes intact.
+Private runs are under `/Users/alfongj/.local/share/engine-core/runs/code-review-2026-11-08/`.
+Keep raw keys, signed wires and journals out of Git. Old incident journals and the
+retained Nitro environment are unrelated to these disposable fixtures.
 
-Reviewed public-testnet aggregates and generated reports belong on the separate
-[`load-tests` branch](https://github.com/alfongj-com/engine-core/tree/load-tests).
-Raw custody files, addresses, signed wires and credentials stay outside Git.
-[PR #3's prior evidence](https://github.com/alfongj-com/engine-core/blob/load-tests/docs/baselines/retained-recovery-2026-10-12/README.md)
-remains historical evidence for its recorded source, not a result for this cleanup.
+## Remaining constraints
 
-## Recovery contract and remaining limits
+The [dependency review](docs/design/dependency-security.md) records one unresolved
+transitive crypto-bigint advisory, six warnings and the native signing mitigation.
+The audit remains enabled and fails visibly. Signature bytes need not match the
+old backend for prehashes at or above the curve order; recovery uses retained wires.
 
-Schema 3 restores only one exact retained Solana wire; it never signs a
-replacement. Recovery grants have a separate durable allowance of 20, and lost
-replies consume grants. A combined original-plus-recovery allowance of 40 assumes
-the original Redis send counter survived until recovery mode. Redis restoration
-also resets its local reconciliation-read counter, so it is not a lifetime
-RPC-read quota.
+The latest independent journal and one active process on one Unix host are required.
+Durable writes are serialized and intent history is retained indefinitely. Restoration
+does not reconstruct missing queue jobs or resolve quarantined unknown outcomes.
+Missing Solana history never authorizes a fresh signature. Follow the
+[upgrade/rollback runbook](docs/design/redis-disaster-recovery.md#schema-upgrade-and-rollback);
+schema 3 has no in-place downgrade.
 
-Offline reattachment accepts only an intact exact checkpoint target, acknowledges
-it and adopts the Redis process identity in one FULL commit, then observes Redis
-again. It does not restore old send permission. See the
-[Solana design](docs/design/retained-solana-recovery.md) and
-[restart/upgrade runbook](docs/design/redis-disaster-recovery.md).
-
-One process on one Unix host must retain the latest authoritative journal.
-Restoration does not rebuild missing queue jobs, release quarantined unknown
-outcomes, choose among ambiguous legacy attempts, or repair lost journal
-authority. Expiry and absent history never authorize a replacement.
-
-Production storage, public RPC capacity, real rollup settlement, sustained
-throughput and KMS integration remain unqualified. No whole-service proof or
-50 TPS-per-chain guarantee is claimed.
+Production hardware, public RPC capacity, actual rollup settlement, sustained
+throughput and KMS integration still require qualification. No 50 TPS-per-chain
+or production-readiness claim follows from local checks.
