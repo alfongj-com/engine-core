@@ -18,7 +18,7 @@ from collections import Counter, OrderedDict
 from contextlib import closing, contextmanager
 import concurrent.futures
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import gzip
 import functools
 import hashlib
@@ -1164,14 +1164,15 @@ class Campaign:
             return row
 
     def sampling(self):
-        deadline = time.monotonic()
-        while not self.stop_sampler.is_set():
+        # Baseline observation is complete before arrivals are armed. The next
+        # sample belongs one full interval into the offered phase.
+        deadline = self.started + self.args.sample_seconds
+        while not self.stop_sampler.wait(max(0, deadline - time.monotonic())):
             try:
                 self.sample()
             except Exception as error:
                 self.event("observer_error", **transport_error_details(error))
             deadline += self.args.sample_seconds
-            self.stop_sampler.wait(max(0, deadline - time.monotonic()))
             if time.monotonic() - deadline > self.args.sample_seconds:
                 deadline = time.monotonic()
 
@@ -1451,7 +1452,7 @@ class Campaign:
             return
         proxy = self.proxies[self.args.chaos_chain or next(iter(self.profiles))]
         try:
-            deadline = time.monotonic() + self.args.seconds
+            deadline = self.started + self.args.seconds
             while True:
                 self.require_lifecycle()
                 try:
@@ -1588,15 +1589,23 @@ class Campaign:
         self.phase = "retry_drain"
         self.wait_drain()
 
-    def load(self):
-        if self.resource_monitor and not self.resource_monitor.begin_load()["allowed"]:
-            return
-        self.started = time.monotonic()
-        self.phase = "load"
-        self.report["offered_started_utc"] = datetime.now(timezone.utc).isoformat()
+    def arm_arrivals(self):
+        # A synchronous first SQLite/RPC sample can exceed the 25ms schedule
+        # tolerance. It is preparation, never a late first offered intent.
         self.observer = JournalObserver(self.journal, self.id_chain, self.started, self.times)
         self.sample()
         self.start_provider_guards()
+        lead = 1
+        self.started = time.monotonic() + lead
+        self.observer.start = self.started
+        self.phase = "load"
+        self.report["arrival_lead_in_seconds"] = lead
+        self.report["offered_started_utc"] = (datetime.now(timezone.utc) + timedelta(seconds=lead)).isoformat()
+
+    def load(self):
+        if self.resource_monitor and not self.resource_monitor.begin_load()["allowed"]:
+            return
+        self.arm_arrivals()
         sampler = threading.Thread(target=self.sampling, name="campaign-observer", daemon=True)
         sampler.start()
         chaos = threading.Thread(target=self.chaos, name="campaign-chaos", daemon=True)
