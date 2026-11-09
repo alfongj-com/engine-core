@@ -364,6 +364,16 @@ pub enum EngineError {
     #[schema(title = "Recovery Publication Pending")]
     #[error("Recovery publication pending: {message}")]
     RecoveryPending { message: String },
+
+    /// The journal has retained the intent, but queue publication is incomplete.
+    /// The same ID may execute through recovery; clients must not create a new ID.
+    #[schema(title = "Durable Admission Pending")]
+    #[error("Durable admission pending for {transaction_id}: {message}")]
+    AdmissionPending {
+        #[serde(rename = "transactionId")]
+        transaction_id: String,
+        message: String,
+    },
 }
 
 #[derive(thiserror::Error, Debug, Serialize, Clone, Deserialize, utoipa::ToSchema)]

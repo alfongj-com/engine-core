@@ -30,28 +30,35 @@ pub(crate) async fn reserve<T: Serialize + DeserializeOwned>(
         .map_err(|_| internal("Recovery admission payload does not match this engine version"))
 }
 
-/// A full Redis queue cannot turn a completed idempotent retry into new work.
-/// This read-only path bypasses intake capacity only for a matching terminal ID.
-pub(crate) async fn terminal_retry<T: Serialize>(
+#[derive(Debug, PartialEq, Eq)]
+pub(crate) enum RetryAdmission {
+    Missing,
+    Active,
+    Terminal,
+}
+
+/// A full Redis queue must distinguish a fresh rejection from an existing
+/// durable intent. Completed retries need no work; active IDs may still execute.
+pub(crate) async fn retry_admission<T: Serialize>(
     kind: &str,
     id: &str,
     payload: &T,
-) -> Result<bool, EngineError> {
+) -> Result<RetryAdmission, EngineError> {
     let Some(journal) = recovery::global() else {
-        return Ok(false);
+        return Ok(RetryAdmission::Missing);
     };
-    terminal_retry_with_journal(&journal, kind, id, payload).await
+    retry_admission_with_journal(&journal, kind, id, payload).await
 }
 
-async fn terminal_retry_with_journal<T: Serialize>(
+async fn retry_admission_with_journal<T: Serialize>(
     journal: &std::sync::Arc<recovery::RecoveryJournal>,
     kind: &str,
     id: &str,
     payload: &T,
-) -> Result<bool, EngineError> {
+) -> Result<RetryAdmission, EngineError> {
     journal.ensure_healthy().await.map_err(recovery_error)?;
     let Some(record) = journal.admission(kind, id).await.map_err(recovery_error)? else {
-        return Ok(false);
+        return Ok(RetryAdmission::Missing);
     };
     let value =
         serde_json::to_value(payload).map_err(|_| internal("Cannot encode recovery retry"))?;
@@ -64,7 +71,38 @@ async fn terminal_retry_with_journal<T: Serialize>(
             "transaction is quarantined",
         )));
     }
-    Ok(record.state == recovery::AdmissionState::Terminal)
+    Ok(if record.state == recovery::AdmissionState::Terminal {
+        RetryAdmission::Terminal
+    } else {
+        RetryAdmission::Active
+    })
+}
+
+pub(crate) fn admission_pending(id: &str) -> EngineError {
+    EngineError::AdmissionPending {
+        transaction_id: id.into(),
+        message: "Intent is durably reserved and may execute through recovery. Queue capacity is unavailable; retry the original request with this transactionId as its idempotency key.".into(),
+    }
+}
+
+/// Called only after reserve returned the original payload. Embedded tests may
+/// omit the journal; their ordinary capacity rejection still has no admission.
+pub(crate) fn eoa_enqueue_error(
+    error: engine_executors::eoa::store::TransactionStoreError,
+    id: &str,
+    durably_reserved: bool,
+) -> EngineError {
+    use engine_executors::eoa::store::TransactionStoreError;
+    match error {
+        TransactionStoreError::CapacityExceeded if durably_reserved => admission_pending(id),
+        TransactionStoreError::CapacityExceeded => EngineError::Overloaded { message: error.to_string() },
+        TransactionStoreError::TransactionConflict { .. } => EngineError::ValidationError {
+            message: "The idempotency key already belongs to a different or incomplete transaction. Use the original request or reconcile its status.".into(),
+        },
+        other => EngineError::from(twmq::error::TwmqError::Runtime {
+            message: format!("Failed to add transaction to EOA store: {other}"),
+        }),
+    }
 }
 
 fn internal(message: &str) -> EngineError {
@@ -228,10 +266,11 @@ mod tests {
             "terminal Redis payload intentionally absent, as after TTL expiry"
         );
         let before = recovery::RecoveryJournal::status(&path).unwrap();
-        assert!(
-            terminal_retry_with_journal(&journal, "eoa", &request.transaction_id, &request)
+        assert_eq!(
+            retry_admission_with_journal(&journal, "eoa", &request.transaction_id, &request)
                 .await
-                .unwrap()
+                .unwrap(),
+            RetryAdmission::Terminal,
         );
         let after = recovery::RecoveryJournal::status(&path).unwrap();
         assert_eq!(before.checkpoint, after.checkpoint);
@@ -247,7 +286,7 @@ mod tests {
         let mut conflicting = request.clone();
         conflicting.value = U256::from(2);
         let error =
-            terminal_retry_with_journal(&journal, "eoa", &request.transaction_id, &conflicting)
+            retry_admission_with_journal(&journal, "eoa", &request.transaction_id, &conflicting)
                 .await
                 .err()
                 .unwrap();
@@ -257,10 +296,11 @@ mod tests {
         );
         let mut fresh = request;
         fresh.transaction_id = "new-intent".into();
-        assert!(
-            !terminal_retry_with_journal(&journal, "eoa", &fresh.transaction_id, &fresh)
+        assert_eq!(
+            retry_admission_with_journal(&journal, "eoa", &fresh.transaction_id, &fresh)
                 .await
-                .unwrap()
+                .unwrap(),
+            RetryAdmission::Missing,
         );
         assert!(
             journal
@@ -285,5 +325,162 @@ mod tests {
                 .unwrap()
                 .as_nanos()
         )
+    }
+
+    #[tokio::test]
+    #[ignore = "requires disposable Redis in TEST_REDIS_URL"]
+    async fn capacity_race_after_durable_reservation_returns_retryable_503_with_original_id() {
+        use alloy::primitives::{Address, Bytes, U256};
+        use engine_core::{
+            chain::RpcCredentials, credentials::SigningCredential,
+            execution_options::SendTransactionRequest,
+        };
+        use engine_executors::eoa::{
+            EoaExecutorStore, EoaTransactionRequest,
+            store::{MAX_PENDING_TRANSACTIONS, TransactionStoreError},
+        };
+        use twmq::redis::AsyncCommands;
+        let token = uuid_for_test();
+        let namespace = format!("admission_race_{token}");
+        let directory = std::env::temp_dir().join(&namespace);
+        let path = directory.join("journal.sqlite");
+        let url = std::env::var("TEST_REDIS_URL").expect("select disposable Redis");
+        recovery::RecoveryJournal::initialize(&path, &url, Some(namespace.clone()))
+            .await
+            .unwrap();
+        let journal = recovery::RecoveryJournal::open(&path, &url, Some(namespace.clone()))
+            .await
+            .unwrap();
+        let client = twmq::redis::Client::open(url).unwrap();
+        let mut redis = client.get_connection_manager().await.unwrap();
+        let sender = Address::repeat_byte(1);
+        // Exercise the real default ID generator: the caller did not supply an
+        // idempotency key, so the error response must return the generated one.
+        let envelope: SendTransactionRequest = serde_json::from_value(serde_json::json!({
+            "executionOptions":{"type":"EOA","chainId":31337,"from":sender},
+            "params":[{"to":Address::repeat_byte(2),"value":"0x1"}]
+        }))
+        .unwrap();
+        let request = EoaTransactionRequest {
+            transaction_id: envelope.execution_options.base.idempotency_key,
+            chain_id: 31337,
+            from: sender,
+            to: Some(Address::repeat_byte(2)),
+            value: U256::from(1),
+            data: Bytes::new(),
+            gas_limit: Some(21000),
+            webhook_options: vec![],
+            signing_credential: SigningCredential::Environment { address: sender },
+            rpc_credentials: RpcCredentials::Configured,
+            transaction_type_data: None,
+        };
+        assert!(!request.transaction_id.is_empty());
+        let store =
+            EoaExecutorStore::new(redis.clone(), Some(namespace.clone()), sender, 31337, 3600);
+        store
+            .check_admission_capacity(&request.transaction_id)
+            .await
+            .unwrap();
+        let payload = serde_json::to_value(&request).unwrap();
+        let fingerprint = recovery::admission_fingerprint("eoa", &payload).unwrap();
+        journal
+            .reserve_admission(
+                "eoa",
+                &request.transaction_id,
+                &fingerprint,
+                payload.clone(),
+            )
+            .await
+            .unwrap();
+        // A competing intake fills capacity after preflight and journal commit.
+        let _: () = twmq::redis::Script::new(
+            "for i=1,tonumber(ARGV[1]) do redis.call('ZADD',KEYS[1],i,'queued-'..i) end return nil",
+        )
+        .key(store.pending_transactions_zset_name())
+        .arg(MAX_PENDING_TRANSACTIONS)
+        .invoke_async(&mut redis)
+        .await
+        .unwrap();
+        let error = store.add_transaction(request.clone()).await.unwrap_err();
+        assert!(matches!(error, TransactionStoreError::CapacityExceeded));
+        let response =
+            ApiEngineError(eoa_enqueue_error(error, &request.transaction_id, true)).into_response();
+        assert_eq!(response.status(), StatusCode::SERVICE_UNAVAILABLE);
+        let bytes = axum::body::to_bytes(response.into_body(), 4096)
+            .await
+            .unwrap();
+        let body: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+        assert_eq!(body["error"]["details"]["type"], "ADMISSION_PENDING");
+        assert_eq!(
+            body["error"]["details"]["transactionId"],
+            request.transaction_id
+        );
+        assert!(
+            body["error"]["message"]
+                .as_str()
+                .unwrap()
+                .contains("retry the original request")
+        );
+        assert_eq!(
+            retry_admission_with_journal(&journal, "eoa", &request.transaction_id, &request)
+                .await
+                .unwrap(),
+            RetryAdmission::Active
+        );
+        assert!(
+            store
+                .get_transaction_data(&request.transaction_id)
+                .await
+                .unwrap()
+                .is_none()
+        );
+        let retained = journal
+            .admission("eoa", &request.transaction_id)
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(retained.state, recovery::AdmissionState::Admitted);
+        assert_eq!(retained.payload, payload);
+        assert!(retained.replay_key.is_none());
+        let status = recovery::RecoveryJournal::status(&path).unwrap();
+        assert_eq!((status.admissions, status.attempts), (1, 0));
+        // A true pre-reservation capacity refusal remains429, and the same
+        // generated ID can finish queue publication when a slot becomes free.
+        assert_eq!(
+            ApiEngineError(eoa_enqueue_error(
+                TransactionStoreError::CapacityExceeded,
+                "fresh",
+                false
+            ))
+            .into_response()
+            .status(),
+            StatusCode::TOO_MANY_REQUESTS
+        );
+        let _: () = redis
+            .zrem(store.pending_transactions_zset_name(), "queued-1")
+            .await
+            .unwrap();
+        let retry = journal
+            .reserve_admission("eoa", &request.transaction_id, &fingerprint, payload)
+            .await
+            .unwrap();
+        let request: EoaTransactionRequest = serde_json::from_value(retry.payload).unwrap();
+        store.add_transaction(request.clone()).await.unwrap();
+        store.add_transaction(request.clone()).await.unwrap();
+        assert_eq!(
+            redis
+                .zcard::<_, u64>(store.pending_transactions_zset_name())
+                .await
+                .unwrap(),
+            MAX_PENDING_TRANSACTIONS
+        );
+        assert_eq!(
+            recovery::RecoveryJournal::status(&path).unwrap().admissions,
+            1
+        );
+        let keys: Vec<String> = redis.keys(format!("{namespace}:*")).await.unwrap();
+        let _: () = redis.del(keys).await.unwrap();
+        drop(journal);
+        std::fs::remove_dir_all(directory).unwrap();
     }
 }

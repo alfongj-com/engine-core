@@ -390,14 +390,20 @@ impl ExecutionRouter {
         {
             match error {
                 engine_executors::eoa::store::TransactionStoreError::CapacityExceeded => {
-                    if crate::recovery::terminal_retry(
+                    match crate::recovery::retry_admission(
                         "eoa",
                         &base_execution_options.idempotency_key,
                         &eoa_transaction_request,
                     )
                     .await?
                     {
-                        return Ok(());
+                        crate::recovery::RetryAdmission::Terminal => return Ok(()),
+                        crate::recovery::RetryAdmission::Active => {
+                            return Err(crate::recovery::admission_pending(
+                                &base_execution_options.idempotency_key,
+                            ));
+                        }
+                        crate::recovery::RetryAdmission::Missing => {}
                     }
                     return Err(EngineError::Overloaded {
                         message: error.to_string(),
@@ -425,14 +431,12 @@ impl ExecutionRouter {
         eoa_executor_store
             .add_transaction(eoa_transaction_request)
             .await
-            .map_err(|e| match e {
-                engine_executors::eoa::store::TransactionStoreError::CapacityExceeded => EngineError::Overloaded { message: e.to_string() },
-                engine_executors::eoa::store::TransactionStoreError::TransactionConflict { .. } => EngineError::ValidationError {
-                    message: "The idempotency key already belongs to a different or incomplete transaction. Use the original request or reconcile its status.".to_string(),
-                },
-                other => EngineError::from(TwmqError::Runtime {
-                    message: format!("Failed to add transaction to EOA store: {other}"),
-                }),
+            .map_err(|e| {
+                crate::recovery::eoa_enqueue_error(
+                    e,
+                    &base_execution_options.idempotency_key,
+                    engine_core::recovery::global().is_some(),
+                )
             })?;
 
         // Register transaction in registry
