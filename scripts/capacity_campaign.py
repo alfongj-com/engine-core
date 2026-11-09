@@ -1102,7 +1102,14 @@ class Campaign:
             self.statuses[txid] = status
 
     def dropped(self, offer, reason):
-        with self.lock: self.stats[offer.chain]["dropped_" + reason] += 1
+        with self.lock:
+            self.stats[offer.chain]["dropped_" + reason] += 1
+            # The offered inventory is bounded before setup. Retain exact
+            # missing IDs so a sweep cannot excuse an unrelated liveness error
+            # merely because its aggregate count happens to match the drops.
+            self.report.setdefault("predispatch_drops", []).append({
+                "id": f"{self.namespace}-{offer.chain}-{offer.index}",
+                "chain": offer.chain, "reason": reason})
 
     def resources(self):
         pids = [process.pid for process in self.children.values() if process.poll() is None] + [os.getpid()]
