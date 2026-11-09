@@ -18,7 +18,7 @@ Neither establishes public RPC capacity, rollup settlement or production readine
 | Installed test tools and checksum manifest | `/Users/alfongj/.local/share/engine-core/tools/` |
 | Private retained incident data; leave untouched | `/Users/alfongj/.local/share/engine-core-custody/` |
 
-The active order is #21 → #18 → #19. PRs #5–#17 were merged into stack parents; #21 carries those changes into main. PR #4 is the cleanup baseline. PRs #5–#9 add EOA creation/gas fixes, durable cancellation, bounded API work, dependency patches and native environment-key signing. The latest branch also reclaims dead Solana processing locks using the queue lease, with stale-worker fencing. See the [November review](https://github.com/alfongj-com/engine-core/blob/load-tests/docs/baselines/code-review-2026-11-08/README.md) for results tied to each source and binary. The [October public-chain campaign](https://github.com/alfongj-com/engine-core/blob/load-tests/docs/baselines/testnet-cleanup-2026-10-13/README.md) is historical evidence. Read [WORK_IN_PROGRESS.md](WORK_IN_PROGRESS.md) for current scope and limits.
+The active order is #21 → #18 → #19. PRs #5–#17 were merged into stack parents; #21 carries those changes into main. The review includes EOA construction, cancellation and admission fixes, bounded API work, dependency migration, native signing, Solana crash fencing, queue reconstruction, journal compaction and KMS protocol checks. Read [WORK_IN_PROGRESS.md](WORK_IN_PROGRESS.md) for scope and [the latest evidence](https://github.com/alfongj-com/engine-core/blob/load-tests/docs/baselines/pending-work-2026-11-08/README.md) for results tied to each source and binary.
 
 The tools formerly under `/tmp/engine-*` were removed by temporary-file cleanup.
 Use the persistent paths below. The old release binary is preserved as
@@ -98,7 +98,7 @@ node --test scripts/rpc/budget-gateway.test.mjs scripts/rpc/load-probe.test.mjs
   capacity_pool_test capacity_assess_test capacity_fence_test \
   capacity_resource_guard_test capacity_resource_phase_test \
   capacity_resource_projection_test capacity_anvil_custody_test \
-  capacity_infrastructure_test capacity_journal_reader_test capacity_metrics_test test_local_eoa_reorg test_local_eoa_recovery -v
+  capacity_infrastructure_test capacity_journal_reader_test capacity_metrics_test capacity_sweep_test test_local_eoa_reorg test_local_eoa_recovery -v
 ```
 
 The final command exercises the capacity and fault oracles; require zero skipped tests
@@ -227,7 +227,7 @@ Keep the gateway's shared spending ledger and unresolved-run locks intact.
 The harness checkout may change independently of the tested executable. Pin the
 binary explicitly; its hash is checked before every launch. The source argument
 records the declared binary commit separately from the harness commit/hash.
-These saved binaries correspond to the current comparison:
+These saved binaries identify the historical October comparison; rebuild and freeze the exact current checkout for a new qualification run:
 
 | Binary under `/Users/alfongj/.local/share/engine-core/runs/testnet-cleanup-2026-10-13/` | Declared source |
 | --- | --- |
@@ -276,8 +276,8 @@ restarts Redis and requires exact-checkpoint reattachment.
 
 Each run keeps its original IDs, signed wires, journal, Redis AOF and private
 report. Do not remove a lock, replace a journal, invent new request IDs, or start
-a new funded run to work around an uncertain outcome. EVM has no automatic
-resume mode: inspect and reconcile its original retained state first.
+a new funded run to work around an uncertain outcome. EVM has a separate read-only reconciliation command; use section 8 for its
+provenance and retained-state requirements. It does not broadcast new work.
 
 Solana can resume **only the same incomplete run**, with its matching binary,
 retained journal and AOF. Do not pass `--run-dir` or create new payloads:
@@ -318,7 +318,8 @@ before reusing them. Build each checkout's own target/debug/thirdweb-engine.
 
 Run the fast harness checks, compile, Rust/Redis regressions and local EVM/Solana
 process scenarios in LOCAL_TESTING.md. Use fresh disposable Redis and chain state,
-loopback endpoints and generated test keys. No paid/public RPCs, existing wallet
+loopback endpoints and generated test keys. Do not run heavy builds or unrelated tests during a matched capacity measurement.
+No paid/public RPCs, existing wallet
 keys, faucets, old incident journals or the retained Nitro VM. Preserve failed
 reports and runtime data. Do not clear safety fences or suppress failed tests.
 
@@ -384,3 +385,20 @@ independent oracle proves safety, every admitted request settled, all queues and
 pools drained, and the only missing offers were dropped before any HTTP request.
 Unknown admissions, outstanding work, failed observations and infrastructure
 fences stop the search for review.
+
+### Reconcile an interrupted EVM public run
+
+Use `scripts/testnet_evm_reconcile.py --run-id ORIGINAL_ID --max-rpc-calls 600
+--report NEW_PRIVATE_REPORT`. It requires the original manifest, failed report,
+Redis AOF, journal and pinned binary. It verifies original harness provenance,
+waits for finalized chain evidence, preserves a cold journal/AOF snapshot, and
+reattaches the original namespace. Every broadcast is refused. Only original
+same-ID requests are replayed; receipt identity, finality, fees and balances are
+checked before releasing the chain lock. Legacy/incomplete provenance requires
+its recorded checkout. A failed attempt retains the lock and original evidence.
+
+Reconciliation derives each transaction hash locally from its retained signed
+bytes using offline Foundry `cast keccak` (`CAST_BIN` or `--cast-bin`). A successful
+RPC reply is corroboration: missing replies permit read-only lookup; contradictory
+hash replies reject reconciliation. The original optional source-commit label
+may be null; matching binary and committed original harness hashes remain required.

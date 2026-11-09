@@ -189,7 +189,7 @@
     },
     {
       "path": "executors/src/eoa/worker/error.rs",
-      "sha256": "065858f440b602838b5d4fab295ded4f70a3e46f945f0aa0d17f28e6d4a4d72d",
+      "sha256": "3362655527c3ac674537e656ff28d8d12ba40c90d129fc32569ec61fa102dc15",
       "models": [
         "EoaRecovery"
       ]
@@ -252,7 +252,7 @@
     },
     {
       "path": "executors/src/eoa/worker/send.rs",
-      "sha256": "6dfb02a82622eeca5e5561b003b1feace9f529616be5add76a24516b5c205852",
+      "sha256": "27e6e23c0e651940311f24decf68529af6622cf87c8acd6049a5eaa5cc4b5f8c",
       "models": [
         "DisasterRecovery",
         "EoaRecovery",
@@ -261,7 +261,7 @@
     },
     {
       "path": "executors/src/eoa/worker/send_dispatch_tests.rs",
-      "sha256": "8284268ef71bdb0119fadc9bf57280fcf13aea4ef11d58d4f5d3dc8fe1c02670",
+      "sha256": "fae28d5de96148a315357c6ca610b0e7c9efbe9243d52e4ce54f82fce7f703b2",
       "models": [
         "EoaRecovery",
         "DisasterRecovery"
@@ -1183,6 +1183,10 @@
     "canonical_nonce_progress": {
       "decision": "Use canonical latest nonce for stall detection and gas-bump race checks; retain finality polling and exact-wire ownership.",
       "reason": "EoaRecovery already models canonical latest separately from receipts. This change restricts bump scheduling to actual current-nonce submitted members, leaves fee/replay authority unchanged, and prevents a preconfirmation hint from refreshing the canonical progress clock. Included-but-unfinalized attempts and idle wallets do not produce stuck alerts. Indexed Redis counts run only after a stall threshold; finality and continuity polling continue independently. Executable Redis/RPC regressions cover idle, included/unfinalized, preconfirmation ahead, a future nonce gap, canonical progress, capped fees, missing requests and failed simulation; they assert retained members, no fallback sends, expected simulation calls and exported stuck metrics. This is scheduler/monitoring coverage, not a proof of chain inclusion liveness or wall-clock timing."
+    },
+    "transient_preparation_http": {
+      "decision": "Retry unsigned HTTP408/429; yield a preparation cycle on transient failure after preserving/sending a valid prefix.",
+      "reason": "Preparation never grants a send. These HTTP statuses retain the original pending intent without a nonce/wire reservation, unlike permanent client/authentication errors. New and recycled-nonce batches may each consume one existing bounded preparation retry budget; it cannot repeat it across ten refill passes. Deterministic rejection refill, ordered prefix publication, borrowed-state owner/journal gates and post-dispatch uncertainty rules remain unchanged. EoaRecovery/Admission already permit pending retry/stutter and require durable ownership before broadcasting; numeric HTTP classification, runtime timing, retry budgets and partial-batch scheduling are implementation obligations. Real HTTP/Redis tests cover eight statuses with supplied/estimated gas, no premature failure webhook, original-nonce recovery, a throttled suffix after a valid prefix, and recycled-nonce retention without NOOP substitution. This is not a model of provider quotas or a proof that RPC service eventually recovers."
     }
   },
   "review_notes": {
