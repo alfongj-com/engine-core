@@ -20,6 +20,21 @@ Runtime source `4d05bbf`; frozen local executable SHA-256
 Exact-head CI summaries are saved separately as `ci-pr*.json`. Later review fixes
 require their own CI and measurements; the table above remains pinned to #17.
 
+## Verified review heads, November 9
+
+| PR | Source | CI evidence |
+| --- | --- | --- |
+| #21 | `0783256` | [Full checks](ci-pr21-07832567ac90.json) |
+| #18 | `164b4c5` | [Full checks](ci-pr18-164b4c553156.json) |
+| #19 | `7fd8fa7` | [Full checks](ci-pr19-7fd8fa785b43.json) |
+
+All three pass Rust, Redis/API and process scenarios, dependency audit, 122 finite
+model cases, 110 source guards and five fee proofs with two required mutation
+counterexamples. Artifact digests and model/source hashes are independently
+checked. New regressions cover mixed failure refusal, terminal scheduling cleanup,
+identical-wire recovery, typed KMS rejection/outage handling and retained-error
+serialization. These checks do not qualify throughput or prove the whole service.
+
 ## Public testnets
 
 [Both campaigns and reconciliation](public-testnets.json) cover Sepolia, Arbitrum
@@ -79,6 +94,11 @@ This is an Engine scheduling/serialization limit in that trial; allowing a
 longer drain would not make 100 TPS sustainable. The original failed fixture is
 retained privately in its verified archive.
 
+The earlier workflow archived fixtures only when the entire job failed. A closed
+failed screen followed by successful fallback could therefore retain its report
+without its raw fixture. The #18 correction archives those fixtures even when
+the job succeeds; it cannot recreate fixtures discarded by older runners.
+
 The 250ms EVM profile is Ethereum-mode Anvil, not Nitro. Small public Arbitrum
 checks do not establish Arbitrum throughput. Earlier Nitro results remain
 historical and its retained VM is untouched.
@@ -96,6 +116,12 @@ not all reached `main`; #21 brings that reviewed code and post-merge corrections
 onto `main`. Open-PR fixes live in their own PR, followed by rebasing dependents.
 Temporary #20/#22 are closed. Read the code branch's `WORK_IN_PROGRESS.md` and
 `LOCAL_TESTING.md` for setup and current scope.
+
+The [current campaign](https://github.com/alfongj-com/engine-core/actions/runs/42573447135)
+uses source `7fd8fa7`, a 50-TPS ceiling and 600-second/480-second trial/window
+settings. Three individual confirmations are required before shared-chain and
+chaos qualification. It is still running. Partial campaign exports contain only
+completed jobs; their workflow status remains explicit.
 
 One independent journal and one Engine process on one Unix host remain required.
 Intent/replay history is permanent; offline compaction reclaims unused pages.

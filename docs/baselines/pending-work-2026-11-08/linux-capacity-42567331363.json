@@ -1,0 +1,1123 @@
+{
+  "run_id": 42567331363,
+  "head_sha": "462baff387d1beafddd682e5f734e2ec9d7b5a7c",
+  "status": "in_progress",
+  "conclusion": "",
+  "url": "https://github.com/alfongj-com/engine-core/actions/runs/42567331363",
+  "artifacts": [
+    {
+      "name": "capacity-individual-solana",
+      "id": 13653820682,
+      "digest": "sha256:d894608870d735cb3e4d4737976ffd72d10a2f1c000d6754b98869f1d3085aec",
+      "size_in_bytes": 1604669415
+    },
+    {
+      "name": "capacity-engine",
+      "id": 13652385377,
+      "digest": "sha256:8c085bc9163541eac955690d4aa7a83b6b3636bacd497ccc4cee11c98da0e8cc",
+      "size_in_bytes": 19709281,
+      "binary_sha256": "f7b36e41606441b96697a0e6be3dac2ecc037ad55407dd51782c690f3e6ef146",
+      "binary_source_commit": "462baff387d1beafddd682e5f734e2ec9d7b5a7c"
+    }
+  ],
+  "retained_failed_archives": 4,
+  "individuals": [
+    {
+      "summary": {
+        "scope": "local-node host/workload measurements; no public-chain or power-loss qualification",
+        "engine_binary_sha256": "f7b36e41606441b96697a0e6be3dac2ecc037ad55407dd51782c690f3e6ef146",
+        "source_commit": "462baff387d1beafddd682e5f734e2ec9d7b5a7c",
+        "platform": "Linux-7.0.0-1019-azure-x86_64-with-glibc2.43",
+        "logical_cpus": 4,
+        "seconds_per_trial": 600,
+        "late_window_seconds": 480,
+        "warmup_seconds": 60,
+        "redis_fsync": "always",
+        "configured_search_ceiling_tps": 100,
+        "search_scope": "Highest qualifying tested candidate within the configured ceiling; not an absolute maximum",
+        "profile": "solana",
+        "qualified_tps": null,
+        "confirmation_reports": [],
+        "stopped": "RuntimeError"
+      },
+      "raw_summary_sha256": "49e07638c15b605763aa06aa85926a063bf87ef1075c1e2f60ef02d8ccf050f4",
+      "trials": [
+        {
+          "report_name": "00-none.json",
+          "rates": {
+            "solana": 25
+          },
+          "chaos": "none",
+          "exit": 0,
+          "seconds": 659.021,
+          "outcome": "pass",
+          "duration_seconds": 600.0,
+          "source_commit": "462baff387d1beafddd682e5f734e2ec9d7b5a7c",
+          "engine_binary_sha256": "f7b36e41606441b96697a0e6be3dac2ecc037ad55407dd51782c690f3e6ef146",
+          "all_chain_capacity_candidate": true,
+          "requested_fault_validated": true,
+          "journal_halted": false,
+          "owned_children_stopped": true,
+          "operator_recovery_required": false,
+          "minimum_late_window_seconds": 480.0,
+          "arrival_lead_in_seconds": 1,
+          "raw_report_sha256": "1d2733df5dafbff7fab2c08b3cb5f78a99b4b173026a054d4e098139d3823f20",
+          "oracle": {
+            "safety_pass": true,
+            "liveness_pass": true,
+            "outcome": "pass",
+            "offered_intents": 15000,
+            "observed_intents": 15000,
+            "eligible_for_rate_assessment": true
+          },
+          "failure_counts": {
+            "safety_failures": 0,
+            "liveness_failures": 0
+          },
+          "reported_error_count": 0,
+          "drain": {
+            "client_pending": 0,
+            "http_inflight": 0,
+            "journal_unresolved": 0,
+            "node_pending": 0,
+            "redis_active": 0,
+            "redis_borrowed": 0,
+            "redis_delayed": 0,
+            "redis_pending": 0,
+            "redis_submitted": 0
+          },
+          "per_chain": {
+            "solana": {
+              "offered": 15000,
+              "offered_tps": 25.0,
+              "responses": {
+                "202": 15000
+              },
+              "client": {
+                "dispatched": 15000
+              },
+              "late_window": {
+                "admission_p99_limit_ms": 1000,
+                "capacity_candidate": true,
+                "disqualifiers": [],
+                "from_seconds": 120.0,
+                "rates_tps": {
+                  "admitted": 25.0,
+                  "attempted": 25.0,
+                  "included": 24.954,
+                  "terminal": 24.998
+                },
+                "relative_tolerance": 0.05,
+                "requires_repeated_confirmation": true,
+                "terminal_backlog_end": 374,
+                "terminal_backlog_growth_per_second": 0.002,
+                "terminal_backlog_start": 373,
+                "to_seconds": 600.0,
+                "unsigned_backlog_end": 0,
+                "unsigned_backlog_linear_trend_per_second": 0.001,
+                "unsigned_backlog_start": 0,
+                "unsigned_growth_detected": false,
+                "unsigned_monotonic_growth": false,
+                "unsigned_trend_threshold_per_second": 0.1,
+                "window_seconds": 480.0
+              },
+              "http_service_latency_ms": {
+                "count": 15000,
+                "max": 540.109,
+                "p50": 123.003,
+                "p95": 213.104,
+                "p99": 247.48
+              },
+              "scheduled_to_response_latency_ms": {
+                "count": 15000,
+                "max": 541.405,
+                "p50": 123.431,
+                "p95": 213.625,
+                "p99": 247.876
+              },
+              "durable_latency_upper_bounds_ms": {
+                "attempt_observed_upper_ms": {
+                  "count": 15000,
+                  "max": 5364.607,
+                  "p50": 2522.653,
+                  "p95": 4800.989,
+                  "p99": 5000.961
+                },
+                "terminal_observed_upper_ms": {
+                  "count": 15000,
+                  "max": 20043.014,
+                  "p50": 17163.246,
+                  "p95": 19523.152,
+                  "p99": 19882.476
+                }
+              }
+            }
+          },
+          "durability": {
+            "redis_appendfsync": "always",
+            "sqlite": "WAL synchronous=FULL/fullfsync=ON"
+          },
+          "harness_sha256": {
+            "capacity_campaign.py": "0648642ebd215da4383c496c0141815039f25fb423eb1657c45a9be34db72e1f",
+            "capacity_faults.py": "59e2bc4d90bceca2682c27e35c5871ee538d4878a795f990fa90e6d5f90afa13",
+            "capacity_resource_guard.py": "bbfda4901f49600cdff9fa907b73e2a64e8df534496083994fd4717c55979bb6"
+          },
+          "timing_source_sha256": "3c7321093f3f69721624a028991e1c27a2cf83b28c4b2ecfd5dedc693615f6c2",
+          "storage_wait_observations": {
+            "scope": "Cumulative journal histogram sum/count differences across each phase. Mean timings, not percentiles; overlapping phases are not additive. Changed-process/reset metrics omitted. Raw time series remains private.",
+            "intervals": [
+              {
+                "phase": "setup",
+                "successful_scrapes": 1,
+                "from_seconds": 27.76951661199999,
+                "to_seconds": 27.76951661199999,
+                "same_engine_process": true,
+                "metrics": []
+              },
+              {
+                "phase": "load",
+                "successful_scrapes": 120,
+                "from_seconds": 5.016001557999999,
+                "to_seconds": 600.020639522,
+                "same_engine_process": true,
+                "metrics": [
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"admission\",\"phase\":\"lane_wait\"}",
+                    "observations": 14874.0,
+                    "total_seconds": 1327.542464,
+                    "mean_ms": 89.252552
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"admission\",\"phase\":\"serial_hold\"}",
+                    "observations": 14874.0,
+                    "total_seconds": 63.630419,
+                    "mean_ms": 4.277963
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"admission\",\"phase\":\"serial_wait\"}",
+                    "observations": 14874.0,
+                    "total_seconds": 0.419849,
+                    "mean_ms": 0.028227
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"broadcast\",\"phase\":\"lane_wait\"}",
+                    "observations": 29750.0,
+                    "total_seconds": 526.798621,
+                    "mean_ms": 17.707517
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"broadcast\",\"phase\":\"serial_hold\"}",
+                    "observations": 29750.0,
+                    "total_seconds": 54.942297,
+                    "mean_ms": 1.8468
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"broadcast\",\"phase\":\"serial_wait\"}",
+                    "observations": 29750.0,
+                    "total_seconds": 0.967708,
+                    "mean_ms": 0.032528
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"checkpoint\",\"phase\":\"redis_mirror\"}",
+                    "observations": 44375.0,
+                    "total_seconds": 28.236749,
+                    "mean_ms": 0.636321
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"checkpoint\",\"phase\":\"sql_ack\"}",
+                    "observations": 44375.0,
+                    "total_seconds": 16.827711,
+                    "mean_ms": 0.379216
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"continuity\",\"phase\":\"redis_observation\"}",
+                    "observations": 469315.0,
+                    "total_seconds": 287.764444,
+                    "mean_ms": 0.613158
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"database\",\"phase\":\"blocking_queue\"}",
+                    "observations": 977382.0,
+                    "total_seconds": 83.145424,
+                    "mean_ms": 0.08507
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"database\",\"phase\":\"db_execution\"}",
+                    "observations": 977382.0,
+                    "total_seconds": 94.001177,
+                    "mean_ms": 0.096176
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"database\",\"phase\":\"db_mutex_wait\"}",
+                    "observations": 977382.0,
+                    "total_seconds": 16.232933,
+                    "mean_ms": 0.016609
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"database\",\"phase\":\"sql_commit\"}",
+                    "observations": 88750.0,
+                    "total_seconds": 32.491454,
+                    "mean_ms": 0.366101
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"health\",\"phase\":\"health_capacity_wait\"}",
+                    "observations": 276940.0,
+                    "total_seconds": 0.054086,
+                    "mean_ms": 0.000195
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"health\",\"phase\":\"lane_wait\"}",
+                    "observations": 276940.0,
+                    "total_seconds": 29016.599056,
+                    "mean_ms": 104.77576
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"health\",\"phase\":\"serial_hold\"}",
+                    "observations": 276940.0,
+                    "total_seconds": 283.276924,
+                    "mean_ms": 1.022882
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"health\",\"phase\":\"serial_wait\"}",
+                    "observations": 276940.0,
+                    "total_seconds": 28.888876,
+                    "mean_ms": 0.104315
+                  }
+                ]
+              },
+              {
+                "phase": "drain",
+                "successful_scrapes": 8,
+                "from_seconds": 600.0479942029999,
+                "to_seconds": 615.2071223989999,
+                "same_engine_process": true,
+                "metrics": [
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"checkpoint\",\"phase\":\"redis_mirror\"}",
+                    "observations": 374.0,
+                    "total_seconds": 0.252656,
+                    "mean_ms": 0.675552
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"checkpoint\",\"phase\":\"sql_ack\"}",
+                    "observations": 374.0,
+                    "total_seconds": 0.124539,
+                    "mean_ms": 0.332992
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"continuity\",\"phase\":\"redis_observation\"}",
+                    "observations": 4315.0,
+                    "total_seconds": 2.912146,
+                    "mean_ms": 0.674889
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"database\",\"phase\":\"blocking_queue\"}",
+                    "observations": 9923.0,
+                    "total_seconds": 0.907107,
+                    "mean_ms": 0.091415
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"database\",\"phase\":\"db_execution\"}",
+                    "observations": 9923.0,
+                    "total_seconds": 0.828752,
+                    "mean_ms": 0.083518
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"database\",\"phase\":\"db_mutex_wait\"}",
+                    "observations": 9923.0,
+                    "total_seconds": 0.150281,
+                    "mean_ms": 0.015145
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"database\",\"phase\":\"sql_commit\"}",
+                    "observations": 748.0,
+                    "total_seconds": 0.23916,
+                    "mean_ms": 0.319733
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"health\",\"phase\":\"health_capacity_wait\"}",
+                    "observations": 2819.0,
+                    "total_seconds": 0.000501,
+                    "mean_ms": 0.000178
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"health\",\"phase\":\"lane_wait\"}",
+                    "observations": 2819.0,
+                    "total_seconds": 275.002582,
+                    "mean_ms": 97.553239
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"health\",\"phase\":\"serial_hold\"}",
+                    "observations": 2819.0,
+                    "total_seconds": 3.105639,
+                    "mean_ms": 1.101681
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"health\",\"phase\":\"serial_wait\"}",
+                    "observations": 2819.0,
+                    "total_seconds": 0.000386,
+                    "mean_ms": 0.000137
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"terminal\",\"phase\":\"lane_wait\"}",
+                    "observations": 374.0,
+                    "total_seconds": 49.891661,
+                    "mean_ms": 133.400163
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"terminal\",\"phase\":\"serial_hold\"}",
+                    "observations": 374.0,
+                    "total_seconds": 1.277644,
+                    "mean_ms": 3.416161
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"terminal\",\"phase\":\"serial_wait\"}",
+                    "observations": 374.0,
+                    "total_seconds": 5.7e-05,
+                    "mean_ms": 0.000153
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "report_name": "01-none.json",
+          "rates": {
+            "solana": 50
+          },
+          "chaos": "none",
+          "exit": 0,
+          "seconds": 677.793,
+          "outcome": "pass",
+          "duration_seconds": 600.0,
+          "source_commit": "462baff387d1beafddd682e5f734e2ec9d7b5a7c",
+          "engine_binary_sha256": "f7b36e41606441b96697a0e6be3dac2ecc037ad55407dd51782c690f3e6ef146",
+          "all_chain_capacity_candidate": true,
+          "requested_fault_validated": true,
+          "journal_halted": false,
+          "owned_children_stopped": true,
+          "operator_recovery_required": false,
+          "minimum_late_window_seconds": 480.0,
+          "arrival_lead_in_seconds": 1,
+          "raw_report_sha256": "fd279aa16ec093447a22f8da3f4a60a926799dce738d874cdb7a1536a827feb6",
+          "oracle": {
+            "safety_pass": true,
+            "liveness_pass": true,
+            "outcome": "pass",
+            "offered_intents": 30000,
+            "observed_intents": 30000,
+            "eligible_for_rate_assessment": true
+          },
+          "failure_counts": {
+            "safety_failures": 0,
+            "liveness_failures": 0
+          },
+          "reported_error_count": 0,
+          "drain": {
+            "client_pending": 0,
+            "http_inflight": 0,
+            "journal_unresolved": 0,
+            "node_pending": 0,
+            "redis_active": 0,
+            "redis_borrowed": 0,
+            "redis_delayed": 0,
+            "redis_pending": 0,
+            "redis_submitted": 0
+          },
+          "per_chain": {
+            "solana": {
+              "offered": 30000,
+              "offered_tps": 50.0,
+              "responses": {
+                "202": 30000
+              },
+              "client": {
+                "dispatched": 30000
+              },
+              "late_window": {
+                "admission_p99_limit_ms": 1000,
+                "capacity_candidate": true,
+                "disqualifiers": [],
+                "from_seconds": 120.0,
+                "rates_tps": {
+                  "admitted": 49.998,
+                  "attempted": 49.96,
+                  "included": 50.01,
+                  "terminal": 50.01
+                },
+                "relative_tolerance": 0.05,
+                "requires_repeated_confirmation": true,
+                "terminal_backlog_end": 902,
+                "terminal_backlog_growth_per_second": -0.013,
+                "terminal_backlog_start": 908,
+                "to_seconds": 600.0,
+                "unsigned_backlog_end": 126,
+                "unsigned_backlog_linear_trend_per_second": 0.019,
+                "unsigned_backlog_start": 108,
+                "unsigned_growth_detected": false,
+                "unsigned_monotonic_growth": false,
+                "unsigned_trend_threshold_per_second": 0.1,
+                "window_seconds": 480.0
+              },
+              "http_service_latency_ms": {
+                "count": 30000,
+                "max": 734.505,
+                "p50": 182.994,
+                "p95": 294.361,
+                "p99": 332.217
+              },
+              "scheduled_to_response_latency_ms": {
+                "count": 30000,
+                "max": 734.905,
+                "p50": 183.513,
+                "p95": 294.768,
+                "p99": 332.672
+              },
+              "durable_latency_upper_bounds_ms": {
+                "attempt_observed_upper_ms": {
+                  "count": 30000,
+                  "max": 8504.76,
+                  "p50": 5384.29,
+                  "p95": 7861.956,
+                  "p99": 8241.681
+                },
+                "terminal_observed_upper_ms": {
+                  "count": 30000,
+                  "max": 25563.996,
+                  "p50": 20746.484,
+                  "p95": 23508.754,
+                  "p99": 24268.798
+                }
+              }
+            }
+          },
+          "durability": {
+            "redis_appendfsync": "always",
+            "sqlite": "WAL synchronous=FULL/fullfsync=ON"
+          },
+          "harness_sha256": {
+            "capacity_campaign.py": "0648642ebd215da4383c496c0141815039f25fb423eb1657c45a9be34db72e1f",
+            "capacity_faults.py": "59e2bc4d90bceca2682c27e35c5871ee538d4878a795f990fa90e6d5f90afa13",
+            "capacity_resource_guard.py": "bbfda4901f49600cdff9fa907b73e2a64e8df534496083994fd4717c55979bb6"
+          },
+          "timing_source_sha256": "3c7321093f3f69721624a028991e1c27a2cf83b28c4b2ecfd5dedc693615f6c2",
+          "storage_wait_observations": {
+            "scope": "Cumulative journal histogram sum/count differences across each phase. Mean timings, not percentiles; overlapping phases are not additive. Changed-process/reset metrics omitted. Raw time series remains private.",
+            "intervals": [
+              {
+                "phase": "setup",
+                "successful_scrapes": 1,
+                "from_seconds": 27.993543104000082,
+                "to_seconds": 27.993543104000082,
+                "same_engine_process": true,
+                "metrics": []
+              },
+              {
+                "phase": "load",
+                "successful_scrapes": 120,
+                "from_seconds": 5.022619133000035,
+                "to_seconds": 600.0390012050001,
+                "same_engine_process": true,
+                "metrics": [
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"admission\",\"phase\":\"lane_wait\"}",
+                    "observations": 29744.0,
+                    "total_seconds": 5392.555588,
+                    "mean_ms": 181.298937
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"admission\",\"phase\":\"serial_hold\"}",
+                    "observations": 29744.0,
+                    "total_seconds": 125.510064,
+                    "mean_ms": 4.219677
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"admission\",\"phase\":\"serial_wait\"}",
+                    "observations": 29744.0,
+                    "total_seconds": 1.7899,
+                    "mean_ms": 0.060177
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"broadcast\",\"phase\":\"lane_wait\"}",
+                    "observations": 59232.0,
+                    "total_seconds": 11293.173677,
+                    "mean_ms": 190.660009
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"broadcast\",\"phase\":\"serial_hold\"}",
+                    "observations": 59231.0,
+                    "total_seconds": 129.652954,
+                    "mean_ms": 2.188937
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"broadcast\",\"phase\":\"serial_wait\"}",
+                    "observations": 59232.0,
+                    "total_seconds": 7.322166,
+                    "mean_ms": 0.123618
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"checkpoint\",\"phase\":\"redis_mirror\"}",
+                    "observations": 88467.0,
+                    "total_seconds": 54.571986,
+                    "mean_ms": 0.616863
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"checkpoint\",\"phase\":\"sql_ack\"}",
+                    "observations": 88467.0,
+                    "total_seconds": 33.008843,
+                    "mean_ms": 0.37312
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"continuity\",\"phase\":\"redis_observation\"}",
+                    "observations": 647147.0,
+                    "total_seconds": 316.543512,
+                    "mean_ms": 0.489137
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"database\",\"phase\":\"blocking_queue\"}",
+                    "observations": 1084188.0,
+                    "total_seconds": 75.431617,
+                    "mean_ms": 0.069574
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"database\",\"phase\":\"db_execution\"}",
+                    "observations": 1084188.0,
+                    "total_seconds": 137.600863,
+                    "mean_ms": 0.126916
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"database\",\"phase\":\"db_mutex_wait\"}",
+                    "observations": 1084188.0,
+                    "total_seconds": 21.366756,
+                    "mean_ms": 0.019708
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"database\",\"phase\":\"sql_commit\"}",
+                    "observations": 176934.0,
+                    "total_seconds": 62.98824,
+                    "mean_ms": 0.355999
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"health\",\"phase\":\"health_capacity_wait\"}",
+                    "observations": 263683.0,
+                    "total_seconds": 0.057221,
+                    "mean_ms": 0.000217
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"health\",\"phase\":\"lane_wait\"}",
+                    "observations": 263683.0,
+                    "total_seconds": 39398.156334,
+                    "mean_ms": 149.414852
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"health\",\"phase\":\"serial_hold\"}",
+                    "observations": 263684.0,
+                    "total_seconds": 218.856243,
+                    "mean_ms": 0.829994
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"health\",\"phase\":\"serial_wait\"}",
+                    "observations": 263683.0,
+                    "total_seconds": 61.466998,
+                    "mean_ms": 0.233109
+                  }
+                ]
+              },
+              {
+                "phase": "client_drain",
+                "successful_scrapes": 1,
+                "from_seconds": 600.084705786,
+                "to_seconds": 600.084705786,
+                "same_engine_process": true,
+                "metrics": []
+              },
+              {
+                "phase": "drain",
+                "successful_scrapes": 9,
+                "from_seconds": 600.2178588959999,
+                "to_seconds": 620.3816207000001,
+                "same_engine_process": true,
+                "metrics": [
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"broadcast\",\"phase\":\"lane_wait\"}",
+                    "observations": 281.0,
+                    "total_seconds": 50.929857,
+                    "mean_ms": 181.245044
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"broadcast\",\"phase\":\"serial_hold\"}",
+                    "observations": 281.0,
+                    "total_seconds": 0.639086,
+                    "mean_ms": 2.274326
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"broadcast\",\"phase\":\"serial_wait\"}",
+                    "observations": 281.0,
+                    "total_seconds": 4.6e-05,
+                    "mean_ms": 0.000165
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"checkpoint\",\"phase\":\"redis_mirror\"}",
+                    "observations": 1029.0,
+                    "total_seconds": 0.718983,
+                    "mean_ms": 0.69872
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"checkpoint\",\"phase\":\"sql_ack\"}",
+                    "observations": 1029.0,
+                    "total_seconds": 0.367266,
+                    "mean_ms": 0.356915
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"continuity\",\"phase\":\"redis_observation\"}",
+                    "observations": 10977.0,
+                    "total_seconds": 7.919249,
+                    "mean_ms": 0.72144
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"database\",\"phase\":\"blocking_queue\"}",
+                    "observations": 24264.0,
+                    "total_seconds": 1.997627,
+                    "mean_ms": 0.082329
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"database\",\"phase\":\"db_execution\"}",
+                    "observations": 24264.0,
+                    "total_seconds": 2.1998,
+                    "mean_ms": 0.090661
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"database\",\"phase\":\"db_mutex_wait\"}",
+                    "observations": 24264.0,
+                    "total_seconds": 0.355271,
+                    "mean_ms": 0.014642
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"database\",\"phase\":\"sql_commit\"}",
+                    "observations": 2058.0,
+                    "total_seconds": 0.69261,
+                    "mean_ms": 0.336545
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"health\",\"phase\":\"health_capacity_wait\"}",
+                    "observations": 6695.0,
+                    "total_seconds": 0.001315,
+                    "mean_ms": 0.000196
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"health\",\"phase\":\"lane_wait\"}",
+                    "observations": 6695.0,
+                    "total_seconds": 823.005211,
+                    "mean_ms": 122.928336
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"health\",\"phase\":\"serial_hold\"}",
+                    "observations": 6696.0,
+                    "total_seconds": 7.854584,
+                    "mean_ms": 1.173026
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"health\",\"phase\":\"serial_wait\"}",
+                    "observations": 6695.0,
+                    "total_seconds": 0.020553,
+                    "mean_ms": 0.00307
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"terminal\",\"phase\":\"lane_wait\"}",
+                    "observations": 913.0,
+                    "total_seconds": 157.10538,
+                    "mean_ms": 172.075992
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"terminal\",\"phase\":\"serial_hold\"}",
+                    "observations": 913.0,
+                    "total_seconds": 3.338211,
+                    "mean_ms": 3.65631
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"terminal\",\"phase\":\"serial_wait\"}",
+                    "observations": 913.0,
+                    "total_seconds": 0.000625,
+                    "mean_ms": 0.000684
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "report_name": "02-none.json",
+          "rates": {
+            "solana": 100
+          },
+          "chaos": "none",
+          "exit": 1,
+          "seconds": 926.711,
+          "outcome": "incomplete",
+          "duration_seconds": 600.0,
+          "source_commit": "462baff387d1beafddd682e5f734e2ec9d7b5a7c",
+          "engine_binary_sha256": "f7b36e41606441b96697a0e6be3dac2ecc037ad55407dd51782c690f3e6ef146",
+          "all_chain_capacity_candidate": false,
+          "requested_fault_validated": true,
+          "journal_halted": false,
+          "owned_children_stopped": true,
+          "operator_recovery_required": false,
+          "minimum_late_window_seconds": 480.0,
+          "arrival_lead_in_seconds": 1,
+          "raw_report_sha256": "11956ee4bd90e13cf296ce80c0914771adddb1d75ab178e8d569f0a20d0dcdf2",
+          "oracle": {
+            "safety_pass": true,
+            "liveness_pass": false,
+            "outcome": "incomplete",
+            "offered_intents": 60000,
+            "observed_intents": 59983,
+            "eligible_for_rate_assessment": false
+          },
+          "failure_counts": {
+            "safety_failures": 0,
+            "liveness_failures": 12711
+          },
+          "reported_error_count": 0,
+          "drain": {
+            "client_pending": 0,
+            "http_inflight": 0,
+            "journal_unresolved": 12692,
+            "node_pending": 0,
+            "redis_active": 0,
+            "redis_borrowed": 0,
+            "redis_delayed": 0,
+            "redis_pending": 12692,
+            "redis_submitted": 0
+          },
+          "per_chain": {
+            "solana": {
+              "offered": 60000,
+              "offered_tps": 100.0,
+              "responses": {
+                "202": 59983
+              },
+              "client": {
+                "dispatched": 59983,
+                "dropped_client_capacity": 17
+              },
+              "late_window": {
+                "admission_p99_limit_ms": 1000,
+                "capacity_candidate": false,
+                "disqualifiers": [
+                  "rate_or_admission_threshold_not_met",
+                  "exact_reconciliation_failed"
+                ],
+                "from_seconds": 120.0,
+                "rates_tps": {
+                  "admitted": 99.935,
+                  "attempted": 68.56,
+                  "included": 68.631,
+                  "terminal": 47.669
+                },
+                "relative_tolerance": 0.05,
+                "requires_repeated_confirmation": true,
+                "terminal_backlog_end": 31692,
+                "terminal_backlog_growth_per_second": 52.267,
+                "terminal_backlog_start": 6604,
+                "to_seconds": 600.0,
+                "unsigned_backlog_end": 18896,
+                "unsigned_backlog_linear_trend_per_second": 30.729,
+                "unsigned_backlog_start": 3836,
+                "unsigned_growth_detected": true,
+                "unsigned_monotonic_growth": true,
+                "unsigned_trend_threshold_per_second": 0.1,
+                "window_seconds": 480.0
+              },
+              "http_service_latency_ms": {
+                "count": 59983,
+                "max": 799.973,
+                "p50": 226.586,
+                "p95": 352.105,
+                "p99": 416.227
+              },
+              "scheduled_to_response_latency_ms": {
+                "count": 59983,
+                "max": 800.239,
+                "p50": 226.984,
+                "p95": 352.537,
+                "p99": 416.548
+              },
+              "durable_latency_upper_bounds_ms": {
+                "attempt_observed_upper_ms": {
+                  "count": 59983,
+                  "max": 210822.303,
+                  "p50": 137913.249,
+                  "p95": 207110.914,
+                  "p99": 209388.821
+                },
+                "terminal_observed_upper_ms": {
+                  "count": 47164,
+                  "max": 399915.357,
+                  "p50": 262973.788,
+                  "p95": 392390.412,
+                  "p99": 397332.212
+                }
+              }
+            }
+          },
+          "durability": {
+            "redis_appendfsync": "always",
+            "sqlite": "WAL synchronous=FULL/fullfsync=ON"
+          },
+          "harness_sha256": {
+            "capacity_campaign.py": "0648642ebd215da4383c496c0141815039f25fb423eb1657c45a9be34db72e1f",
+            "capacity_faults.py": "59e2bc4d90bceca2682c27e35c5871ee538d4878a795f990fa90e6d5f90afa13",
+            "capacity_resource_guard.py": "bbfda4901f49600cdff9fa907b73e2a64e8df534496083994fd4717c55979bb6"
+          },
+          "timing_source_sha256": "3c7321093f3f69721624a028991e1c27a2cf83b28c4b2ecfd5dedc693615f6c2",
+          "storage_wait_observations": {
+            "scope": "Cumulative journal histogram sum/count differences across each phase. Mean timings, not percentiles; overlapping phases are not additive. Changed-process/reset metrics omitted. Raw time series remains private.",
+            "intervals": [
+              {
+                "phase": "setup",
+                "successful_scrapes": 1,
+                "from_seconds": 28.399725704000048,
+                "to_seconds": 28.399725704000048,
+                "same_engine_process": true,
+                "metrics": []
+              },
+              {
+                "phase": "load",
+                "successful_scrapes": 120,
+                "from_seconds": 5.035814253999888,
+                "to_seconds": 600.0477157209998,
+                "same_engine_process": true,
+                "metrics": [
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"admission\",\"phase\":\"lane_wait\"}",
+                    "observations": 59478.0,
+                    "total_seconds": 13693.859684,
+                    "mean_ms": 230.234031
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"admission\",\"phase\":\"serial_hold\"}",
+                    "observations": 59478.0,
+                    "total_seconds": 202.695688,
+                    "mean_ms": 3.40791
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"admission\",\"phase\":\"serial_wait\"}",
+                    "observations": 59478.0,
+                    "total_seconds": 6.081244,
+                    "mean_ms": 0.102244
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"broadcast\",\"phase\":\"lane_wait\"}",
+                    "observations": 81369.0,
+                    "total_seconds": 16334.627207,
+                    "mean_ms": 200.747548
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"broadcast\",\"phase\":\"serial_hold\"}",
+                    "observations": 81369.0,
+                    "total_seconds": 145.808384,
+                    "mean_ms": 1.79194
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"broadcast\",\"phase\":\"serial_wait\"}",
+                    "observations": 81369.0,
+                    "total_seconds": 14.758932,
+                    "mean_ms": 0.181383
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"checkpoint\",\"phase\":\"redis_mirror\"}",
+                    "observations": 128431.0,
+                    "total_seconds": 73.663881,
+                    "mean_ms": 0.573568
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"checkpoint\",\"phase\":\"sql_ack\"}",
+                    "observations": 128431.0,
+                    "total_seconds": 48.117462,
+                    "mean_ms": 0.374656
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"continuity\",\"phase\":\"redis_observation\"}",
+                    "observations": 767367.0,
+                    "total_seconds": 255.264569,
+                    "mean_ms": 0.33265
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"database\",\"phase\":\"blocking_queue\"}",
+                    "observations": 1032461.0,
+                    "total_seconds": 62.945722,
+                    "mean_ms": 0.060967
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"database\",\"phase\":\"db_execution\"}",
+                    "observations": 1032461.0,
+                    "total_seconds": 169.81642,
+                    "mean_ms": 0.164477
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"database\",\"phase\":\"db_mutex_wait\"}",
+                    "observations": 1032461.0,
+                    "total_seconds": 16.152816,
+                    "mean_ms": 0.015645
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"database\",\"phase\":\"sql_commit\"}",
+                    "observations": 256863.0,
+                    "total_seconds": 93.718348,
+                    "mean_ms": 0.364857
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"health\",\"phase\":\"health_capacity_wait\"}",
+                    "observations": 212971.0,
+                    "total_seconds": 0.046588,
+                    "mean_ms": 0.000219
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"health\",\"phase\":\"lane_wait\"}",
+                    "observations": 212971.0,
+                    "total_seconds": 33979.6328,
+                    "mean_ms": 159.550515
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"health\",\"phase\":\"serial_hold\"}",
+                    "observations": 212972.0,
+                    "total_seconds": 128.766293,
+                    "mean_ms": 0.604616
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"health\",\"phase\":\"serial_wait\"}",
+                    "observations": 212971.0,
+                    "total_seconds": 117.794162,
+                    "mean_ms": 0.5531
+                  }
+                ]
+              },
+              {
+                "phase": "client_drain",
+                "successful_scrapes": 1,
+                "from_seconds": 600.1009749220002,
+                "to_seconds": 600.1009749220002,
+                "same_engine_process": true,
+                "metrics": []
+              },
+              {
+                "phase": "drain",
+                "successful_scrapes": 97,
+                "from_seconds": 600.3901829689999,
+                "to_seconds": 840.3278419220001,
+                "same_engine_process": true,
+                "metrics": [
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"broadcast\",\"phase\":\"lane_wait\"}",
+                    "observations": 37877.0,
+                    "total_seconds": 5624.817861,
+                    "mean_ms": 148.502201
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"broadcast\",\"phase\":\"serial_hold\"}",
+                    "observations": 37878.0,
+                    "total_seconds": 85.232417,
+                    "mean_ms": 2.250183
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"broadcast\",\"phase\":\"serial_wait\"}",
+                    "observations": 37877.0,
+                    "total_seconds": 0.093445,
+                    "mean_ms": 0.002467
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"checkpoint\",\"phase\":\"redis_mirror\"}",
+                    "observations": 37826.0,
+                    "total_seconds": 28.702934,
+                    "mean_ms": 0.758815
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"checkpoint\",\"phase\":\"sql_ack\"}",
+                    "observations": 37826.0,
+                    "total_seconds": 14.168998,
+                    "mean_ms": 0.374584
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"continuity\",\"phase\":\"redis_observation\"}",
+                    "observations": 246147.0,
+                    "total_seconds": 112.638273,
+                    "mean_ms": 0.457606
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"database\",\"phase\":\"blocking_queue\"}",
+                    "observations": 378548.0,
+                    "total_seconds": 35.42249,
+                    "mean_ms": 0.093575
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"database\",\"phase\":\"db_execution\"}",
+                    "observations": 378548.0,
+                    "total_seconds": 58.270598,
+                    "mean_ms": 0.153932
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"database\",\"phase\":\"db_mutex_wait\"}",
+                    "observations": 378548.0,
+                    "total_seconds": 5.72713,
+                    "mean_ms": 0.015129
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"database\",\"phase\":\"sql_commit\"}",
+                    "observations": 75652.0,
+                    "total_seconds": 27.964216,
+                    "mean_ms": 0.369643
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"health\",\"phase\":\"health_capacity_wait\"}",
+                    "observations": 75903.0,
+                    "total_seconds": 0.020001,
+                    "mean_ms": 0.000264
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"health\",\"phase\":\"lane_wait\"}",
+                    "observations": 75903.0,
+                    "total_seconds": 13066.996959,
+                    "mean_ms": 172.153893
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"health\",\"phase\":\"serial_hold\"}",
+                    "observations": 75902.0,
+                    "total_seconds": 61.656605,
+                    "mean_ms": 0.812319
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"health\",\"phase\":\"serial_wait\"}",
+                    "observations": 75903.0,
+                    "total_seconds": 0.525799,
+                    "mean_ms": 0.006927
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"terminal\",\"phase\":\"lane_wait\"}",
+                    "observations": 18889.0,
+                    "total_seconds": 4367.154843,
+                    "mean_ms": 231.200955
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"terminal\",\"phase\":\"serial_hold\"}",
+                    "observations": 18889.0,
+                    "total_seconds": 86.82766,
+                    "mean_ms": 4.596731
+                  },
+                  {
+                    "metric": "tw_engine_journal_duration_seconds_sum{\"operation\":\"terminal\",\"phase\":\"serial_wait\"}",
+                    "observations": 18889.0,
+                    "total_seconds": 0.048629,
+                    "mean_ms": 0.002574
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "shared": [],
+  "scope": "Four-core hosted Linux, frozen release binary, local Anvil/Agave, Redis always and SQLite FULL/fullfsync. EVM250ms is Ethereum-mode Anvil, not Nitro. Green jobs without a qualified rate do not qualify. Prior harness defects and negative trials are retained; later review fixes require new measurements."
+}

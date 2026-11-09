@@ -37,9 +37,14 @@ Old incident journals, failed fixtures and the Nitro VM remain intact.
 
 ## Results
 
+- The latest review heads—`0783256` (#21), `164b4c5` (#18) and `7fd8fa7`
+  (#19)—pass full CI: Rust/Redis/API/process checks, dependency audit,
+  **122 finite model configurations**, **110 source guards**, five fee proofs
+  and two required mutation counterexamples. All known open-PR review threads
+  are addressed. Source guards and finite models are not whole-service proofs.
 - Runtime `4d05bbf`: full Rust checks, **196 Redis/API regressions**, **15 process
   scenarios**, **115 finite model configurations** and five fee proofs pass.
-  Later fixes have separate exact-head CI; these are not whole-service proofs.
+  Those historical results remain separate from the latest review checks.
 - The dependency audit reports **zero vulnerabilities and zero unsoundness
   warnings**. Five maintenance warnings remain; no advisory is suppressed.
 - Small public correctness/recovery checks cover Sepolia, OP Sepolia, Arbitrum
@@ -58,10 +63,21 @@ Old incident journals, failed fixtures and the Nitro VM remain intact.
 
 ## Remaining qualification
 
-Use the latest code's CI and capacity results before promoting it. Production
-hardware, public-provider limits, actual Nitro throughput, rollup settlement,
-physical power loss and real AWS KMS operation still need qualification. KMS
-protocol vectors do not establish correct transient-error handling, IAM or quotas.
+The [current local capacity campaign](https://github.com/alfongj-com/engine-core/actions/runs/42573447135)
+uses source `7fd8fa7`, a 50-TPS screening ceiling, ten-minute trials and an
+eight-minute observation window. Each individual rate needs three passes before
+the shared-chain and chaos phase can run. It is still in progress; the PRs remain
+draft while these measurements finish. No public RPC credits are used.
+
+The earlier 100-TPS Agave trial finalizes all accepted transactions on chain but
+leaves 17,397 Engine acknowledgements pending at its drain deadline. It does not
+qualify 100 TPS. Journal serialization is the measured bottleneck in that trial.
+
+Production hardware, public-provider limits, actual Nitro throughput, rollup
+settlement, physical power loss and real AWS KMS operation still need
+qualification. SDK and worker tests now cover transient and known permanent KMS
+errors; IAM, quotas, credential persistence and workload identity remain open
+deployment concerns.
 
 Deployment still requires one independent journal and one active Engine process
 on one Unix host. History is permanent; compaction reclaims free pages. Offline
