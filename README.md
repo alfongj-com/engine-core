@@ -8,7 +8,7 @@ Rust transaction infrastructure forked from [thirdweb-dev/engine-core](https://g
 
 The main checkout is **`/Users/alfongj/Code/engine-core`**. Current review work is
 in **`/Users/alfongj/Code/engine-core-review-stack`**, branch
-`pin-testnet-resume-provenance` (review stack on #4). Start with
+`reconcile-public-read-failures` (the current stack tip). Start with
 **[LOCAL_TESTING.md](LOCAL_TESTING.md)** for the installed tool paths, isolated
 checkouts, exact test commands, local recovery scenarios and a
 [copyable prompt for another agent](LOCAL_TESTING.md#prompt-for-another-local-agent).
@@ -20,8 +20,9 @@ Branch layout on November 8, 2026:
 | `production-hardening` / [PR #1](https://github.com/alfongj-com/engine-core/pull/1) | Merged into `main` at `154b0ac`; preserved baseline. |
 | `crash-recovery-and-chain-fairness` / [PR #2](https://github.com/alfongj-com/engine-core/pull/2) | Merged into `main` at `918d7d9`: recoverable checkpoint publication, journal fairness and bounded Solana polling. |
 | `recover-retained-transactions` / [PR #3](https://github.com/alfongj-com/engine-core/pull/3) | Merged into `main` at `8fa866e`: exact signed Solana restoration and pending-target checkpoint reattachment. |
-| `cleanup-recovery-paths` / [PR #4](https://github.com/alfongj-com/engine-core/pull/4) | Cleanup baseline for this review, commit `4e262c8`. |
-| `pin-testnet-resume-provenance` | Current review stack, including Solana crash-lock recovery and strict testnet resume provenance. See [scope and remaining work](WORK_IN_PROGRESS.md). |
+| Review PRs [#4](https://github.com/alfongj-com/engine-core/pull/4)–[#22](https://github.com/alfongj-com/engine-core/pull/22) | Runtime, dependency and harness fixes. See [scope and merge order](WORK_IN_PROGRESS.md); some lower PRs are already merged. |
+| `measure-linux-capacity` / [#18](https://github.com/alfongj-com/engine-core/pull/18) | Repeated release measurements and local fault harnesses. |
+| `reconcile-public-read-failures` / [#19](https://github.com/alfongj-com/engine-core/pull/19) | Current stack tip; retained public-run reconciliation and provider guard tests. |
 | `load-tests` | Historical reports and generated evidence, including failed runs. |
 
 Historical October 13 results: at `835c7c2`, the local Rust suite (including 181 explicit Redis/API tests),
@@ -29,7 +30,7 @@ Historical October 13 results: at `835c7c2`, the local Rust suite (including 181
 Small Solana Devnet crash runs passed on the baseline and cleanup binary, with
 six finalized effects each and no duplicates. Public-chain outcomes and matched-load results are recorded in the
 [qualification report](https://github.com/alfongj-com/engine-core/blob/load-tests/docs/baselines/testnet-cleanup-2026-10-13/README.md).
-These results do not establish public-chain capacity or qualify the later review stack. Its [source-specific review results](https://github.com/alfongj-com/engine-core/blob/load-tests/docs/baselines/code-review-2026-11-08/README.md) are maintained separately.
+These results do not establish public-chain capacity or qualify the later review stack. The [latest source-specific results](https://github.com/alfongj-com/engine-core/blob/load-tests/docs/baselines/pending-work-2026-11-08/README.md) record subsequent dependency, recovery, KMS protocol and public-testnet checks, including failures.
 
 The tools and a read-only copy of the evidence are now in
 `/Users/alfongj/.local/share/engine-core/`, outside temporary storage. Load the
@@ -51,6 +52,9 @@ retained incident journals or the old Nitro VM for these tests.
 - [Configured RPCs and Solana recovery](docs/design/rpc-and-solana-recovery.md): setup, authentication, retry rules and operational limits.
 - [Finality and reorg handling](docs/design/finality-and-recovery.md): completion policies and chain assumptions.
 - [Redis disaster recovery](docs/design/redis-disaster-recovery.md): required independent journal, initialization, restart and quarantine procedures.
+- [Offline queue reconstruction](docs/design/queue-reconstruction.md): retained authority, missing scheduling/indexes and refusal conditions.
+- [Journal maintenance](docs/design/journal-maintenance.md): verified backup and offline compaction with permanent replay history.
+- [Dependency security](docs/design/dependency-security.md) and [KMS protocol tests](docs/design/kms-protocol-tests.md): pinned forks, remaining warnings and independent signing vectors.
 - [Solana processing locks](docs/design/solana-processing-locks.md): queue ownership, crash takeover and rolling upgrades.
 - [Retained Solana recovery](docs/design/retained-solana-recovery.md): exact-wire restoration, durable retry budgets and schema upgrade.
 - [50 TPS review](docs/design/throughput-50tps.md): chain constraints, bounded queues, RPC costs and measurement scope.
@@ -75,7 +79,7 @@ cargo build --locked --bin thirdweb-engine
 cargo test --locked -p engine-integration-tests
 ```
 
-The private Thirdweb Vault SDK and its CI SSH requirement are removed. AWS KMS and IAW remain legacy code paths; configured-provider submission currently selects the local environment signer. Live KMS/IAW interoperability is unqualified. Solana signing uses a configured Ed25519 key file; see [setup and recovery rules](docs/design/rpc-and-solana-recovery.md).
+The private Thirdweb Vault SDK and its CI SSH requirement are removed. AWS KMS and IAW remain legacy code paths; configured-provider submission selects the local environment signer. The actual AWS SDK/Alloy KMS signing path has independent loopback protocol tests; production AWS account/IAM, TLS, quota and HSM behavior remain unqualified. Solana signing uses a configured Ed25519 key file; see [setup and recovery rules](docs/design/rpc-and-solana-recovery.md).
 
 ## Local EVM signer
 
@@ -110,4 +114,4 @@ Webhooks are disabled unless `ENGINE_WEBHOOK_ALLOWED_ORIGINS` lists exact HTTPS 
 
 ## Verification scope
 
-Queue jobs per second are not blockchain transactions per second. [Latest measurements](https://github.com/alfongj-com/engine-core/blob/load-tests/docs/baselines/testnet-cleanup-2026-10-13/README.md) exercise the real server, independent durable journal, Redis AOF, and local EVM/Solana nodes. They report admission, inclusion and finalization separately. Production qualification still needs the intended RPC, signer, transaction workload, public-chain finality window and concurrent-chain load. Finite models and tests do not certify whole-program correctness. See [current validation](WORK_IN_PROGRESS.md) and the handoff for results and remaining work. Public-testnet reports and other generated evidence are kept on the separate `load-tests` branch; private wallets, wires, journals and raw reports stay outside Git.
+Queue jobs per second are not blockchain transactions per second. [Latest measurements](https://github.com/alfongj-com/engine-core/blob/load-tests/docs/baselines/pending-work-2026-11-08/README.md) separate admission, inclusion and finalization, local capacity and public-testnet recovery. Production qualification still needs the intended hardware, RPC, signer and workload. Finite models and tests do not certify whole-program correctness. See [current validation](WORK_IN_PROGRESS.md) and the handoff for results and remaining work. Generated evidence stays on `load-tests`; private wallets, wires, journals and raw reports stay outside Git.

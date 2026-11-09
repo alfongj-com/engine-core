@@ -12,13 +12,13 @@ Neither establishes public RPC capacity, rollup settlement or production readine
 | PR #1 baseline | Merged into `main` at `154b0ac`; preserved branch `production-hardening` at `8741b88` |
 | PR #2 baseline | Merged into `main` at `918d7d9`; preserved branch `crash-recovery-and-chain-fairness` |
 | [PR #3](https://github.com/alfongj-com/engine-core/pull/3) baseline | Merged into `main` at `8fa866e`; executable implementation `04d15d8` |
-| Active review | `/Users/alfongj/Code/engine-core-review-stack`, branch `pin-testnet-resume-provenance` |
+| Active review | `/Users/alfongj/Code/engine-core-review-stack`, branch `reconcile-public-read-failures` |
 | Full historical evidence in Git | Local and remote branch `load-tests`; use its current head for new evidence |
 | Browsable local evidence | `/Users/alfongj/Code/engine-core-review-evidence/LOAD_TESTS.md`; historical readonly snapshots remain under `.local/share/engine-core/evidence/` |
 | Installed test tools and checksum manifest | `/Users/alfongj/.local/share/engine-core/tools/` |
 | Private retained incident data; leave untouched | `/Users/alfongj/.local/share/engine-core-custody/` |
 
-PRs #1–3 are merged. PR #4 is the cleanup baseline. PRs #5–#9 add EOA creation/gas fixes, durable cancellation, bounded API work, dependency patches and native environment-key signing. The latest branch also reclaims dead Solana processing locks using the queue lease, with stale-worker fencing. See the [November review](https://github.com/alfongj-com/engine-core/blob/load-tests/docs/baselines/code-review-2026-11-08/README.md) for results tied to each source and binary. The [October public-chain campaign](https://github.com/alfongj-com/engine-core/blob/load-tests/docs/baselines/testnet-cleanup-2026-10-13/README.md) is historical evidence. Read [WORK_IN_PROGRESS.md](WORK_IN_PROGRESS.md) for current scope and limits.
+The active order is #21 → #18 → #19. PRs #5–#17 were merged into stack parents; #21 carries those changes into main. PR #4 is the cleanup baseline. PRs #5–#9 add EOA creation/gas fixes, durable cancellation, bounded API work, dependency patches and native environment-key signing. The latest branch also reclaims dead Solana processing locks using the queue lease, with stale-worker fencing. See the [November review](https://github.com/alfongj-com/engine-core/blob/load-tests/docs/baselines/code-review-2026-11-08/README.md) for results tied to each source and binary. The [October public-chain campaign](https://github.com/alfongj-com/engine-core/blob/load-tests/docs/baselines/testnet-cleanup-2026-10-13/README.md) is historical evidence. Read [WORK_IN_PROGRESS.md](WORK_IN_PROGRESS.md) for current scope and limits.
 
 The tools formerly under `/tmp/engine-*` were removed by temporary-file cleanup.
 Use the persistent paths below. The old release binary is preserved as
@@ -59,7 +59,7 @@ another agent's work. These commands create detached test checkouts when absent:
 cd /Users/alfongj/Code/engine-core
 git status --short --branch
 git worktree add --detach /Users/alfongj/Code/engine-core-test-pr4-baseline 4e262c8
-git worktree add --detach /Users/alfongj/Code/engine-core-test-review-provenance pin-testnet-resume-provenance
+git worktree add --detach /Users/alfongj/Code/engine-core-test-review-latest reconcile-public-read-failures
 cd /Users/alfongj/Code/engine-core-test-pr4-baseline
 source /Users/alfongj/.local/share/engine-core/tools/env.sh
 unset CARGO_TARGET_DIR
@@ -98,7 +98,7 @@ node --test scripts/rpc/budget-gateway.test.mjs scripts/rpc/load-probe.test.mjs
   capacity_pool_test capacity_assess_test capacity_fence_test \
   capacity_resource_guard_test capacity_resource_phase_test \
   capacity_resource_projection_test capacity_anvil_custody_test \
-  capacity_infrastructure_test capacity_journal_reader_test capacity_metrics_test test_local_eoa_reorg -v
+  capacity_infrastructure_test capacity_journal_reader_test capacity_metrics_test test_local_eoa_reorg test_local_eoa_recovery -v
 ```
 
 The final command exercises the capacity and fault oracles; require zero skipped tests
@@ -135,7 +135,7 @@ cargo test --locked --workspace --no-run
 cargo test --locked --workspace -- --test-threads=1
 cargo test --locked -p engine-core --lib recovery -- --ignored --test-threads=1
 cargo test --locked -p engine-executors --lib -- --ignored --test-threads=1
-cargo test --locked -p thirdweb-engine --lib solana_admission::tests -- --ignored --test-threads=1
+cargo test --locked -p thirdweb-engine --lib -- --ignored --test-threads=1 --skip solana_admission::bench::initialized_admission_backlog_regression --test-threads=1
 cargo test --locked -p thirdweb-engine --test api_safety -- --ignored --test-threads=1
 cargo test --locked -p twmq --lib -- --ignored --test-threads=1
 cargo build --locked --bin thirdweb-engine
@@ -305,12 +305,12 @@ Test Engine Core locally on this Mac.
 
 Repository: /Users/alfongj/Code/engine-core-review-stack
 Read README.md and LOCAL_TESTING.md first. Read the saved WIP notes with:
-  git show pin-testnet-resume-provenance:WORK_IN_PROGRESS.md
+  git show reconcile-public-read-failures:WORK_IN_PROGRESS.md
 Load tools with:
   source /Users/alfongj/.local/share/engine-core/tools/env.sh
 
 Use isolated test checkouts as documented; do not switch or reset the main
-checkout. Compare baseline 4e262c8 (PR #4) and the current pin-testnet-resume-provenance
+checkout. Compare baseline 4e262c8 (PR #4) and the current reconcile-public-read-failures
 branch in separate checkouts. Active work is in
 /Users/alfongj/Code/engine-core-review-stack; preserve its edits. Inspect existing test directories
 before reusing them. Build each checkout's own target/debug/thirdweb-engine.
