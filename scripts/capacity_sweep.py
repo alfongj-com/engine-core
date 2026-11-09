@@ -25,6 +25,16 @@ class NoQualifiedRate(RuntimeError):
     """The bounded search completed without three passing confirmations."""
 
 
+def validate_settings(args):
+    if type(args.max_screen_rate) is not int or args.max_screen_rate not in RATES:
+        raise ValueError("Screening ceiling must be one of the existing rate candidates")
+    if type(args.seconds) is not int or not 300 <= args.seconds <= 900:
+        raise ValueError("Trial duration must be an integer from 300 through 900 seconds")
+    if (type(args.late_window_seconds) is not int
+            or not 180 <= args.late_window_seconds <= args.seconds - 60):
+        raise ValueError("Late window must be at least 180 seconds and leave the fixed 60-second warmup")
+
+
 def eligible(report):
     """A drained run, incomplete sample, or a safety failure cannot qualify."""
     chains = report.get("per_chain", {})
@@ -124,8 +134,7 @@ def closed_trial(report):
 
 class Sweep:
     def __init__(self, args):
-        if type(args.max_screen_rate) is not int or args.max_screen_rate not in RATES:
-            raise ValueError("Screening ceiling must be one of the existing rate candidates")
+        validate_settings(args)
         self.args = args
         self.output = args.output.resolve()
         self.output.mkdir(mode=0o700, parents=True, exist_ok=False)
@@ -134,8 +143,8 @@ class Sweep:
                         "engine_binary_sha256": self.binary_sha, "source_commit": subprocess.check_output(
                             ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(),
                         "platform": platform.platform(), "logical_cpus": os.cpu_count(),
-                        "seconds_per_trial": 300, "late_window_seconds": 180,
-                        "redis_fsync": "always", "trials": []}
+                        "seconds_per_trial": args.seconds, "late_window_seconds": args.late_window_seconds,
+                        "warmup_seconds": 60, "redis_fsync": "always", "trials": []}
         if args.mode == "individual":
             self.summary["configured_search_ceiling_tps"] = args.max_screen_rate
             self.summary["search_scope"] = "Highest qualifying tested candidate within the configured ceiling; not an absolute maximum"
@@ -145,12 +154,26 @@ class Sweep:
         temporary.write_text(json.dumps(self.summary, indent=2) + "\n")
         temporary.replace(self.output / "summary.json")
 
+    def inventory_allows(self, rates, factor=None):
+        offered = sum(int(rate * self.args.seconds) for rate in rates.values())
+        if offered <= 500000:
+            return True
+        limited = {"rates": rates, "offered_intents": offered,
+                   "max_intents": 500000, "reason": "inventory_limit"}
+        if factor is not None:
+            limited["factor"] = factor
+        self.summary.setdefault("inventory_limited_candidates", []).append(limited)
+        self.save()
+        return False
+
     def trial(self, rates, chaos="none"):
+        if not self.inventory_allows(rates):
+            raise RuntimeError("Trial exceeds the bounded campaign inventory")
         index = len(self.summary["trials"])
         report = self.output / f"{index:02d}-{chaos}.json"
         command = [sys.executable, str(ROOT / "scripts/capacity_metrics.py"),
-                   "--engine-bin", str(self.args.engine_bin), "--seconds", "300",
-                   "--drain-seconds", "240", "--warmup-seconds", "60", "--late-window-seconds", "180",
+                   "--engine-bin", str(self.args.engine_bin), "--seconds", str(self.args.seconds),
+                   "--drain-seconds", "240", "--warmup-seconds", "60", "--late-window-seconds", str(self.args.late_window_seconds),
                    "--redis-fsync", "always", "--max-intents", "500000", "--report", str(report)]
         for name, rate in rates.items():
             command += ["--chain", f"{name}={rate}"]
@@ -166,7 +189,7 @@ class Sweep:
             child = subprocess.Popen(command, cwd=ROOT, stdout=log, stderr=subprocess.STDOUT,
                                      start_new_session=True)
             try:
-                code = child.wait(timeout=1200)
+                code = child.wait(timeout=self.args.seconds + 900)
             except subprocess.TimeoutExpired:
                 os.killpg(child.pid, signal.SIGTERM)
                 try:
@@ -178,6 +201,10 @@ class Sweep:
         value = json.loads(report.read_text())
         if value.get("engine_binary_sha256") != self.binary_sha:
             raise RuntimeError("Trial used a different binary")
+        if (value.get("duration_seconds") != self.args.seconds
+                or value.get("minimum_late_window_seconds") != self.args.late_window_seconds
+                or value.get("warmup_seconds") != 60):
+            raise RuntimeError("Trial used different duration or observation settings")
         row = {"report": report.name, "rates": rates, "chaos": chaos, "exit": code,
                "seconds": round(time.monotonic() - started, 3), "outcome": value.get("outcome"),
                "capacity_candidate": eligible(value)}
@@ -198,6 +225,8 @@ class Sweep:
         candidates = []
         for rate in RATES:
             if rate > self.args.max_screen_rate:
+                break
+            if not self.inventory_allows({self.args.profile: rate}):
                 break
             row = self.trial({self.args.profile: rate})
             if not row["capacity_candidate"]:
@@ -232,13 +261,19 @@ class Sweep:
         summaries = []
         for path in self.args.individuals.glob("**/summary.json"):
             summary = json.loads(path.read_text())
+            if (summary.get("seconds_per_trial") != self.args.seconds
+                    or summary.get("late_window_seconds") != self.args.late_window_seconds
+                    or summary.get("warmup_seconds") != 60):
+                raise ValueError("Individual duration and observation settings must match the shared trial")
             for filename in summary.get("confirmation_reports", []):
                 if not isinstance(filename, str) or Path(filename).name != filename:
                     raise ValueError("Invalid individual report path")
                 value = json.loads((path.parent / filename).read_text())
                 profile = summary.get("profile")
                 if (not eligible(value) or value.get("engine_binary_sha256") != self.binary_sha
-                        or value.get("duration_seconds") != 300
+                        or value.get("duration_seconds") != self.args.seconds
+                        or value.get("minimum_late_window_seconds") != self.args.late_window_seconds
+                        or value.get("warmup_seconds") != 60
                         or set(value.get("per_chain", {})) != {profile}
                         or value["per_chain"][profile].get("offered_tps") != summary.get("qualified_tps")):
                     raise ValueError("Individual confirmation evidence does not qualify")
@@ -249,11 +284,7 @@ class Sweep:
         for factor in (1, .5, .25):
             rates = {name: rate * factor for name, rate in original.items()}
             # Keep the existing campaign's explicit bounded inventory limit.
-            if sum(rates.values()) * 300 > 500000:
-                self.summary["inventory_limited_candidates"].append({
-                    "factor": factor, "rates": rates, "offered_intents": sum(rates.values()) * 300,
-                    "max_intents": 500000, "reason": "inventory_limit"})
-                self.save()
+            if not self.inventory_allows(rates, factor):
                 continue
             repeats = []
             for _ in range(3):
@@ -282,9 +313,17 @@ def arguments(argv=None):
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--max-screen-rate", type=int, choices=RATES, default=RATES[-1],
                         help="Individual screening ceiling in TPS; a bounded search, not an absolute maximum")
+    parser.add_argument("--seconds", type=int, default=300,
+                        help="Offered duration per trial, 300 through 900 seconds")
+    parser.add_argument("--late-window-seconds", type=int, default=180,
+                        help="Late observation window, at least 180 seconds with 60 seconds left for warmup")
     args = parser.parse_args(argv)
     if (args.mode == "individual" and not args.profile) or (args.mode == "shared" and not args.individuals):
         parser.error("individual needs --profile; shared needs --individuals")
+    try:
+        validate_settings(args)
+    except ValueError as error:
+        parser.error(str(error))
     return args
 
 
