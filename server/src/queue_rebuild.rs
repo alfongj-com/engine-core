@@ -79,7 +79,8 @@ pub(crate) async fn rebuild(
                             noop_signing_credential: data.signing_credential.clone(),
                         },
                     };
-                    restore_job(&queues.eoa_executor_queue, &job_id, &job).await?;
+                    let job_repaired =
+                        restore_job(&queues.eoa_executor_queue, &job_id, &job).await?;
                     let owner = format!("offline-rebuild-{}", rand::random::<u128>());
                     let atomic = store
                         .acquire_eoa_lock_aggressively(
@@ -96,8 +97,7 @@ pub(crate) async fn rebuild(
                         )
                         .await;
                     atomic.release_eoa_lock().await?;
-                    result?;
-                    summary.eoa += 1;
+                    summary.eoa += usize::from(result? || job_repaired);
                     "eoa_executor"
                 }
                 "solana" => {
@@ -125,10 +125,15 @@ pub(crate) async fn rebuild(
                     );
                     // Worker restoration validates signed bytes and activates its durable
                     // recovery budget before any possible replay. No signing happens here.
-                    restore_solana_admission(&queues.solana_executor_queue.redis, &storage, &data)
-                        .await?;
-                    restore_job(&queues.solana_executor_queue, id, &data).await?;
-                    summary.solana += 1;
+                    let admission_repaired = restore_solana_admission(
+                        &queues.solana_executor_queue.redis,
+                        &storage,
+                        &data,
+                    )
+                    .await?;
+                    let job_repaired =
+                        restore_job(&queues.solana_executor_queue, id, &data).await?;
+                    summary.solana += usize::from(admission_repaired || job_repaired);
                     "solana_executor"
                 }
                 "erc4337" if record.attempts.is_empty() => {
@@ -140,8 +145,9 @@ pub(crate) async fn rebuild(
                         data.transaction_id == *id && data.pregenerated_nonce.is_some(),
                         "ERC4337 admission has no retained nonce"
                     );
-                    restore_job(&queues.external_bundler_send_queue, id, &data).await?;
-                    summary.erc4337_unsent += 1;
+                    summary.erc4337_unsent += usize::from(
+                        restore_job(&queues.external_bundler_send_queue, id, &data).await?,
+                    );
                     "external_bundler_send"
                 }
                 _ => {
@@ -175,7 +181,7 @@ async fn restore_solana_admission(
     redis: &redis::aio::ConnectionManager,
     storage: &SolanaTransactionStorage,
     data: &SolanaExecutorJobData,
-) -> anyhow::Result<()> {
+) -> anyhow::Result<bool> {
     let fingerprint = solana_admission_fingerprint(data)?;
     let result: i32 = redis::Script::new(
         r#"
@@ -185,6 +191,7 @@ async fn restore_solana_admission(
         local state=redis.call('HGET',KEYS[1],'state')
         if (f and f~=ARGV[1]) or (state and state~='active') then return -1 end
         if not f and redis.call('EXISTS',KEYS[1])==1 then return -1 end
+        if f and state=='active' then return 0 end
         redis.call('HSET',KEYS[1],'fingerprint',ARGV[1],'state','active');return 1
     "#,
     )
@@ -192,8 +199,8 @@ async fn restore_solana_admission(
     .arg(fingerprint)
     .invoke_async(&mut redis.clone())
     .await?;
-    anyhow::ensure!(result > 0, "Solana admission conflicts with journal");
-    Ok(())
+    anyhow::ensure!(result >= 0, "Solana admission conflicts with journal");
+    Ok(result == 1)
 }
 
 /// Preserve a live job's counters/order; restore missing scheduling only after
@@ -202,7 +209,7 @@ async fn restore_job<H: DurableExecution>(
     queue: &Queue<H>,
     id: &str,
     data: &H::JobData,
-) -> anyhow::Result<()> {
+) -> anyhow::Result<bool> {
     let payload = serde_json::to_string(data)?;
     let now = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)?
@@ -230,14 +237,21 @@ async fn restore_job<H: DurableExecution>(
             or redis.call('HEXISTS',KEYS[10],id)==1
         -- EOA worker IDs are intentionally reusable after successful completion.
         -- Permanent transaction jobs never revive a terminal/cancelled ID.
-        local reuse=ARGV[4]=='1' and not active and not delayed and #pending==0
-            and redis.call('SISMEMBER',KEYS[6],id)==0
-        if finished and not reuse then return -3 end
+        local deduped=redis.call('SISMEMBER',KEYS[6],id)==1
+        local reusable=ARGV[4]=='1'
+        local reuse=reusable and finished and not active and not delayed and #pending==0
+            and not deduped
+        -- Queue::push leaves completion history from the preceding generation.
+        -- Surviving scheduling/dedup identifies current EOA work; keep its counters.
+        if finished and not reusable then return -3 end
         if (#pending>0 and delayed) or (active and (#pending>0 or delayed)) then return -3 end
         local attempts=redis.call('HGET',KEYS[2],'attempts')
         local created=redis.call('HGET',KEYS[2],'created_at')
         if (attempts and (not string.match(attempts,'^%d+$') or #attempts>10))
             or (created and (not string.match(created,'^%d+$') or #created>12)) then return -3 end
+        local changed=not old or not attempts or not created or reuse or active or token
+            or not deduped or (#pending==0 and not delayed)
+        if not changed then return 0 end
         -- No runtime-error-prone validation remains after the first write.
         redis.call('HSET',KEYS[1],id,ARGV[2])
         if reuse then
@@ -278,10 +292,10 @@ async fn restore_job<H: DurableExecution>(
     .invoke_async(&mut queue.redis.clone())
     .await?;
     anyhow::ensure!(
-        result > 0,
+        result >= 0,
         "Queue projection conflicts with journal or has a live lease"
     );
-    Ok(())
+    Ok(result == 1)
 }
 
 #[cfg(test)]
@@ -290,7 +304,7 @@ mod tests {
     use engine_executors::solana_executor::worker::SolanaExecutorError;
     use serde_json::{Value, json};
     use twmq::{
-        job::{BorrowedJob, JobResult},
+        job::{BorrowedJob, JobOptions, JobResult},
         queue::QueueOptions,
     };
 
@@ -501,5 +515,149 @@ mod tests {
             1
         );
         cleanup(q).await;
+    }
+
+    #[tokio::test]
+    #[ignore = "requires disposable Redis in TEST_REDIS_URL"]
+    async fn unfinished_unscheduled_eoa_worker_keeps_its_retry_history() {
+        let q = fixture(true).await;
+        let mut redis = q.redis.clone();
+        let id = "unfinished";
+        let data = json!({"chain":1});
+        assert!(restore_job(&q, id, &data).await.unwrap());
+        let _: () = redis
+            .hset_multiple(
+                q.job_meta_hash_name(id),
+                &[("attempts", 17), ("created_at", 123)],
+            )
+            .await
+            .unwrap();
+        let _: () = redis.lrem(q.pending_list_name(), 0, id).await.unwrap();
+        let _: () = redis.srem(q.dedupe_set_name(), id).await.unwrap();
+        assert!(restore_job(&q, id, &data).await.unwrap());
+        assert_eq!(
+            redis
+                .hget::<_, _, u32>(q.job_meta_hash_name(id), "attempts")
+                .await
+                .unwrap(),
+            17
+        );
+        assert_eq!(
+            redis
+                .hget::<_, _, u64>(q.job_meta_hash_name(id), "created_at")
+                .await
+                .unwrap(),
+            123
+        );
+        assert!(!restore_job(&q, id, &data).await.unwrap());
+        assert_eq!(
+            redis.llen::<_, usize>(q.pending_list_name()).await.unwrap(),
+            1
+        );
+        cleanup(q).await;
+    }
+
+    #[tokio::test]
+    #[ignore = "requires disposable Redis in TEST_REDIS_URL"]
+    async fn reused_eoa_worker_keeps_current_generation_despite_retained_completion_history() {
+        for scheduling in ["pending", "delayed", "expired-active", "dedup-only"] {
+            let q = fixture(true).await;
+            let mut redis = q.redis.clone();
+            let id = "reused-worker";
+            let data = json!({"chain":1});
+            let _: () = redis
+                .hset(q.job_meta_hash_name(id), "finished_at", 1)
+                .await
+                .unwrap();
+            let _: () = redis.rpush(q.success_list_name(), id).await.unwrap();
+            let _: () = redis
+                .hset(q.job_result_hash_name(), id, "old-result")
+                .await
+                .unwrap();
+            // Exercise the real push path: it starts new work with the same ID
+            // while leaving the old completion fields/list entry in Redis.
+            let pushed = q
+                .push(JobOptions::new(data.clone()).with_id(id))
+                .await
+                .unwrap();
+            let _: () = redis
+                .hset(q.job_meta_hash_name(id), "attempts", 17)
+                .await
+                .unwrap();
+            if scheduling != "pending" {
+                let _: () = redis.lrem(q.pending_list_name(), 0, id).await.unwrap();
+            }
+            match scheduling {
+                "delayed" => {
+                    let _: () = redis.zadd(q.delayed_zset_name(), id, 9999).await.unwrap();
+                }
+                "expired-active" => {
+                    let _: () = redis.hset(q.active_hash_name(), id, 17).await.unwrap();
+                    let _: () = redis
+                        .hset(q.job_meta_hash_name(id), "lease_token", "dead")
+                        .await
+                        .unwrap();
+                    let lease = q.lease_key_name(id, "dead");
+                    let _: () = redis.set(&lease, "1").await.unwrap();
+                    assert!(restore_job(&q, id, &data).await.is_err());
+                    let _: () = redis.del(lease).await.unwrap();
+                }
+                _ => {}
+            }
+            let repaired = restore_job(&q, id, &data).await.unwrap();
+            assert_eq!(
+                repaired,
+                matches!(scheduling, "expired-active" | "dedup-only")
+            );
+            assert_eq!(
+                redis
+                    .hget::<_, _, u32>(q.job_meta_hash_name(id), "attempts")
+                    .await
+                    .unwrap(),
+                17
+            );
+            assert_eq!(
+                redis
+                    .hget::<_, _, u64>(q.job_meta_hash_name(id), "created_at")
+                    .await
+                    .unwrap(),
+                pushed.created_at
+            );
+            assert_eq!(
+                redis
+                    .hget::<_, _, u64>(q.job_meta_hash_name(id), "finished_at")
+                    .await
+                    .unwrap(),
+                1
+            );
+            assert_eq!(
+                redis
+                    .hget::<_, _, String>(q.job_result_hash_name(), id)
+                    .await
+                    .unwrap(),
+                "old-result"
+            );
+            assert_eq!(
+                redis.llen::<_, usize>(q.success_list_name()).await.unwrap(),
+                1
+            );
+            assert_eq!(
+                redis.llen::<_, usize>(q.pending_list_name()).await.unwrap(),
+                usize::from(scheduling != "delayed")
+            );
+            assert_eq!(
+                redis
+                    .zscore::<_, _, Option<u64>>(q.delayed_zset_name(), id)
+                    .await
+                    .unwrap(),
+                if scheduling == "delayed" {
+                    Some(9999)
+                } else {
+                    None
+                }
+            );
+            assert!(!restore_job(&q, id, &data).await.unwrap());
+            cleanup(q).await;
+        }
     }
 }
