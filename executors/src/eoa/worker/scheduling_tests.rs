@@ -64,7 +64,9 @@ async fn progress_requeues_at_tail_while_unknown_and_poll_only_work_stays_delaye
     let url = std::env::var("TEST_REDIS_URL").unwrap();
     // Expected delay seconds are TWMQ's real persisted schedule, not the
     // application's subsecond Duration. The blocker freezes queue consumption
-    // after the target's lease commit, eliminating sleep/second-boundary races.
+    // after the target's lease commit. Its pop can legitimately promote a
+    // one-second delay if that deadline elapsed, so inspect the persisted
+    // scheduling decision as well as the atomic queue snapshot.
     for (name, sent, recovered, pending, borrowed, confirmed, delegation, failure, delay) in [
         ("send_progress", 1, 0, 1, 0, 0, Some(false), false, None),
         (
@@ -150,20 +152,37 @@ async fn progress_requeues_at_tail_while_unknown_and_poll_only_work_stays_delaye
             );
         }
         let mut conn = queue.redis.clone();
-        let queued: Vec<String> = conn.lrange(queue.pending_list_name(), 0, -1).await.unwrap();
-        let scheduled: Option<u64> = conn
-            .zscore(queue.delayed_zset_name(), "target")
-            .await
-            .unwrap();
-        let serialized_error: String = conn
-            .lindex(queue.job_errors_list_name("target"), 0)
-            .await
-            .unwrap();
+        let (queued, scheduled, serialized_error): (Vec<String>, Option<u64>, String) =
+            twmq::redis::pipe()
+                .atomic()
+                .lrange(queue.pending_list_name(), 0, -1)
+                .zscore(queue.delayed_zset_name(), "target")
+                .lindex(queue.job_errors_list_name("target"), 0)
+                .query_async(&mut conn)
+                .await
+                .unwrap();
         let record: twmq::job::JobErrorRecord<EoaExecutorWorkerError> =
             serde_json::from_str(&serialized_error).unwrap();
         if let Some(seconds) = delay {
-            assert_eq!(queued, ["tail"], "{name}: must not become immediately due");
-            assert_eq!(scheduled, Some(record.created_at + seconds), "{name}");
+            let twmq::job::JobErrorType::Nack(options) = &record.details else {
+                panic!("{name}: expected a requeue decision");
+            };
+            assert_eq!(
+                options.delay.unwrap().as_secs_f64().ceil() as u64,
+                seconds,
+                "{name}"
+            );
+            let deadline = record.created_at + seconds;
+            if let Some(at) = scheduled {
+                assert_eq!(queued, ["tail"], "{name}: delayed work stays off pending");
+                assert_eq!(at, deadline, "{name}");
+            } else {
+                assert!(
+                    chrono::Utc::now().timestamp() as u64 >= deadline,
+                    "{name}: promoted before its persisted deadline"
+                );
+                assert_eq!(queued, ["tail", "target"], "{name}: due work goes to tail");
+            }
         } else {
             assert_eq!(queued, ["tail", "target"], "{name}: progress goes to tail");
             assert_eq!(scheduled, None, "{name}: no rounded delay");
