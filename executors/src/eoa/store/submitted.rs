@@ -117,30 +117,43 @@ impl SubmittedTransactionDehydrated {
         redis_strings
             .iter()
             .filter_map(|(member, nonce)| {
-                let parts: Vec<_> = member.split(':').collect();
-                let (hash, id, queued, submitted) = match parts.as_slice() {
-                    ["v2", hash, id, queued, submitted] => {
-                        let bytes = hex::decode(id).ok()?;
-                        let decoded = String::from_utf8(bytes).ok()?;
-                        // Canonical encoding is needed to remove this exact member later.
-                        if !decoded.contains(':') || hex::encode(decoded.as_bytes()) != *id {
-                            return None;
-                        }
-                        (*hash, decoded, *queued, *submitted)
-                    }
-                    [hash, id, queued] => (*hash, (*id).to_owned(), *queued, "0"),
-                    [hash, id, queued, submitted] => (*hash, (*id).to_owned(), *queued, *submitted),
-                    _ => return None,
-                };
-                Some(Self {
-                    transaction_hash: hash.to_owned(),
-                    transaction_id: id,
-                    nonce: *nonce,
-                    queued_at: queued.parse().ok()?,
-                    submitted_at: submitted.parse().ok()?,
-                })
+                let parsed = Self::from_redis_string(member, *nonce);
+                if parsed.is_none() {
+                    tracing::warn!(
+                        nonce,
+                        member_bytes = member.len(),
+                        member_preview = %member.chars().take(256).collect::<String>(),
+                        "Ignoring malformed EOA submitted member; reconcile the retained journal before removing it"
+                    );
+                }
+                parsed
             })
             .collect()
+    }
+
+    fn from_redis_string(member: &str, nonce: u64) -> Option<Self> {
+        let parts: Vec<_> = member.split(':').collect();
+        let (hash, id, queued, submitted) = match parts.as_slice() {
+            ["v2", hash, id, queued, submitted] => {
+                let bytes = hex::decode(id).ok()?;
+                let decoded = String::from_utf8(bytes).ok()?;
+                // Canonical encoding is needed to remove this exact member later.
+                if !decoded.contains(':') || hex::encode(decoded.as_bytes()) != *id {
+                    return None;
+                }
+                (*hash, decoded, *queued, *submitted)
+            }
+            [hash, id, queued] => (*hash, (*id).to_owned(), *queued, "0"),
+            [hash, id, queued, submitted] => (*hash, (*id).to_owned(), *queued, *submitted),
+            _ => return None,
+        };
+        Some(Self {
+            transaction_hash: hash.to_owned(),
+            transaction_id: id,
+            nonce,
+            queued_at: queued.parse().ok()?,
+            submitted_at: submitted.parse().ok()?,
+        })
     }
 
     /// Returns the string representation of the submitted transaction with the nonce

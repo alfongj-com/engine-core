@@ -26,7 +26,7 @@ use engine_core::{
 };
 use serde_json::{Value, json};
 use std::{
-    collections::BTreeSet,
+    collections::{BTreeMap, BTreeSet},
     path::PathBuf,
     sync::{Arc, Mutex},
     time::Duration,
@@ -99,6 +99,8 @@ struct Observed {
     reject: BTreeSet<usize>,
     estimated_gas: Option<u64>,
     preparation_methods: Vec<String>,
+    preparation_http: BTreeMap<usize, u16>,
+    estimate_calls: BTreeMap<usize, usize>,
 }
 
 struct Fixture {
@@ -116,6 +118,10 @@ struct Fixture {
 
 impl Fixture {
     async fn new(count: usize, concurrency: usize) -> Self {
+        Self::with_gas(count, concurrency, true).await
+    }
+
+    async fn with_gas(count: usize, concurrency: usize, supplied_gas: bool) -> Self {
         let url =
             std::env::var("TEST_REDIS_URL").expect("set TEST_REDIS_URL to a disposable Redis");
         let client = twmq::redis::Client::open(url.clone()).unwrap();
@@ -204,7 +210,7 @@ impl Fixture {
                 to: Some(Address::repeat_byte(7)),
                 value: U256::from(index + 1),
                 data: Bytes::new(),
-                gas_limit: Some(21000),
+                gas_limit: supplied_gas.then_some(21000),
                 webhook_options: vec![WebhookOptions {
                     url: "https://example.com/dispatch".into(),
                     secret: None,
@@ -275,6 +281,7 @@ impl Fixture {
                     let request = read_request(&mut socket).await;
                     let mut response = json!({"jsonrpc":"2.0", "id": request["id"]});
                     let mut sent_nonce = None;
+                    let mut http_status = 200;
                     match request["method"].as_str().unwrap() {
                         "eth_sendRawTransaction" => {
                             let wire = request["params"][0].as_str().unwrap();
@@ -321,8 +328,22 @@ impl Fixture {
                         }
                         "eth_getTransactionReceipt" => response["result"] = Value::Null,
                         "eth_estimateGas" => {
-                            let gas = state.lock().unwrap().estimated_gas.unwrap_or(21000);
-                            response["result"] = json!(format!("0x{gas:x}"));
+                            let nonce = request["params"][0]["nonce"]
+                                .as_str()
+                                .map(|n| {
+                                    usize::from_str_radix(n.trim_start_matches("0x"), 16).unwrap()
+                                })
+                                .unwrap_or(usize::MAX);
+                            let mut seen = state.lock().unwrap();
+                            *seen.estimate_calls.entry(nonce).or_default() += 1;
+                            if let Some(status) = seen.preparation_http.get(&nonce) {
+                                http_status = *status;
+                                response["error"] =
+                                    json!({"code":-32000,"message":"fixture HTTP failure"});
+                            } else {
+                                let gas = seen.estimated_gas.unwrap_or(21000);
+                                response["result"] = json!(format!("0x{gas:x}"));
+                            }
                         }
                         "eth_gasPrice" => {
                             state
@@ -345,7 +366,7 @@ impl Fixture {
                     }
                     let body = response.to_string();
                     let bytes = format!(
-                        "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
+                        "HTTP/1.1 {http_status} Fixture\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
                         body.len()
                     );
                     // A caller-cancelled response can fail to write; the accepted
@@ -472,6 +493,340 @@ impl Fixture {
         }
         std::fs::remove_dir_all(&self.directory).unwrap();
     }
+}
+
+#[tokio::test]
+#[ignore = "requires disposable TEST_REDIS_URL; real HTTP statuses and unsigned retry boundaries"]
+async fn http_preparation_failures_keep_retryable_intents_unsigned_and_bounded() {
+    const CASE: &str = "ENGINE_EOA_HTTP_PREPARATION_CASE";
+    let Ok(case) = std::env::var(CASE) else {
+        for status in [408, 429, 503, 400, 401, 402, 403, 404] {
+            for supplied in [true, false] {
+                let output = std::process::Command::new(std::env::current_exe().unwrap())
+                    .args(["--exact", "eoa::worker::send::dispatch_tests::http_preparation_failures_keep_retryable_intents_unsigned_and_bounded", "--ignored", "--nocapture"])
+                    .env(CASE, format!("{status}:{supplied}"))
+                    .env("ENGINE_PRIVATE_KEY", KEY).output().unwrap();
+                assert!(
+                    output.status.success(),
+                    "{status}/{supplied}: {} {}",
+                    String::from_utf8_lossy(&output.stdout),
+                    String::from_utf8_lossy(&output.stderr)
+                );
+            }
+        }
+        return;
+    };
+    tokio::time::timeout(LIMIT, async {
+        let (status, supplied) = case.split_once(':').unwrap();
+        let status: u16 = status.parse().unwrap();
+        let retryable = matches!(status, 408 | 429 | 503);
+        let fixture = Fixture::with_gas(1, 1, supplied == "true").await;
+        fixture
+            .state
+            .lock()
+            .unwrap()
+            .preparation_http
+            .insert(0, status);
+        assert_eq!(fixture.worker.process_new_transactions(1).await.unwrap(), 0);
+        let calls = *fixture
+            .state
+            .lock()
+            .unwrap()
+            .estimate_calls
+            .get(&0)
+            .unwrap();
+        if retryable {
+            assert!(
+                (4..=16).contains(&calls),
+                "one bounded preparation budget, not ten refill rounds: {calls}"
+            );
+        } else {
+            assert_eq!(
+                calls, 1,
+                "permanent HTTP failures must not consume a retry budget"
+            );
+        }
+        assert_eq!(
+            fixture
+                .worker
+                .store
+                .get_pending_transactions_count()
+                .await
+                .unwrap(),
+            u64::from(retryable)
+        );
+        assert_eq!(
+            fixture
+                .worker
+                .store
+                .get_optimistic_transaction_count()
+                .await
+                .unwrap(),
+            0
+        );
+        assert!(
+            fixture
+                .worker
+                .store
+                .peek_borrowed_transactions()
+                .await
+                .unwrap()
+                .is_empty()
+        );
+        assert!(
+            fixture
+                .journal
+                .admission("eoa", "intent-00")
+                .await
+                .unwrap()
+                .unwrap()
+                .replay_key
+                .is_none()
+        );
+        assert_eq!(
+            RecoveryJournal::status(&fixture.directory.join("journal.sqlite"))
+                .unwrap()
+                .attempts,
+            0
+        );
+        assert!(fixture.state.lock().unwrap().wires.is_empty());
+        let mut conn = fixture.worker.store.redis.clone();
+        let status: String = conn
+            .hget(
+                fixture.worker.store.transaction_data_key_name("intent-00"),
+                "status",
+            )
+            .await
+            .unwrap();
+        assert_eq!(status, if retryable { "pending" } else { "failed" });
+        if retryable {
+            let notifications: usize = conn
+                .llen(fixture.worker.webhook_queue.pending_list_name())
+                .await
+                .unwrap();
+            assert_eq!(
+                notifications, 0,
+                "a transient failure must not announce terminal failure"
+            );
+            fixture.state.lock().unwrap().preparation_http.clear();
+            fixture.release_all();
+            assert_eq!(fixture.worker.process_new_transactions(1).await.unwrap(), 1);
+            assert_eq!(
+                fixture
+                    .worker
+                    .store
+                    .get_submitted_transactions_count()
+                    .await
+                    .unwrap(),
+                1
+            );
+            assert_eq!(
+                fixture
+                    .state
+                    .lock()
+                    .unwrap()
+                    .wires
+                    .iter()
+                    .map(|(n, _)| *n)
+                    .collect::<Vec<_>>(),
+                [0]
+            );
+            assert_eq!(
+                RecoveryJournal::status(&fixture.directory.join("journal.sqlite"))
+                    .unwrap()
+                    .attempts,
+                1
+            );
+        }
+        fixture.cleanup().await;
+    })
+    .await
+    .expect("HTTP preparation must remain bounded");
+}
+
+#[tokio::test]
+#[ignore = "requires disposable TEST_REDIS_URL; partial preparation progress and nonce continuity"]
+async fn throttled_suffix_yields_after_valid_prefix_without_skipping_a_nonce() {
+    if !child("throttled_suffix_yields_after_valid_prefix_without_skipping_a_nonce") {
+        return;
+    }
+    tokio::time::timeout(LIMIT, async {
+        let fixture = Fixture::new(3, 3).await;
+        fixture
+            .state
+            .lock()
+            .unwrap()
+            .preparation_http
+            .insert(1, 429);
+        fixture.release_all();
+        assert_eq!(fixture.worker.process_new_transactions(3).await.unwrap(), 1);
+        assert_eq!(
+            fixture
+                .state
+                .lock()
+                .unwrap()
+                .wires
+                .iter()
+                .map(|(n, _)| *n)
+                .collect::<Vec<_>>(),
+            [0]
+        );
+        assert_eq!(
+            fixture
+                .worker
+                .store
+                .get_pending_transactions_count()
+                .await
+                .unwrap(),
+            2
+        );
+        assert_eq!(
+            fixture
+                .worker
+                .store
+                .get_optimistic_transaction_count()
+                .await
+                .unwrap(),
+            1
+        );
+        assert!(
+            fixture
+                .journal
+                .admission("eoa", "intent-02")
+                .await
+                .unwrap()
+                .unwrap()
+                .replay_key
+                .is_none()
+        );
+        let calls = *fixture
+            .state
+            .lock()
+            .unwrap()
+            .estimate_calls
+            .get(&1)
+            .unwrap();
+        assert!((4..=16).contains(&calls));
+        fixture.state.lock().unwrap().preparation_http.clear();
+        assert_eq!(fixture.worker.process_new_transactions(2).await.unwrap(), 2);
+        let nonces: BTreeSet<_> = fixture
+            .state
+            .lock()
+            .unwrap()
+            .wires
+            .iter()
+            .map(|(n, _)| *n)
+            .collect();
+        assert_eq!(nonces, BTreeSet::from([0, 1, 2]));
+        assert_eq!(fixture.state.lock().unwrap().wires.len(), 3);
+        assert_eq!(
+            fixture
+                .worker
+                .store
+                .get_optimistic_transaction_count()
+                .await
+                .unwrap(),
+            3
+        );
+        assert_eq!(
+            RecoveryJournal::status(&fixture.directory.join("journal.sqlite"))
+                .unwrap()
+                .attempts,
+            3
+        );
+        fixture.cleanup().await;
+    })
+    .await
+    .expect("partial preparation progress must yield");
+}
+
+#[tokio::test]
+#[ignore = "requires disposable TEST_REDIS_URL; recycled nonce retry and NOOP boundary"]
+async fn throttled_recycled_nonce_is_retained_without_retries_or_noop_refill() {
+    if !child("throttled_recycled_nonce_is_retained_without_retries_or_noop_refill") {
+        return;
+    }
+    tokio::time::timeout(LIMIT, async {
+        let fixture = Fixture::new(1, 1).await;
+        let mut conn = fixture.worker.store.redis.clone();
+        // A higher submitted nonce keeps zero in the recycled set. Two holes
+        // and one pending intent also exercise the otherwise-empty NOOP suffix.
+        let higher = crate::eoa::store::SubmittedTransactionDehydrated {
+            nonce: 2,
+            transaction_hash: format!("0x{}", "ab".repeat(32)),
+            transaction_id: "higher-submitted".into(),
+            queued_at: 1,
+            submitted_at: 1,
+        };
+        let (member, nonce) = higher.to_redis_string_with_nonce();
+        let _: () = twmq::redis::pipe()
+            .zadd(
+                fixture.worker.store.submitted_transactions_zset_name(),
+                member,
+                nonce,
+            )
+            .zadd_multiple(
+                fixture.worker.store.recycled_nonces_zset_name(),
+                &[(0, 0), (1, 1)],
+            )
+            .set(
+                fixture.worker.store.optimistic_transaction_count_key_name(),
+                3,
+            )
+            .query_async(&mut conn)
+            .await
+            .unwrap();
+        fixture
+            .state
+            .lock()
+            .unwrap()
+            .preparation_http
+            .insert(0, 429);
+        assert_eq!(fixture.worker.process_recycled_nonces().await.unwrap(), 0);
+        let calls = fixture.state.lock().unwrap().estimate_calls[&0];
+        assert!((4..=16).contains(&calls), "one preparation budget: {calls}");
+        assert_eq!(
+            fixture
+                .worker
+                .store
+                .get_pending_transactions_count()
+                .await
+                .unwrap(),
+            1
+        );
+        assert_eq!(
+            fixture.worker.store.get_recycled_nonces().await.unwrap(),
+            [0, 1]
+        );
+        assert_eq!(
+            fixture
+                .worker
+                .store
+                .get_submitted_transactions_count()
+                .await
+                .unwrap(),
+            1
+        );
+        assert!(fixture.state.lock().unwrap().wires.is_empty());
+        assert!(
+            fixture
+                .worker
+                .store
+                .peek_borrowed_transactions()
+                .await
+                .unwrap()
+                .is_empty()
+        );
+        assert_eq!(
+            RecoveryJournal::status(fixture.directory.join("journal.sqlite"))
+                .unwrap()
+                .attempts,
+            0
+        );
+        fixture.cleanup().await;
+    })
+    .await
+    .expect("recycled preparation must yield before NOOP refill");
 }
 
 #[tokio::test]

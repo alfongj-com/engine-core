@@ -1076,6 +1076,46 @@ impl RecoveryJournal {
         Ok(())
     }
 
+    /// Recognize only the durable unsigned ERC-4337 cancellation state. Queue
+    /// cleanup may be interrupted after cancellation commits; it must not turn
+    /// an attempted, mismatched or unhealthy admission into a discarded job.
+    pub async fn cancelled_unbroadcast_payload(
+        self: &Arc<Self>,
+        id: &str,
+        payload: &Value,
+    ) -> Result<bool> {
+        identity("erc4337", id)?;
+        let (id, payload) = (id.to_owned(), payload.clone());
+        let fingerprint = admission_fingerprint("erc4337", &payload)?;
+        self.run_owned(move |journal| async move {
+            let _guard = journal.serial_guard("cancellation_projection").await;
+            journal.healthy_locked().await?;
+            journal
+                .db(move |conn| {
+                    let Some(record) = lookup(conn, &id)? else {
+                        return Ok(false);
+                    };
+                    if record.kind != "erc4337"
+                        || record.fingerprint != fingerprint
+                        || canonical(&record.payload)? != canonical(&payload)?
+                    {
+                        return Err(RecoveryError::Conflict);
+                    }
+                    if record.state != AdmissionState::Quarantined || record.replay_key.is_some() {
+                        return Ok(false);
+                    }
+                    let attempted: bool = conn.query_row(
+                        "SELECT EXISTS(SELECT 1 FROM attempts WHERE id=?)",
+                        [id],
+                        |row| row.get(0),
+                    )?;
+                    Ok(!attempted)
+                })
+                .await
+        })
+        .await
+    }
+
     /// Revoke an unsigned ERC-4337 intent before touching its queue projection.
     /// Competes with before_broadcast under the same serial guard/SQL authority:
     /// once a replay identity exists, cancellation cannot discard reconciliation.

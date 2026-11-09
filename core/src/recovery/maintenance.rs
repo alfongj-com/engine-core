@@ -26,6 +26,8 @@ fn wal_bytes(path: &Path) -> Result<u64> {
 /// Hash every value, including recovery events and sqlite_sequence, in stable
 /// table/column order. At most one SQLite row is materialized at a time. Length
 /// and type prefixes distinguish NULL, empty strings/blobs and field boundaries.
+/// Authority and ordering use explicit IDs/sequences, never implicit rowids,
+/// which VACUUM may renumber. SQLite may spill this all-column sort to disk.
 fn logical_digest(conn: &Connection) -> Result<([u8; 32], u64)> {
     let tables: Vec<String> = conn
         .prepare("SELECT name FROM sqlite_schema WHERE type='table' ORDER BY name")?

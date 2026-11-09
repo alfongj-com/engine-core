@@ -29,6 +29,9 @@ fn submitted_members_round_trip_colons_unicode_and_legacy_forms() {
         "v2:h:666f6f:1:2",
         "v2:h:ff:1:2",
         "v2:h:3a:NaN:2",
+        "h:ambiguous:legacy:id:1:2",
+        "h:id:NaN",
+        "h:id:1:NaN",
     ] {
         assert!(
             SubmittedTransactionDehydrated::from_redis_strings(&[(invalid.into(), 5)]).is_empty()

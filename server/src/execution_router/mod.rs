@@ -231,10 +231,20 @@ impl ExecutionRouter {
         // Create job with transaction ID as the job ID for idempotency
         self.external_bundler_send_queue
             .clone()
-            .job(job_data)
+            .job(job_data.clone())
             .with_id(&base_execution_options.idempotency_key)
             .push()
             .await?;
+
+        if let Some(journal) = engine_core::recovery::global() {
+            reconcile_external_bundler_enqueue(
+                &self.external_bundler_send_queue,
+                &self.transaction_registry,
+                &journal,
+                &job_data,
+            )
+            .await?;
+        }
 
         tracing::debug!(
             transaction_id = base_execution_options.idempotency_key,
@@ -380,14 +390,20 @@ impl ExecutionRouter {
         {
             match error {
                 engine_executors::eoa::store::TransactionStoreError::CapacityExceeded => {
-                    if crate::recovery::terminal_retry(
+                    match crate::recovery::retry_admission(
                         "eoa",
                         &base_execution_options.idempotency_key,
                         &eoa_transaction_request,
                     )
                     .await?
                     {
-                        return Ok(());
+                        crate::recovery::RetryAdmission::Terminal => return Ok(()),
+                        crate::recovery::RetryAdmission::Active => {
+                            return Err(crate::recovery::admission_pending(
+                                &base_execution_options.idempotency_key,
+                            ));
+                        }
+                        crate::recovery::RetryAdmission::Missing => {}
                     }
                     return Err(EngineError::Overloaded {
                         message: error.to_string(),
@@ -415,14 +431,12 @@ impl ExecutionRouter {
         eoa_executor_store
             .add_transaction(eoa_transaction_request)
             .await
-            .map_err(|e| match e {
-                engine_executors::eoa::store::TransactionStoreError::CapacityExceeded => EngineError::Overloaded { message: e.to_string() },
-                engine_executors::eoa::store::TransactionStoreError::TransactionConflict { .. } => EngineError::ValidationError {
-                    message: "The idempotency key already belongs to a different or incomplete transaction. Use the original request or reconcile its status.".to_string(),
-                },
-                other => EngineError::from(TwmqError::Runtime {
-                    message: format!("Failed to add transaction to EOA store: {other}"),
-                }),
+            .map_err(|e| {
+                crate::recovery::eoa_enqueue_error(
+                    e,
+                    &base_execution_options.idempotency_key,
+                    engine_core::recovery::global().is_some(),
+                )
             })?;
 
         // Register transaction in registry
@@ -611,6 +625,39 @@ fn validate_execution_request(request: &SendTransactionRequest) -> Result<(), En
     }
     Ok(())
 }
+
+/// Cancellation can commit between registry publication and queue insertion.
+/// Recheck after insertion so that intake cannot report acceptance of a job
+/// already revoked at that point. A worker handles a crash before this cleanup.
+async fn reconcile_external_bundler_enqueue<H>(
+    queue: &Arc<Queue<H>>,
+    registry: &TransactionRegistry,
+    journal: &Arc<engine_core::recovery::RecoveryJournal>,
+    data: &ExternalBundlerSendJobData,
+) -> Result<(), EngineError>
+where
+    H: twmq::DurableExecution<JobData = ExternalBundlerSendJobData>,
+{
+    let payload = serde_json::to_value(data).map_err(|_| EngineError::InternalError {
+        message: "Cannot encode recovery payload".into(),
+    })?;
+    if !journal
+        .cancelled_unbroadcast_payload(&data.transaction_id, &payload)
+        .await
+        .map_err(crate::recovery::recovery_error)?
+    {
+        return Ok(());
+    }
+    queue.cancel_job(&data.transaction_id).await?;
+    registry.remove_transaction(&data.transaction_id).await?;
+    Err(EngineError::ValidationError {
+        message: "Transaction was cancelled before intake completed".into(),
+    })
+}
+
+#[cfg(test)]
+#[path = "cancellation_tests.rs"]
+mod cancellation_tests;
 
 #[cfg(test)]
 mod request_validation_tests {

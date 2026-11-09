@@ -181,6 +181,10 @@ pub fn should_update_balance_threshold(error: &EngineError) -> bool {
 
 pub fn is_retryable_rpc_error(kind: &RpcErrorKind) -> bool {
     match kind {
+        // Throttling and request timeouts do not reject an unsigned intent.
+        RpcErrorKind::TransportHttpError {
+            status: 408 | 429, ..
+        } => true,
         RpcErrorKind::TransportHttpError { status, .. } if *status >= 400 && *status < 500 => false,
         RpcErrorKind::UnsupportedFeature { .. } => false,
         RpcErrorKind::ErrorResp(resp) => {

@@ -46,6 +46,12 @@ EOA payload/attempt state that cannot demonstrate its scheduling remains blocked
 The journal does not retain original scheduling timestamps. Newly reconstructed
 metadata uses repair time; surviving retry counters, creation times and delayed
 positions are preserved. Solana send bounds remain in the independent journal.
+EOA worker IDs are reusable: completion history from a prior generation does not
+invalidate surviving current scheduling. Only a completed worker with no current
+scheduling or dedup membership starts with fresh metadata. Rebuilt attempt lists
+remain newest-first. Missing hash lookups and nonce floors are restored for
+surviving attempted projections too; conflicting lookups stop repair before any
+intent update. Successful no-op visits do not increase the restored-work counts.
 Unknown queue age does not establish non-execution. Original intent and replay
 identity remain unchanged; deadline-sensitive intents must encode their deadline.
 

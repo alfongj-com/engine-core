@@ -41,7 +41,7 @@
     },
     {
       "path": "core/src/recovery.rs",
-      "sha256": "9fef4e3787e54d3b9208dfc9061326db34c917e5ad4b728548989f96020c676a",
+      "sha256": "9944ec9385d21acc4802c91f76e2f9c665f463014a8bfc8b7add1a2dc66408e8",
       "models": [
         "DisasterRecovery",
         "Finality",
@@ -158,7 +158,7 @@
     },
     {
       "path": "executors/src/eoa/store/submitted.rs",
-      "sha256": "ab0f3226e26e8b82c8fbcf96de69a6f3ade9ab69b9c8522bf8c034727d00c30d",
+      "sha256": "5e2d2fba4a7da536593ce6c1e0942e56f3b4fe357a63dbfee5fb389f0e8c11c1",
       "models": [
         "EoaRecovery",
         "Finality",
@@ -187,7 +187,7 @@
     },
     {
       "path": "executors/src/eoa/worker/error.rs",
-      "sha256": "525cd8260c35d04711b1b1f987a2f7456d2d010ff03ad109df8678d95b092b52",
+      "sha256": "ad80ca78fccd7534b9445ad603795ddf05682f2a4fd42bba1e35d2990b0b3ae9",
       "models": [
         "EoaRecovery"
       ]
@@ -250,7 +250,7 @@
     },
     {
       "path": "executors/src/eoa/worker/send.rs",
-      "sha256": "dd6f2d9e314459a8a9677255ad9b008a47a53056bb303e0474e40d5bb1128bd9",
+      "sha256": "21fba4dcd9491afefcd38207b4472d5ddc0f880cf1cd603474e94dc7aefacee4",
       "models": [
         "DisasterRecovery",
         "EoaRecovery",
@@ -259,7 +259,7 @@
     },
     {
       "path": "executors/src/eoa/worker/send_dispatch_tests.rs",
-      "sha256": "ef81a7aeb94dd0ebb8a7f9ae5e46fcad2f3990bb18ed1a12f1fac22466a2000e",
+      "sha256": "4602451550d873e79b9d14ed524d2fc348b05255538e4fd2836b6a800ccc35f4",
       "models": [
         "EoaRecovery",
         "DisasterRecovery"
@@ -292,7 +292,7 @@
     },
     {
       "path": "executors/src/external_bundler/send.rs",
-      "sha256": "af0de44d186d91b37255e055ecf1bc87974b8d618351323cf0336e53e8d2c2bb",
+      "sha256": "e81f9af8806ff2800451431fb64723d7a1f8e6c58e8ac3f98acf2bc67a77b6f5",
       "models": [
         "DisasterRecovery"
       ]
@@ -302,7 +302,7 @@
       "models": [
         "DisasterRecovery"
       ],
-      "sha256": "10c53dfb01f76f223694a1b0df2faa8da62a9bfd2f7b2ea5385d8017128027c7"
+      "sha256": "1449ea9bb4cf97e798c9f92eb62cf385b5f7e528379205ed77774e02d63e637a"
     },
     {
       "path": "executors/src/finality.rs",
@@ -472,7 +472,7 @@
     },
     {
       "path": "server/src/execution_router/mod.rs",
-      "sha256": "d02bd1154fe350fb915b069c9d4740f3057528339132dfc3512d9104def9db36",
+      "sha256": "26665bd1d1276f88ec0d49d801d5bd29bbe14c163240211d237c3ccf905f6e5b",
       "models": [
         "Admission",
         "DisasterRecovery",
@@ -531,7 +531,7 @@
     },
     {
       "path": "server/src/recovery.rs",
-      "sha256": "086c65f98d9dced965f5658cc79a09149c000f2253e4f2469dc28b8b5cf98985",
+      "sha256": "d33dbb9b09f2fb4aa82f963f2bada648301dc976a5a381427018207755ef5594",
       "models": [
         "DisasterRecovery",
         "DisasterRecoveryProjection",
@@ -554,7 +554,7 @@
     },
     {
       "path": "server/tests/api_safety.rs",
-      "sha256": "9544415a35ca228d1805c4234dce5781c2fb846e101e6b4393270af5ba98f3d9",
+      "sha256": "155e305f6e9d5b5c74220d505cc9a8f1397d2c7fd7e11ad146716d98f4865fce",
       "models": [
         "Admission",
         "DisasterRecovery",
@@ -622,7 +622,7 @@
     },
     {
       "path": "core/src/recovery/cancellation_tests.rs",
-      "sha256": "a09fa5cf49e8a66d950aefb96a4ede0338a2645909b5c998cf1c015d0453084b",
+      "sha256": "aec7f3893bc1d1a1c9242a4524b4406286f8b8ad321406077bc7ab652b0b589b",
       "models": [
         "DisasterRecovery",
         "IntentCancellation"
@@ -640,7 +640,7 @@
       "models": [
         "DisasterRecoveryProjection"
       ],
-      "sha256": "fd8eebfe284c32dd73c1351980e32aaca9acb4ceebc1d5a1f36635d11f2496a3"
+      "sha256": "3e5f23adffc97f4ff9e67819e4064d1f8d2afd8a4b8ea62cf91b48b64573e842"
     },
     {
       "path": "core/src/recovery/projection.rs",
@@ -701,7 +701,7 @@
       "models": [
         "DisasterRecoveryProjection"
       ],
-      "sha256": "2f6dc401112a9f419b37c0612ba35e7d58bdbd293a736974dcea7deb3831d17a"
+      "sha256": "1c86ac510b41d449c60372cc43cedb275939777ef5f67bc07a29ac448c24c4cb"
     },
     {
       "path": "twmq/src/shutdown_tests.rs",
@@ -739,7 +739,7 @@
       "models": [
         "IntentCancellation"
       ],
-      "sha256": "5a05707eedab2d3aea3ecd03cffb979610eccdca2a283aaf254b527aeae54939"
+      "sha256": "f12a5957e0aafc281bcd11953725040439f57b3abd7c160b3b04842e17feb76d"
     },
     {
       "path": "core/src/credentials.rs",
@@ -766,7 +766,7 @@
     },
     {
       "path": "executors/src/eoa/store/rebuild.rs",
-      "sha256": "b530b39351eab5ee8d670f2b99f7c88aab0b8fa4fc46ab1d285b09113cbbfbad",
+      "sha256": "6b85b16e3e446a0d02b6cb099d5a3d891c6c9590f11730b07fda3b3170ed1b41",
       "models": [
         "EoaRecovery",
         "QueueRebuild"
@@ -774,7 +774,7 @@
     },
     {
       "path": "server/src/queue_rebuild.rs",
-      "sha256": "c4c155144010d31fa92ee5a0345106026d06698922e29be01ae437301a15bcf3",
+      "sha256": "7c4e2d17b65662be7ba2264dfb7dba2971bedb5481ae725fd5a69878e766aa88",
       "models": [
         "QueueRebuild",
         "SolanaRetainedAttempt"
@@ -782,16 +782,24 @@
     },
     {
       "path": "executors/src/eoa/store/submitted_member_tests.rs",
-      "sha256": "afe6f26f41ac01acfaaa846be1695a4f51428f5b5222872d37b386af3e2f05be",
+      "sha256": "66c3f1eb9a8da5074523e92b20ca5faece30feb9c43ed7b1bf0517512aaa02e8",
       "models": [
         "EoaRecovery"
       ]
     },
     {
       "path": "core/src/recovery/maintenance.rs",
-      "sha256": "55a0386edcadf86ce47ab975a48cbbfa090f2e67e10718e37e38f1e5da91a97f",
+      "sha256": "c2b6439e5fb40d7c241476bf810110fe9ee0bc9063e9ddce4dfeb44495e20c6d",
       "models": [
         "DisasterRecovery"
+      ]
+    },
+    {
+      "path": "server/src/execution_router/cancellation_tests.rs",
+      "sha256": "4d9e92d8b37e327bf10609628d92ca91b660e3b13be3c3e16741ea4949c4e608",
+      "models": [
+        "IntentCancellation",
+        "Admission"
       ]
     }
   ],
@@ -1086,6 +1094,22 @@
     "canonical_nonce_progress": {
       "decision": "Use canonical latest nonce for stall detection and gas-bump race checks; retain finality polling and exact-wire ownership.",
       "reason": "EoaRecovery already models canonical latest separately from receipts. This change restricts bump scheduling to actual current-nonce submitted members, leaves fee/replay authority unchanged, and prevents a preconfirmation hint from refreshing the canonical progress clock. Included-but-unfinalized attempts and idle wallets do not produce stuck alerts. Indexed Redis counts run only after a stall threshold; finality and continuity polling continue independently. Executable Redis/RPC regressions cover idle, included/unfinalized, preconfirmation ahead, a future nonce gap, canonical progress, capped fees, missing requests and failed simulation; they assert retained members, no fallback sends, expected simulation calls and exported stuck metrics. This is scheduler/monitoring coverage, not a proof of chain inclusion liveness or wall-clock timing."
+    },
+    "transient_preparation_http": {
+      "decision": "Retry unsigned HTTP408/429; yield a preparation cycle on transient failure after preserving/sending a valid prefix.",
+      "reason": "Preparation never grants a send. These HTTP statuses retain the original pending intent without a nonce/wire reservation, unlike permanent client/authentication errors. New and recycled-nonce batches may each consume one existing bounded preparation retry budget; it cannot repeat it across ten refill passes. Deterministic rejection refill, ordered prefix publication, borrowed-state owner/journal gates and post-dispatch uncertainty rules remain unchanged. EoaRecovery/Admission already permit pending retry/stutter and require durable ownership before broadcasting; numeric HTTP classification, runtime timing, retry budgets and partial-batch scheduling are implementation obligations. Real HTTP/Redis tests cover eight statuses with supplied/estimated gas, no premature failure webhook, original-nonce recovery, a throttled suffix after a valid prefix, and recycled-nonce retention without NOOP substitution. This is not a model of provider quotas or a proof that RPC service eventually recovers."
+    },
+    "cancelled_queue_projection": {
+      "decision": "Complete only exact, healthy, unattempted ERC4337 cancellations; reconcile intake and queue projection after durable revocation.",
+      "reason": "IntentCancellation already serializes cancellation against the first broadcast reservation. Queue projection cleanup is a crash-recoverable consequence and grants no send permission. Matching payload/fingerprint, no replay key, zero attempts and a healthy owner are required before a worker may permanently finish revoked work. Mismatches, continuity loss, attempts and halts remain retry/refusal states. Real Redis/API and serialized-journal regressions cover cancellation before queue push, interrupted queue cancellation, late work arrival, restart, mismatched payloads and attempted/halted negatives. This does not prove arbitrary queue liveness or fairness."
+    },
+    "post_reservation_capacity": {
+      "decision": "Distinguish fresh capacity rejection from a durable intent whose Redis enqueue lost a capacity race.",
+      "reason": "AdmissionPending is HTTP503 with the original transactionId; callers must retry that ID because the retained journal reservation may execute through recovery. Fresh pre-reservation overload remains429, and exact terminal retries create no new work. No reservation is deleted or quarantined to manufacture rejection. Admission/QueueRebuild retain their journal-before-projection ordering; the HTTP contract and autogenerated-ID propagation are runtime obligations. A deterministic real Redis capacity cut tests the actual failed add, immutable reservation, no prior replay binding, structured response and exactly-once subsequent publication."
+    },
+    "retained_queue_projection_repairs": {
+      "decision": "Preserve current reusable worker generations and repair retained EOA floor/hash projections only after validating every witness under the owner fence.",
+      "reason": "QueueRebuild assumes validated intent-level terminality and a current exclusive owner. Historical successful reusable worker generations are not permanent intent tombstones; current unfinished retry counts/delays survive. Every retained attempt receives its hash alias, history remains newest-first, and a surviving attempted projection raises a missing/stale nonce floor without rebinding a nonce. Conflicting aliases/types/noninteger floors fail before writes. Existing borrowed JSON is bounded, decoded and checked against exact retained canonical wires, then literally rechecked in the final Lua mutation; unsigned journal records cannot adopt a borrowed wire. Existing terminal/quarantine exclusions, live-lease refusal and journal send gates remain unchanged. Rust/Redis regressions and direct production-Lua failure cuts cover generation reuse, idempotent counts, selective index loss and witness races. These are runtime validation obligations of the finite model, not a proof of Lua/SQLite refinement."
     }
   }
 }

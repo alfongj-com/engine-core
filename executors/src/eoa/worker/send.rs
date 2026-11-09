@@ -321,6 +321,12 @@ impl<C: Chain> EoaExecutorWorker<C> {
                 .buffered(PREPARATION_CONCURRENCY)
                 .collect::<Vec<_>>()
                 .await;
+            let retryable_failure = prepared_results.iter().any(|result| {
+                result
+                    .as_ref()
+                    .err()
+                    .is_some_and(is_retryable_preparation_error)
+            });
             let prepared_results_with_pending = pending_txs
                 .iter()
                 .take(prepared_results.len())
@@ -332,7 +338,10 @@ impl<C: Chain> EoaExecutorWorker<C> {
                 .await?;
 
             if cleaned_results.is_empty() {
-                // No successful preparations, try again with more pending transactions
+                if retryable_failure {
+                    return Ok(total_sent as u32);
+                }
+                // Deterministic failures removed work; try another pending batch.
                 continue;
             }
 
@@ -372,6 +381,11 @@ impl<C: Chain> EoaExecutorWorker<C> {
             );
 
             total_sent += processing_report.moved_to_submitted;
+            if retryable_failure {
+                // Keep failed pending work and its available nonce for the next
+                // cycle. In particular, do not replace it with a NOOP.
+                return Ok(total_sent as u32);
+            }
         }
 
         if is_pending_empty {
@@ -553,6 +567,13 @@ impl<C: Chain> EoaExecutorWorker<C> {
                 .collect::<Vec<_>>()
                 .await;
 
+            let retryable_failure = prepared_results.iter().any(|result| {
+                result
+                    .as_ref()
+                    .err()
+                    .is_some_and(is_retryable_preparation_error)
+            });
+
             tracing::info!(
                 duration_seconds = calculate_duration_seconds(build_start, current_timestamp_ms()),
                 iteration = iteration,
@@ -586,7 +607,12 @@ impl<C: Chain> EoaExecutorWorker<C> {
             );
 
             if cleaned_results.is_empty() {
-                // No successful preparations, reduce budget and continue
+                // Refill only after deterministic failures removed work. A
+                // transient failure keeps the same pending IDs; yield rather
+                // than repeating the entire retry budget ten times this cycle.
+                if retryable_failure {
+                    break;
+                }
                 continue;
             }
 
@@ -667,6 +693,9 @@ impl<C: Chain> EoaExecutorWorker<C> {
                 worker_id = %self.store.worker_id,
                 "JOB_LIFECYCLE - process_new_transactions: Completed iteration"
             );
+            if retryable_failure {
+                break; // The valid prefix was sent; retain/yield its unsigned suffix.
+            }
         }
 
         tracing::info!(
