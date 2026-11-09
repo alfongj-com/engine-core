@@ -17,12 +17,11 @@ Apply the remaining entries in this order, skipping PRs already merged:
 | #19 | Read-only public-run reconciliation, provider guards and bounded retries for throttled unsigned work. |
 
 Fixes to an open PR are committed to that PR and its dependents are rebased.
-Temporary follow-up PRs #20/#22 are closed; their fixes are in #19 and #13/#14 respectively.
+Temporary follow-up PRs #20/#22 are closed; their fixes are in #19 and the #21 base integration respectively.
 PRs #5–#17 were merged into stack parents rather than main; #21
 retains that history as the base for the remaining PRs. This review creates PRs;
-it does not merge them. Earlier PRs can have historical
-failing checks that are fixed above them. Assess the exact final head and merge
-order, including comments whose fix is later in the stack.
+it does not merge them. Assess each open PR at its exact current head and merge
+in the stated order. Historical checks on closed heads do not validate new code.
 
 ## Validation
 

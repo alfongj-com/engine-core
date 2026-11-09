@@ -13,7 +13,7 @@ in **`/Users/alfongj/Code/engine-core-review-stack`**, branch
 checkouts, exact test commands, local recovery scenarios and a
 [copyable prompt for another agent](LOCAL_TESTING.md#prompt-for-another-local-agent).
 
-Branch layout on November 8, 2026:
+Branch layout on November 9, 2026:
 
 | Branch | Status |
 | --- | --- |
@@ -103,6 +103,12 @@ cargo run --locked --bin thirdweb-engine
 ```
 
 The journal is mandatory for the server and supports one active process on one host. Store it on a persistent local volume independent of Redis; normal startup refuses a missing journal. Never initialize a replacement journal over existing work. Use the [recovery runbook](docs/design/redis-disaster-recovery.md) for upgrades and Redis restarts. The zero-depth policy above is restricted to local chain 31337; public chains default to `finalized` with no automatic downgrade.
+
+Supply a stable `executionOptions.idempotencyKey` for every logical transaction
+and reuse the exact request after a timeout or server error. Work may already be
+durably admitted when its response is lost. `ADMISSION_PENDING` includes the
+original transaction ID; retry that ID. If you omit the key and lose the response
+containing the generated ID, this API cannot safely deduplicate a new request.
 
 The configured endpoint lets local requests use the operator token alone. Each public EVM chain accepts its own endpoint and headers using the same setting. Provider clients reuse connections and refuse redirects. Unconfigured chains retain the legacy Thirdweb routing; bundlers and paymasters are separate integrations.
 

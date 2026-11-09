@@ -165,6 +165,7 @@ Run sequentially after the build succeeds:
 "$PYTHON_BIN" scripts/local_eoa_recovery.py --live-redis-restart --report "$ENGINE_TEST_REPORTS/eoa-live-redis.json"
 "$PYTHON_BIN" scripts/local_eoa_recovery.py --transactions 8 --redis-crash --revert --report "$ENGINE_TEST_REPORTS/eoa-revert.json"
 "$PYTHON_BIN" scripts/local_eoa_recovery.py --transactions 4 --redis-crash --create --report "$ENGINE_TEST_REPORTS/eoa-create.json"
+"$PYTHON_BIN" scripts/local_eoa_preparation_failure.py --report "$ENGINE_TEST_REPORTS/eoa-preparation-failure.json"
 # Upgrade check: add --engine-bin /absolute/old-engine --restart-engine-bin /absolute/new-engine.
 # It reuses the same journal/Redis state and checks the original transaction hashes.
 "$PYTHON_BIN" scripts/local_redis_disaster.py --loss flush --report "$ENGINE_TEST_REPORTS/redis-flush.json"

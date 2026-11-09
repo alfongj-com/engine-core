@@ -81,6 +81,8 @@ jobs:
         run: |
           ANVIL_BIN=/tmp/engine-foundry/anvil python3 scripts/local_eoa_recovery.py --transactions 8 --rebuild-queues --report /tmp/local-eoa-rebuild.json
           ANVIL_BIN=/tmp/engine-foundry/anvil python3 scripts/local_eoa_recovery.py --transactions 8 --rebuild-jobs-only --report /tmp/local-eoa-rebuild-jobs.json
+      - name: Rejected EOA intent stays rejected after Redis loss and offline rebuild
+        run: ANVIL_BIN=/tmp/engine-foundry/anvil python3 scripts/local_eoa_preparation_failure.py --report /tmp/local-eoa-preparation-failure.json
       - name: Redis AOF crash recovery
         run: ANVIL_BIN=/tmp/engine-foundry/anvil python3 scripts/local_eoa_recovery.py --redis-crash --report /tmp/local-eoa-redis-crash.json
       - name: Reverted execution and Redis crash recovery

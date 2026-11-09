@@ -101,6 +101,9 @@ SQLite uses WAL with `synchronous=FULL`; initialization and private output files
 are synced, including containing directory entries. Owned tasks retain the
 serialization lock and admission permit through publication and acknowledgement.
 Cancelling a caller does not abandon its update; retry the original ID and intent.
+Clients must choose stable idempotency keys before sending. An unreceived HTTP
+response can hide a committed admission, including a generated ID; a new ID is
+a new intent and can execute in addition to the original.
 Blocking database work retains the OS owner lock. Graceful shutdown stops HTTP
 and workers, then permanently closes registration and drains registered work.
 Delayed detached health probes cannot start a repair after that barrier returns.

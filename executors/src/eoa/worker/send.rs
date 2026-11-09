@@ -453,7 +453,7 @@ impl<C: Chain> EoaExecutorWorker<C> {
                         tracing::error!(
                             error = ?e,
                             transaction_id = pending.transaction_id,
-                            "Transaction permanently failed due to non-retryable preparation error",
+                            "Permanent preparation error observed; attempting durable failure decision",
                         );
                         non_retryable_failures.push((pending, e.clone()));
                     }
