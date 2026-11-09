@@ -41,7 +41,7 @@ def download(url, expected_sha256, destination, *, attempts=4, max_bytes=1024**3
     HTTP integrity/framing failures are permanent. Only transport failures and
     408/429/5xx responses retry; retries cache-bust the original release URL.
     Check the overall deadline between chunks and before publication. A body
-    read already in progress can overrun it by at most its 10-second I/O timeout.
+    read already in progress can overrun it by at most its 30-second I/O timeout.
     """
     parts = urllib.parse.urlsplit(url)
     if parts.scheme not in {"http", "https"} or not parts.netloc:
@@ -63,7 +63,7 @@ def download(url, expected_sha256, destination, *, attempts=4, max_bytes=1024**3
         try:
             request_url = url if attempt == 0 else _retry_url(url)
             request = urllib.request.Request(request_url, headers={"Cache-Control": "no-cache"})
-            with urllib.request.urlopen(request, timeout=min(10, _remaining(deadline))) as response:
+            with urllib.request.urlopen(request, timeout=min(30, _remaining(deadline))) as response:
                 _remaining(deadline)
                 lengths = response.headers.get_all("Content-Length", [])
                 if len(lengths) > 1 or (lengths and response.headers.get("Transfer-Encoding")):
