@@ -44,3 +44,5 @@ prometheus = { workspace = true }
 
 [dev-dependencies]
 tokio = { workspace = true }
+axum = { workspace = true }
+base64 = { workspace = true }
