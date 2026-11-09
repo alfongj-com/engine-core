@@ -171,6 +171,25 @@ impl<C: Chain> EoaExecutorWorker<C> {
                                 message: format!("Durably rejected before broadcast: {original}"),
                             });
                         }
+                        if journal
+                            .admission("eoa", &pending_transaction.transaction_id)
+                            .await
+                            .map_err(crate::recovery::eoa_journal_error)?
+                            .is_some_and(|record| {
+                                record.state == engine_core::recovery::AdmissionState::Terminal
+                                    && record.payload == payload
+                            })
+                        {
+                            // The exact terminal payload was already checked by
+                            // eoa_preparation_failure. Route only its stale pending
+                            // membership to the store's fenced terminal cleanup;
+                            // it must not publish a replacement failure or wait
+                            // behind the ordinary unsigned retry/age limits.
+                            return Err(EoaExecutorWorkerError::TransactionBuildFailed {
+                                message: "Durably terminal intent needs pending scheduling cleanup"
+                                    .into(),
+                            });
+                        }
                     }
                     if is_retryable_preparation_error(&error) && attempt < MAX_PREPARATION_RETRIES {
                         tracing::warn!(

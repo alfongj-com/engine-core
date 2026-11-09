@@ -171,17 +171,17 @@ async fn authorized_attempt_prevents_false_failure_status_webhook_and_expiry() {
     crate::recovery::before_eoa(&row.user_request, &row.signed_transaction)
         .await
         .unwrap();
-    assert!(
-        fixture
-            .worker
-            .store
-            .fail_pending_transactions_batch(
-                vec![(&pending, failure("stale preparation error"))],
-                fixture.worker.webhook_queue.clone()
-            )
-            .await
-            .is_err()
-    );
+    let report = fixture
+        .worker
+        .store
+        .fail_pending_transactions_batch(
+            vec![(&pending, failure("stale preparation error"))],
+            fixture.worker.webhook_queue.clone(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(report.published, 0);
+    assert_eq!(report.retained, 1);
     assert_eq!(
         fixture
             .worker
@@ -329,17 +329,17 @@ async fn uncertain_kms_failure_keeps_unsigned_work_for_successful_retry() {
         );
         // A caller bypassing worker classification still cannot make this
         // ambiguous infrastructure failure an irreversible failure decision.
-        assert!(
-            fixture
-                .worker
-                .store
-                .fail_pending_transactions_batch(
-                    vec![(&pending, error)],
-                    fixture.worker.webhook_queue.clone()
-                )
-                .await
-                .is_err()
-        );
+        let report = fixture
+            .worker
+            .store
+            .fail_pending_transactions_batch(
+                vec![(&pending, error)],
+                fixture.worker.webhook_queue.clone(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(report.published, 0);
+        assert_eq!(report.retained, 1);
         assert_eq!(
             fixture
                 .worker

@@ -21,7 +21,7 @@ pub mod hydrate;
 mod rebuild;
 
 pub mod error;
-pub use atomic::AtomicEoaExecutorStore;
+pub use atomic::{AtomicEoaExecutorStore, PendingFailureReport};
 pub use borrowed::{BorrowedProcessingReport, SubmissionResult, SubmissionResultType};
 pub use submitted::{
     CleanupReport, SubmittedNoopTransaction, SubmittedTransaction, SubmittedTransactionDehydrated,

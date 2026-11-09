@@ -44,6 +44,9 @@ const LIMIT: Duration = Duration::from_secs(15);
 #[path = "send_preparation_failure_tests.rs"]
 mod preparation_failure_tests;
 
+#[path = "send_failure_progress_tests.rs"]
+mod failure_progress_tests;
+
 fn child(test: &str) -> bool {
     const FLAG: &str = "ENGINE_EOA_DISPATCH_TEST_CHILD";
     if std::env::var(FLAG).as_deref() == Ok(test) {
@@ -103,6 +106,8 @@ struct Observed {
     estimated_gas: Option<u64>,
     preparation_methods: Vec<String>,
     rpc_methods: Vec<String>,
+    receipts: std::collections::BTreeMap<String, Value>,
+    latest_nonce: u64,
 }
 
 struct Fixture {
@@ -328,7 +333,29 @@ impl Fixture {
                             }
                             sent_nonce = Some(nonce);
                         }
-                        "eth_getTransactionReceipt" => response["result"] = Value::Null,
+                        "eth_getTransactionReceipt" => {
+                            response["result"] = state
+                                .lock()
+                                .unwrap()
+                                .receipts
+                                .get(request["params"][0].as_str().unwrap())
+                                .cloned()
+                                .unwrap_or(Value::Null);
+                        }
+                        "eth_getTransactionCount" => {
+                            response["result"] =
+                                json!(format!("0x{:x}", state.lock().unwrap().latest_nonce));
+                        }
+                        "eth_getBlockByNumber" => {
+                            assert!(matches!(
+                                request["params"][0].as_str(),
+                                Some("0xa" | "finalized" | "latest")
+                            ));
+                            let mut block: alloy::rpc::types::Block = Default::default();
+                            block.header.number = 10;
+                            block.header.hash = alloy::primitives::B256::repeat_byte(9);
+                            response["result"] = serde_json::to_value(block).unwrap();
+                        }
                         "eth_estimateGas" => {
                             let gas = state.lock().unwrap().estimated_gas.unwrap_or(21000);
                             response["result"] = json!(format!("0x{gas:x}"));

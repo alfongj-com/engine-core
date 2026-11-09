@@ -54,6 +54,13 @@ the terminal commit and Redis publication leaves stale pending work; the worker
 validates the retained failure and finishes publishing the original error without
 signing or contacting the RPC. Receipt-based terminal evidence is unchanged.
 
+Batch failure cleanup publishes only eligible entries. Missing, conflicting or
+nonterminal attempted/quarantined entries remain for reconciliation while other
+entries, receipt confirmation and retained-wire recovery can progress. An exact
+already-terminal intent may lose its stale pending scheduler membership without
+changing its outcome, retention or notifications. Journal/storage and owner
+failures still stop the worker cycle.
+
 This applies to failures durably recorded by this version. Older failures whose
 Redis status has already expired are indistinguishable from valid unsigned
 admissions in the old journal. Upgrading cannot reconstruct that lost negative

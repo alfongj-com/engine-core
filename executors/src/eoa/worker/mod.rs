@@ -504,10 +504,20 @@ impl<C: Chain> EoaExecutorWorker<C> {
             })
             .collect();
 
-        self.store
+        let report = self
+            .store
             .fail_pending_transactions_batch(failures, self.webhook_queue.clone())
             .await
             .map_err(EoaExecutorWorkerError::from)?;
+
+        if report.retained > 0 {
+            tracing::warn!(
+                published = report.published,
+                terminal_cleanup = report.terminal_cleanup,
+                retained = report.retained,
+                "Stale pending entries require reconciliation; continuing the worker cycle"
+            );
+        }
 
         Ok(())
     }

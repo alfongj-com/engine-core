@@ -464,16 +464,17 @@ impl<C: Chain> EoaExecutorWorker<C> {
 
         // Batch fail all non-retryable failures in a single Redis pipeline
         if !non_retryable_failures.is_empty() {
-            if let Err(e) = self
+            let report = self
                 .store
                 .fail_pending_transactions_batch(non_retryable_failures, self.webhook_queue.clone())
-                .await
-            {
-                tracing::error!(
-                    error = ?e,
-                    "Failed to batch mark transactions as failed - some transactions may be stuck in pending state"
+                .await?;
+            if report.retained > 0 {
+                tracing::warn!(
+                    published = report.published,
+                    terminal_cleanup = report.terminal_cleanup,
+                    retained = report.retained,
+                    "Preparation failures without durable failure authority remain for reconciliation"
                 );
-                // Don't propagate the error, continue processing
             }
         }
 
