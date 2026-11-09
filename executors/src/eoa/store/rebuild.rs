@@ -203,6 +203,7 @@ impl super::atomic::AtomicEoaExecutorStore {
                 -- A durable binding must still have a borrowed/submitted projection.
                 -- Do not let a partial pending record allocate another nonce.
                 if next_nonce then
+                    if redis.call('ZSCORE',KEYS[2],ARGV[1])~=false then return -1 end
                     local borrowed=redis.call('HGET',KEYS[3],ARGV[1])
                     if borrowed then
                         if ARGV[11]=='' or borrowed~=ARGV[11] then return -1 end
@@ -709,6 +710,124 @@ mod tests {
                 valid
             );
             cleanup(store).await;
+        }
+    }
+
+    #[tokio::test]
+    #[ignore = "requires disposable Redis in TEST_REDIS_URL"]
+    async fn attempted_intent_with_pending_overlap_refuses_any_index_repair() {
+        for status in ["pending", "submitted"] {
+            for borrowed_survives in [true, false] {
+                let (store, request, history, key) = fixture().await;
+                store
+                    .rebuild_missing_intent(&request, Some(&key), &history)
+                    .await
+                    .unwrap();
+                let mut redis = store.redis.clone();
+                let _: () = redis
+                    .hset(
+                        store.transaction_data_key_name(&request.transaction_id),
+                        "status",
+                        status,
+                    )
+                    .await
+                    .unwrap();
+                if !borrowed_survives {
+                    let _: () = redis
+                        .hdel(
+                            store.borrowed_transactions_hashmap_name(),
+                            &request.transaction_id,
+                        )
+                        .await
+                        .unwrap();
+                }
+                let _: () = redis
+                    .del(store.optimistic_transaction_count_key_name())
+                    .await
+                    .unwrap();
+                for attempt in &history {
+                    let _: () = redis
+                        .del(store.transaction_hash_to_id_key_name(
+                            attempt["transactionHash"].as_str().unwrap(),
+                        ))
+                        .await
+                        .unwrap();
+                }
+                let _: () = redis
+                    .zadd(
+                        store.pending_transactions_zset_name(),
+                        &request.transaction_id,
+                        123,
+                    )
+                    .await
+                    .unwrap();
+                let _: () = redis
+                    .zadd(store.recycled_nonces_zset_name(), 5, 5)
+                    .await
+                    .unwrap();
+                assert!(
+                    store
+                        .rebuild_missing_intent(&request, Some(&key), &history)
+                        .await
+                        .is_err()
+                );
+                assert!(
+                    !redis
+                        .exists::<_, bool>(store.optimistic_transaction_count_key_name())
+                        .await
+                        .unwrap()
+                );
+                assert_eq!(
+                    redis
+                        .zscore::<_, _, u64>(
+                            store.pending_transactions_zset_name(),
+                            &request.transaction_id
+                        )
+                        .await
+                        .unwrap(),
+                    123
+                );
+                assert_eq!(
+                    redis
+                        .zscore::<_, _, u64>(store.recycled_nonces_zset_name(), 5)
+                        .await
+                        .unwrap(),
+                    5
+                );
+                assert_eq!(
+                    store.get_borrowed_transactions_count().await.unwrap(),
+                    u64::from(borrowed_survives)
+                );
+                assert_eq!(store.get_submitted_transactions_count().await.unwrap(), 2);
+                for attempt in &history {
+                    assert_eq!(
+                        store
+                            .get_transaction_id_for_hash(
+                                attempt["transactionHash"].as_str().unwrap()
+                            )
+                            .await
+                            .unwrap(),
+                        None
+                    );
+                }
+                // Pending status alone is valid during the borrowed phase;
+                // only overlapping pending scheduling contradicts the binding.
+                let _: () = redis
+                    .zrem(
+                        store.pending_transactions_zset_name(),
+                        &request.transaction_id,
+                    )
+                    .await
+                    .unwrap();
+                assert!(
+                    store
+                        .rebuild_missing_intent(&request, Some(&key), &history)
+                        .await
+                        .unwrap()
+                );
+                assert_eq!(store.get_optimistic_transaction_count().await.unwrap(), 6);
+                cleanup(store).await;
+            }
         }
     }
 
