@@ -41,6 +41,9 @@ use twmq::redis::AsyncCommands;
 const KEY: &str = "1111111111111111111111111111111111111111111111111111111111111111";
 const LIMIT: Duration = Duration::from_secs(15);
 
+#[path = "send_preparation_failure_tests.rs"]
+mod preparation_failure_tests;
+
 fn child(test: &str) -> bool {
     const FLAG: &str = "ENGINE_EOA_DISPATCH_TEST_CHILD";
     if std::env::var(FLAG).as_deref() == Ok(test) {
@@ -99,6 +102,7 @@ struct Observed {
     reject: BTreeSet<usize>,
     estimated_gas: Option<u64>,
     preparation_methods: Vec<String>,
+    rpc_methods: Vec<String>,
 }
 
 struct Fixture {
@@ -273,6 +277,11 @@ impl Fixture {
                 let accepted = accepted_tx.clone();
                 tokio::spawn(async move {
                     let request = read_request(&mut socket).await;
+                    state
+                        .lock()
+                        .unwrap()
+                        .rpc_methods
+                        .push(request["method"].as_str().unwrap().to_owned());
                     let mut response = json!({"jsonrpc":"2.0", "id": request["id"]});
                     let mut sent_nonce = None;
                     match request["method"].as_str().unwrap() {

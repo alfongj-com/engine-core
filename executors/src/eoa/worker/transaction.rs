@@ -146,6 +146,32 @@ impl<C: Chain> EoaExecutorWorker<C> {
             {
                 Ok(result) => return Ok(result),
                 Err(error) => {
+                    if matches!(error, EoaExecutorWorkerError::RecoveryRequired { .. })
+                        && let Some(journal) = engine_core::recovery::global()
+                    {
+                        let payload = serde_json::to_value(&pending_transaction.user_request)
+                            .map_err(|_| {
+                                crate::recovery::eoa_required("Cannot encode recovery payload")
+                            })?;
+                        if let Some(retained) = journal
+                            .eoa_preparation_failure(&pending_transaction.transaction_id, &payload)
+                            .await
+                            .map_err(crate::recovery::eoa_journal_error)?
+                        {
+                            let original: EoaExecutorWorkerError = serde_json::from_value(retained)
+                                .map_err(|_| {
+                                    crate::recovery::eoa_required(
+                                        "Invalid preparation failure evidence",
+                                    )
+                                })?;
+                            // Feed the existing failure projection even if a
+                            // later release changes the original classifier.
+                            // The store re-reads and publishes the first error.
+                            return Err(EoaExecutorWorkerError::TransactionBuildFailed {
+                                message: format!("Durably rejected before broadcast: {original}"),
+                            });
+                        }
+                    }
                     if is_retryable_preparation_error(&error) && attempt < MAX_PREPARATION_RETRIES {
                         tracing::warn!(
                             transaction_id = ?pending_transaction.transaction_id,

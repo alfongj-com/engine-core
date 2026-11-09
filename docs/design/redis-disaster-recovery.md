@@ -43,6 +43,24 @@ key `evm:<chain>:<lowercase sender>:<nonce>`, so neither can reuse the other's
 allocation. Fee replacements can retain the same replay identity; a new nonce
 for the same ID is rejected.
 
+An EOA preparation failure reported as permanent is also retained before its
+Redis status or failure webhook. Its terminal witness binds the exact admitted
+payload and original structured error, with no replay key or authorized attempt.
+This decision competes with broadcast authorization under the same journal lock:
+if broadcast wins, failure publication is refused and reconciliation remains
+required. If failure wins, neither a changed chain state, Redis TTL/loss, offline
+queue rebuild nor same-ID retry can execute the rejected intent. A crash between
+the terminal commit and Redis publication leaves stale pending work; the worker
+validates the retained failure and finishes publishing the original error without
+signing or contacting the RPC. Receipt-based terminal evidence is unchanged.
+
+This applies to failures durably recorded by this version. Older failures whose
+Redis status has already expired are indistinguishable from valid unsigned
+admissions in the old journal. Upgrading cannot reconstruct that lost negative
+information. Reconcile retained unsigned work against external failure/business
+records before queue reconstruction; preserve the original authority and do not
+treat an absent Redis status as permission to retry a reported failure.
+
 EOA signing also preserves the full admitted authorization list. The old
 recipient-code filter could silently remove an authorization belonging to a
 different authority and has been removed. Networks with stricter authorization

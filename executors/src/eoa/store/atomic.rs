@@ -641,11 +641,61 @@ impl AtomicEoaExecutorStore {
     /// when there are many failures at once
     pub async fn fail_pending_transactions_batch(
         &self,
-        failures: Vec<(&PendingTransaction, EoaExecutorWorkerError)>,
+        mut failures: Vec<(&PendingTransaction, EoaExecutorWorkerError)>,
         webhook_queue: Arc<twmq::Queue<WebhookJobHandler>>,
     ) -> Result<(), TransactionStoreError> {
         if failures.is_empty() {
             return Ok(());
+        }
+
+        if let Some(journal) = engine_core::recovery::global() {
+            for (pending, error) in &mut failures {
+                // A retained failure is an irreversible decision. Retryable or
+                // post-dispatch errors cannot authorize it, including HTTP
+                // throttling on binaries predating the classifier correction.
+                let transient_http = matches!(
+                    error,
+                    EoaExecutorWorkerError::RpcError {
+                        inner_error: engine_core::error::EngineError::RpcError {
+                            kind: engine_core::error::RpcErrorKind::TransportHttpError {
+                                status: 408 | 429,
+                                ..
+                            },
+                            ..
+                        },
+                        ..
+                    }
+                );
+                if transient_http
+                    || crate::eoa::worker::error::is_retryable_preparation_error(error)
+                {
+                    return Err(TransactionStoreError::InternalError {
+                        message: "Retryable preparation error cannot become a durable failure"
+                            .into(),
+                    });
+                }
+                self.ensure_eoa_lock_owned().await?;
+                let payload = serde_json::to_value(&pending.user_request)?;
+                let retained = journal
+                    .record_eoa_preparation_failure(
+                        &pending.transaction_id,
+                        &payload,
+                        serde_json::to_value(&*error)?,
+                    )
+                    .await
+                    .map_err(|error| TransactionStoreError::InternalError {
+                        message: error.to_string(),
+                    })?
+                    .ok_or_else(|| TransactionStoreError::InternalError {
+                        message:
+                            "Broadcast or unresolved recovery state prevents permanent failure"
+                                .into(),
+                    })?;
+                self.ensure_eoa_lock_owned().await?;
+                // The first committed failure, not a later cleanup error, is
+                // the notification/status authority after a process crash.
+                *error = serde_json::from_value(retained)?;
+            }
         }
 
         let mut pipeline = twmq::redis::pipe();

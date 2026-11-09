@@ -37,6 +37,8 @@ mod inventory;
 pub use inventory::RebuildRecord;
 #[path = "recovery/operations.rs"]
 mod operations;
+#[path = "recovery/preparation_failure.rs"]
+mod preparation_failure;
 #[path = "recovery/projection.rs"]
 mod projection;
 #[path = "recovery/solana_projection.rs"]
