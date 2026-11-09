@@ -21,6 +21,10 @@ PROFILES = ("evm12", "evm2", "evm025", "solana")
 RATES = (25, 50, 100, 200, 400, 800)
 
 
+class NoQualifiedRate(RuntimeError):
+    """The bounded search completed without three passing confirmations."""
+
+
 def eligible(report):
     """A drained run, incomplete sample, or a safety failure cannot qualify."""
     chains = report.get("per_chain", {})
@@ -71,8 +75,16 @@ def closed_trial(report):
         return oracle.get("liveness_pass") is True and not oracle.get("liveness_failures")
     if report.get("outcome") != "incomplete" or oracle.get("liveness_pass") is not False:
         return False
+    if (report.get("requested_fault_validated") is not True
+            or any(event.get("event") == "observer_error" for event in report.get("events", []))):
+        return False
+    timing = [row for row in report.get("timing_observations", []) if row.get("phase") == "load"]
+    if (len(timing) < 2 or any(row.get("http_status") != 200 or row.get("unavailable")
+                             or not isinstance(row.get("values"), dict) for row in timing)):
+        return False
     dispatched = offered = missed = 0
-    for row in report.get("per_chain", {}).values():
+    missing_by_chain = {}
+    for name, row in report.get("per_chain", {}).items():
         client = row.get("client", {})
         sent, planned = client.get("dispatched", 0), row.get("offered")
         drops = [client.get("dropped_schedule_lag", 0), client.get("dropped_client_capacity", 0)]
@@ -85,6 +97,27 @@ def closed_trial(report):
         dispatched += sent
         offered += planned
         missed += sum(drops)
+        missing_by_chain[name] = dict(zip(("schedule_lag", "client_capacity"), drops))
+    drops = report.get("predispatch_drops", [])
+    if not isinstance(drops, list) or len(drops) != missed:
+        return False
+    missing_ids = set()
+    for drop in drops:
+        if not isinstance(drop, dict):
+            return False
+        txid, chain, reason = drop.get("id"), drop.get("chain"), drop.get("reason")
+        if (not isinstance(txid, str) or not txid or txid in missing_ids
+                or not isinstance(chain, str) or chain not in missing_by_chain
+                or not isinstance(reason, str) or reason not in missing_by_chain[chain]):
+            return False
+        missing_ids.add(txid)
+        missing_by_chain[chain][reason] -= 1
+    failures = oracle.get("liveness_failures")
+    if (any(count for reasons in missing_by_chain.values() for count in reasons.values())
+            or not isinstance(failures, list) or len(failures) != missed
+            or any(not isinstance(failure, str) for failure in failures)
+            or set(failures) != {txid + ": offered intent not admitted" for txid in missing_ids}):
+        return False
     return (missed > 0 and oracle.get("observed_intents") == dispatched
             and oracle.get("offered_intents") == offered and offered == dispatched + missed)
 
@@ -162,24 +195,30 @@ class Sweep:
             if not row["capacity_candidate"]:
                 break
             candidates.append((rate, row))
-        if not candidates:
-            for rate in (12, 6):
-                row = self.trial({self.args.profile: rate})
-                if row["capacity_candidate"]:
-                    candidates.append((rate, row))
-                    break
         for rate, screen in reversed(candidates):
-            repeats = [screen]
-            for _ in range(2):
-                row = self.trial({self.args.profile: rate})
-                repeats.append(row)
-                if not row["capacity_candidate"]:
-                    break
-            if len(repeats) == 3 and all(row["capacity_candidate"] for row in repeats):
-                self.summary.update(qualified_tps=rate, confirmation_reports=[row["report"] for row in repeats],
-                                    search_ceiling_reached=rate == RATES[-1])
-                break
+            if self.confirm_individual(rate, screen):
+                self.save()
+                return
+        # Confirm each fallback before deciding whether to try the next. A
+        # passing 12-TPS screen alone cannot suppress the 6-TPS fallback.
+        for rate in (12, 6):
+            screen = self.trial({self.args.profile: rate})
+            if screen["capacity_candidate"] and self.confirm_individual(rate, screen):
+                self.save()
+                return
         self.save()
+        raise NoQualifiedRate("No individual rate passed three confirmations")
+
+    def confirm_individual(self, rate, screen):
+        repeats = [screen]
+        for _ in range(2):
+            row = self.trial({self.args.profile: rate})
+            repeats.append(row)
+            if not row["capacity_candidate"]:
+                return False
+        self.summary.update(qualified_tps=rate, confirmation_reports=[row["report"] for row in repeats],
+                            search_ceiling_reached=rate == RATES[-1])
+        return True
 
     def shared(self):
         summaries = []
@@ -197,12 +236,17 @@ class Sweep:
                     raise ValueError("Individual confirmation evidence does not qualify")
             summaries.append(summary)
         original = selected_rates(summaries, self.binary_sha)
-        self.summary.update(individual_rates=original, qualified_shared_rates=None, confirmation_reports=[])
+        self.summary.update(individual_rates=original, qualified_shared_rates=None, confirmation_reports=[],
+                            inventory_limited_candidates=[])
         for factor in (1, .5, .25):
             rates = {name: rate * factor for name, rate in original.items()}
             # Keep the existing campaign's explicit bounded inventory limit.
             if sum(rates.values()) * 300 > 500000:
-                raise RuntimeError("Combined maximum exceeds the bounded campaign inventory")
+                self.summary["inventory_limited_candidates"].append({
+                    "factor": factor, "rates": rates, "offered_intents": sum(rates.values()) * 300,
+                    "max_intents": 500000, "reason": "inventory_limit"})
+                self.save()
+                continue
             repeats = []
             for _ in range(3):
                 row = self.trial(rates)
@@ -214,8 +258,10 @@ class Sweep:
                                     confirmation_reports=[row["report"] for row in repeats])
                 for fault in ("engine-crash", "lost-send", "rpc-errors", "redis-restart", "reorg"):
                     self.trial(rates, fault)
-                break
+                self.save()
+                return
         self.save()
+        raise NoQualifiedRate("No shared rate passed three confirmations")
 
 
 def main():
