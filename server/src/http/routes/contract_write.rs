@@ -53,6 +53,7 @@ pub struct WriteContractRequest {
     ///
     /// All calls will be executed in a single transaction if possible,
     /// or as separate transactions if atomic batching is not supported
+    #[schema(max_items = 100)]
     pub params: Vec<ContractWrite>,
 
     #[serde(default)]

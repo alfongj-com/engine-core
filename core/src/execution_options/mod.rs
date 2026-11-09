@@ -121,6 +121,7 @@ pub struct WebhookOptions {
 #[serde(rename_all = "camelCase")]
 pub struct SendTransactionRequest {
     pub execution_options: ExecutionOptions,
+    #[schema(max_items = 100)]
     pub params: Vec<InnerTransaction>,
     #[serde(default)]
     pub webhook_options: Vec<WebhookOptions>,
