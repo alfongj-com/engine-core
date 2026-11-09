@@ -401,7 +401,7 @@
     },
     {
       "path": "scripts/local_eoa_recovery.py",
-      "sha256": "69a0fff3f14eb10671b9c7675ac2692c2cb71452123db58c2dd1fb60a0a2079f",
+      "sha256": "577a502527d96509a5aef876e2186c16584fe7aed9733c199ba135224473d532",
       "models": [
         "DisasterRecovery",
         "EoaRecovery"
@@ -801,6 +801,14 @@
         "IntentCancellation",
         "Admission"
       ]
+    },
+    {
+      "path": "scripts/test_local_eoa_recovery.py",
+      "sha256": "b1ac4d455ea8bd3beb88f66d6f006aa6b8738382575d82250421bbf01ecee488",
+      "models": [
+        "EoaRecovery",
+        "DisasterRecovery"
+      ]
     }
   ],
   "review": {
@@ -1110,6 +1118,10 @@
     "retained_queue_projection_repairs": {
       "decision": "Preserve current reusable worker generations and repair retained EOA floor/hash projections only after validating every witness under the owner fence.",
       "reason": "QueueRebuild assumes validated intent-level terminality and a current exclusive owner. Historical successful reusable worker generations are not permanent intent tombstones; current unfinished retry counts/delays survive. Every retained attempt receives its hash alias, history remains newest-first, and a surviving attempted projection raises a missing/stale nonce floor without rebinding a nonce. Conflicting aliases/types/noninteger floors fail before writes. Existing borrowed JSON is bounded, decoded and checked against exact retained canonical wires, then literally rechecked in the final Lua mutation; unsigned journal records cannot adopt a borrowed wire. Existing terminal/quarantine exclusions, live-lease refusal and journal send gates remain unchanged. Rust/Redis regressions and direct production-Lua failure cuts cover generation reuse, idempotent counts, selective index loss and witness races. These are runtime validation obligations of the finite model, not a proof of Lua/SQLite refinement."
+    },
+    "cross_binary_identity_witness": {
+      "decision": "Bind each upgrade receipt to its original intent-specific retained hashes, rather than a global hash set.",
+      "reason": "EoaRecovery retains an intent/replay/wire binding across restart. The process oracle must reject swapped IDs, shared hashes, missing identity evidence and pending-node disagreement even if the global set of hashes is unchanged. The new helper checks the original journal snapshot before crash and each receipt after the binary change. Offline negative cases exercise these confusions; a four-CREATE old#10-to-runtime#17 process run passed with Engine/Redis SIGKILL and AOF replay. This validates a recorded runtime pair, not every later runtime or host power-loss recovery."
     }
   }
 }
