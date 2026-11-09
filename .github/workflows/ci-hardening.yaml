@@ -42,6 +42,8 @@ jobs:
           node-version: '22'
       - name: RPC spending guard and load generator tests
         run: node --test scripts/rpc/budget-gateway.test.mjs scripts/rpc/load-probe.test.mjs
+      - name: Local EOA custody guards (offline)
+        run: python3 -m unittest discover -s scripts -p 'test_local_eoa*.py' -v
       - name: Public transaction harness guards (offline)
         run: python3 -m unittest discover -s scripts -p 'test_testnet_*.py' -v
       - name: Install pinned Rust toolchain
@@ -63,8 +65,8 @@ jobs:
         run: cargo test --locked -p engine-core --lib recovery -- --ignored --test-threads=1
       - name: EOA and Solana Redis, RPC and deployment regressions
         run: cargo test --locked -p engine-executors --lib -- --ignored --test-threads=1
-      - name: Solana request retention across queue pruning
-        run: cargo test --locked -p thirdweb-engine --lib solana_admission::tests -- --ignored
+      - name: Server admission, cancellation and Solana retention
+        run: cargo test --locked -p thirdweb-engine --lib -- --ignored --test-threads=1
       - name: HTTP authorization and admission integration
         run: cargo test --locked -p thirdweb-engine --test api_safety -- --ignored
       - name: Offline queue reconstruction ownership and conflict regressions
