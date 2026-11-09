@@ -69,8 +69,7 @@ jobs:
         run: cargo test --locked -p twmq --lib -- --ignored
       - name: Install pinned local EVM
         run: |
-          curl -fL --retry 3 https://github.com/foundry-rs/foundry/releases/download/v1.8.1/foundry_v1.8.1_linux_amd64.tar.gz -o /tmp/foundry.tar.gz
-          echo "37b45855232e57624d90113b049ca54f0c92055bb5c1997fcbdc3076c7b89c10  /tmp/foundry.tar.gz" | sha256sum -c -
+          python3 formal/download.py https://github.com/foundry-rs/foundry/releases/download/v1.8.1/foundry_v1.8.1_linux_amd64.tar.gz 37b45855232e57624d90113b049ca54f0c92055bb5c1997fcbdc3076c7b89c10 /tmp/foundry.tar.gz
           mkdir -p /tmp/engine-foundry
           tar xzf /tmp/foundry.tar.gz -C /tmp/engine-foundry anvil
       - name: Actual server crash recovery and duplicate admission
@@ -99,8 +98,7 @@ jobs:
         run: ANVIL_BIN=/tmp/engine-foundry/anvil python3 scripts/local_eoa_throughput.py --engine-bin "$PWD/target/debug/thirdweb-engine" --rate 50 --seconds 20 --redis-fsync everysec --drain-seconds 120 --report /tmp/local-eoa-throughput.json
       - name: Install pinned local Solana validator
         run: |
-          curl -fL --retry 3 https://github.com/anza-xyz/agave/releases/download/v4.2.2/solana-release-x86_64-unknown-linux-gnu.tar.bz2 -o /tmp/solana.tar.bz2
-          echo "5fc8684f7430038105fde953d4308ed56addf627f658daa61709f345448247ee  /tmp/solana.tar.bz2" | sha256sum -c -
+          python3 formal/download.py https://github.com/anza-xyz/agave/releases/download/v4.2.2/solana-release-x86_64-unknown-linux-gnu.tar.bz2 5fc8684f7430038105fde953d4308ed56addf627f658daa61709f345448247ee /tmp/solana.tar.bz2
           mkdir -p /tmp/engine-solana
           tar xjf /tmp/solana.tar.bz2 -C /tmp/engine-solana
       - name: Solana accepted-send response loss and process recovery
