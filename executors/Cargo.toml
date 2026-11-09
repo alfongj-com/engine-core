@@ -31,7 +31,13 @@ moka = { workspace = true }
 prometheus = { workspace = true }
 lazy_static = { workspace = true }
 engine-solana-core = { version = "0.1.0", path = "../solana-core" }
-solana-sdk = { workspace = true }
+solana-hash = { workspace = true }
+solana-keypair = { workspace = true }
+solana-message = { workspace = true }
+solana-pubkey = { workspace = true }
+solana-signature = { workspace = true }
+solana-signer = { workspace = true }
+solana-transaction = { workspace = true }
 solana-rpc-client = { workspace = true }
 solana-rpc-client-api = { workspace = true }
 solana-transaction-status = { workspace = true }

@@ -1,5 +1,8 @@
 use super::*;
-use solana_sdk::{hash::Hash, message::Message, signature::Keypair, signer::Signer};
+use solana_hash::Hash;
+use solana_keypair::Keypair;
+use solana_message::Message;
+use solana_signer::Signer;
 
 #[test]
 fn wire_matches_sdk_bincode_for_legacy_and_v0_and_preserves_signed_messages() {

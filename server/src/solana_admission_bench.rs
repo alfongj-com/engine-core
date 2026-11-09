@@ -19,7 +19,7 @@ use engine_solana_core::transaction::{
 };
 use futures::{StreamExt, stream};
 use serde_json::{Value, json};
-use solana_sdk::pubkey::Pubkey;
+use solana_pubkey::Pubkey;
 use std::{
     collections::HashSet,
     time::{Instant, SystemTime, UNIX_EPOCH},

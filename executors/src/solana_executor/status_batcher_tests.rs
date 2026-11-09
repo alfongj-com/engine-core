@@ -1,7 +1,7 @@
 use super::*;
 use crate::solana_executor::rpc_cache::{SolanaRpcCache, SolanaRpcUrls};
 use engine_core::execution_options::solana::SolanaChainId;
-use solana_sdk::signature::Signature;
+use solana_signature::Signature;
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
     net::TcpListener,

@@ -2,12 +2,12 @@ use base64::{Engine, engine::general_purpose::STANDARD as Base64Engine};
 use serde::{Deserialize, Serialize};
 use serde_with::{DisplayFromStr, serde_as};
 use solana_compute_budget_interface::ComputeBudgetInstruction;
-use solana_sdk::{
-    instruction::Instruction,
-    message::{AccountMeta, VersionedMessage, v0},
-    pubkey::Pubkey,
-    transaction::VersionedTransaction,
-};
+use solana_instruction::Instruction;
+use solana_message::AccountMeta;
+use solana_message::VersionedMessage;
+use solana_message::v0;
+use solana_pubkey::Pubkey;
+use solana_transaction::versioned::VersionedTransaction;
 
 /// Input for Solana transaction - either build from instructions or use pre-built
 #[derive(Debug, Clone, Serialize, Deserialize, utoipa::ToSchema)]
@@ -155,7 +155,7 @@ impl SolanaTransaction {
     pub fn to_versioned_transaction(
         &self,
         payer: Pubkey,
-        recent_blockhash: solana_sdk::hash::Hash,
+        recent_blockhash: solana_hash::Hash,
     ) -> Result<VersionedTransaction, SolanaTransactionError> {
         match &self.input {
             SolanaTransactionInput::Instructions(i) => {
@@ -172,7 +172,7 @@ impl SolanaTransaction {
         &self,
         instructions: &[SolanaInstructionData],
         payer: Pubkey,
-        recent_blockhash: solana_sdk::hash::Hash,
+        recent_blockhash: solana_hash::Hash,
     ) -> Result<VersionedTransaction, SolanaTransactionError> {
         let mut inst_list: Vec<Instruction> = Vec::new();
 
@@ -200,7 +200,7 @@ impl SolanaTransaction {
 
         let message = VersionedMessage::V0(message);
         let num_signatures = message.header().num_required_signatures as usize;
-        let signatures = vec![solana_sdk::signature::Signature::default(); num_signatures];
+        let signatures = vec![solana_signature::Signature::default(); num_signatures];
 
         Ok(VersionedTransaction {
             signatures,

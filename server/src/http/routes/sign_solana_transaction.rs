@@ -10,7 +10,7 @@ use engine_solana_core::transaction::{
 };
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use solana_sdk::signer::Signer;
+use solana_signer::Signer;
 
 use crate::http::{
     error::ApiEngineError,
@@ -110,7 +110,7 @@ pub async fn sign_solana_transaction(
         .await
         .map_err(ApiEngineError)?;
     let recent_blockhash = if serialized {
-        solana_sdk::hash::Hash::default()
+        solana_hash::Hash::default()
     } else {
         rpc_client.get_latest_blockhash().await.map_err(|_| {
             ApiEngineError(EngineError::ValidationError {

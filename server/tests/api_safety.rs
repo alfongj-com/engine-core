@@ -560,7 +560,8 @@ async fn public_routes_reject_unauthorized_mutations_and_invalid_execution() {
 #[test]
 #[ignore = "requires redis-server; isolated credentials and actual loopback HTTP"]
 fn configured_signer_routes_authenticate_and_queue_only_public_identity() {
-    use solana_sdk::{signature::Keypair, signer::Signer};
+    use solana_keypair::Keypair;
+    use solana_signer::Signer;
     const TEST: &str = "configured_signer_routes_authenticate_and_queue_only_public_identity";
     const CHILD: &str = "ENGINE_CONFIGURED_SIGNER_TEST_CHILD";
     if std::env::var_os(CHILD).is_none() {
@@ -614,7 +615,11 @@ fn configured_signer_routes_authenticate_and_queue_only_public_identity() {
     tokio::runtime::Runtime::new().unwrap().block_on(async {
         use base64::{Engine, engine::general_purpose::STANDARD};
         use engine_solana_core::transaction::{decode_transaction_wire, encode_transaction_wire};
-        use solana_sdk::{hash::Hash, message::{Message, VersionedMessage}, signature::Signature, transaction::VersionedTransaction};
+        use solana_hash::Hash;
+use solana_message::Message;
+use solana_message::VersionedMessage;
+use solana_signature::Signature;
+use solana_transaction::versioned::VersionedTransaction;
         let (_redis, client) = start_redis().await;
         let config = thirdweb_engine::EvmRpcConfig { endpoints: [("31337".into(), engine_core::chain::RpcEndpointConfig { url: "http://127.0.0.1:1".into(), ..Default::default() })].into(), ..Default::default() };
         let state = state_with_rpc(client.clone(), config).await;

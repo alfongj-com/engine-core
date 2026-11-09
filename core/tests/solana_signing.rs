@@ -1,14 +1,16 @@
 use engine_core::{credentials::SigningCredential, signer::SolanaSigner};
 use engine_solana_core::transaction::{decode_transaction_wire, encode_transaction_wire};
-use solana_sdk::{
-    hash::Hash,
-    instruction::{AccountMeta, Instruction},
-    message::{Message, VersionedMessage, v0},
-    pubkey::Pubkey,
-    signature::{Keypair, Signature},
-    signer::Signer,
-    transaction::VersionedTransaction,
-};
+use solana_hash::Hash;
+use solana_instruction::AccountMeta;
+use solana_instruction::Instruction;
+use solana_keypair::Keypair;
+use solana_message::Message;
+use solana_message::VersionedMessage;
+use solana_message::v0;
+use solana_pubkey::Pubkey;
+use solana_signature::Signature;
+use solana_signer::Signer;
+use solana_transaction::versioned::VersionedTransaction;
 use std::{fs::OpenOptions, io::Write, process::Command};
 use thirdweb_core::iaw::IAWClient;
 
