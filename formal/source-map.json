@@ -189,7 +189,7 @@
     },
     {
       "path": "executors/src/eoa/worker/error.rs",
-      "sha256": "525cd8260c35d04711b1b1f987a2f7456d2d010ff03ad109df8678d95b092b52",
+      "sha256": "18f84ef51315db240981574bc13b3c11f7edb7ff89a5c1ff9dacf99155e30560",
       "models": [
         "EoaRecovery"
       ]
@@ -1152,6 +1152,7 @@
     }
   },
   "review_notes": {
-    "durable_unsigned_preparation_failure": "A permanent EOA preparation failure requires exact admitted payload, no replay key and no attempts under owned journal serialization before Redis failed status or webhook. Retained original negative evidence resumes publication after a crash; attempted, quarantined and unrelated terminal outcomes cannot be rejected. Seven finite protocol cases include original Redis-only resurrection and attempted-work mutation counterexamples, plus reachable recovery/broadcast winners. Rust/Redis/process tests cover implementation separately; old expired Redis-only failures cannot be inferred. No refinement/composition proof."
+    "durable_unsigned_preparation_failure": "A permanent EOA preparation failure requires exact admitted payload, no replay key and no attempts under owned journal serialization before Redis failed status or webhook. Retained original negative evidence resumes publication after a crash; attempted, quarantined and unrelated terminal outcomes cannot be rejected. Seven finite protocol cases include original Redis-only resurrection and attempted-work mutation counterexamples, plus reachable recovery/broadcast winners. Rust/Redis/process tests cover implementation separately; old expired Redis-only failures cannot be inferred. No refinement/composition proof.",
+    "kms_unsigned_retry": "Preserve nested Alloy/AWS typed causes; unsigned SDK transport/service/unknown failures remain retryable under the existing bounded preparation loop, while construction/input/cryptographic errors are permanent. Actual loopback SDK503\u2192same-input recovery and typed malformed signatures plus real Redis/worker no-terminal\u2192successful nonce0 retry cover the boundary; no AWS account/IAM/quota qualification."
   }
 }
