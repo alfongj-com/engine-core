@@ -7,6 +7,98 @@ use serde_json::json;
 
 #[tokio::test]
 #[ignore = "requires disposable Redis in TEST_REDIS_URL"]
+async fn cancelled_queue_cleanup_requires_exact_unsigned_payload_and_healthy_authority() {
+    let f = Fixture::fresh();
+    f.initialize().await;
+    let j = f.open().await;
+    let payload = request("cancelled");
+    admit(&j, "erc4337", "cancelled", payload.clone()).await;
+    assert!(
+        !j.cancelled_unbroadcast_payload("cancelled", &payload)
+            .await
+            .unwrap()
+    );
+    assert!(j.cancel_unbroadcast("cancelled").await.unwrap());
+    drop(j);
+    let j = f.open().await;
+    assert!(
+        j.cancelled_unbroadcast_payload("cancelled", &payload)
+            .await
+            .unwrap()
+    );
+    assert!(matches!(
+        j.cancelled_unbroadcast_payload("cancelled", &json!({"changed":true}))
+            .await,
+        Err(RecoveryError::Conflict)
+    ));
+    // Fingerprinting deliberately ignores proposed ERC-4337 nonces. Cleanup
+    // must still bind the complete persisted payload, including that nonce.
+    let mut different_nonce = payload.clone();
+    different_nonce["pregeneratedNonce"] = json!("0x1");
+    assert!(matches!(
+        j.cancelled_unbroadcast_payload("cancelled", &different_nonce)
+            .await,
+        Err(RecoveryError::Conflict)
+    ));
+    let attempted = request("attempted");
+    admit(&j, "erc4337", "attempted", attempted.clone()).await;
+    j.before_broadcast(
+        "erc4337", "attempted",
+        "erc4337:31337:0x1111111111111111111111111111111111111111:0x2222222222222222222222222222222222222222:0",
+        json!({"wire":"retained"}),
+    ).await.unwrap();
+    j.db(|conn| {
+        conn.execute(
+            "UPDATE admissions SET state='quarantined' WHERE id='attempted'",
+            [],
+        )?;
+        Ok(())
+    })
+    .await
+    .unwrap();
+    assert!(
+        !j.cancelled_unbroadcast_payload("attempted", &attempted)
+            .await
+            .unwrap()
+    );
+    // Even inconsistent legacy evidence with no replay key cannot discard a
+    // retained attempt. This is a negative fixture, never a repair procedure.
+    j.db(|conn| {
+        conn.execute(
+            "UPDATE admissions SET replay_key=NULL WHERE id='attempted'",
+            [],
+        )?;
+        Ok(())
+    })
+    .await
+    .unwrap();
+    assert!(
+        !j.cancelled_unbroadcast_payload("attempted", &attempted)
+            .await
+            .unwrap()
+    );
+    let foreign = request("foreign");
+    admit(&j, "eoa", "foreign", foreign.clone()).await;
+    assert!(matches!(
+        j.cancelled_unbroadcast_payload("foreign", &foreign).await,
+        Err(RecoveryError::Conflict)
+    ));
+    assert!(
+        !j.cancelled_unbroadcast_payload("missing", &request("missing"))
+            .await
+            .unwrap()
+    );
+    j.halt("cancellation cleanup fixture").await;
+    assert!(matches!(
+        j.cancelled_unbroadcast_payload("cancelled", &payload).await,
+        Err(RecoveryError::RecoveryRequired(_))
+    ));
+    drop(j);
+    f.cleanup(&[]).await;
+}
+
+#[tokio::test]
+#[ignore = "requires disposable Redis in TEST_REDIS_URL"]
 async fn cancelled_mutations_finish_mirroring_and_retain_owner_and_serialization() {
     for operation in [
         "admission",

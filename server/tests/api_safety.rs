@@ -188,6 +188,146 @@ async fn state_with_rpc(
 
 #[tokio::test]
 #[ignore = "requires redis-server; starts its own disposable loopback process"]
+async fn durable_cancellation_without_a_job_succeeds_and_late_work_is_drained() {
+    use engine_core::recovery::{self, RecoveryJournal, admission_fingerprint};
+    const CHILD: &str = "ENGINE_TEST_CANCEL_PROJECTION_CHILD";
+    if std::env::var_os(CHILD).is_none() {
+        let directory =
+            std::env::temp_dir().join(format!("cancel-projection-{}", rand::random::<u64>()));
+        let output = Command::new(std::env::current_exe().unwrap())
+            .args([
+                "--exact",
+                "durable_cancellation_without_a_job_succeeds_and_late_work_is_drained",
+                "--ignored",
+                "--nocapture",
+            ])
+            .env(CHILD, &directory)
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "{} {}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+        std::fs::remove_dir_all(directory).unwrap();
+        return;
+    }
+    let directory = std::path::PathBuf::from(std::env::var_os(CHILD).unwrap());
+    let (_redis, client) = start_redis().await;
+    let url = match &client.get_connection_info().addr {
+        twmq::redis::ConnectionAddr::Tcp(host, port) => format!("redis://{host}:{port}/"),
+        _ => panic!("disposable Redis must be loopback TCP"),
+    };
+    let path = directory.join("journal.sqlite");
+    RecoveryJournal::initialize(&path, &url, Some("api_safety".into()))
+        .await
+        .unwrap();
+    let journal = RecoveryJournal::open(&path, &url, Some("api_safety".into()))
+        .await
+        .unwrap();
+    recovery::install(journal.clone()).unwrap();
+    let state = state(client.clone()).await;
+    let queue = state.queue_manager.external_bundler_send_queue.clone();
+    let registry = state.queue_manager.transaction_registry.clone();
+    let data = ExternalBundlerSendJobData {
+        transaction_id: "late-cancelled-job".into(),
+        chain_id: 31337,
+        transactions: vec![],
+        execution_options: serde_json::from_value(
+            json!({"signerAddress":"0x1111111111111111111111111111111111111111"}),
+        )
+        .unwrap(),
+        signing_credential: SigningCredential::Environment {
+            address: alloy::primitives::Address::repeat_byte(1),
+        },
+        rpc_credentials: RpcCredentials::Configured,
+        webhook_options: vec![],
+        pregenerated_nonce: Some(alloy::primitives::U256::from(1)),
+    };
+    let payload = serde_json::to_value(&data).unwrap();
+    journal
+        .reserve_admission(
+            "erc4337",
+            &data.transaction_id,
+            &admission_fingerprint("erc4337", &payload).unwrap(),
+            payload.clone(),
+        )
+        .await
+        .unwrap();
+    registry
+        .set_transaction_queue(&data.transaction_id, "external_bundler_send")
+        .await
+        .unwrap();
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let base = format!("http://{}", listener.local_addr().unwrap());
+    let mut server = EngineServer::new(state).await;
+    server.start(listener).unwrap();
+    // The registry is visible while intake has not yet pushed its job. The
+    // successful cancellation is durable even though Redis returns NotFound.
+    let response = reqwest::Client::new()
+        .post(format!(
+            "{base}/v1/transactions/{}/cancel",
+            data.transaction_id
+        ))
+        .header("x-diagnostic-access-password", "test-admin-password")
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(response.status(), reqwest::StatusCode::OK);
+    assert!(
+        response
+            .text()
+            .await
+            .unwrap()
+            .contains("CANCELLED_IMMEDIATELY")
+    );
+    assert!(
+        registry
+            .get_transaction_queue(&data.transaction_id)
+            .await
+            .unwrap()
+            .is_none()
+    );
+    assert!(
+        journal
+            .cancelled_unbroadcast_payload(&data.transaction_id, &payload)
+            .await
+            .unwrap()
+    );
+    // Simulate a process cut before intake's post-push reconciliation. The
+    // real send worker must complete this retained job without reaching RPC.
+    queue
+        .clone()
+        .job(data.clone())
+        .with_id(&data.transaction_id)
+        .push()
+        .await
+        .unwrap();
+    let worker = queue.work();
+    tokio::time::timeout(Duration::from_secs(5), async {
+        while queue.count(JobStatus::Failed).await.unwrap() != 1 {
+            tokio::time::sleep(Duration::from_millis(10)).await;
+        }
+    })
+    .await
+    .unwrap();
+    worker.shutdown().await.unwrap();
+    assert_eq!(queue.count(JobStatus::Pending).await.unwrap(), 0);
+    assert_eq!(queue.count(JobStatus::Delayed).await.unwrap(), 0);
+    assert_eq!(queue.count(JobStatus::Active).await.unwrap(), 0);
+    let retained = journal
+        .admission("erc4337", &data.transaction_id)
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(retained.state, recovery::AdmissionState::Quarantined);
+    assert!(retained.replay_key.is_none());
+    assert_eq!(RecoveryJournal::status(&path).unwrap().attempts, 0);
+}
+
+#[tokio::test]
+#[ignore = "requires redis-server; starts its own disposable loopback process"]
 async fn public_routes_reject_unauthorized_mutations_and_invalid_execution() {
     const CHILD: &str = "ENGINE_TEST_PUBLIC_API_ACCESS_CHILD";
     const TOKEN: &str = "test-engine-access-token-at-least-32-bytes";
