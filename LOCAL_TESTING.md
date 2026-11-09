@@ -337,3 +337,15 @@ SUMMARY.md covering commits, commands, counts, failures, reproduction steps and
 remaining gaps. Stop only processes you started. Keep code changes and any fixes
 separate for review; do not merge or push them without further instruction.
 ```
+
+## Missing queue work
+
+With Engine stopped and the original persistent journal/configuration selected,
+run `thirdweb-engine --rebuild-queues`, inspect its counts, then start normally.
+See [eligibility and limits](docs/design/queue-reconstruction.md). Local fault
+checks remove only their own disposable projections:
+
+```sh
+python3 scripts/local_eoa_recovery.py --transactions 8 --rebuild-queues
+python3 scripts/local_solana_recovery.py --transactions 8 --drop-attempts-on-restart --rebuild-queues
+```

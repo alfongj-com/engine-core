@@ -162,6 +162,7 @@ class FaultProxy:
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--transactions", type=int, default=12)
+    parser.add_argument("--rebuild-queues", action="store_true", help="Delete stopped queue/admission/attempt projections and rebuild twice from retained journal")
     parser.add_argument("--report", type=Path)
     parser.add_argument("--rust-log", default="info", help="Engine log filter; use debug to verify credential redaction")
     scenario = parser.add_mutually_exclusive_group()
@@ -313,6 +314,15 @@ def run_scenario(args):
             assert removed == args.transactions
             assert not redis("KEYS", f"{run_id}:solana_tx_attempt:*")
             report["signed_projections_removed"] = removed
+        if args.rebuild_queues:
+            for pattern in [f"{run_id}:solana_*", f"twmq:{run_id}_solana_executor:*"]:
+                keys = redis("KEYS", pattern)
+                if keys:
+                    redis("DEL", *keys)
+            for _ in range(2):
+                subprocess.run([str(ROOT / "target/debug/thirdweb-engine"), "--rebuild-queues"],
+                    cwd=ROOT / "server", env=env, check=True, capture_output=True)
+            report["missing_queue_admission_attempt_projections_rebuilt_twice"] = True
         with proxy.lock:
             before_counts = {wire: item["calls"] for wire, item in proxy.messages.items()}
             proxy.drop_responses = False

@@ -41,7 +41,7 @@
     },
     {
       "path": "core/src/recovery.rs",
-      "sha256": "844126c5231fec0036370f250f2ecd272cae67065e20331b593683e07b414839",
+      "sha256": "0cd0ce755626fca0d8225af7ff3b9d880efb9ca26edfd52e88777e0e895c9b89",
       "models": [
         "DisasterRecovery",
         "Finality",
@@ -140,7 +140,7 @@
     },
     {
       "path": "executors/src/eoa/store/mod.rs",
-      "sha256": "7c1fefa822daa156474da3dc5bcb31bd951eda7e89e2a13f4fcb8bb9cdb10d4e",
+      "sha256": "19c73886b6b9d0fee151c4e4802d9d97ac024e28f5466691e17da2b22d6bc25e",
       "models": [
         "DisasterRecovery",
         "EoaRecovery",
@@ -332,7 +332,7 @@
     },
     {
       "path": "executors/src/recovery.rs",
-      "sha256": "ad36d80717697f3695c31bdd753009992a33636ccd4e24ae239dc04899e03039",
+      "sha256": "fd381bf149dff18d397c056e0222de0c732ded83a8c0cfc6924c26913952e631",
       "models": [
         "DisasterRecovery",
         "DisasterRecoveryProjection"
@@ -401,7 +401,7 @@
     },
     {
       "path": "scripts/local_eoa_recovery.py",
-      "sha256": "0bc81dfcd4f404c5e238558218f6c13bd13dc8f10cbf3d23b18ffa1f01fd965c",
+      "sha256": "69a0fff3f14eb10671b9c7675ac2692c2cb71452123db58c2dd1fb60a0a2079f",
       "models": [
         "DisasterRecovery",
         "EoaRecovery"
@@ -425,7 +425,7 @@
     },
     {
       "path": "scripts/local_solana_recovery.py",
-      "sha256": "0394f281e25d4a289bd3db3e190adf24bee7ed28d087fa5291a9fe3e375face2",
+      "sha256": "b84148062ab7dd5332e9451ac8bb6a345f1fcde6739f40cb743a8f73af3de293",
       "models": [
         "DisasterRecovery",
         "SolanaRecovery",
@@ -516,7 +516,7 @@
     },
     {
       "path": "server/src/main.rs",
-      "sha256": "5d24cddbc8de2dd120d12d4f7541ad044eb4780e32221a86ebdea4d85840ecae",
+      "sha256": "24e0a248db2c90bc932593f14d036d94226fd3fd86d5e4e68d39a6937bd8c8fa",
       "models": [
         "DisasterRecovery",
         "DisasterRecoveryProjection"
@@ -755,6 +755,30 @@
         "SolanaProcessingLease"
       ],
       "sha256": "e4a41e9040af1606ee7987ae812e9ecde4e04f1bf92358e5801c735b4e03e8ee"
+    },
+    {
+      "path": "core/src/recovery/inventory.rs",
+      "sha256": "0a48c836c968af6e73372dba19c2756b542a2bbaf1921bfa4833e30d71b141e5",
+      "models": [
+        "DisasterRecovery",
+        "QueueRebuild"
+      ]
+    },
+    {
+      "path": "executors/src/eoa/store/rebuild.rs",
+      "sha256": "b530b39351eab5ee8d670f2b99f7c88aab0b8fa4fc46ab1d285b09113cbbfbad",
+      "models": [
+        "EoaRecovery",
+        "QueueRebuild"
+      ]
+    },
+    {
+      "path": "server/src/queue_rebuild.rs",
+      "sha256": "c4c155144010d31fa92ee5a0345106026d06698922e29be01ae437301a15bcf3",
+      "models": [
+        "QueueRebuild",
+        "SolanaRetainedAttempt"
+      ]
     },
     {
       "path": "executors/src/eoa/store/submitted_member_tests.rs",
@@ -1037,6 +1061,10 @@
         "executors/src/solana_executor/recovery_tests.rs"
       ],
       "reason": "Queue pop attaches immutable lease key/token identity to BorrowedJob for regular and multilane queues. New Solana processing locks record that identity plus a distinct processing token. Atomic acquisition requires the current queue token and its expiring key; a known prior record may be replaced only after its queue owner is no longer live. Attempt reads/writes and final pre-RPC lock checks require both processing ownership and queue liveness, strengthening stale-worker refusal. Legacy UUID/opaque records retain conservative TTL behavior. Signed wire, admission, journal publication, grant budgets and finality/expiry policy are unchanged. Standard ERR lock-lost replies fix Redis error classification. SolanaProcessingLease abstracts the new-format conjunction of metadata and live lease key; positive invariants, two faults and an early-reclaim witness are checked. JSON/key construction, expiry timing, old-format compatibility and actual crash behavior remain executable obligations; no refinement/composition or wall-clock liveness proof is claimed."
+    },
+    "offline_queue_reconstruction": {
+      "decision": "Add QueueRebuild finite model and preserve existing independent authority/retained-wire protocols.",
+      "reason": "Offline CLI holds the exclusive journal owner, verifies continuity before/after bounded inventory/projection repair, starts no workers/HTTP and never grants a send. Inventory excludes terminal/quarantine and validates canonical attempt digests/replay binding. EOA repair validates all retained wire identities, preserves the nonce floor and mutates only under the current EOA owner token; unsupported/contradictory records fail closed. Solana workers still activate retained-wire recovery and consume its permanent journal budget. Existing queue counters/order/delay survive, live leases and cancellation/terminal witnesses reject repair. A new QueueRebuild model has one positive, six fault counterexamples and a successful-repair witness; file locks, numeric/encoding bounds, Redis runtime type safety, cryptography and cross-model composition remain assumptions/implementation tests. Tagged encoding only extends previously broken colon-containing EOA IDs; ordinary and supported legacy members retain their representation. An additional real-process jobs-only failure exposed a valid initial-submission boundary with no attempt-list entry. Repair now checks a bounded literal submitted member whose hash belongs to the retained history and repeats its exact score check under the EOA owner token. It still refuses absent/foreign/malformed witnesses; the test covers that valid empty-attempt-list projection."
     },
     "submitted_id_encoding": {
       "decision": "Preserve ordinary/legacy members; tag and hex-encode IDs containing colon.",
