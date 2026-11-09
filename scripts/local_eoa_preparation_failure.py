@@ -67,6 +67,10 @@ def main():
     def redis(*command):
         return json.loads(subprocess.check_output(cli + list(command), text=True))
 
+    def redis_ready():
+        result = subprocess.run(cli + ["PING"], capture_output=True, text=True)
+        return result.returncode == 0 and json.loads(result.stdout) == "PONG"
+
     def failed_authority():
         with sqlite3.connect(f"file:{journal}?mode=ro", uri=True) as db:
             state = db.execute("SELECT state,replay_key FROM admissions WHERE id=?", (failed_id,)).fetchone()
@@ -92,7 +96,7 @@ def main():
     try:
         spawn([os.environ.get("REDIS_SERVER_BIN", "redis-server"), "--bind", "127.0.0.1", "--port", str(redis_port),
                "--save", "", "--appendonly", "no"], "redis.log")
-        until(lambda: redis("PING") == "PONG")
+        until(redis_ready)
         spawn([os.environ.get("ANVIL_BIN", "anvil"), "--host", "127.0.0.1", "--port", str(anvil_port),
                "--chain-id", "31337", "--no-mining", "--silent"], "anvil.log")
         until(lambda: rpc(rpc_url, "eth_chainId", []) == "0x7a69")
