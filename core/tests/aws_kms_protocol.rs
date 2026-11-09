@@ -74,6 +74,11 @@ async fn kms(
                 | "alias/invalid-spki"
                 | "alias/sign-outage"
                 | "alias/public-key-outage"
+                | "alias/sign-denied"
+                | "alias/sign-disabled"
+                | "alias/sign-invalid-state"
+                | "alias/sign-invalid-usage"
+                | "alias/public-key-missing"
         );
     let response = if !valid {
         observed.lock().unwrap().invalid_requests += 1;
@@ -88,6 +93,9 @@ async fn kms(
         };
         if id == "alias/public-key-outage" && calls == 1 {
             return unavailable();
+        }
+        if id == "alias/public-key-missing" {
+            return service_error(StatusCode::BAD_REQUEST, "NotFoundException");
         }
         // SubjectPublicKeyInfo: id-ecPublicKey + secp256k1 + uncompressed point.
         let mut spki =
@@ -133,6 +141,21 @@ async fn kms(
         if id == "alias/sign-outage" && calls == 1 {
             return unavailable();
         }
+        match id {
+            "alias/sign-denied" => {
+                return service_error(StatusCode::FORBIDDEN, "AccessDeniedException");
+            }
+            "alias/sign-disabled" => {
+                return service_error(StatusCode::BAD_REQUEST, "DisabledException");
+            }
+            "alias/sign-invalid-state" => {
+                return service_error(StatusCode::BAD_REQUEST, "KMSInvalidStateException");
+            }
+            "alias/sign-invalid-usage" => {
+                return service_error(StatusCode::BAD_REQUEST, "InvalidKeyUsageException");
+            }
+            _ => {}
+        }
         // Independent libsecp256k1 produces the signature; RustCrypto only
         // serializes its public scalars into the DER representation used by KMS.
         let signature = key(match id {
@@ -175,13 +198,19 @@ async fn kms(
 }
 
 fn unavailable() -> (StatusCode, [(&'static str, &'static str); 1], Vec<u8>) {
+    service_error(StatusCode::SERVICE_UNAVAILABLE, "KMSInternalException")
+}
+
+fn service_error(
+    status: StatusCode,
+    code: &str,
+) -> (StatusCode, [(&'static str, &'static str); 1], Vec<u8>) {
     (
-        StatusCode::SERVICE_UNAVAILABLE,
+        status,
         [("content-type", "application/x-amz-json-1.1")],
-        serde_json::to_vec(
-            &json!({"__type":"KMSInternalException","message":"Fixture service outage"}),
-        )
-        .unwrap(),
+        // All service errors share the same uninformative message. Error policy
+        // must use the SDK's code/status, not words from this message.
+        serde_json::to_vec(&json!({"__type":code,"message":"Fixture service error"})).unwrap(),
     )
 }
 
@@ -227,15 +256,31 @@ async fn engine_error_and_recovery_vectors() {
             EngineError::AwsKmsSignerError {
                 error:
                     SerialisableAwsSignerError::Sign {
-                        aws_sdk_error: SerialisableAwsSdkError::ServiceError { .. },
+                        aws_sdk_error:
+                            SerialisableAwsSdkError::ServiceError {
+                                code: Some(code),
+                                http_status: Some(503),
+                                ..
+                            },
                     },
-            } => assert_eq!(id, "alias/sign-outage"),
+            } => {
+                assert_eq!(id, "alias/sign-outage");
+                assert_eq!(code, "KMSInternalException");
+            }
             EngineError::AwsKmsSignerError {
                 error:
                     SerialisableAwsSignerError::GetPublicKey {
-                        aws_sdk_error: SerialisableAwsSdkError::ServiceError { .. },
+                        aws_sdk_error:
+                            SerialisableAwsSdkError::ServiceError {
+                                code: Some(code),
+                                http_status: Some(503),
+                                ..
+                            },
                     },
-            } => assert_eq!(id, "alias/public-key-outage"),
+            } => {
+                assert_eq!(id, "alias/public-key-outage");
+                assert_eq!(code, "KMSInternalException");
+            }
             other => panic!("SDK outage lost its typed cause: {other:?}"),
         }
         // No endpoint/key/input change and no hidden SDK retries. The same
@@ -252,6 +297,58 @@ async fn engine_error_and_recovery_vectors() {
                 .to_string()
         );
     }
+    for (id, expected_code, expected_status) in [
+        ("alias/sign-denied", "AccessDeniedException", 403),
+        ("alias/sign-disabled", "DisabledException", 400),
+        ("alias/sign-invalid-state", "KMSInvalidStateException", 400),
+        ("alias/sign-invalid-usage", "InvalidKeyUsageException", 400),
+        ("alias/public-key-missing", "NotFoundException", 400),
+    ] {
+        let credential = SigningCredential::AwsKms(configured_credential(id));
+        let error = engine
+            .sign_transaction(options.clone(), &transaction, &credential)
+            .await
+            .unwrap_err();
+        let sdk_error = match error {
+            EngineError::AwsKmsSignerError {
+                error: SerialisableAwsSignerError::Sign { aws_sdk_error },
+            } => {
+                assert_ne!(id, "alias/public-key-missing");
+                aws_sdk_error
+            }
+            EngineError::AwsKmsSignerError {
+                error: SerialisableAwsSignerError::GetPublicKey { aws_sdk_error },
+            } => {
+                assert_eq!(id, "alias/public-key-missing");
+                aws_sdk_error
+            }
+            other => panic!("SDK rejection lost its typed cause: {other:?}"),
+        };
+        match sdk_error {
+            SerialisableAwsSdkError::ServiceError {
+                code: Some(code),
+                http_status: Some(status),
+                ..
+            } => {
+                assert_eq!(code, expected_code);
+                assert_eq!(status, expected_status);
+            }
+            other => panic!("SDK rejection lost its response metadata: {other:?}"),
+        }
+    }
+    // Request-specific bad credentials/keys cannot poison later valid work.
+    let valid_credential = SigningCredential::AwsKms(configured_credential("alias/low-s"));
+    let signature = engine
+        .sign_transaction(options.clone(), &transaction, &valid_credential)
+        .await
+        .unwrap();
+    assert_eq!(
+        signature,
+        native
+            .sign_hash_sync(&transaction.signature_hash())
+            .unwrap()
+            .to_string()
+    );
     for id in ["alias/invalid-der", "alias/wrong-key"] {
         let credential = SigningCredential::AwsKms(configured_credential(id));
         let error = engine
@@ -417,18 +514,23 @@ fn aws_kms_protocol_vectors() {
     );
     let observed = observed.lock().unwrap();
     assert_eq!(observed.invalid_requests, 0);
-    assert_eq!(observed.gets, 13);
-    assert_eq!(observed.signs, 21);
+    assert_eq!(observed.gets, 19);
+    assert_eq!(observed.signs, 26);
     assert_eq!(
         observed.by_key,
         BTreeMap::from([
-            ("alias/low-s".into(), (3, 7)),
+            ("alias/low-s".into(), (4, 8)),
             ("alias/high-s".into(), (1, 7)),
             ("alias/wrong-key".into(), (2, 2)),
             ("alias/invalid-der".into(), (2, 2)),
             ("alias/invalid-spki".into(), (1, 0)),
             ("alias/sign-outage".into(), (2, 2)),
             ("alias/public-key-outage".into(), (2, 1)),
+            ("alias/sign-denied".into(), (1, 1)),
+            ("alias/sign-disabled".into(), (1, 1)),
+            ("alias/sign-invalid-state".into(), (1, 1)),
+            ("alias/sign-invalid-usage".into(), (1, 1)),
+            ("alias/public-key-missing".into(), (1, 0)),
         ])
     );
 }

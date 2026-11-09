@@ -192,6 +192,43 @@ pub fn is_retryable_rpc_error(kind: &RpcErrorKind) -> bool {
     }
 }
 
+fn is_retryable_kms_sdk_error(error: &SerialisableAwsSdkError) -> bool {
+    match error {
+        SerialisableAwsSdkError::ConstructionFailure { .. } => false,
+        SerialisableAwsSdkError::ServiceError {
+            code: Some(code),
+            http_status: Some(status),
+            ..
+        } if (400..500).contains(status) && !matches!(*status, 408 | 429) => {
+            // Only a known rejection with matching response metadata can end an
+            // unsigned intent. Unknown/legacy errors, throttling and outages
+            // remain retryable; the preparation budget bounds those retries.
+            !matches!(
+                code.as_str(),
+                "AccessDenied"
+                    | "AccessDeniedException"
+                    | "NotAuthorized"
+                    | "UnrecognizedClientException"
+                    | "ExpiredTokenException"
+                    | "IncompleteSignature"
+                    | "NotFoundException"
+                    | "DisabledException"
+                    | "InvalidArnException"
+                    | "InvalidGrantTokenException"
+                    | "InvalidKeyUsageException"
+                    | "KMSInvalidStateException"
+                    | "UnsupportedOperationException"
+                    | "DryRunOperationException"
+                    | "ValidationError"
+                    | "ValidationException"
+                    | "MalformedHttpRequestException"
+                    | "RequestEntityTooLargeException"
+            )
+        }
+        _ => true,
+    }
+}
+
 pub fn is_retryable_preparation_error(error: &EoaExecutorWorkerError) -> bool {
     match error {
         EoaExecutorWorkerError::RpcError { inner_error, .. } => {
@@ -214,12 +251,7 @@ pub fn is_retryable_preparation_error(error: &EoaExecutorWorkerError) -> bool {
             EngineError::AwsKmsSignerError { error } => match error {
                 SerialisableAwsSignerError::Sign { aws_sdk_error }
                 | SerialisableAwsSignerError::GetPublicKey { aws_sdk_error } => {
-                    // A service/transport failure does not reject the unsigned
-                    // intent. The existing preparation budget bounds retries.
-                    !matches!(
-                        aws_sdk_error,
-                        SerialisableAwsSdkError::ConstructionFailure { .. }
-                    )
+                    is_retryable_kms_sdk_error(aws_sdk_error)
                 }
                 SerialisableAwsSignerError::Unknown { .. } => true,
                 _ => false, // Invalid keys, DER/SPKI, recovery and local crypto.
@@ -305,6 +337,8 @@ mod kms_preparation_tests {
             },
             SerialisableAwsSdkError::ServiceError {
                 message: "throttled or unavailable".into(),
+                code: None,
+                http_status: None,
             },
             SerialisableAwsSdkError::Other {
                 message: "unknown SDK failure".into(),
@@ -320,6 +354,94 @@ mod kms_preparation_tests {
         assert!(retryable(SerialisableAwsSignerError::Unknown {
             message: "untyped signer failure".into()
         }));
+    }
+
+    #[test]
+    fn kms_known_rejections_need_both_service_code_and_4xx_status() {
+        for (code, status, expected) in [
+            (Some("AccessDeniedException"), Some(403), false),
+            (Some("NotFoundException"), Some(400), false),
+            (Some("DisabledException"), Some(400), false),
+            (Some("KMSInvalidStateException"), Some(400), false),
+            (Some("InvalidKeyUsageException"), Some(400), false),
+            (Some("ValidationException"), Some(400), false),
+            (Some("UnrecognizedClientException"), Some(403), false),
+            (Some("AccessDeniedException"), Some(503), true),
+            (Some("AccessDeniedException"), Some(408), true),
+            (Some("AccessDeniedException"), Some(429), true),
+            (Some("AccessDeniedException"), Some(200), true),
+            (Some("AccessDeniedException"), None, true),
+            (None, Some(403), true),
+            (None, None, true),
+            (Some("FutureKmsError"), Some(400), true),
+            (Some("ThrottlingException"), Some(400), true),
+            (Some("DependencyTimeoutException"), Some(500), true),
+            (Some("KeyUnavailableException"), Some(500), true),
+            (Some("KMSInternalException"), Some(503), true),
+            // A transient code must never become permanent just because a
+            // proxy or future service version changes its HTTP status.
+            (Some("KeyUnavailableException"), Some(400), true),
+        ] {
+            let aws_sdk_error = SerialisableAwsSdkError::ServiceError {
+                message: "AccessDeniedException NotFoundException 403 unavailable".into(),
+                code: code.map(str::to_owned),
+                http_status: status,
+            };
+            for error in [
+                SerialisableAwsSignerError::Sign {
+                    aws_sdk_error: aws_sdk_error.clone(),
+                },
+                SerialisableAwsSignerError::GetPublicKey { aws_sdk_error },
+            ] {
+                assert_eq!(
+                    retryable(error),
+                    expected,
+                    "code={code:?}, status={status:?}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn legacy_service_error_text_cannot_turn_uncertainty_into_failure() {
+        let error: SerialisableAwsSignerError = serde_json::from_value(serde_json::json!({
+            "type": "SIGN",
+            "aws_sdk_error": {
+                "type": "SERVICE_ERROR",
+                "message": "AccessDeniedException: status 403"
+            }
+        }))
+        .unwrap();
+        assert!(retryable(error));
+    }
+
+    #[test]
+    fn retained_kms_worker_failure_preserves_both_error_types_and_retry_policy() {
+        for (code, status, expected_retry) in [
+            (Some("AccessDeniedException"), Some(403), false),
+            (Some("KMSInternalException"), Some(503), true),
+            (None, None, true),
+        ] {
+            let error = EoaExecutorWorkerError::SigningError {
+                message: "KMS failure".into(),
+                inner_error: EngineError::AwsKmsSignerError {
+                    error: SerialisableAwsSignerError::Sign {
+                        aws_sdk_error: SerialisableAwsSdkError::ServiceError {
+                            message: "service rejected this request".into(),
+                            code: code.map(str::to_owned),
+                            http_status: status,
+                        },
+                    },
+                },
+            };
+            let retained = serde_json::to_value(&error).unwrap();
+            assert_eq!(retained["inner_error"]["type"], "AWS_KMS_SIGNER_ERROR");
+            assert_eq!(retained["inner_error"]["error"]["type"], "SIGN");
+            let restored: EoaExecutorWorkerError =
+                serde_json::from_value(retained.clone()).unwrap();
+            assert_eq!(serde_json::to_value(&restored).unwrap(), retained);
+            assert_eq!(is_retryable_preparation_error(&restored), expected_retry);
+        }
     }
 
     #[test]
