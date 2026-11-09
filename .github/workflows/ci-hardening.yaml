@@ -216,9 +216,24 @@ jobs:
           ANVIL_BIN=/tmp/engine-foundry/anvil python3 -m unittest discover -s scripts -p 'capacity*test.py'
           python3 scripts/capacity_sweep.py individual --profile "$PROFILE" --max-screen-rate "$MAX_SCREEN_RATE" --seconds "$TRIAL_SECONDS" --late-window-seconds "$LATE_WINDOW_SECONDS" --engine-bin "$RUNNER_TEMP/capacity-bin/thirdweb-engine" --solana-bin-dir /tmp/engine-solana/solana-release/bin --output "$RUNNER_TEMP/capacity-$PROFILE"
       - name: Preserve failed trial fixtures
-        if: failure()
+        if: always()
+        env:
+          CAPACITY_JOB_STATUS: ${{ job.status }}
+          CAPACITY_SUMMARY: ${{ runner.temp }}/capacity-${{ matrix.profile }}/summary.json
         run: |
-          if test -d "$RUNNER_TEMP/fixtures"; then
+          if test -d "$RUNNER_TEMP/fixtures" && ! python3 - <<'PY'
+          import json, os, sys
+          try:
+              with open(os.environ["CAPACITY_SUMMARY"], encoding="utf-8") as source:
+                  trials = json.load(source)["trials"]
+              all_candidates = isinstance(trials, list) and bool(trials) and all(
+                  isinstance(trial, dict) and trial.get("capacity_candidate") is True
+                  for trial in trials)
+          except (OSError, ValueError, KeyError, TypeError):
+              all_candidates = False
+          sys.exit(0 if os.environ.get("CAPACITY_JOB_STATUS") == "success" and all_candidates else 1)
+          PY
+          then
             tar -czf "$RUNNER_TEMP/failed-fixtures.tar.gz" -C "$RUNNER_TEMP" fixtures
           fi
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -267,9 +282,24 @@ jobs:
           export TMPDIR="$RUNNER_TEMP/fixtures"
           python3 scripts/capacity_sweep.py shared --seconds "$TRIAL_SECONDS" --late-window-seconds "$LATE_WINDOW_SECONDS" --individuals "$RUNNER_TEMP/individuals" --engine-bin "$RUNNER_TEMP/capacity-bin/thirdweb-engine" --solana-bin-dir /tmp/engine-solana/solana-release/bin --output "$RUNNER_TEMP/capacity-shared"
       - name: Preserve failed trial fixtures
-        if: failure()
+        if: always()
+        env:
+          CAPACITY_JOB_STATUS: ${{ job.status }}
+          CAPACITY_SUMMARY: ${{ runner.temp }}/capacity-shared/summary.json
         run: |
-          if test -d "$RUNNER_TEMP/fixtures"; then
+          if test -d "$RUNNER_TEMP/fixtures" && ! python3 - <<'PY'
+          import json, os, sys
+          try:
+              with open(os.environ["CAPACITY_SUMMARY"], encoding="utf-8") as source:
+                  trials = json.load(source)["trials"]
+              all_candidates = isinstance(trials, list) and bool(trials) and all(
+                  isinstance(trial, dict) and trial.get("capacity_candidate") is True
+                  for trial in trials)
+          except (OSError, ValueError, KeyError, TypeError):
+              all_candidates = False
+          sys.exit(0 if os.environ.get("CAPACITY_JOB_STATUS") == "success" and all_candidates else 1)
+          PY
+          then
             tar -czf "$RUNNER_TEMP/failed-fixtures.tar.gz" -C "$RUNNER_TEMP" fixtures
           fi
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
