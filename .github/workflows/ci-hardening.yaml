@@ -4,13 +4,19 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      capacity:
+        description: Run the bounded release-build capacity search instead of correctness gates
+        type: boolean
+        default: false
 concurrency:
-  group: rust-correctness-${{ github.event.pull_request.head.ref || github.ref_name }}
+  group: rust-correctness-${{ github.event.pull_request.head.ref || github.ref_name }}-${{ inputs.capacity && github.run_id || 'correctness' }}
   cancel-in-progress: true
 permissions:
   contents: read
 jobs:
   test:
+    if: github.event_name != 'workflow_dispatch' || !inputs.capacity
     runs-on: ubuntu-latest
     timeout-minutes: 40
     services:
@@ -72,6 +78,8 @@ jobs:
           python3 formal/download.py https://github.com/foundry-rs/foundry/releases/download/v1.8.1/foundry_v1.8.1_linux_amd64.tar.gz 37b45855232e57624d90113b049ca54f0c92055bb5c1997fcbdc3076c7b89c10 /tmp/foundry.tar.gz
           mkdir -p /tmp/engine-foundry
           tar xzf /tmp/foundry.tar.gz -C /tmp/engine-foundry anvil
+      - name: Capacity evidence qualification guards
+        run: ANVIL_BIN=/tmp/engine-foundry/anvil python3 -m unittest discover -s scripts -p 'capacity*test.py' -v
       - name: Actual server crash recovery and duplicate admission
         run: |
           cargo build --locked --bin thirdweb-engine
@@ -121,3 +129,138 @@ jobs:
         run: |
           cargo install cargo-audit --version 0.22.2 --locked
           cargo audit
+  capacity-build:
+    if: github.event_name == 'workflow_dispatch' && inputs.capacity
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_RELEASE_DEBUG: '0'
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - run: sudo apt-get update && sudo apt-get install -y libudev-dev libusb-1.0-0-dev pkg-config libssl-dev clang cmake
+      - uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target/release
+          key: capacity-release-${{ runner.os }}-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}
+      - run: rustup show && cargo build --release --locked --bin thirdweb-engine
+      - name: Freeze the measured binary
+        run: |
+          mkdir "$RUNNER_TEMP/capacity-bin"
+          cp target/release/thirdweb-engine "$RUNNER_TEMP/capacity-bin/"
+          git rev-parse HEAD > "$RUNNER_TEMP/capacity-bin/source-commit.txt"
+          cd "$RUNNER_TEMP/capacity-bin"
+          sha256sum thirdweb-engine > SHA256SUMS
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: capacity-engine
+          path: ${{ runner.temp }}/capacity-bin/
+          retention-days: 14
+  capacity-individual:
+    needs: capacity-build
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    strategy:
+      fail-fast: false
+      matrix:
+        profile: [evm12, evm2, evm025, solana]
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: capacity-engine
+          path: ${{ runner.temp }}/capacity-bin
+      - name: Install pinned local nodes
+        run: |
+          sudo apt-get update && sudo apt-get install -y redis-server
+          curl -fL --retry 3 https://github.com/foundry-rs/foundry/releases/download/v1.8.1/foundry_v1.8.1_linux_amd64.tar.gz -o /tmp/foundry.tar.gz
+          echo "37b45855232e57624d90113b049ca54f0c92055bb5c1997fcbdc3076c7b89c10  /tmp/foundry.tar.gz" | sha256sum -c -
+          mkdir /tmp/engine-foundry
+          tar xzf /tmp/foundry.tar.gz -C /tmp/engine-foundry anvil cast
+          curl -fL --retry 3 https://github.com/anza-xyz/agave/releases/download/v4.2.2/solana-release-x86_64-unknown-linux-gnu.tar.bz2 -o /tmp/solana.tar.bz2
+          echo "5fc8684f7430038105fde953d4308ed56addf627f658daa61709f345448247ee  /tmp/solana.tar.bz2" | sha256sum -c -
+          mkdir /tmp/engine-solana
+          tar xjf /tmp/solana.tar.bz2 -C /tmp/engine-solana
+      - name: Measure individual rate and confirm three runs
+        env:
+          PROFILE: ${{ matrix.profile }}
+          ANVIL_BIN: /tmp/engine-foundry/anvil
+          CAST_BIN: /tmp/engine-foundry/cast
+        run: |
+          cd "$RUNNER_TEMP/capacity-bin" && sha256sum -c SHA256SUMS
+          chmod +x thirdweb-engine
+          test "$(cat source-commit.txt)" = "$GITHUB_SHA"
+          cd "$GITHUB_WORKSPACE"
+          mkdir "$RUNNER_TEMP/fixtures"
+          export TMPDIR="$RUNNER_TEMP/fixtures"
+          ANVIL_BIN=/tmp/engine-foundry/anvil python3 -m unittest discover -s scripts -p 'capacity*test.py'
+          python3 scripts/capacity_sweep.py individual --profile "$PROFILE" --engine-bin "$RUNNER_TEMP/capacity-bin/thirdweb-engine" --solana-bin-dir /tmp/engine-solana/solana-release/bin --output "$RUNNER_TEMP/capacity-$PROFILE"
+      - name: Preserve failed trial fixtures
+        if: failure()
+        run: |
+          if test -d "$RUNNER_TEMP/fixtures"; then
+            tar -czf "$RUNNER_TEMP/failed-fixtures.tar.gz" -C "$RUNNER_TEMP" fixtures
+          fi
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: capacity-individual-${{ matrix.profile }}
+          path: |
+            ${{ runner.temp }}/capacity-${{ matrix.profile }}/
+            ${{ runner.temp }}/failed-fixtures.tar.gz
+          retention-days: 14
+  capacity-shared:
+    needs: capacity-individual
+    runs-on: ubuntu-latest
+    timeout-minutes: 100
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: capacity-engine
+          path: ${{ runner.temp }}/capacity-bin
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          pattern: capacity-individual-*
+          path: ${{ runner.temp }}/individuals
+      - name: Install pinned local nodes
+        run: |
+          sudo apt-get update && sudo apt-get install -y redis-server
+          curl -fL --retry 3 https://github.com/foundry-rs/foundry/releases/download/v1.8.1/foundry_v1.8.1_linux_amd64.tar.gz -o /tmp/foundry.tar.gz
+          echo "37b45855232e57624d90113b049ca54f0c92055bb5c1997fcbdc3076c7b89c10  /tmp/foundry.tar.gz" | sha256sum -c -
+          mkdir /tmp/engine-foundry
+          tar xzf /tmp/foundry.tar.gz -C /tmp/engine-foundry anvil cast
+          curl -fL --retry 3 https://github.com/anza-xyz/agave/releases/download/v4.2.2/solana-release-x86_64-unknown-linux-gnu.tar.bz2 -o /tmp/solana.tar.bz2
+          echo "5fc8684f7430038105fde953d4308ed56addf627f658daa61709f345448247ee  /tmp/solana.tar.bz2" | sha256sum -c -
+          mkdir /tmp/engine-solana
+          tar xjf /tmp/solana.tar.bz2 -C /tmp/engine-solana
+      - name: Measure shared rates and mixed fault workloads
+        env:
+          ANVIL_BIN: /tmp/engine-foundry/anvil
+          CAST_BIN: /tmp/engine-foundry/cast
+        run: |
+          cd "$RUNNER_TEMP/capacity-bin" && sha256sum -c SHA256SUMS
+          chmod +x thirdweb-engine
+          test "$(cat source-commit.txt)" = "$GITHUB_SHA"
+          cd "$GITHUB_WORKSPACE"
+          mkdir "$RUNNER_TEMP/fixtures"
+          export TMPDIR="$RUNNER_TEMP/fixtures"
+          python3 scripts/capacity_sweep.py shared --individuals "$RUNNER_TEMP/individuals" --engine-bin "$RUNNER_TEMP/capacity-bin/thirdweb-engine" --solana-bin-dir /tmp/engine-solana/solana-release/bin --output "$RUNNER_TEMP/capacity-shared"
+      - name: Preserve failed trial fixtures
+        if: failure()
+        run: |
+          if test -d "$RUNNER_TEMP/fixtures"; then
+            tar -czf "$RUNNER_TEMP/failed-fixtures.tar.gz" -C "$RUNNER_TEMP" fixtures
+          fi
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: capacity-shared
+          path: |
+            ${{ runner.temp }}/capacity-shared/
+            ${{ runner.temp }}/failed-fixtures.tar.gz
+          retention-days: 14

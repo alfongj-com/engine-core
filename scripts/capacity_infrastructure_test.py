@@ -97,10 +97,10 @@ class Infrastructure(unittest.TestCase):
              mock.patch.object(campaign, 'provider_probe', return_value=(False, 'ConnectionRefusedError')), \
              mock.patch.object(campaign, 'request', return_value=(202, {})) as request:
             c.load()
-        self.assertEqual(request.call_count, 20)  # t=0..9.5; outage latches at10
+        self.assertEqual(request.call_count, 18)  # arrivals t=1..9.5; outage latches at10
         self.assertEqual(c.stats['nitro']['dropped_infrastructure_stop'], 1)  # queued dispatch sees latch
-        self.assertEqual(c.stats['nitro']['dropped_campaign_aborted'], 19)
-        self.assertEqual(c.responses['nitro']['202'], 20)
+        self.assertEqual(c.stats['nitro']['dropped_campaign_aborted'], 21)
+        self.assertEqual(c.responses['nitro']['202'], 18)
         c.wait_drain.assert_not_called(); c.retry_phase.assert_not_called(); c.spawn.assert_not_called()
         self.assertEqual(c.sample.call_count, 1)
         self.assertTrue(c.report['operator_review_required'])
