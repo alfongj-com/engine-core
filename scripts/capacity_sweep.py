@@ -52,6 +52,43 @@ def selected_rates(summaries, binary_sha):
     return selected
 
 
+def closed_trial(report):
+    """Only pre-dispatch misses may continue a safely closed failed screen.
+
+    They remain an incomplete, disqualified workload. An unresolved admission,
+    lost HTTP outcome, missing observation or failed safety check stops the run.
+    """
+    oracle, drain = report.get("oracle", {}), report.get("drain", {})
+    required = {"client_pending", "http_inflight", "journal_unresolved", "node_pending",
+                "redis_active", "redis_borrowed", "redis_delayed", "redis_pending", "redis_submitted"}
+    if (report.get("owned_children_stopped") is not True or oracle.get("safety_pass") is not True
+            or report.get("errors") or report.get("infrastructure_stop") or report.get("journal_halted")
+            or report.get("client_worker_failures") or oracle.get("safety_failures")
+            or report.get("durable_chain_halts") or report.get("operator_recovery_required")
+            or not required <= set(drain) or any(type(n) is not int or n != 0 for n in drain.values())):
+        return False
+    if report.get("outcome") == "pass":
+        return oracle.get("liveness_pass") is True and not oracle.get("liveness_failures")
+    if report.get("outcome") != "incomplete" or oracle.get("liveness_pass") is not False:
+        return False
+    dispatched = offered = missed = 0
+    for row in report.get("per_chain", {}).values():
+        client = row.get("client", {})
+        sent, planned = client.get("dispatched", 0), row.get("offered")
+        drops = [client.get("dropped_schedule_lag", 0), client.get("dropped_client_capacity", 0)]
+        if (any(type(n) is not int or n < 0 for n in (sent, planned, *drops))
+                or planned != sent + sum(drops)
+                or row.get("responses", {}) != ({"202": sent} if sent else {})
+                or any(value for key, value in client.items()
+                       if key.startswith("dropped_") and key not in ("dropped_schedule_lag", "dropped_client_capacity"))):
+            return False
+        dispatched += sent
+        offered += planned
+        missed += sum(drops)
+    return (missed > 0 and oracle.get("observed_intents") == dispatched
+            and oracle.get("offered_intents") == offered and offered == dispatched + missed)
+
+
 class Sweep:
     def __init__(self, args):
         self.args = args
@@ -62,7 +99,8 @@ class Sweep:
                         "engine_binary_sha256": self.binary_sha, "source_commit": subprocess.check_output(
                             ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(),
                         "platform": platform.platform(), "logical_cpus": os.cpu_count(),
-                        "seconds_per_trial": 300, "redis_fsync": "always", "trials": []}
+                        "seconds_per_trial": 300, "late_window_seconds": 180,
+                        "redis_fsync": "always", "trials": []}
 
     def save(self):
         temporary = self.output / ".summary.tmp"
@@ -74,7 +112,7 @@ class Sweep:
         report = self.output / f"{index:02d}-{chaos}.json"
         command = [sys.executable, str(ROOT / "scripts/capacity_metrics.py"),
                    "--engine-bin", str(self.args.engine_bin), "--seconds", "300",
-                   "--drain-seconds", "240", "--warmup-seconds", "60", "--late-window-seconds", "60",
+                   "--drain-seconds", "240", "--warmup-seconds", "60", "--late-window-seconds", "180",
                    "--redis-fsync", "always", "--max-intents", "500000", "--report", str(report)]
         for name, rate in rates.items():
             command += ["--chain", f"{name}={rate}"]
@@ -109,12 +147,10 @@ class Sweep:
         self.save()
         print(json.dumps(row), flush=True)
         # Never hide an infrastructure/safety failure by trying a lower rate.
-        # The metrics wrapper returns 2 for a safely drained rate that fails
-        # the capacity screen, including intentionally disrupted chaos trials.
-        if (code not in (0, 2) or value.get("outcome") != "pass" or value.get("errors")
-                or value.get("oracle", {}).get("safety_pass") is not True
-                or value.get("oracle", {}).get("liveness_pass") is not True
-                or value.get("owned_children_stopped") is not True):
+        # The wrapper returns 2 for a complete failed capacity screen and 1 for
+        # an incomplete workload. Only independently closed pre-dispatch misses
+        # may continue at a lower rate; neither result can qualify a rate.
+        if code not in (0, 1, 2) or not closed_trial(value):
             raise RuntimeError("Trial did not close safely; preserved evidence needs review")
         return row
 

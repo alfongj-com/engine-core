@@ -385,3 +385,12 @@ reattaches the original namespace. Every broadcast is refused. Only original
 same-ID requests are replayed; receipt identity, finality, fees and balances are
 checked before releasing the chain lock. Legacy/incomplete provenance requires
 its recorded checkout. A failed attempt retains the lock and original evidence.
+
+The capacity clock starts after the initial observer sample, with an explicit
+one-second lead-in before the first offer. Qualification uses the last three
+minutes of each five-minute trial. A pre-dispatch scheduler drop always fails
+that trial's capacity screen. The search may try a lower rate only when the
+independent oracle proves safety, every admitted request settled, all queues and
+pools drained, and the only missing offers were dropped before any HTTP request.
+Unknown admissions, outstanding work, failed observations and infrastructure
+fences stop the search for review.
