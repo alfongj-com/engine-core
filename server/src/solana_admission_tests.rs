@@ -4,7 +4,7 @@ use engine_core::{
 };
 use engine_executors::solana_executor::worker::SolanaExecutorError;
 use serde_json::json;
-use solana_sdk::pubkey::Pubkey;
+use solana_pubkey::Pubkey;
 use std::sync::{
     Arc,
     atomic::{AtomicUsize, Ordering},

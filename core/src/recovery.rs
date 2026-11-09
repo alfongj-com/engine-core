@@ -1582,7 +1582,7 @@ fn validate_attempt_identity_in_db(
             }
             "solana" => {
                 let signature_text: String = field(identity, "signature")?;
-                let signature: solana_sdk::signature::Signature = signature_text
+                let signature: solana_signature::Signature = signature_text
                     .parse()
                     .map_err(|_| RecoveryError::Conflict)?;
                 let supplied_chain: String = field(identity, "chainId")?;
@@ -1590,7 +1590,7 @@ fn validate_attempt_identity_in_db(
                     && attempt
                         .get("signature")
                         .and_then(Value::as_str)
-                        .and_then(|value| value.parse::<solana_sdk::signature::Signature>().ok())
+                        .and_then(|value| value.parse::<solana_signature::Signature>().ok())
                         == Some(signature)
             }
             "erc4337" => {

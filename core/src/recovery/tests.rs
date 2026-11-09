@@ -1037,7 +1037,7 @@ async fn terminal_identity_must_belong_to_same_admission_not_merely_same_chain()
 #[tokio::test]
 #[ignore = "requires disposable Redis in TEST_REDIS_URL"]
 async fn solana_terminal_signature_and_chain_are_bound_to_recorded_attempt() {
-    use solana_sdk::signature::Signature;
+    use solana_signature::Signature;
     let f = Fixture::fresh();
     f.initialize().await;
     let j = f.open().await;

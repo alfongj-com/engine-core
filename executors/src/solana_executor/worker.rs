@@ -18,12 +18,12 @@ use engine_solana_core::{
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use solana_commitment_config::{CommitmentConfig, CommitmentLevel};
+use solana_pubkey::Pubkey;
 use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 use solana_rpc_client_api::{
     config::{RpcSendTransactionConfig, RpcTransactionConfig},
     request::RpcRequest,
 };
-use solana_sdk::pubkey::Pubkey;
 use solana_transaction_status::{EncodedTransactionWithStatusMeta, UiTransactionEncoding};
 use spl_memo_interface::instruction::build_memo;
 use std::{sync::Arc, time::Duration};
@@ -839,7 +839,7 @@ impl SolanaExecutorJobHandler {
                     .map_err(|e| self.rpc_error(&e, chain_id_str.as_str()))?;
                 (hash, Some(height))
             }
-            SolanaTransactionInput::Serialized(_) => (solana_sdk::hash::Hash::default(), None),
+            SolanaTransactionInput::Serialized(_) => (solana_hash::Hash::default(), None),
         };
 
         // Build transaction - handle execution options differently for instructions vs serialized

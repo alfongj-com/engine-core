@@ -528,7 +528,7 @@ impl ExecutionRouter {
                 compute_unit_limit: None,
                 compute_unit_price: None,
             }
-            .to_versioned_transaction(signer_address, solana_sdk::hash::Hash::default())
+            .to_versioned_transaction(signer_address, solana_hash::Hash::default())
             .map_err(|error| EngineError::ValidationError {
                 message: error.to_string(),
             })?;
