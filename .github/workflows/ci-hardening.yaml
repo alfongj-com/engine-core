@@ -10,7 +10,7 @@ on:
         type: boolean
         default: false
 concurrency:
-  group: rust-correctness-${{ github.event.pull_request.head.ref || github.ref_name }}-${{ inputs.capacity && 'capacity' || 'correctness' }}
+  group: rust-correctness-${{ github.event.pull_request.head.ref || github.ref_name }}-${{ inputs.capacity && github.run_id || 'correctness' }}
   cancel-in-progress: true
 permissions:
   contents: read
@@ -44,8 +44,6 @@ jobs:
         run: node --test scripts/rpc/budget-gateway.test.mjs scripts/rpc/load-probe.test.mjs
       - name: Public transaction harness guards (offline)
         run: python3 -m unittest discover -s scripts -p 'test_testnet_*.py' -v
-      - name: Capacity evidence qualification guards
-        run: PYTHONPATH=scripts python3 -m unittest capacity_metrics_test capacity_sweep_test -v
       - name: Install pinned Rust toolchain
         run: rustup show
       - uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684
@@ -79,6 +77,8 @@ jobs:
           echo "37b45855232e57624d90113b049ca54f0c92055bb5c1997fcbdc3076c7b89c10  /tmp/foundry.tar.gz" | sha256sum -c -
           mkdir -p /tmp/engine-foundry
           tar xzf /tmp/foundry.tar.gz -C /tmp/engine-foundry anvil
+      - name: Capacity evidence qualification guards
+        run: ANVIL_BIN=/tmp/engine-foundry/anvil python3 -m unittest discover -s scripts -p 'capacity*test.py' -v
       - name: Actual server crash recovery and duplicate admission
         run: |
           cargo build --locked --bin thirdweb-engine
@@ -195,6 +195,7 @@ jobs:
           cd "$GITHUB_WORKSPACE"
           mkdir "$RUNNER_TEMP/fixtures"
           export TMPDIR="$RUNNER_TEMP/fixtures"
+          ANVIL_BIN=/tmp/engine-foundry/anvil python3 -m unittest discover -s scripts -p 'capacity*test.py'
           python3 scripts/capacity_sweep.py individual --profile "$PROFILE" --engine-bin "$RUNNER_TEMP/capacity-bin/thirdweb-engine" --solana-bin-dir /tmp/engine-solana/solana-release/bin --output "$RUNNER_TEMP/capacity-$PROFILE"
       - name: Preserve failed trial fixtures
         if: failure()
