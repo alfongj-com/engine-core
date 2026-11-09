@@ -374,3 +374,14 @@ Every trial report and storage/Redis timing snapshot is uploaded; failed fixture
 are retained as artifacts. No public RPC or wallet funding is used. These results
 qualify the runner's tested workload; they do not establish public sequencer,
 L1 settlement, production hardware or power-loss guarantees.
+
+### Reconcile an interrupted EVM public run
+
+Use `scripts/testnet_evm_reconcile.py --run-id ORIGINAL_ID --max-rpc-calls 600
+--report NEW_PRIVATE_REPORT`. It requires the original manifest, failed report,
+Redis AOF, journal and pinned binary. It verifies original harness provenance,
+waits for finalized chain evidence, preserves a cold journal/AOF snapshot, and
+reattaches the original namespace. Every broadcast is refused. Only original
+same-ID requests are replayed; receipt identity, finality, fees and balances are
+checked before releasing the chain lock. Legacy/incomplete provenance requires
+its recorded checkout. A failed attempt retains the lock and original evidence.

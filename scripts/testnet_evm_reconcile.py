@@ -18,6 +18,7 @@ import subprocess
 import threading
 import time
 from urllib.parse import urlparse
+from urllib.error import HTTPError, URLError
 
 import testnet_evm_write as evm
 from local_eoa_recovery import stop
@@ -72,6 +73,43 @@ class NoBroadcastGuard(evm.Guard):
         raise RuntimeError("Reconciliation refuses every broadcast; original signed evidence retained")
 
 
+def verified_runtime(manifest, original):
+    """Bind the read-only follow-up to the old experiment, without relabeling it.
+
+    The reconciler is a separate harness. Original harness bytes must match its
+    recorded Git tree; the pinned Engine must still match its recorded digest.
+    Legacy manifests require their recorded checkout, never an inferred binary.
+    """
+    saved = manifest.get("provenance")
+    required = ("engine_binary_path", "engine_binary_sha256", "declared_binary_source_commit",
+                "harness_source_commit", "harness_sha256", "process_helper_sha256")
+    if not isinstance(saved, dict) or any(not saved.get(field) for field in required):
+        raise RuntimeError("Incomplete original provenance; use the recorded checkout")
+    if (original.get("provenance") != saved
+            or manifest.get("binary_sha256") != saved["engine_binary_sha256"]
+            or original.get("binary_sha256") != saved["engine_binary_sha256"]
+            or not re.fullmatch(r"[0-9a-f]{40}", saved["harness_source_commit"])):
+        raise RuntimeError("Original report and manifest provenance disagree")
+    current = evm.provenance(saved["engine_binary_path"], saved["declared_binary_source_commit"], __file__)
+    if current["engine_binary_sha256"] != saved["engine_binary_sha256"]:
+        raise RuntimeError("Original Engine binary changed")
+    for path, field in (("scripts/testnet_evm_write.py", "harness_sha256"),
+                        ("scripts/testnet_engine.py", "process_helper_sha256")):
+        source = subprocess.check_output(["git", "show", saved["harness_source_commit"] + ":" + path], cwd=evm.ROOT)
+        if hashlib.sha256(source).hexdigest() != saved[field]:
+            raise RuntimeError("Original harness does not match its recorded Git tree")
+    return saved, current
+
+
+def reconcile_fees(manifest, final_balance, execution_fees, l1_fees):
+    debit = manifest["initial_sender_balance_wei"] - final_balance - manifest["transactions"]
+    # The original allocation covers posting/operator fees as well as EVM gas.
+    # Reconciliation may not enlarge it or assume those components are zero.
+    if not execution_fees + l1_fees <= debit <= manifest["total_debit_allocation_wei"]:
+        raise RuntimeError("Fee reconciliation exceeds the original allocation")
+    return debit, debit - execution_fees - l1_fees
+
+
 def loopback_port(url, scheme):
     parsed = urlparse(url)
     if parsed.scheme != scheme or parsed.hostname != "127.0.0.1" or parsed.username or parsed.password or parsed.query or parsed.fragment:
@@ -104,12 +142,14 @@ def main():
     parser.add_argument("--run-id", required=True)
     parser.add_argument("--state-dir", type=Path, default=evm.STATE)
     parser.add_argument("--max-rpc-calls", type=int, default=200)
+    parser.add_argument("--timeout", type=int, default=1800)
     parser.add_argument("--redis-server", default=os.environ.get("REDIS_SERVER_BIN", "redis-server"))
     parser.add_argument("--redis-cli", default=os.environ.get("REDIS_CLI_BIN", "redis-cli"))
     parser.add_argument("--report", type=Path, required=True)
     args = parser.parse_args()
     assert re.fullmatch(r"[0-9a-f]{32}", args.run_id)
     assert 50 <= args.max_rpc_calls <= 1000 and not args.report.exists()
+    assert 60 <= args.timeout <= 7200
     directory = args.state_dir / "public-runs" / args.run_id
     manifest = json.loads((directory / "manifest.json").read_text())
     original = json.loads((directory / "report.json").read_text())
@@ -125,8 +165,12 @@ def main():
     server_port = int(saved_env["APP__SERVER__PORT"])
     assert 1 <= server_port <= 65535 and len({redis_port, proxy_port, server_port}) == 3
     assert_ports_free([redis_port, proxy_port, server_port])
-    binary = evm.ROOT / "target/debug/thirdweb-engine"
-    assert file_hash(binary) == manifest["binary_sha256"], "Use the original qualified binary"
+    saved_provenance, reconciliation_provenance = verified_runtime(manifest, original)
+    evm.pinned_binary(saved_provenance)
+    assert saved_env[f"APP__EVM_RPC__ENDPOINTS__{chain}__FINALITY__MODE"] == "finalized"
+    assert saved_env["APP__RECOVERY__JOURNAL_PATH"] == str(directory / "recovery.sqlite")
+    assert manifest["value_wei"] == 1 and manifest["expected_execution_status"] == "0x1", "Transfer-only reconciliation"
+    assert type(manifest["total_debit_allocation_wei"]) is int and manifest["total_debit_allocation_wei"] > 0
     chain_lock = args.state_dir / f"public-evm-{chain}.lock"
     original_lock = chain_lock.read_bytes()
     # An active previous harness must finish or be reconciled by its owner first.
@@ -153,8 +197,10 @@ def main():
               "run_id": args.run_id, "chain_id": chain, "network": evm.CHAINS[chain],
               "transactions": count, "outcome": "incomplete", "original_outcome": original["outcome"],
               "original_error": original.get("error"), "original_evidence_sha256": original_hashes,
-              "source_commit": manifest["source_commit"], "binary_sha256": manifest["binary_sha256"],
-              "confirmation_scope": "successful receipts rechecked against current canonical blocks; not long-term finality",
+              "original_provenance": saved_provenance, "reconciliation_provenance": reconciliation_provenance,
+              "reconciliation_dependency_sha256": {"testnet_evm_write.py": file_hash(Path(evm.__file__))},
+              "binary_sha256": manifest["binary_sha256"],
+              "confirmation_scope": "original transfers, finalized Engine terminal evidence and independent canonical/finalized rechecks; no broadcasts",
               "rpc_read_limit": args.max_rpc_calls}
     started = time.monotonic()
 
@@ -202,6 +248,16 @@ def main():
             hashes.add(tx_hash)
         assert len(hashes) == count
 
+        highest_block = max(int(row["receipt"]["blockNumber"], 16) for row in verified)
+        def finalized():
+            try:
+                block = evm.rpc(url, "eth_getBlockByNumber", ["finalized", False])
+            except (HTTPError, URLError, TimeoutError):
+                # Read-only retry stays under the same pre-dispatch budget.
+                return False
+            return block is not None and int(block["number"], 16) >= highest_block
+        evm.wait(finalized, timeout=args.timeout, interval=10)
+
         def balances():
             return {"sender": int(evm.rpc(url, "eth_getBalance", [sender, "latest"]), 16),
                     "recipient": int(evm.rpc(url, "eth_getBalance", [recipient, "latest"]), 16),
@@ -210,18 +266,35 @@ def main():
 
         before = balances()
         assert before["recipient"] == count and before["latest_nonce"] == before["pending_nonce"] == initial_nonce + count
-        actual_fees = manifest["initial_sender_balance_wei"] - before["sender"] - count
-        assert actual_fees == execution_fees + l1_fees, "Additional fee components require explicit reconciliation"
+        actual_fees, other_fees = reconcile_fees(manifest, before["sender"], execution_fees, l1_fees)
         # This is a reconciliation check against the originally intended reserve,
         # not a retroactive assertion that execution maxFee capped L1 fees.
         assert actual_fees < min(manifest["initial_sender_balance_wei"] // 3, 2 * 10**15)
         report.update({"sender": sender, "recipient": recipient, "initial_nonce": initial_nonce,
                        "actual_fees_wei": actual_fees, "receipt_execution_fees_wei": execution_fees,
-                       "receipt_l1_fees_wei": l1_fees, "other_fee_components_wei": 0,
+                       "receipt_l1_fees_wei": l1_fees, "other_fee_components_wei": other_fees,
                        "original_execution_ceiling_wei": manifest["max_execution_cost_wei"],
-                       "fee_failure_cause": "The harness compared total debit including L1 fees to an execution-only gas-times-fee bound.",
                        "chain_before_duplicate": before, "confirmed_transactions": verified})
         evm.durable(work / "chain-before-restore.json", report)
+        # Keep the failed database cut before advancing the original authority.
+        # Its owner is stopped; preserve every existing SQLite sidecar too.
+        snapshot = work / "journal-before-restore"
+        snapshot.mkdir(mode=0o700)
+        snapshot_hashes = {}
+        for suffix in ("", "-wal", "-shm"):
+            source = directory / ("recovery.sqlite" + suffix)
+            if source.exists():
+                destination = snapshot / source.name
+                shutil.copy2(source, destination)
+                with destination.open("rb") as retained:
+                    os.fsync(retained.fileno())
+                snapshot_hashes[source.name] = file_hash(destination)
+        descriptor = os.open(snapshot, os.O_RDONLY)
+        try:
+            os.fsync(descriptor)
+        finally:
+            os.close(descriptor)
+        report["pre_restore_journal_snapshot_sha256"] = snapshot_hashes
         shutil.copytree(directory / "redis", work / "redis-before-restore")
         redis_process = spawn([args.redis_server, "--bind", "127.0.0.1", "--port", str(redis_port),
                                "--dir", str(directory / "redis"), "--save", "", "--appendonly", "yes", "--appendfsync", "always"], "redis.log")
@@ -239,7 +312,8 @@ def main():
         env = os.environ.copy()
         env.update(saved_env)
         env["APP_ENVIRONMENT"] = "production"
-        process = spawn([str(binary)], "engine.log", evm.ROOT / "server", env)
+        evm.prepare_recovery(saved_provenance, directory, env, resume=True)
+        process = spawn([evm.pinned_binary(saved_provenance)], "engine.log", evm.ROOT / "server", env)
         base = f"http://127.0.0.1:{server_port}"
         for _ in range(200):
             try:
@@ -268,6 +342,8 @@ def main():
             _, body = evm.request(base + f"/admin/executors/eoa/{sender}:{chain}/transaction/{txid}", headers=diagnostic)
             data = body["result"]["transactionData"]
             assert data and data["transaction_id"] == txid and data["receipt"]["status"] == "0x1"
+            terminal = evm.verify_retained_terminal(redis, args.run_id, txid, data["receipt"], "0x1")
+            evm.verify_finalized_receipt(url, data["receipt"]["blockNumber"], data["receipt"]["blockHash"], terminal["finality"])
             restored[txid] = data["receipt"]["transactionHash"].lower()
         assert set(restored.values()) == hashes and len(restored) == count
 
@@ -282,8 +358,7 @@ def main():
         after = balances()
         assert after == before, "Duplicate admission changed a chain balance or nonce"
         for number, block_hash in {(row["receipt"]["blockNumber"], row["receipt"]["blockHash"]) for row in verified}:
-            block = evm.rpc(url, "eth_getBlockByNumber", [number, False])
-            assert block and block["hash"] == block_hash, "Receipt is no longer canonical"
+            evm.verify_finalized_receipt(url, number, block_hash)
         assert all(file_hash(directory / name) == digest for name, digest in original_hashes.items())
         report.update({"outcome": "pass", "unique_chain_effects": count, "duplicate_requests": count,
                        "duplicate_chain_effects": 0, "rpc_sends": 0, "refused_broadcasts": 0,
@@ -300,6 +375,7 @@ def main():
         if guard:
             guard.close()
             report["guard_errors"] = guard.errors
+            report["upstream_http_errors"] = dict(guard.upstream_http_errors)
             report["refused_broadcasts"] = guard.refused_broadcasts
             if guard.errors or guard.refused_broadcasts:
                 report.update({"outcome": "fail", "error": "Guard rejected a request; retain chain lock", "reconciliation_lock_cleared": False})
