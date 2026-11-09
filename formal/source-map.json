@@ -158,7 +158,7 @@
     },
     {
       "path": "executors/src/eoa/store/submitted.rs",
-      "sha256": "f9408dc0ec413c3f909ee00a576a6e8f3c14d352ed818a47d348b5cf16d655c3",
+      "sha256": "5e2d2fba4a7da536593ce6c1e0942e56f3b4fe357a63dbfee5fb389f0e8c11c1",
       "models": [
         "EoaRecovery",
         "Finality",
@@ -771,6 +771,13 @@
         "DisasterRecovery"
       ],
       "sha256": "84e399d485aa66c8870157bc410c4c8fc3756bc38c16a27fabd10b50cdafd1c6"
+    },
+    {
+      "path": "executors/src/eoa/store/submitted_member_tests.rs",
+      "sha256": "66c3f1eb9a8da5074523e92b20ca5faece30feb9c43ed7b1bf0517512aaa02e8",
+      "models": [
+        "EoaRecovery"
+      ]
     }
   ],
   "review": {
@@ -1046,6 +1053,10 @@
         "executors/src/solana_executor/recovery_tests.rs"
       ],
       "reason": "Queue pop attaches immutable lease key/token identity to BorrowedJob for regular and multilane queues. New Solana processing locks record that identity plus a distinct processing token. Atomic acquisition requires the current queue token and its expiring key; a known prior record may be replaced only after its queue owner is no longer live. Attempt reads/writes and final pre-RPC lock checks require both processing ownership and queue liveness, strengthening stale-worker refusal. Legacy UUID/opaque records retain conservative TTL behavior. Signed wire, admission, journal publication, grant budgets and finality/expiry policy are unchanged. Standard ERR lock-lost replies fix Redis error classification. SolanaProcessingLease abstracts the new-format conjunction of metadata and live lease key; positive invariants, two faults and an early-reclaim witness are checked. JSON/key construction, expiry timing, old-format compatibility and actual crash behavior remain executable obligations; no refinement/composition or wall-clock liveness proof is claimed."
+    },
+    "submitted_id_encoding": {
+      "decision": "Preserve ordinary/legacy members; tag and hex-encode IDs containing colon.",
+      "reason": "The submitted index previously silently omitted these accepted IDs. The encoding maps to the same ID/hash/nonce model values; normal and supported legacy strings remain byte-identical. Canonical decoding is required for exact cleanup. Round-trip tests cover colon/Unicode IDs, legacy rows, malformed/noncanonical hex and cleanup identity. No claim of parsing ambiguous malformed historical colon members."
     }
   },
   "reviews": {
