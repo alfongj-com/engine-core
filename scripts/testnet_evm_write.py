@@ -217,7 +217,10 @@ class Guard:
                             # Let Engine exercise its real retry/uncertainty
                             # handling. Policy/budget/authentication failures
                             # remain fatal; never retry a send in this guard.
-                            if error.code not in (429, 500, 502, 503, 504):
+                            origin = (error.headers or {}).get("X-Engine-RPC-Error-Origin")
+                            if (error.code not in (429, 500, 502, 503, 504)
+                                    or origin not in ("upstream", "transport")):
+                                error.close()
                                 raise
                             http_status = error.code
                             error.close()

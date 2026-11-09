@@ -176,7 +176,8 @@ class GuardTests(unittest.TestCase):
 
     def test_upstream_timeout_is_forwarded_and_uncertain_wire_stays_reserved(self):
         body = {"jsonrpc": "2.0", "id": 1, "method": "eth_sendRawTransaction", "params": [self.wire()]}
-        failure = urllib.error.HTTPError("http://127.0.0.1", 502, "timeout", {}, None)
+        failure = urllib.error.HTTPError("http://127.0.0.1", 502, "timeout",
+                                         {"X-Engine-RPC-Error-Origin": "transport"}, None)
         response = {"jsonrpc": "2.0", "id": 1, "result": "0x" + "33" * 32}
         with patch("testnet_evm_write.request", side_effect=[failure, (200, response)]) as forward:
             for expected in (502, 200):
@@ -196,6 +197,44 @@ class GuardTests(unittest.TestCase):
         self.assertEqual((saved["wire"], saved["attempts"]), (self.wire(), 2))
         self.assertIn("error", saved["responses"][0])
         self.assertEqual(self.guard.accepted, {"7": response["result"]})
+
+    def test_transient_http_errors_require_gateway_upstream_or_transport_origin(self):
+        for status in (429, 500, 502, 503, 504):
+            for origin in ("upstream", "transport"):
+                with self.subTest(status=status, origin=origin):
+                    failure = urllib.error.HTTPError("http://127.0.0.1", status, "unavailable",
+                        {"X-Engine-RPC-Error-Origin": origin}, None)
+                    with patch("testnet_evm_write.request", side_effect=failure) as forward:
+                        connection = http.client.HTTPConnection("127.0.0.1", self.guard.server.server_address[1], timeout=2)
+                        try:
+                            connection.request("POST", "/", json.dumps({
+                                "jsonrpc": "2.0", "id": 1, "method": "eth_chainId", "params": []}))
+                            reply = connection.getresponse()
+                            self.assertEqual(reply.status, status)
+                            self.assertIn("error", json.loads(reply.read()))
+                        finally:
+                            connection.close()
+                        forward.assert_called_once()
+        self.assertEqual(self.guard.errors, [])
+        self.assertEqual(self.guard.upstream_http_errors, dict.fromkeys((429, 500, 502, 503, 504), 2))
+
+    def test_gateway_local_or_unattributed_503_remains_fatal(self):
+        for origin in ("local", None, "unknown"):
+            with self.subTest(origin=origin):
+                headers = {"X-Engine-RPC-Error-Origin": origin} if origin else {}
+                failure = urllib.error.HTTPError("http://127.0.0.1", 503, "budget unavailable", headers, None)
+                with patch("testnet_evm_write.request", side_effect=failure) as forward:
+                    connection = http.client.HTTPConnection("127.0.0.1", self.guard.server.server_address[1], timeout=2)
+                    try:
+                        connection.request("POST", "/", json.dumps({
+                            "jsonrpc": "2.0", "id": 1, "method": "eth_chainId", "params": []}))
+                        with self.assertRaises((http.client.RemoteDisconnected, ConnectionResetError)):
+                            connection.getresponse()
+                    finally:
+                        connection.close()
+                    forward.assert_called_once()
+        self.assertEqual(len(self.guard.errors), 3)
+        self.assertEqual(self.guard.upstream_http_errors, {})
 
     def test_budget_failure_remains_fatal_before_any_automatic_retry(self):
         failure = urllib.error.HTTPError("http://127.0.0.1", 402, "budget", {}, None)
