@@ -349,3 +349,11 @@ checks remove only their own disposable projections:
 python3 scripts/local_eoa_recovery.py --transactions 8 --rebuild-queues
 python3 scripts/local_solana_recovery.py --transactions 8 --drop-attempts-on-restart --rebuild-queues
 ```
+
+## Journal maintenance
+
+With Engine stopped, `engine-recovery compact --path data/recovery.sqlite
+--out data/before-compact.sqlite` creates a verified private SQLite snapshot and
+compacts the original without deleting any logical history. See
+[journal retention and maintenance](docs/design/journal-maintenance.md) for disk
+bounds, permanent retention and rollback limits.
