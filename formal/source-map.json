@@ -41,7 +41,7 @@
     },
     {
       "path": "core/src/recovery.rs",
-      "sha256": "7c64679e89352a60794e1df544681fa15f817a4efb31e9471f7c149352d85266",
+      "sha256": "9944ec9385d21acc4802c91f76e2f9c665f463014a8bfc8b7add1a2dc66408e8",
       "models": [
         "DisasterRecovery",
         "Finality",
@@ -67,7 +67,7 @@
         "DisasterRecoveryProjection",
         "SolanaRetainedAttempt"
       ],
-      "sha256": "2829c6523f39939a363c6e8a399c08f5548fbabe939f2fe074ca687f5fd74c92"
+      "sha256": "542c2eb184c73311388eb808bf608a8208883bd34835c7fc10d181b2821e5962"
     },
     {
       "path": "core/src/recovery/history_index_tests.rs",
@@ -443,7 +443,7 @@
     },
     {
       "path": "server/src/bin/engine-recovery.rs",
-      "sha256": "61e8e345bd4c987188138d98166f1193cb3880e09c19985770eaf638cfceeaa7",
+      "sha256": "6735e363437738bab7e68dd4a482433594920c91020459989575acc05a477e4f",
       "models": [
         "DisasterRecovery"
       ]
@@ -802,6 +802,13 @@
         "QueueRebuild",
         "SolanaRetainedAttempt"
       ]
+    },
+    {
+      "path": "core/src/recovery/maintenance.rs",
+      "sha256": "9635eca5cc98af896d9fe50de5c3dba4663a66e5f5431672832e7aee0601b4b8",
+      "models": [
+        "DisasterRecovery"
+      ]
     }
   ],
   "review": {
@@ -1085,6 +1092,10 @@
     "offline_queue_reconstruction": {
       "decision": "Add QueueRebuild finite model and preserve existing independent authority/retained-wire protocols.",
       "reason": "Offline CLI holds the exclusive journal owner, verifies continuity before/after bounded inventory/projection repair, starts no workers/HTTP and never grants a send. Inventory excludes terminal/quarantine and validates canonical attempt digests/replay binding. EOA repair validates all retained wire identities, preserves the nonce floor and mutates only under the current EOA owner token; unsupported/contradictory records fail closed. Solana workers still activate retained-wire recovery and consume its permanent journal budget. Existing queue counters/order/delay survive, live leases and cancellation/terminal witnesses reject repair. A new QueueRebuild model has one positive, six fault counterexamples and a successful-repair witness; file locks, numeric/encoding bounds, Redis runtime type safety, cryptography and cross-model composition remain assumptions/implementation tests. Tagged encoding only extends previously broken colon-containing EOA IDs; ordinary and supported legacy members retain their representation. An additional real-process jobs-only failure exposed a valid initial-submission boundary with no attempt-list entry. Repair now checks a bounded literal submitted member whose hash belongs to the retained history and repeats its exact score check under the EOA owner token. It still refuses absent/foreign/malformed witnesses; the test covers that valid empty-attempt-list projection."
+    },
+    "physical_journal_maintenance": {
+      "decision": "Permanent logical retention; verified offline SQLite snapshot/compaction without new authority state or schema.",
+      "reason": "The exclusive owner lock excludes serving workers. Unhalted current-schema/no-pending preconditions prevent maintenance from acknowledging checkpoints or clearing incidents. A private no-overwrite SQLite snapshot is checked against a bounded-row-memory digest of every table/value including recovery events and sqlite_sequence before publication. Source VACUUM must preserve that digest and the full control identity; failed verification latches a durable halt. WAL checkpoint/truncation reports busy readers rather than resetting continuity. Normal startup/admission/broadcast paths do not invoke maintenance. This physical operation stutters over DisasterRecovery logical state; SQLite atomicity, filesystem sync/power loss and the correctness/collision resistance of the digest are assumptions, not proved implementation refinement. Real SQLite/Redis tests check retained rows, export identity, private publication, actual free-page reclamation, restart/dedup/replay fences and owner/halt/pending/output rejection. Lifetime growth and permanent sensitive payload retention remain explicit contract limits."
     }
   },
   "reviews": {

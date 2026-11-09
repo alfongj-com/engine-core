@@ -24,7 +24,7 @@ fn wal_bytes(path: &Path) -> Result<u64> {
 }
 
 /// Hash every value, including recovery events and sqlite_sequence, in stable
-/// table/column order. At most one SQLite row is materialized at a time. Length
+/// table/column order. The Rust iterator holds one row at a time; SQLite still sorts each table. Length
 /// and type prefixes distinguish NULL, empty strings/blobs and field boundaries.
 /// Authority and ordering use explicit IDs/sequences, never implicit rowids,
 /// which VACUUM may renumber. SQLite may spill this all-column sort to disk.
