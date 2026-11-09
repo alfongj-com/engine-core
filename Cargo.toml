@@ -15,12 +15,21 @@ resolver = "2"
 
 [workspace.dependencies]
 # Alloy and related
-alloy = { version = "1.0.36" }
-alloy-signer-aws = { version = "1.0.23" }
+alloy = { git = "https://github.com/alfongj-com/alloy", rev = "12003e896f89eb9c9263102a5d7c9ec58fb113b9" }
+alloy-signer-aws = { git = "https://github.com/alfongj-com/alloy", rev = "12003e896f89eb9c9263102a5d7c9ec58fb113b9" }
 
 
 # Solana
-solana-sdk = "3.0"
+# Import only the host-side types used by Engine. solana-sdk also pulls unused
+# on-chain secp256k1 recovery and its obsolete RustCrypto dependency graph.
+solana-hash = { version = "3.0", features = ["serde"] }
+solana-instruction = "3.0"
+solana-keypair = "3.0"
+solana-message = { version = "3.0", features = ["serde"] }
+solana-pubkey = { version = "3.0", features = ["serde", "rand"] }
+solana-signature = { version = "3.0", features = ["serde", "verify"] }
+solana-signer = "3.0"
+solana-transaction = { version = "3.0", features = ["serde", "verify", "blake3"] }
 solana-rpc-client = "3.0"
 solana-rpc-client-api = "3.0"
 solana-transaction-status = "3.0"
@@ -101,3 +110,7 @@ redis = { version = "0.31.0", features = ["tokio-comp", "connection-manager"] }
 
 # Dev dependencies
 criterion = { version = "0.6", features = ["html_reports", "async_tokio"] }
+
+# Temporary compatibility patch for fixed RustCrypto releases.
+[patch.crates-io]
+alloy-primitives = { git = "https://github.com/alfongj-com/alloy-core", rev = "36b85284347fcc45158f120e201492d3634acde8" }

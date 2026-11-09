@@ -1,7 +1,9 @@
 use serde::{Deserialize, Serialize};
 use serde_with::{DisplayFromStr, serde_as};
-use solana_sdk::{hash::Hash, signature::Signature};
+use solana_hash::Hash;
+use solana_signature::Signature;
 use twmq::{
+    job::QueueLease,
     redis,
     redis::{AsyncCommands, aio::ConnectionManager},
 };
@@ -82,6 +84,36 @@ impl SolanaTransactionAttempt {
     }
 }
 
+// Shared by every attempt mutation/read and the final pre-RPC lock check.
+// Legacy UUID locks keep their original semantics until release/expiry.
+const PROCESSING_LOCK_OWNERSHIP: &str = r#"
+local function owner_is_well_formed(owner)
+    return type(owner) == 'table'
+        and type(owner.metadata_key) == 'string' and owner.metadata_key ~= ''
+        and type(owner.lease_key) == 'string' and owner.lease_key ~= ''
+        and type(owner.token) == 'string' and owner.token ~= ''
+        and string.sub(owner.metadata_key, -5) == ':meta'
+        and owner.lease_key == string.sub(owner.metadata_key, 1, -6) .. ':lease:' .. owner.token
+end
+local function owner_is_live(owner)
+    return owner_is_well_formed(owner)
+        and redis.call('HGET', owner.metadata_key, 'lease_token') == owner.token
+        and redis.call('EXISTS', owner.lease_key) == 1
+end
+local function owns_processing_lock(key, value)
+    if redis.call('GET', key) ~= value then return false end
+    local ok, record = pcall(cjson.decode, value)
+    if ok then
+        return type(record) == 'table' and record.version == 1 and owner_is_live(record.owner)
+    end
+    return #value == 36 and string.match(value, '^%x%x%x%x%x%x%x%x%-%x%x%x%x%-%x%x%x%x%-%x%x%x%x%-%x%x%x%x%x%x%x%x%x%x%x%x$') ~= nil
+end
+"#;
+
+fn processing_script(body: &str) -> redis::Script {
+    redis::Script::new(&format!("{PROCESSING_LOCK_OWNERSHIP}\n{body}"))
+}
+
 /// Represents a lock held on a transaction
 /// When dropped, the lock is automatically released
 pub struct TransactionLock {
@@ -93,8 +125,12 @@ pub struct TransactionLock {
 impl TransactionLock {
     /// Check if we still hold the lock
     pub async fn still_held(&self) -> Result<bool, redis::RedisError> {
-        let current_value: Option<String> = self.redis.clone().get(&self.lock_key).await?;
-        Ok(current_value.as_deref() == Some(&self.lock_value))
+        processing_script("return owns_processing_lock(KEYS[1], ARGV[1]) and 1 or 0")
+            .key(&self.lock_key)
+            .arg(&self.lock_value)
+            .invoke_async::<i32>(&mut self.redis.clone())
+            .await
+            .map(|owned| owned == 1)
     }
 
     /// Explicitly release the lock
@@ -147,6 +183,9 @@ impl Drop for TransactionLock {
 pub enum LockError {
     #[error("Failed to acquire lock: another worker is processing this transaction")]
     AlreadyLocked,
+
+    #[error("Queue lease is no longer owned")]
+    QueueLeaseLost,
 
     #[error("Redis error: {0}")]
     RedisError(String),
@@ -273,6 +312,58 @@ impl SolanaTransactionStorage {
         }
     }
 
+    /// Reclaim only a lock whose recorded queue owner is no longer live. The
+    /// claimant's lease and the prior owner's lease are checked in the same CAS.
+    /// Opaque/legacy values retain their TTL; they carry no ownership evidence.
+    pub async fn try_acquire_lock_with_lease(
+        &self,
+        transaction_id: &str,
+        lease: &QueueLease,
+    ) -> Result<TransactionLock, LockError> {
+        let lock_key = self.lock_key(transaction_id);
+        let lock_value = serde_json::json!({
+            "version": 1,
+            "token": uuid::Uuid::new_v4().to_string(),
+            "owner": {
+                "metadata_key": lease.metadata_key(),
+                "lease_key": lease.lease_key(),
+                "token": lease.token(),
+            },
+        })
+        .to_string();
+        let result: i32 = processing_script(
+            r#"
+            local owner = {metadata_key=KEYS[2], lease_key=KEYS[3], token=ARGV[1]}
+            if not owner_is_live(owner) then return -1 end
+            local old = redis.call('GET', KEYS[1])
+            if old then
+                local ok, record = pcall(cjson.decode, old)
+                if not ok or type(record) ~= 'table' or record.version ~= 1
+                    or not owner_is_well_formed(record.owner) then return 0 end
+                if owner_is_live(record.owner) then return 0 end
+            end
+            redis.call('SET', KEYS[1], ARGV[2], 'EX', 120)
+            return 1
+        "#,
+        )
+        .key(&lock_key)
+        .key(lease.metadata_key())
+        .key(lease.lease_key())
+        .arg(lease.token())
+        .arg(&lock_value)
+        .invoke_async(&mut self.redis.clone())
+        .await?;
+        match result {
+            1 => Ok(TransactionLock {
+                redis: self.redis.clone(),
+                lock_key,
+                lock_value,
+            }),
+            -1 => Err(LockError::QueueLeaseLost),
+            _ => Err(LockError::AlreadyLocked),
+        }
+    }
+
     /// Store an attempt ATOMICALLY before sending to RPC (must hold lock)
     /// This is critical to prevent duplicate transactions from crashes
     /// Uses Lua script to atomically check lock and store attempt
@@ -292,7 +383,7 @@ impl SolanaTransactionStorage {
         })?;
 
         // Lua script to atomically verify lock and store attempt
-        let script = redis::Script::new(
+        let script = processing_script(
             r#"
             local lock_key = KEYS[1]
             local lock_value = ARGV[1]
@@ -300,9 +391,8 @@ impl SolanaTransactionStorage {
             local attempt_json = ARGV[2]
             
             -- Check if we still hold the lock
-            local current_lock = redis.call('GET', lock_key)
-            if current_lock ~= lock_value then
-                return redis.error_reply('lock lost')
+            if not owns_processing_lock(lock_key, lock_value) then
+                return redis.error_reply('ERR lock lost')
             end
             
             -- Try to store attempt if it doesn't exist
@@ -374,16 +464,15 @@ impl SolanaTransactionStorage {
         let attempt_key = self.attempt_key(transaction_id);
 
         // Lua script to atomically verify lock and get attempt
-        let script = redis::Script::new(
+        let script = processing_script(
             r#"
             local lock_key = KEYS[1]
             local lock_value = ARGV[1]
             local attempt_key = KEYS[2]
             
             -- Check if we still hold the lock
-            local current_lock = redis.call('GET', lock_key)
-            if current_lock ~= lock_value then
-                return redis.error_reply('lock lost')
+            if not owns_processing_lock(lock_key, lock_value) then
+                return redis.error_reply('ERR lock lost')
             end
             
             -- Get the attempt
@@ -440,7 +529,7 @@ impl SolanaTransactionStorage {
         })?;
 
         // Lua script to atomically verify lock and update attempt
-        let script = redis::Script::new(
+        let script = processing_script(
             r#"
             local lock_key = KEYS[1]
             local lock_value = ARGV[1]
@@ -448,9 +537,8 @@ impl SolanaTransactionStorage {
             local attempt_json = ARGV[2]
             
             -- Check if we still hold the lock
-            local current_lock = redis.call('GET', lock_key)
-            if current_lock ~= lock_value then
-                return redis.error_reply('lock lost')
+            if not owns_processing_lock(lock_key, lock_value) then
+                return redis.error_reply('ERR lock lost')
             end
             
             -- Update the attempt

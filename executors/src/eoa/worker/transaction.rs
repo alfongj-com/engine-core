@@ -14,7 +14,7 @@ use alloy::{
         TypedTransaction,
     },
     network::{TransactionBuilder, TransactionBuilder7702},
-    primitives::{Bytes, U256},
+    primitives::{Bytes, TxKind, U256},
     providers::Provider,
     rpc::types::TransactionRequest as AlloyTransactionRequest,
     signers::Signature,
@@ -146,6 +146,51 @@ impl<C: Chain> EoaExecutorWorker<C> {
             {
                 Ok(result) => return Ok(result),
                 Err(error) => {
+                    if matches!(error, EoaExecutorWorkerError::RecoveryRequired { .. })
+                        && let Some(journal) = engine_core::recovery::global()
+                    {
+                        let payload = serde_json::to_value(&pending_transaction.user_request)
+                            .map_err(|_| {
+                                crate::recovery::eoa_required("Cannot encode recovery payload")
+                            })?;
+                        if let Some(retained) = journal
+                            .eoa_preparation_failure(&pending_transaction.transaction_id, &payload)
+                            .await
+                            .map_err(crate::recovery::eoa_journal_error)?
+                        {
+                            let original: EoaExecutorWorkerError = serde_json::from_value(retained)
+                                .map_err(|_| {
+                                    crate::recovery::eoa_required(
+                                        "Invalid preparation failure evidence",
+                                    )
+                                })?;
+                            // Feed the existing failure projection even if a
+                            // later release changes the original classifier.
+                            // The store re-reads and publishes the first error.
+                            return Err(EoaExecutorWorkerError::TransactionBuildFailed {
+                                message: format!("Durably rejected before broadcast: {original}"),
+                            });
+                        }
+                        if journal
+                            .admission("eoa", &pending_transaction.transaction_id)
+                            .await
+                            .map_err(crate::recovery::eoa_journal_error)?
+                            .is_some_and(|record| {
+                                record.state == engine_core::recovery::AdmissionState::Terminal
+                                    && record.payload == payload
+                            })
+                        {
+                            // The exact terminal payload was already checked by
+                            // eoa_preparation_failure. Route only its stale pending
+                            // membership to the store's fenced terminal cleanup;
+                            // it must not publish a replacement failure or wait
+                            // behind the ordinary unsigned retry/age limits.
+                            return Err(EoaExecutorWorkerError::TransactionBuildFailed {
+                                message: "Durably terminal intent needs pending scheduling cleanup"
+                                    .into(),
+                            });
+                        }
+                    }
                     if is_retryable_preparation_error(&error) && attempt < MAX_PREPARATION_RETRIES {
                         tracing::warn!(
                             transaction_id = ?pending_transaction.transaction_id,
@@ -367,11 +412,8 @@ impl<C: Chain> EoaExecutorWorker<C> {
             .with_value(request.value)
             .with_input(request.data.clone())
             .with_chain_id(request.chain_id)
-            .with_nonce(nonce);
-
-        if let Some(to) = request.to {
-            tx_request = tx_request.with_to(to);
-        }
+            .with_nonce(nonce)
+            .with_kind(request.to.map_or(TxKind::Create, TxKind::Call));
 
         if let Some(gas_limit) = request.gas_limit {
             tx_request = tx_request.with_gas_limit(gas_limit);
@@ -401,8 +443,17 @@ impl<C: Chain> EoaExecutorWorker<C> {
                     if let Some(gas_price) = data.gas_price {
                         tx_request.with_gas_price(gas_price)
                     } else {
-                        // User didn't provide gas price, estimate it
-                        self.estimate_gas_fees(tx_request).await?
+                        let gas_price =
+                            self.chain.provider().get_gas_price().await.map_err(|e| {
+                                EoaExecutorWorkerError::RpcError {
+                                    message: format!(
+                                        "Failed to get legacy gas price: {}",
+                                        engine_core::error::rpc_error_diagnostic(&e)
+                                    ),
+                                    inner_error: e.to_engine_error(&self.chain),
+                                }
+                            })?;
+                        tx_request.with_gas_price(gas_price)
                     }
                 }
                 TransactionTypeData::Eip7702(data) => {
@@ -439,8 +490,18 @@ impl<C: Chain> EoaExecutorWorker<C> {
         if tx_request.gas.is_none() {
             match self.chain.provider().estimate_gas(tx_request.clone()).await {
                 Ok(gas_limit) => {
-                    tx_request = tx_request
-                        .with_gas_limit(gas_limit * 120 / 100 + GAS_ESTIMATION_FIXED_OVERHEAD); // 20% buffer + fixed overhead
+                    // Widen before scaling: an out-of-range RPC estimate must not
+                    // panic a worker or wrap into a smaller signed gas limit.
+                    let buffered = u128::from(gas_limit) * 120 / 100
+                        + u128::from(GAS_ESTIMATION_FIXED_OVERHEAD);
+                    let buffered = u64::try_from(buffered).map_err(|_| {
+                        EoaExecutorWorkerError::TransactionBuildFailed {
+                            message:
+                                "Buffered gas estimate exceeds the transaction gas limit range"
+                                    .into(),
+                        }
+                    })?;
+                    tx_request = tx_request.with_gas_limit(buffered);
                 }
                 Err(e) => {
                     // Check if this is a revert
@@ -500,7 +561,14 @@ impl<C: Chain> EoaExecutorWorker<C> {
                     extra_gas = extra,
                     "Adding Etherlink authorization list gas overhead"
                 );
-                tx_request = tx_request.with_gas_limit(current_gas + extra);
+                let gas_limit = current_gas.checked_add(extra).ok_or_else(|| {
+                    EoaExecutorWorkerError::TransactionBuildFailed {
+                        message:
+                            "Authorization gas overhead exceeds the transaction gas limit range"
+                                .into(),
+                    }
+                })?;
+                tx_request = tx_request.with_gas_limit(gas_limit);
             }
         }
 

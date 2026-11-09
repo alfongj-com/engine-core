@@ -205,16 +205,66 @@ impl<T: Clone> Job<T> {
     }
 }
 
+/// Borrow-time identity of a queue lease. This is not proof that it remains
+/// live: users must check both Redis metadata and the expiring lease atomically.
+#[derive(Debug, Clone)]
+pub struct QueueLease {
+    metadata_key: String,
+    lease_key: String,
+    token: String,
+}
+
+impl QueueLease {
+    /// Construct an identity, not a permission grant. Redis users must validate
+    /// the matching metadata token and expiring lease before acting on it.
+    pub fn new(metadata_key: String, lease_key: String, token: String) -> Self {
+        Self {
+            metadata_key,
+            lease_key,
+            token,
+        }
+    }
+
+    pub fn metadata_key(&self) -> &str {
+        &self.metadata_key
+    }
+    pub fn lease_key(&self) -> &str {
+        &self.lease_key
+    }
+    pub fn token(&self) -> &str {
+        &self.token
+    }
+}
+
 // A job that has been borrowed from the queue with a lease token
 #[derive(Debug, Clone)]
 pub struct BorrowedJob<T: Clone> {
     pub job: Job<T>,
     pub lease_token: String,
+    queue_lease: Option<QueueLease>,
 }
 
 impl<T: Clone> BorrowedJob<T> {
     pub fn new(job: Job<T>, lease_token: String) -> Self {
-        Self { job, lease_token }
+        Self {
+            job,
+            lease_token,
+            queue_lease: None,
+        }
+    }
+
+    pub(crate) fn with_lease_keys(mut self, metadata_key: String, lease_key: String) -> Self {
+        self.queue_lease = Some(QueueLease {
+            metadata_key,
+            lease_key,
+            token: self.lease_token.clone(),
+        });
+        self
+    }
+
+    /// Manually constructed jobs have no queue identity and retain legacy behavior.
+    pub fn queue_lease(&self) -> Option<&QueueLease> {
+        self.queue_lease.as_ref()
     }
 
     // Convenience methods to access job fields

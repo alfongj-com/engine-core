@@ -7,7 +7,6 @@ use axum::{
     response::{IntoResponse, Json},
 };
 use engine_core::error::EngineError;
-use futures::future::join_all;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use thirdweb_core::auth::ThirdwebAuth;
@@ -41,6 +40,7 @@ pub struct EncodeRequest {
     /// List of contract function calls to encode
     ///
     /// Each call will be encoded to its raw transaction data
+    #[schema(max_items = 100)]
     pub params: Vec<ContractCall>,
 }
 
@@ -105,6 +105,7 @@ pub async fn encode_contract(
     OptionalRpcCredentialsExtractor(rpc_credentials): OptionalRpcCredentialsExtractor,
     EngineJson(request): EngineJson<EncodeRequest>,
 ) -> Result<impl IntoResponse, ApiEngineError> {
+    crate::batch::validate_size(request.params.len())?;
     let auth: Option<ThirdwebAuth> = rpc_credentials.and_then(|creds| match creds {
         engine_core::chain::RpcCredentials::Thirdweb(auth) => Some(auth),
         engine_core::chain::RpcCredentials::Configured => None,
@@ -116,13 +117,13 @@ pub async fn encode_contract(
         })
     })?;
 
-    // Prepare all contract calls in parallel
+    // Prepare a bounded batch in input order
     let prepare_futures = request.params.iter().map(|contract_call| {
         contract_call.prepare_call_with_error_tracking(&state.abi_service, chain_id, auth.clone())
     });
 
     let preparation_results: Vec<ContractOperationResult<PreparedContractCall>> =
-        join_all(prepare_futures).await;
+        crate::batch::collect(prepare_futures.collect()).await;
 
     // Convert all results to encode result items
     let results: Vec<BatchResultItem<EncodeResultSuccessItem>> = preparation_results

@@ -19,6 +19,31 @@ use crate::{
     execution_options::aa::{EntrypointAndFactoryDetails, EntrypointAndFactoryDetailsDeserHelper},
 };
 
+/// Alloy boxes AWS errors behind its signer interface. Keep their SDK/crypto
+/// variants so preparation can distinguish a service outage from invalid input.
+fn aws_transaction_signing_error(error: alloy::signers::Error) -> EngineError {
+    match error {
+        alloy::signers::Error::Other(error) => {
+            match error.downcast::<alloy_signer_aws::AwsSignerError>() {
+                Ok(error) => EngineError::from(*error),
+                Err(error) => match error.downcast::<alloy::signers::Error>() {
+                    // TxSigner wraps the Signer error again; preserve the
+                    // underlying AWS cause through both Alloy interfaces.
+                    Ok(error) => aws_transaction_signing_error(*error),
+                    Err(error) => EngineError::AwsKmsSignerError {
+                        error: SerialisableAwsSignerError::Unknown {
+                            message: error.to_string(),
+                        },
+                    },
+                },
+            }
+        }
+        error => EngineError::ValidationError {
+            message: format!("Invalid AWS KMS signing request: {error}"),
+        },
+    }
+}
+
 /// Encoding of a message before EIP-191 personal signing.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, utoipa::ToSchema)]
 #[serde(rename_all = "lowercase")]
@@ -414,19 +439,12 @@ impl AccountSigner for EoaSigner {
                 )?;
                 let mut transaction = transaction.clone();
 
-                // TODO: create serialisable error for @alloy-signer::error::Error
                 let signature = signer
                     .sign_transaction(&mut transaction)
                     .await
                     .map_err(|e| {
-                        tracing::error!("Error signing message with EOA (AWS KMS): {:?}", e);
-                        EngineError::AwsKmsSignerError {
-                            error: SerialisableAwsSignerError::Sign {
-                                aws_sdk_error: SerialisableAwsSdkError::Other {
-                                    message: e.to_string(),
-                                },
-                            },
-                        }
+                        tracing::error!("Error signing transaction with EOA (AWS KMS): {:?}", e);
+                        aws_transaction_signing_error(e)
                     })?;
                 Ok(signature.to_string())
             }
@@ -560,11 +578,12 @@ impl SolanaSigner {
     /// co-signatures; a partially signed transaction must supply every other signer.
     pub async fn sign_transaction(
         &self,
-        mut transaction: solana_sdk::transaction::VersionedTransaction,
-        from: solana_sdk::pubkey::Pubkey,
+        mut transaction: solana_transaction::versioned::VersionedTransaction,
+        from: solana_pubkey::Pubkey,
         credentials: &SigningCredential,
-    ) -> Result<solana_sdk::transaction::VersionedTransaction, EngineError> {
-        use solana_sdk::{signature::Signature, signer::Signer};
+    ) -> Result<solana_transaction::versioned::VersionedTransaction, EngineError> {
+        use solana_signature::Signature;
+        use solana_signer::Signer;
         let invalid = |message: &str| EngineError::ValidationError {
             message: message.into(),
         };

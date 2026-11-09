@@ -121,7 +121,7 @@ fn retained(conn: &Connection, id: &str, expected_payload: &Value) -> Result<Opt
         .get("signature")
         .and_then(Value::as_str)
         .ok_or(RecoveryError::Storage)?;
-    let signature: solana_sdk::signature::Signature =
+    let signature: solana_signature::Signature =
         signature.parse().map_err(|_| RecoveryError::Storage)?;
     let chain = payload
         .get("chainId")

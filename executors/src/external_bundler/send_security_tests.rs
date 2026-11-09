@@ -11,6 +11,87 @@ use tokio::{
     net::TcpListener,
 };
 
+#[tokio::test]
+#[ignore = "requires disposable Redis in TEST_REDIS_URL"]
+async fn interrupted_cancellation_completes_only_proven_unsigned_work() {
+    use engine_core::recovery::{RecoveryJournal, admission_fingerprint};
+    use twmq::redis::AsyncCommands;
+    let token = uuid::Uuid::new_v4().simple().to_string();
+    let namespace = format!("cancelled_worker_{token}");
+    let directory = std::env::temp_dir().join(&namespace);
+    let path = directory.join("journal.sqlite");
+    let url = std::env::var("TEST_REDIS_URL").expect("select disposable Redis");
+    RecoveryJournal::initialize(&path, &url, Some(namespace.clone()))
+        .await
+        .unwrap();
+    let journal = RecoveryJournal::open(&path, &url, Some(namespace.clone()))
+        .await
+        .unwrap();
+    let payload = json!({"transactionId":"cancelled","pregeneratedNonce":"0x1"});
+    journal
+        .reserve_admission(
+            "erc4337",
+            "cancelled",
+            &admission_fingerprint("erc4337", &payload).unwrap(),
+            payload.clone(),
+        )
+        .await
+        .unwrap();
+    assert!(
+        validate_send_admission(&journal, "cancelled", &payload)
+            .await
+            .is_ok()
+    );
+    journal.cancel_unbroadcast("cancelled").await.unwrap();
+    drop(journal);
+    let journal = RecoveryJournal::open(&path, &url, Some(namespace.clone()))
+        .await
+        .unwrap();
+    assert!(matches!(
+        validate_send_admission(&journal, "cancelled", &payload).await,
+        Err(JobError::Fail(ExternalBundlerSendError::UserCancelled))
+    ));
+    assert!(matches!(
+        validate_send_admission(
+            &journal,
+            "cancelled",
+            &json!({"transactionId":"cancelled","pregeneratedNonce":"0x2"})
+        )
+        .await,
+        Err(JobError::Nack { .. })
+    ));
+    let attempted = json!({"transactionId":"attempted","pregeneratedNonce":"0x1"});
+    journal
+        .reserve_admission(
+            "erc4337",
+            "attempted",
+            &admission_fingerprint("erc4337", &attempted).unwrap(),
+            attempted.clone(),
+        )
+        .await
+        .unwrap();
+    journal.before_broadcast("erc4337", "attempted", "erc4337:31337:0x1111111111111111111111111111111111111111:0x2222222222222222222222222222222222222222:0", json!({"wire":"retained"})).await.unwrap();
+    assert!(!journal.cancel_unbroadcast("attempted").await.unwrap());
+    assert!(
+        validate_send_admission(&journal, "attempted", &attempted)
+            .await
+            .is_ok()
+    );
+    let client = twmq::redis::Client::open(url).unwrap();
+    let mut redis = client.get_connection_manager().await.unwrap();
+    let keys: Vec<String> = redis.keys(format!("{namespace}:*")).await.unwrap();
+    let _: () = redis.del(keys).await.unwrap();
+    assert!(
+        matches!(
+            validate_send_admission(&journal, "cancelled", &payload).await,
+            Err(JobError::Nack { .. })
+        ),
+        "a continuity failure is never proof of cancellation"
+    );
+    drop(journal);
+    std::fs::remove_dir_all(directory).unwrap();
+}
+
 fn operation() -> VersionedUserOp {
     VersionedUserOp::V0_6(UserOperation {
         sender: Address::repeat_byte(5),

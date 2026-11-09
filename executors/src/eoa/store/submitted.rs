@@ -116,50 +116,44 @@ impl SubmittedTransactionDehydrated {
     pub fn from_redis_strings(redis_strings: &[SubmittedTransactionStringWithNonce]) -> Vec<Self> {
         redis_strings
             .iter()
-            .filter_map(|tx| {
-                let parts: Vec<&str> = tx.0.split(':').collect();
-                // this exists for backwards compatibility with old transactions
-                // remove after sufficient time for old transactions to be cleaned up
-                if parts.len() == 3 {
-                    if let Ok(queued_at) = parts[2].parse::<u64>() {
-                        Some(SubmittedTransactionDehydrated {
-                            transaction_hash: parts[0].to_string(),
-                            transaction_id: parts[1].to_string(),
-                            submitted_at: 0,
-                            nonce: tx.1,
-                            queued_at,
-                        })
-                    } else {
-                        tracing::error!("Invalid queued_at timestamp: {}", tx.0);
-                        None
-                    }
-                } else if parts.len() == 4 {
-                    let transaction_hash = parts[0].to_string();
-                    let transaction_id = parts[1].to_string();
-                    let queued_at = parts[2].parse::<u64>();
-                    let submitted_at = parts[3].parse::<u64>();
-
-                    if let (Ok(queued_at), Ok(submitted_at)) = (queued_at, submitted_at) {
-                        Some(SubmittedTransactionDehydrated {
-                            transaction_hash,
-                            transaction_id,
-                            submitted_at,
-                            nonce: tx.1,
-                            queued_at,
-                        })
-                    } else {
-                        tracing::error!("Invalid queued_at or submitted_at timestamps: {}", tx.0);
-                        None
-                    }
-                } else {
-                    tracing::error!(
-                        "Invalid transaction format, expected 3 or 4 parts separated by ':': {}",
-                        tx.0
+            .filter_map(|(member, nonce)| {
+                let parsed = Self::from_redis_string(member, *nonce);
+                if parsed.is_none() {
+                    tracing::warn!(
+                        nonce,
+                        member_bytes = member.len(),
+                        member_preview = %member.chars().take(256).collect::<String>(),
+                        "Ignoring malformed EOA submitted member; reconcile the retained journal before removing it"
                     );
-                    None
                 }
+                parsed
             })
             .collect()
+    }
+
+    fn from_redis_string(member: &str, nonce: u64) -> Option<Self> {
+        let parts: Vec<_> = member.split(':').collect();
+        let (hash, id, queued, submitted) = match parts.as_slice() {
+            ["v2", hash, id, queued, submitted] => {
+                let bytes = hex::decode(id).ok()?;
+                let decoded = String::from_utf8(bytes).ok()?;
+                // Canonical encoding is needed to remove this exact member later.
+                if !decoded.contains(':') || hex::encode(decoded.as_bytes()) != *id {
+                    return None;
+                }
+                (*hash, decoded, *queued, *submitted)
+            }
+            [hash, id, queued] => (*hash, (*id).to_owned(), *queued, "0"),
+            [hash, id, queued, submitted] => (*hash, (*id).to_owned(), *queued, *submitted),
+            _ => return None,
+        };
+        Some(Self {
+            transaction_hash: hash.to_owned(),
+            transaction_id: id,
+            nonce,
+            queued_at: queued.parse().ok()?,
+            submitted_at: submitted.parse().ok()?,
+        })
     }
 
     /// Returns the string representation of the submitted transaction with the nonce
@@ -175,10 +169,20 @@ impl SubmittedTransactionDehydrated {
     /// The nonce is the value of the transaction in the submitted state, and is used as the score of the submitted zset
     pub fn to_redis_string_with_nonce(&self) -> SubmittedTransactionStringWithNonce {
         (
-            format!(
-                "{}:{}:{}:{}",
-                self.transaction_hash, self.transaction_id, self.queued_at, self.submitted_at
-            ),
+            if self.transaction_id.contains(':') {
+                format!(
+                    "v2:{}:{}:{}:{}",
+                    self.transaction_hash,
+                    hex::encode(self.transaction_id.as_bytes()),
+                    self.queued_at,
+                    self.submitted_at
+                )
+            } else {
+                format!(
+                    "{}:{}:{}:{}",
+                    self.transaction_hash, self.transaction_id, self.queued_at, self.submitted_at
+                )
+            },
             self.nonce,
         )
     }
@@ -780,3 +784,7 @@ impl SafeRedisTransaction for CleanAndGetRecycledNonces<'_> {
         recycled_nonces
     }
 }
+
+#[cfg(test)]
+#[path = "submitted_member_tests.rs"]
+mod member_tests;

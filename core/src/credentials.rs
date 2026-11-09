@@ -1,5 +1,8 @@
 use alloy::primitives::{Address, ChainId};
-use alloy::signers::local::PrivateKeySigner;
+use alloy::signers::{
+    Signer,
+    local::{PrivateKeySigner, Secp256k1Signer},
+};
 use alloy_signer_aws::AwsSigner;
 use aws_config::{BehaviorVersion, Region};
 use aws_credential_types::provider::future::ProvideCredentials as ProvideCredentialsFuture;
@@ -30,9 +33,13 @@ impl SigningCredential {
         })
     }
 
-    pub fn local_signer(&self) -> Result<PrivateKeySigner, EngineError> {
+    pub fn local_signer(&self) -> Result<Secp256k1Signer, EngineError> {
         match self {
-            Self::PrivateKey(signer) => Ok(signer.clone()),
+            Self::PrivateKey(signer) => Secp256k1Signer::from_bytes(&signer.to_bytes())
+                .map(|native| native.with_chain_id(signer.chain_id()))
+                .map_err(|_| EngineError::ValidationError {
+                    message: "Invalid local EVM signing key".into(),
+                }),
             Self::Environment { address } => {
                 let signer = environment_signer()?;
                 validate_signer_address(signer.address(), *address)?;
@@ -46,14 +53,14 @@ impl SigningCredential {
 
     /// Persist only the configured Solana public identity, never the key file or bytes.
     pub fn solana_environment() -> Result<Self, EngineError> {
-        use solana_sdk::signer::Signer;
+        use solana_signer::Signer;
         Ok(Self::SolanaEnvironment {
             public_key: environment_solana_keypair()?.pubkey(),
         })
     }
 
-    pub fn solana_keypair(&self) -> Result<solana_sdk::signature::Keypair, EngineError> {
-        use solana_sdk::signer::Signer;
+    pub fn solana_keypair(&self) -> Result<solana_keypair::Keypair, EngineError> {
+        use solana_signer::Signer;
         let Self::SolanaEnvironment { public_key } = self else {
             return Err(EngineError::ValidationError {
                 message: "A configured Solana signer is required".into(),
@@ -81,7 +88,7 @@ impl SigningCredential {
 pub enum SigningCredential {
     /// Public identity of ENGINE_SOLANA_KEYPAIR_FILE, resolved by each worker.
     SolanaEnvironment {
-        public_key: solana_sdk::pubkey::Pubkey,
+        public_key: solana_pubkey::Pubkey,
     },
     /// Reference to ENGINE_PRIVATE_KEY, pinned to its public address across queue retries.
     Environment {
@@ -205,7 +212,7 @@ impl AwsKmsCredential {
     }
 }
 
-fn environment_signer() -> Result<PrivateKeySigner, EngineError> {
+fn environment_signer() -> Result<Secp256k1Signer, EngineError> {
     let key = std::env::var("ENGINE_PRIVATE_KEY").map_err(|_| EngineError::ValidationError {
         message: "ENGINE_PRIVATE_KEY is not configured".into(),
     })?;
@@ -255,7 +262,7 @@ impl std::fmt::Debug for AwsKmsCredential {
 }
 
 /// Read a Solana CLI keypair file with bounded input and non-secret error messages.
-fn environment_solana_keypair() -> Result<solana_sdk::signature::Keypair, EngineError> {
+fn environment_solana_keypair() -> Result<solana_keypair::Keypair, EngineError> {
     use std::io::Read;
     let invalid = || {
         EngineError::ValidationError { message: "ENGINE_SOLANA_KEYPAIR_FILE must refer to a readable Solana CLI JSON keypair containing 64 valid bytes".into() }
@@ -270,5 +277,113 @@ fn environment_solana_keypair() -> Result<solana_sdk::signature::Keypair, Engine
         return Err(invalid());
     }
     let bytes: Vec<u8> = serde_json::from_slice(&encoded).map_err(|_| invalid())?;
-    solana_sdk::signature::Keypair::try_from(bytes.as_slice()).map_err(|_| invalid())
+    solana_keypair::Keypair::try_from(bytes.as_slice()).map_err(|_| invalid())
+}
+
+#[cfg(test)]
+mod local_signer_tests {
+    use super::*;
+    use alloy::{
+        consensus::{SignableTransaction, TxEnvelope, TxLegacy},
+        eips::Encodable2718,
+        network::TxSignerSync,
+        primitives::{B256, Bytes, TxKind, U256, address, keccak256},
+        signers::SignerSync,
+    };
+
+    #[test]
+    fn native_signer_matches_published_eip155_wire_and_rejects_other_chain() {
+        // Independent published transaction: https://eips.ethereum.org/EIPS/eip-155
+        let legacy = PrivateKeySigner::from_bytes(&B256::repeat_byte(0x46))
+            .unwrap()
+            .with_chain_id(Some(1));
+        let native = SigningCredential::PrivateKey(legacy)
+            .local_signer()
+            .unwrap();
+        assert_eq!(
+            native.address(),
+            address!("9d8A62f656a8d1615C1294fd71e9CfB3E4855A4F")
+        );
+        assert_eq!(native.chain_id(), Some(1));
+        let mut tx = TxLegacy {
+            chain_id: Some(1),
+            nonce: 9,
+            gas_price: 20_000_000_000,
+            gas_limit: 21_000,
+            to: TxKind::Call(address!("3535353535353535353535353535353535353535")),
+            value: U256::from(1_000_000_000_000_000_000u64),
+            input: Bytes::new(),
+        };
+        let signature = native.sign_transaction_sync(&mut tx).unwrap();
+        let envelope: TxEnvelope = tx.clone().into_signed(signature).into();
+        assert_eq!(
+            alloy::hex::encode(envelope.encoded_2718()),
+            "f86c098504a817c800825208943535353535353535353535353535353535353535880de0b6b3a76400008025a028ef61340bd939bc2195fe537567866003e1a15d3c71ff63e1590620aa636276a067cbe9d8997f761aecb703304b3800ccf555c9f3dc64214b297fb1966a3b6d83"
+        );
+        assert!(
+            native
+                .with_chain_id(Some(2))
+                .sign_transaction_sync(&mut tx)
+                .is_err()
+        );
+    }
+
+    #[test]
+    fn native_prehash_curve_order_boundaries_recover_the_same_identity() {
+        let legacy = PrivateKeySigner::from_bytes(&B256::repeat_byte(1)).unwrap();
+        let native = SigningCredential::PrivateKey(legacy.clone())
+            .local_signer()
+            .unwrap();
+        let order = U256::from_str_radix(
+            "fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141",
+            16,
+        )
+        .unwrap();
+        // libsecp256k1 reduces a digest modulo n before RFC6979 nonce seeding.
+        // k256 0.13 does not. At/above n, require valid signatures and the same
+        // public identity; byte-for-byte nonce/signature equality is not promised.
+        for value in [
+            order - U256::from(1),
+            order,
+            order + U256::from(1),
+            U256::MAX,
+        ] {
+            let hash = B256::from(value.to_be_bytes::<32>());
+            for signature in [
+                native.sign_hash_sync(&hash).unwrap(),
+                legacy.sign_hash_sync(&hash).unwrap(),
+            ] {
+                assert_eq!(
+                    signature.recover_address_from_prehash(&hash).unwrap(),
+                    legacy.address()
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn native_signer_preserves_hash_personal_signatures_and_configured_chain() {
+        let legacy = PrivateKeySigner::from_bytes(&B256::repeat_byte(1))
+            .unwrap()
+            .with_chain_id(Some(31337));
+        let native = SigningCredential::PrivateKey(legacy.clone())
+            .local_signer()
+            .unwrap();
+        assert_eq!(native.address(), legacy.address());
+        assert_eq!(native.chain_id(), Some(31337));
+        for hash in [B256::ZERO, keccak256(b"engine signing compatibility")] {
+            let actual = native.sign_hash_sync(&hash).unwrap();
+            assert_eq!(actual, legacy.sign_hash_sync(&hash).unwrap());
+            assert_eq!(
+                actual.recover_address_from_prehash(&hash).unwrap(),
+                native.address()
+            );
+        }
+        for message in [b"".as_slice(), b"engine", "Unicode: 🔐".as_bytes()] {
+            assert_eq!(
+                native.sign_message_sync(message).unwrap(),
+                legacy.sign_message_sync(message).unwrap()
+            );
+        }
+    }
 }

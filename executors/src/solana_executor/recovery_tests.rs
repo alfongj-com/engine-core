@@ -6,12 +6,12 @@ use engine_core::execution_options::solana::{
     CommitmentLevel as ExecutionCommitment, SolanaChainId, SolanaExecutionOptions,
 };
 use serde_json::Value;
-use solana_sdk::{
-    hash::Hash,
-    message::{VersionedMessage, v0},
-    signature::{Keypair, Signer},
-    transaction::VersionedTransaction,
-};
+use solana_hash::Hash;
+use solana_keypair::Keypair;
+use solana_message::VersionedMessage;
+use solana_message::v0;
+use solana_signer::Signer;
+use solana_transaction::versioned::VersionedTransaction;
 use std::{collections::VecDeque, sync::Mutex};
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
@@ -1201,7 +1201,7 @@ async fn a_receipt_for_another_signature_is_not_success() {
     let lock = f.seed().await;
     let mut wrong = details(&f.attempt);
     wrong.body.as_mut().unwrap()["result"]["transaction"]["signatures"][0] =
-        json!(solana_sdk::signature::Signature::default().to_string());
+        json!(solana_signature::Signature::default().to_string());
     let (rpc, _, server) = rpc(vec![status(finalized()), wrong]).await;
     assert!(matches!(
         assert_nack(f.handler.execute_transaction(&rpc, &f.data, &lock, 1).await),
@@ -2197,11 +2197,11 @@ fn retained_wire_validation_rejects_changed_identity_crypto_and_encoding() {
     bad.blockhash = Hash::new_unique();
     cases.push(bad);
     let mut bad = attempt.clone();
-    bad.signature = solana_sdk::signature::Signature::default();
+    bad.signature = solana_signature::Signature::default();
     cases.push(bad);
     let mut bad = attempt.clone();
     let mut invalid_crypto = signed.clone();
-    invalid_crypto.signatures[0] = solana_sdk::signature::Signature::default();
+    invalid_crypto.signatures[0] = solana_signature::Signature::default();
     bad.signature = invalid_crypto.signatures[0];
     bad.signed_transaction = Some(
         base64::engine::general_purpose::STANDARD
@@ -2244,4 +2244,171 @@ fn retained_wire_validation_rejects_changed_identity_crypto_and_encoding() {
         SolanaExecutorJobHandler::durable_attempt_payload(&data, &restored),
         SolanaExecutorJobHandler::durable_attempt_payload(&data, &attempt)
     );
+}
+
+// These records are the queue's real two-part Redis ownership contract. The
+// storage Lua, not a mock, decides whether the metadata token and TTL are live.
+async fn processing_queue_lease(f: &Fixture, id: &str) -> twmq::job::QueueLease {
+    let token = uuid::Uuid::new_v4().to_string();
+    let prefix = format!("{}:probe:job:{id}", f.namespace);
+    let metadata = format!("{prefix}:meta");
+    let lease = format!("{prefix}:lease:{token}");
+    let _: () = f
+        .redis
+        .clone()
+        .hset(&metadata, "lease_token", &token)
+        .await
+        .unwrap();
+    let _: () = f.redis.clone().set_ex(&lease, 1, 120).await.unwrap();
+    twmq::job::QueueLease::new(metadata, lease, token)
+}
+
+#[tokio::test]
+#[ignore = "requires disposable TEST_REDIS_URL"]
+async fn processing_queue_lease_expiry_fences_old_writes_and_reclaims_before_lock_ttl() {
+    let f = Fixture::new().await;
+    let storage = &f.handler.storage;
+    let (first, second, third) = (
+        processing_queue_lease(&f, "first").await,
+        processing_queue_lease(&f, "second").await,
+        processing_queue_lease(&f, "third").await,
+    );
+    let old = storage
+        .try_acquire_lock_with_lease("intent", &first)
+        .await
+        .unwrap();
+    assert!(matches!(
+        storage.try_acquire_lock_with_lease("intent", &second).await,
+        Err(LockError::AlreadyLocked)
+    ));
+    let ttl: i64 = f
+        .redis
+        .clone()
+        .ttl(format!("{}:solana_tx_lock:intent", f.namespace))
+        .await
+        .unwrap();
+    assert!(ttl > 100, "the processing lock has not expired");
+    let _: () = f.redis.clone().del(first.lease_key()).await.unwrap();
+    assert!(!old.still_held().await.unwrap());
+    let error = storage
+        .store_attempt_if_not_exists("intent", &f.attempt, &old)
+        .await
+        .unwrap_err();
+    assert_eq!(
+        error.kind(),
+        redis::ErrorKind::IoError,
+        "error={error:?}, display={error}, code={:?}, detail={:?}",
+        error.code(),
+        error.detail()
+    );
+    assert!(error.to_string().contains("Lost lock while"), "{error}");
+    assert!(matches!(
+        storage.try_acquire_lock_with_lease("intent", &first).await,
+        Err(LockError::QueueLeaseLost)
+    ));
+    let next = storage
+        .try_acquire_lock_with_lease("intent", &second)
+        .await
+        .unwrap();
+    assert!(
+        storage
+            .store_attempt_if_not_exists("intent", &f.attempt, &next)
+            .await
+            .unwrap()
+    );
+    old.release().await.unwrap();
+    assert!(
+        next.still_held().await.unwrap(),
+        "old release must preserve the replacement"
+    );
+    // A lingering TTL key is insufficient if the metadata token was replaced.
+    let _: () = f
+        .redis
+        .clone()
+        .hset(second.metadata_key(), "lease_token", "superseded")
+        .await
+        .unwrap();
+    assert!(
+        f.redis
+            .clone()
+            .exists::<_, bool>(second.lease_key())
+            .await
+            .unwrap()
+    );
+    assert!(!next.still_held().await.unwrap());
+    let current = storage
+        .try_acquire_lock_with_lease("intent", &third)
+        .await
+        .unwrap();
+    let mut stale_update = f.attempt.clone();
+    stale_update.broadcast_attempts = 19;
+    let error = storage
+        .update_attempt("intent", &stale_update, &next)
+        .await
+        .unwrap_err();
+    assert_eq!(
+        error.kind(),
+        redis::ErrorKind::IoError,
+        "error={error:?}, display={error}, code={:?}, detail={:?}",
+        error.code(),
+        error.detail()
+    );
+    assert!(error.to_string().contains("Lost lock while"), "{error}");
+    let retained = f.stored(&current).await;
+    assert_eq!(retained.signature, f.attempt.signature);
+    assert_eq!(retained.broadcast_attempts, 0);
+    next.release().await.unwrap();
+    assert!(current.still_held().await.unwrap());
+    current.release().await.unwrap();
+    f.cleanup().await;
+}
+
+#[tokio::test]
+#[ignore = "requires disposable TEST_REDIS_URL"]
+async fn processing_queue_lease_competitors_cannot_steal_live_or_legacy_locks() {
+    let f = Fixture::new().await;
+    let storage = &f.handler.storage;
+    let (first, second, third) = (
+        processing_queue_lease(&f, "first").await,
+        processing_queue_lease(&f, "second").await,
+        processing_queue_lease(&f, "third").await,
+    );
+    let old = storage
+        .try_acquire_lock_with_lease("intent", &first)
+        .await
+        .unwrap();
+    let _: () = f.redis.clone().del(first.lease_key()).await.unwrap();
+    let (a, b) = tokio::join!(
+        storage.try_acquire_lock_with_lease("intent", &second),
+        storage.try_acquire_lock_with_lease("intent", &third)
+    );
+    let winner = match (a, b) {
+        (Ok(lock), Err(LockError::AlreadyLocked)) | (Err(LockError::AlreadyLocked), Ok(lock)) => {
+            lock
+        }
+        _ => panic!("one live queue owner must win the processing lock CAS"),
+    };
+    assert!(winner.still_held().await.unwrap());
+    old.release().await.unwrap();
+    assert!(winner.still_held().await.unwrap());
+    let legacy = storage.try_acquire_lock("legacy").await.unwrap();
+    assert!(matches!(
+        storage.try_acquire_lock_with_lease("legacy", &second).await,
+        Err(LockError::AlreadyLocked)
+    ));
+    assert!(legacy.still_held().await.unwrap());
+    let wrong_key = twmq::job::QueueLease::new(
+        third.metadata_key().into(),
+        second.lease_key().into(),
+        third.token().into(),
+    );
+    assert!(matches!(
+        storage
+            .try_acquire_lock_with_lease("other", &wrong_key)
+            .await,
+        Err(LockError::QueueLeaseLost)
+    ));
+    legacy.release().await.unwrap();
+    winner.release().await.unwrap();
+    f.cleanup().await;
 }

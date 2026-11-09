@@ -598,5 +598,137 @@
     "config": "DisasterRecoveryProjection_reattach_retry_witness.cfg",
     "expected": "invariant:CommittedReattachRetryNotReached",
     "kind": "witness"
+  },
+  {
+    "module": "IntentCancellation",
+    "config": "IntentCancellation.cfg",
+    "expected": "pass",
+    "kind": "positive"
+  },
+  {
+    "module": "IntentCancellation",
+    "config": "IntentCancellation_cached_read.cfg",
+    "expected": "invariant:CancellationExcludesAttempt",
+    "kind": "fault"
+  },
+  {
+    "module": "IntentCancellation",
+    "config": "IntentCancellation_success_witness.cfg",
+    "expected": "invariant:SuccessfulCancellationNotReached",
+    "kind": "witness"
+  },
+  {
+    "module": "SolanaProcessingLease",
+    "config": "SolanaProcessingLease.cfg",
+    "expected": "pass",
+    "kind": "positive"
+  },
+  {
+    "module": "SolanaProcessingLease",
+    "config": "SolanaProcessingLease_stale_mutation.cfg",
+    "expected": "invariant:AttemptMutationsHaveQueueOwner",
+    "kind": "fault"
+  },
+  {
+    "module": "SolanaProcessingLease",
+    "config": "SolanaProcessingLease_live_steal.cfg",
+    "expected": "invariant:LiveProcessingOwnerNotStolen",
+    "kind": "fault"
+  },
+  {
+    "module": "SolanaProcessingLease",
+    "config": "SolanaProcessingLease_reclaim_witness.cfg",
+    "expected": "invariant:DeadOwnerReclaimNotReached",
+    "kind": "witness"
+  },
+  {
+    "module": "QueueRebuild",
+    "config": "QueueRebuild.cfg",
+    "expected": "pass",
+    "kind": "positive"
+  },
+  {
+    "module": "QueueRebuild",
+    "config": "QueueRebuild_revive.cfg",
+    "expected": "invariant:AuthorityRequired",
+    "kind": "fault"
+  },
+  {
+    "module": "QueueRebuild",
+    "config": "QueueRebuild_halt.cfg",
+    "expected": "invariant:AuthorityRequired",
+    "kind": "fault"
+  },
+  {
+    "module": "QueueRebuild",
+    "config": "QueueRebuild_lease.cfg",
+    "expected": "invariant:LeasePreserved",
+    "kind": "fault"
+  },
+  {
+    "module": "QueueRebuild",
+    "config": "QueueRebuild_resign.cfg",
+    "expected": "invariant:IdentityPreserved",
+    "kind": "fault"
+  },
+  {
+    "module": "QueueRebuild",
+    "config": "QueueRebuild_permission.cfg",
+    "expected": "invariant:NoPermissionFromRepair",
+    "kind": "fault"
+  },
+  {
+    "module": "QueueRebuild",
+    "config": "QueueRebuild_budget.cfg",
+    "expected": "invariant:RecoveryBudgetBounded",
+    "kind": "fault"
+  },
+  {
+    "module": "QueueRebuild",
+    "config": "QueueRebuild_witness.cfg",
+    "expected": "invariant:RepairNotReached",
+    "kind": "witness"
+  },
+  {
+    "module": "EoaPreparationFailure",
+    "config": "EoaPreparationFailure.cfg",
+    "expected": "pass",
+    "kind": "positive"
+  },
+  {
+    "module": "EoaPreparationFailure",
+    "config": "EoaPreparationFailure_retry.cfg",
+    "expected": "pass",
+    "kind": "positive"
+  },
+  {
+    "module": "EoaPreparationFailure",
+    "config": "EoaPreparationFailure_race.cfg",
+    "expected": "pass",
+    "kind": "positive"
+  },
+  {
+    "module": "EoaPreparationFailure",
+    "config": "EoaPreparationFailure_old_publish.cfg",
+    "expected": "invariant:ReportedFailureCannotExecute",
+    "kind": "fault"
+  },
+  {
+    "module": "EoaPreparationFailure",
+    "config": "EoaPreparationFailure_attempted_failure.cfg",
+    "expected": "invariant:PriorAttemptNeverReportedFailed",
+    "kind": "fault"
+  },
+  {
+    "module": "EoaPreparationFailure",
+    "config": "EoaPreparationFailure_recovery_witness.cfg",
+    "expected": "invariant:RecoveryPublicationNotReached",
+    "kind": "witness"
+  },
+  {
+    "module": "EoaPreparationFailure",
+    "config": "EoaPreparationFailure_broadcast_witness.cfg",
+    "expected": "invariant:BroadcastWinnerNotReached",
+    "kind": "witness"
   }
 ]

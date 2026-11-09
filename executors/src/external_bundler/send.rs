@@ -255,15 +255,15 @@ where
     ) -> JobResult<Self::Output, Self::ErrorData> {
         let operation = async {
             let job_data = &job.job.data;
-            crate::recovery::validate("erc4337", &job_data.transaction_id, job_data)
-                .await
-                .map_err(|error| {
-                    crate::recovery::nack(error, Duration::from_secs(10), |error| {
-                        ExternalBundlerSendError::InternalError {
-                            message: error.to_string(),
-                        }
-                    })
+            if let Some(journal) = engine_core::recovery::global() {
+                let payload = serde_json::to_value(job_data).map_err(|_| {
+                    ExternalBundlerSendError::InternalError {
+                        message: "Cannot encode recovery payload".into(),
+                    }
+                    .nack(Some(Duration::from_secs(10)), RequeuePosition::Last)
                 })?;
+                validate_send_admission(&journal, &job_data.transaction_id, &payload).await?;
+            }
             // A prior broadcast reservation is durable evidence of an unknown
             // outcome. Later build/provider errors cannot turn it into failure.
             let previously_broadcast = if let Some(journal) = engine_core::recovery::global() {
@@ -682,6 +682,37 @@ where
             );
         }
     }
+}
+
+async fn validate_send_admission(
+    journal: &Arc<engine_core::recovery::RecoveryJournal>,
+    id: &str,
+    payload: &serde_json::Value,
+) -> JobResult<(), ExternalBundlerSendError> {
+    let error = match journal.validate_payload("erc4337", id, payload).await {
+        Ok(()) => return Ok(()),
+        Err(error) => error,
+    };
+    // Only a matching, unattempted cancellation permits permanent completion.
+    // All journal/continuity failures and ambiguous broadcasts remain retryable.
+    match journal.cancelled_unbroadcast_payload(id, payload).await {
+        Ok(true) => return Err(ExternalBundlerSendError::UserCancelled.fail()),
+        Ok(false) => {}
+        Err(error) => return Err(send_admission_nack(error)),
+    }
+    Err(send_admission_nack(error))
+}
+
+fn send_admission_nack(
+    error: engine_core::recovery::RecoveryError,
+) -> JobError<ExternalBundlerSendError> {
+    crate::recovery::nack(
+        crate::recovery::from_journal_error(error),
+        Duration::from_secs(10),
+        |error| ExternalBundlerSendError::InternalError {
+            message: error.to_string(),
+        },
+    )
 }
 
 /// A provider error after dispatch is not proof that an operation never landed.

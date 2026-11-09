@@ -7,8 +7,10 @@ public test key 1, funded only in the disposable local node. Never contacts a pu
 import argparse
 import concurrent.futures
 import contextlib
+import hashlib
 import json
 import os
+import re
 from pathlib import Path
 import signal
 import sqlite3
@@ -23,6 +25,8 @@ import uuid
 ROOT = Path(__file__).resolve().parents[1]
 FROM = "0x7e5f4552091a69125d5dfcb7b8c2659029395bdf"
 TO = "0x1111111111111111111111111111111111111111"
+CREATED_CODE = "0x600160005260206000f3"
+CREATE_INPUT = "0x600a600c600039600a6000f3" + CREATED_CODE[2:]
 
 def port():
     with socket.socket() as sock:
@@ -48,6 +52,50 @@ def rpc(url, method, params):
     if "error" in result:
         raise AssertionError(f"{method}: {result['error']}")
     return result["result"]
+
+
+def capture_intent_hashes(journal, transaction_ids, pending_transactions):
+    """Freeze the original journal's ID-to-hash binding before the upgrade."""
+    assert len(set(transaction_ids)) == len(transaction_ids), "Duplicate original intent ID"
+    by_id, owners = {}, {}
+    with sqlite3.connect(f"file:{Path(journal).resolve()}?mode=ro", uri=True) as db:
+        db.execute("BEGIN")
+        for transaction_id in transaction_ids:
+            attempts = db.execute("SELECT payload FROM attempts WHERE id=? ORDER BY sequence", (transaction_id,)).fetchall()
+            hashes, original_nonce = set(), None
+            for row in attempts:
+                attempt = json.loads(row[0])
+                transaction_hash, nonce = attempt["transactionHash"].lower(), attempt["nonce"]
+                assert type(nonce) is int and nonce >= 0, "Invalid original attempt nonce"
+                if original_nonce is None:
+                    original_nonce = nonce
+                assert nonce == original_nonce, "Original intent changed its reserved nonce"
+                owner = (transaction_id, nonce)
+                assert transaction_hash not in owners or owners[transaction_hash] == owner, \
+                    "An original hash belongs to multiple intent IDs"
+                owners[transaction_hash] = owner
+                hashes.add(transaction_hash)
+            assert hashes, "Original intent has no durable signed attempt"
+            by_id[transaction_id] = hashes
+    pending_hashes, pending_owners = set(), set()
+    for transaction in pending_transactions:
+        transaction_hash = transaction["hash"].lower()
+        assert transaction_hash not in pending_hashes, "Duplicate pending transaction hash"
+        assert transaction_hash in owners, "Original durable attempts differ from Anvil's pending transactions"
+        transaction_id, nonce = owners[transaction_hash]
+        assert int(transaction["nonce"], 16) == nonce, "Pending transaction nonce differs from its durable attempt"
+        pending_hashes.add(transaction_hash)
+        pending_owners.add(transaction_id)
+    # Anvil keeps the current fee replacement, while the journal correctly
+    # retains superseded hashes too. Every unmined intent still needs its own
+    # current pending witness; all retained hashes remain valid receipt history.
+    assert pending_owners == set(transaction_ids), "Original intent has no pending signed transaction"
+    return by_id
+
+
+def verify_original_receipt(transaction_id, receipt, original_hashes):
+    assert receipt["transactionHash"].lower() in original_hashes.get(transaction_id, set()), \
+        "Upgrade changed the original intent-to-transaction binding"
 
 def until(check, timeout=45):
     deadline = time.monotonic() + timeout
@@ -76,9 +124,20 @@ def main():
     parser.add_argument("--transactions", type=int, default=24)
     parser.add_argument("--redis-crash", action="store_true", help="Also SIGKILL Redis and replay its appendfsync=always AOF before restarting Engine")
     parser.add_argument("--live-redis-restart", action="store_true", help="Kill Redis while Engine stays running; require a durable halt, SIGTERM shutdown, and exact-checkpoint reattach")
-    parser.add_argument("--revert", action="store_true", help="Use a reverting local contract; prove terminal failure and no duplicate retry")
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--revert", action="store_true", help="Use a reverting local contract; prove terminal failure and no duplicate retry")
+    mode.add_argument("--create", action="store_true", help="Deploy fixed contracts through Engine; verify predicted addresses, runtime, value and duplicate retries")
+    parser.add_argument("--engine-bin", type=Path, default=ROOT / "target/debug/thirdweb-engine")
+    parser.add_argument("--restart-engine-bin", type=Path, help="Restart with a different binary against the same journal and Redis state")
+    parser.add_argument("--rebuild-jobs-only", action="store_true", help="Rebuild only missing worker jobs; keep EOA intent/attempt projections")
+    parser.add_argument("--rebuild-queues", action="store_true", help="Delete stopped EOA projections/jobs, rebuild twice from the journal, then reconcile exact original hashes")
     parser.add_argument("--report", type=Path)
     args = parser.parse_args()
+    args.rebuild_queues = args.rebuild_queues or args.rebuild_jobs_only
+    args.engine_bin = args.engine_bin.resolve(strict=True)
+    args.restart_engine_bin = (args.restart_engine_bin or args.engine_bin).resolve(strict=True)
+    for binary in (args.engine_bin, args.restart_engine_bin):
+        assert binary.is_file() and os.access(binary, os.X_OK), "Engine binary must be an executable file"
     args.redis_crash = args.redis_crash or args.live_redis_restart
     assert 1 <= args.transactions <= 40
     redis_port, server_port, anvil_port = ports(3)
@@ -110,8 +169,8 @@ def main():
         proc = subprocess.Popen(command, cwd=cwd, env=child_env, stdout=stream, stderr=subprocess.STDOUT)
         children.append(proc)
         return proc
-    def engine(name):
-        proc = spawn([str(ROOT / "target/debug/thirdweb-engine")], name, ROOT / "server", env)
+    def engine(name, binary):
+        proc = spawn([str(binary)], name, ROOT / "server", env)
         until(lambda: request(base + "/health")[0] == 200)
         return proc
     redis_dir = logs / "redis"
@@ -121,7 +180,10 @@ def main():
             "--dir", str(redis_dir), "--save", "", "--appendonly", "yes" if args.redis_crash else "no",
             "--appendfsync", "always"], name)
     report = {"scenario": "local EOA HTTP admission, crash with pending transactions, restart, mine, duplicate admission", "transactions": args.transactions, "log_directory": str(logs),
-              "configured_rpc": True, "redis_crash": args.redis_crash, "live_redis_restart": args.live_redis_restart, "reverted_execution": args.revert}
+              "configured_rpc": True, "redis_crash": args.redis_crash, "live_redis_restart": args.live_redis_restart, "reverted_execution": args.revert, "contract_creation": args.create,
+              "binary_upgrade": args.engine_bin != args.restart_engine_bin,
+              "engine_binary_sha256": hashlib.sha256(args.engine_bin.read_bytes()).hexdigest(),
+              "restart_engine_binary_sha256": hashlib.sha256(args.restart_engine_bin.read_bytes()).hexdigest()}
     started = time.monotonic()
     try:
         redis_process = start_redis("redis-before.log")
@@ -133,11 +195,26 @@ def main():
             # gas but rolls back the value transfer.
             rpc(rpc_url, "anvil_setCode", [TO, "0x60006000fd"])
         initial_balance = int(rpc(rpc_url, "eth_getBalance", [TO, "latest"]), 16)
-        subprocess.run([str(ROOT / "target/debug/thirdweb-engine"), "--initialize-recovery"],
+        subprocess.run([str(args.engine_bin), "--initialize-recovery"],
             cwd=ROOT / "server", env=env, check=True, capture_output=True)
-        process = engine("engine-before.log")
-        payloads = [{"executionOptions": {"chainId": 31337, "type": "EOA", "from": FROM, "idempotencyKey": f"{run_id}-{i}"},
+        process = engine("engine-before.log", args.engine_bin)
+        payloads = [{"executionOptions": {"chainId": 31337, "type": "EOA", "from": FROM, "idempotencyKey": f"{run_id}:invoice:{i}" if args.rebuild_queues else f"{run_id}-{i}"},
             "params": [{"to": TO, "value": "0x1", "data": "0x", "gasLimit": 40000 if args.revert else 21000}]} for i in range(args.transactions)]
+        created_addresses = []
+        if args.create:
+            for nonce, payload in enumerate(payloads):
+                # Exercise both gas paths. No supplied gas means Engine must
+                # estimate a CREATE envelope rather than an unfinished request.
+                payload["params"] = [{"to": None, "value": "0x1", "data": CREATE_INPUT}]
+                if nonce % 2:
+                    payload["params"][0]["gasLimit"] = 300000
+                computed = subprocess.check_output([
+                    os.environ.get("CAST_BIN", "cast"), "compute-address", FROM, "--nonce", str(nonce),
+                ], text=True)
+                matches = re.findall(r"0x[0-9a-fA-F]{40}", computed)
+                assert len(matches) == 1, "Cannot derive CREATE address independently"
+                created_addresses.append(matches[0].lower())
+                assert rpc(rpc_url, "eth_getCode", [created_addresses[-1], "latest"]) == "0x"
         # A valid signing payload with missing/wrong authentication must never reach the queue.
         for index, invalid_headers in enumerate([
             {"x-thirdweb-secret-key": "local-test"},
@@ -158,6 +235,20 @@ def main():
             list(pool.map(send, payloads))
         until(lambda: int(rpc(rpc_url, "eth_getTransactionCount", [FROM, "pending"]), 16) == args.transactions)
         assert int(rpc(rpc_url, "eth_getTransactionCount", [FROM, "latest"]), 16) == 0
+        prior_hashes = None
+        if report["binary_upgrade"] or args.rebuild_queues:
+            pending = rpc(rpc_url, "eth_getBlockByNumber", ["pending", True])
+            assert len(pending["transactions"]) == args.transactions
+            prior_hashes = capture_intent_hashes(
+                logs / "recovery.sqlite",
+                [payload["executionOptions"]["idempotencyKey"] for payload in payloads],
+                pending["transactions"],
+            )
+        if args.rebuild_queues:
+            locked = subprocess.run([str(args.restart_engine_bin), "--rebuild-queues"],
+                cwd=ROOT / "server", env=env, capture_output=True, timeout=30)
+            assert locked.returncode != 0 and b"already owned" in locked.stderr
+            report["live_journal_owner_refused_rebuild"] = True
         if args.live_redis_restart:
             stop(redis_process, crash=True)
             def live_halted():
@@ -182,32 +273,68 @@ def main():
                 stop(redis_process, crash=True)
             redis_process = start_redis("redis-after.log")
             until(lambda: subprocess.run([os.environ.get("REDIS_CLI_BIN", "redis-cli"), "-p", str(redis_port), "PING"], capture_output=True, text=True).stdout.strip() == "PONG")
-            subprocess.run([str(ROOT / "target/debug/thirdweb-engine"), "--reattach-recovery"],
+            subprocess.run([str(args.restart_engine_bin), "--reattach-recovery"],
                 cwd=ROOT / "server", env=env, check=True, capture_output=True)
-        process = engine("engine-after.log")
+        if args.rebuild_queues:
+            cli = [os.environ.get("REDIS_CLI_BIN", "redis-cli"), "-p", str(redis_port), "--json"]
+            removed = []
+            patterns = [f"twmq:{run_id}_eoa_executor:*"]
+            if not args.rebuild_jobs_only:
+                patterns.append(f"{run_id}:eoa_executor:*")
+            for pattern in patterns:
+                keys = json.loads(subprocess.check_output(cli + ["KEYS", pattern], text=True))
+                if keys:
+                    subprocess.run(cli + ["DEL"] + keys, check=True, capture_output=True)
+                    removed.extend(keys)
+            assert removed
+            for _ in range(2):
+                rebuilt = subprocess.run([str(args.restart_engine_bin), "--rebuild-queues"],
+                    cwd=ROOT / "server", env=env, check=True, capture_output=True)
+            report["missing_projection_rebuilt_twice"] = True
+        process = engine("engine-after.log", args.restart_engine_bin)
         if args.live_redis_restart:
             with sqlite3.connect(f"file:{logs / 'recovery.sqlite'}?mode=ro", uri=True) as db:
                 assert db.execute("SELECT count(*) FROM admissions WHERE state='quarantined'").fetchone() == (0,)
                 assert db.execute("SELECT namespace FROM control").fetchone() == (run_id,)
             report["reattached_without_quarantine_or_namespace_change"] = True
         rpc(rpc_url, "evm_mine", [])
-        expected_transfer = 0 if args.revert else args.transactions
+        expected_transfer = 0 if args.revert or args.create else args.transactions
         until(lambda: int(rpc(rpc_url, "eth_getTransactionCount", [FROM, "latest"]), 16) == args.transactions)
         assert int(rpc(rpc_url, "eth_getBalance", [TO, "latest"]), 16) == initial_balance + expected_transfer
         def confirmations():
             found = 0
+            seen_creations = set()
             for payload in payloads:
                 txid = payload["executionOptions"]["idempotencyKey"]
                 _, body = request(base + f"/admin/executors/eoa/{FROM}:31337/transaction/{txid}", headers={"x-diagnostic-access-password": diagnostic})
                 data = body.get("result", {}).get("transactionData")
                 if data and data.get("receipt"):
                     assert data["receipt"]["status"] == ("0x0" if args.revert else "0x1"), data["receipt"]
+                    if prior_hashes is not None:
+                        verify_original_receipt(txid, data["receipt"], prior_hashes)
+                    if args.create:
+                        # Concurrent admissions need not receive nonces in
+                        # caller order. Derive the expected address from the
+                        # actual mined transaction, independently of Engine.
+                        mined = rpc(rpc_url, "eth_getTransactionByHash", [data["receipt"]["transactionHash"]])
+                        nonce = int(mined["nonce"], 16)
+                        assert mined["to"] is None and mined["input"] == CREATE_INPUT
+                        assert int(mined["value"], 16) == 1 and 0 <= nonce < args.transactions
+                        address = created_addresses[nonce]
+                        assert address not in seen_creations
+                        seen_creations.add(address)
+                        assert data["receipt"]["contractAddress"].lower() == address
+                        assert rpc(rpc_url, "eth_getCode", [address, "latest"]) == CREATED_CODE
+                        assert int(rpc(rpc_url, "eth_getBalance", [address, "latest"]), 16) == 1
                     status = subprocess.check_output([os.environ.get("REDIS_CLI_BIN", "redis-cli"), "-p", str(redis_port),
                         "--raw", "HGET", f"{run_id}:eoa_executor:tx_data:{txid}", "status"], text=True).strip()
                     assert status == ("failed" if args.revert else "confirmed"), status
                     found += 1
             return found == args.transactions
         until(confirmations)
+        if prior_hashes is not None:
+            report["retained_transaction_hashes_verified"] = True
+            report["original_intent_hash_bindings_verified"] = True
         with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
             list(pool.map(send, payloads))
         time.sleep(2)
@@ -215,8 +342,11 @@ def main():
         balance = int(rpc(rpc_url, "eth_getBalance", [TO, "latest"]), 16)
         assert balance == initial_balance + expected_transfer, f"Recipient gained {balance - initial_balance} wei; expected {expected_transfer}"
         assert int(rpc(rpc_url, "eth_getTransactionCount", [FROM, "pending"]), 16) == args.transactions
+        for address in created_addresses:
+            assert rpc(rpc_url, "eth_getCode", [address, "latest"]) == CREATED_CODE
+            assert int(rpc(rpc_url, "eth_getBalance", [address, "latest"]), 16) == 1
         report.update({"outcome": "pass", "unique_chain_effects": args.transactions, "duplicate_chain_effects": 0, "unauthorized_requests_rejected": 2,
-            "successful_transfers": 0 if args.revert else args.transactions, "reverted_transactions": args.transactions if args.revert else 0,
+            "successful_transfers": expected_transfer, "contract_creations": len(created_addresses), "reverted_transactions": args.transactions if args.revert else 0,
             "recipient_value_received_wei": expected_transfer, "terminal_status": "failed" if args.revert else "confirmed",
             "elapsed_seconds": round(time.monotonic() - started, 3),
             "redis_persistence": "appendonly=yes, appendfsync=always; Redis SIGKILL and AOF replay, not host power loss or failover" if args.redis_crash else "disabled; Engine process-restart test, not Redis power-loss test"})

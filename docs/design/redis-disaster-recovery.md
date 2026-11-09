@@ -43,6 +43,31 @@ key `evm:<chain>:<lowercase sender>:<nonce>`, so neither can reuse the other's
 allocation. Fee replacements can retain the same replay identity; a new nonce
 for the same ID is rejected.
 
+An EOA preparation failure reported as permanent is also retained before its
+Redis status or failure webhook. Its terminal witness binds the exact admitted
+payload and original structured error, with no replay key or authorized attempt.
+This decision competes with broadcast authorization under the same journal lock:
+if broadcast wins, failure publication is refused and reconciliation remains
+required. If failure wins, neither a changed chain state, Redis TTL/loss, offline
+queue rebuild nor same-ID retry can execute the rejected intent. A crash between
+the terminal commit and Redis publication leaves stale pending work; the worker
+validates the retained failure and finishes publishing the original error without
+signing or contacting the RPC. Receipt-based terminal evidence is unchanged.
+
+Batch failure cleanup publishes only eligible entries. Missing, conflicting or
+nonterminal attempted/quarantined entries remain for reconciliation while other
+entries, receipt confirmation and retained-wire recovery can progress. An exact
+already-terminal intent may lose its stale pending scheduler membership without
+changing its outcome, retention or notifications. Journal/storage and owner
+failures still stop the worker cycle.
+
+This applies to failures durably recorded by this version. Older failures whose
+Redis status has already expired are indistinguishable from valid unsigned
+admissions in the old journal. Upgrading cannot reconstruct that lost negative
+information. Reconcile retained unsigned work against external failure/business
+records before queue reconstruction; preserve the original authority and do not
+treat an absent Redis status as permission to retry a reported failure.
+
 EOA signing also preserves the full admitted authorization list. The old
 recipient-code filter could silently remove an authorization belonging to a
 different authority and has been removed. Networks with stricter authorization
@@ -83,6 +108,9 @@ SQLite uses WAL with `synchronous=FULL`; initialization and private output files
 are synced, including containing directory entries. Owned tasks retain the
 serialization lock and admission permit through publication and acknowledgement.
 Cancelling a caller does not abandon its update; retry the original ID and intent.
+Clients must choose stable idempotency keys before sending. An unreceived HTTP
+response can hide a committed admission, including a generated ID; a new ID is
+a new intent and can execute in addition to the original.
 Blocking database work retains the OS owner lock. Graceful shutdown stops HTTP
 and workers, then permanently closes registration and drains registered work.
 Delayed detached health probes cannot start a repair after that barrier returns.
@@ -106,8 +134,10 @@ claim. In particular, the first Solana attempt can be bound in SQLite before its
 Redis attempt is stored. The worker can reconstruct that missing attempt from
 the exact retained journal record under its storage lock. It validates the signed
 bytes and durably bounds recovery sends; it never rebuilds or re-signs the request.
-Conflicting or quarantined records remain blocked. Missing queue jobs and unknown
-chain outcomes still require separate reconciliation. See
+Conflicting or quarantined records remain blocked. Missing queue jobs can be rebuilt offline from eligible journal records with
+`thirdweb-engine --rebuild-queues`; terminal/quarantined and unsupported records
+remain blocked. See [queue reconstruction](queue-reconstruction.md). Unknown
+chain outcomes still require their existing reconciliation policy. See
 [retained Solana recovery](retained-solana-recovery.md).
 Ordinary Redis persistence remains necessary for availability.
 

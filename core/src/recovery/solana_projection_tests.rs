@@ -8,7 +8,7 @@ fn payload(id: &str) -> Value {
     json!({"transactionId":id,"intent":"original"})
 }
 fn attempt() -> Value {
-    let signature = solana_sdk::signature::Signature::from([7u8; 64]).to_string();
+    let signature = solana_signature::Signature::from([7u8; 64]).to_string();
     json!({"chainId":"devnet","signature":signature,"attempt":{
         "signature":signature,"signed_transaction":"retained-wire",
         "broadcast_attempts":0,"last_broadcast_at":0,"reconciliation_checks":0,

@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from testnet_engine import pinned_binary, prepare_recovery, provenance
+from testnet_engine import pinned_binary, prepare_recovery, provenance, require_resume_provenance
 
 
 class EngineSetupTests(unittest.TestCase):
@@ -30,6 +30,23 @@ class EngineSetupTests(unittest.TestCase):
                 prepare_recovery(self.evidence, self.directory, self.env)
             spawn.assert_not_called()
 
+    def test_resume_requires_complete_matching_binary_and_harness_identity(self):
+        original = dict(self.evidence)
+        require_resume_provenance(self.evidence, dict(self.evidence))
+        self.assertEqual(self.evidence, original)
+        for field in original:
+            with self.subTest(field=field):
+                current = {**original, field: "changed"}
+                with self.assertRaisesRegex(RuntimeError, "Resume provenance changed.*" + field):
+                    require_resume_provenance(original, current)
+                missing = dict(original)
+                del missing[field]
+                with self.assertRaisesRegex(RuntimeError, "missing or incomplete"):
+                    require_resume_provenance(missing, original)
+        with self.assertRaisesRegex(RuntimeError, "missing or incomplete"):
+            require_resume_provenance(None, original)
+        self.assertEqual(self.evidence, original)
+
     def test_new_and_resumed_authority_cannot_be_interchanged(self):
         with patch("testnet_engine.subprocess.run") as spawn:
             spawn.return_value.returncode = 0
@@ -44,6 +61,16 @@ class EngineSetupTests(unittest.TestCase):
             prepare_recovery(self.evidence, self.directory, self.env, resume=True)
             self.assertEqual(spawn.call_args.args[0], [str(self.binary.resolve()), "--reattach-recovery"])
             self.assertEqual(spawn.call_count, 2)
+
+    def test_unknown_source_stays_explicit_without_weakening_binary_identity(self):
+        evidence = provenance(self.binary, None, __file__)
+        self.assertIsNone(evidence["declared_binary_source_commit"])
+        require_resume_provenance(evidence, dict(evidence))
+        self.assertIsNone(evidence["declared_binary_source_commit"])
+        for field in ["engine_binary_sha256", "harness_sha256", "process_helper_sha256"]:
+            with self.subTest(field=field):
+                with self.assertRaisesRegex(RuntimeError, "Resume provenance changed"):
+                    require_resume_provenance(evidence, {**evidence, field:"changed"})
 
     def test_refused_reattach_never_falls_back_to_initialize(self):
         (self.directory / "recovery.sqlite").touch()

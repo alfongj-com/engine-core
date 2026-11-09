@@ -126,8 +126,19 @@ multi-tenant ownership or per-principal spending policy.
 
 Administrative cancellation of an AA send-stage job with a durable broadcast
 reservation now returns `CANNOT_CANCEL` and keeps tracking. That job may already
-have executed even when its send response was lost. Cancelling an unreserved
-pending job retains the existing queue semantics.
+have executed even when its send response was lost. An unsigned ERC-4337 intent
+is revoked in the journal before its queue projection is cancelled. Revocation
+competes with broadcast under the same serialization and survives restart;
+the cancelled ID cannot be admitted again.
+
+After durable revocation, an absent Redis job still reports
+`CANCELLED_IMMEDIATELY`. Intake rechecks cancellation after pushing a job, so a
+revocation that won during enqueue cannot be reported as accepted at that
+point. If a crash interrupts queue cleanup, the send worker completes matching
+unsigned cancelled work as `UserCancelled`, clearing its registry entry rather
+than retrying forever. That cleanup requires a healthy journal, the exact
+retained payload, no replay key and zero attempts. Ambiguous broadcasts,
+conflicting payloads and continuity failures remain fenced for reconciliation.
 
 ## Credentials at rest
 
@@ -162,6 +173,9 @@ Local tests exercise:
 - Missing/wrong/unconfigured/short legacy access tokens causing zero journal or
   queue admissions; authenticated KMS/IAW requests retaining their selected
   backend; ambiguous reserved-AA cancellation preserving tracking.
+- Cancellation before/after enqueue and after journal restart, late Redis work
+  completing without RPC, and attempted/mismatched/unhealthy admissions refusing
+  cancellation cleanup.
 - Wrong/unavailable Solana genesis preventing worker signing and send, transient
   failures being retried, success coalescing/cache reuse, and endpoint/cluster
   cache isolation.

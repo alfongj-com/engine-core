@@ -10,7 +10,7 @@
     },
     {
       "path": "core/src/execution_options/solana.rs",
-      "sha256": "5b72692caf397365c1a07003258624122994cec0335461753a424a7d01ed1bea",
+      "sha256": "4dc9400d27ccd560e0b11189de6e36d8b8febb329d7e54f7788fed62a79063b5",
       "models": [
         "SolanaRecovery"
       ]
@@ -41,13 +41,15 @@
     },
     {
       "path": "core/src/recovery.rs",
-      "sha256": "4b3349ef5afe100eebc4ab61616ff685315e185265258b1fa29cd36172e17c21",
+      "sha256": "f19772340ee09dd9cee3e1bb1d19025d7462a7b9dfd108a05fdd48d2e9f066ce",
       "models": [
         "DisasterRecovery",
         "Finality",
         "EoaRecovery",
         "DisasterRecoveryProjection",
-        "SolanaRetainedAttempt"
+        "SolanaRetainedAttempt",
+        "IntentCancellation",
+        "EoaPreparationFailure"
       ]
     },
     {
@@ -66,7 +68,7 @@
         "DisasterRecoveryProjection",
         "SolanaRetainedAttempt"
       ],
-      "sha256": "2829c6523f39939a363c6e8a399c08f5548fbabe939f2fe074ca687f5fd74c92"
+      "sha256": "542c2eb184c73311388eb808bf608a8208883bd34835c7fc10d181b2821e5962"
     },
     {
       "path": "core/src/recovery/history_index_tests.rs",
@@ -79,7 +81,7 @@
     },
     {
       "path": "core/src/recovery/tests.rs",
-      "sha256": "e47bd7f61ac827b0684e76d2f7d552e5193054cba9e40e9c819efbf923bd24c8",
+      "sha256": "ef65edcf263e81ae06fdd75d9e3236e789298b695acd6c5b78226d413865f5b5",
       "models": [
         "DisasterRecovery",
         "Finality"
@@ -116,10 +118,11 @@
     },
     {
       "path": "executors/src/eoa/store/atomic.rs",
-      "sha256": "ad4d7256739b339106f129b3b94c269252df5697418ade92c14297ae7e01dd10",
+      "sha256": "e64763d3025668143b3d826636377bf0dfa272089c9f3e78fe7d96fa411d5274",
       "models": [
         "DisasterRecovery",
-        "EoaRecovery"
+        "EoaRecovery",
+        "EoaPreparationFailure"
       ]
     },
     {
@@ -139,7 +142,7 @@
     },
     {
       "path": "executors/src/eoa/store/mod.rs",
-      "sha256": "7c1fefa822daa156474da3dc5bcb31bd951eda7e89e2a13f4fcb8bb9cdb10d4e",
+      "sha256": "5c411e7c3f71397b7ff4b237fd28e8699c77072011348f3571bf7b968d44e0ff",
       "models": [
         "DisasterRecovery",
         "EoaRecovery",
@@ -157,7 +160,7 @@
     },
     {
       "path": "executors/src/eoa/store/submitted.rs",
-      "sha256": "f9408dc0ec413c3f909ee00a576a6e8f3c14d352ed818a47d348b5cf16d655c3",
+      "sha256": "5e2d2fba4a7da536593ce6c1e0942e56f3b4fe357a63dbfee5fb389f0e8c11c1",
       "models": [
         "EoaRecovery",
         "Finality",
@@ -176,7 +179,7 @@
     },
     {
       "path": "executors/src/eoa/worker/confirm.rs",
-      "sha256": "d045cd9b652bbb396c64a1585ca04987c3d00fb4170b37d9798fe8afa33af3ed",
+      "sha256": "0b133cc9c157cb52db45cc582893421a57b1927a6251125e1f7376805586e3c8",
       "models": [
         "DisasterRecovery",
         "EoaRecovery",
@@ -186,7 +189,7 @@
     },
     {
       "path": "executors/src/eoa/worker/error.rs",
-      "sha256": "525cd8260c35d04711b1b1f987a2f7456d2d010ff03ad109df8678d95b092b52",
+      "sha256": "065858f440b602838b5d4fab295ded4f70a3e46f945f0aa0d17f28e6d4a4d72d",
       "models": [
         "EoaRecovery"
       ]
@@ -200,7 +203,7 @@
     },
     {
       "path": "executors/src/eoa/worker/fee_tests.rs",
-      "sha256": "1d4f8b258453e88bf5e52d6d0e1eb94bd0862a038e88f4df7ddb59a6df8c72fd",
+      "sha256": "25fe8b4ff444f1fdeb3f7660796fd966abf2906170268b01fcbb33b24b6e0faa",
       "models": [
         "Fees"
       ]
@@ -224,7 +227,7 @@
     },
     {
       "path": "executors/src/eoa/worker/mod.rs",
-      "sha256": "6e9d03ecb5bf8bbae076e54516fa83d157eb41e071cd47915c6c0976ff700ee9",
+      "sha256": "53e8fc99576f7f0f9fcda760b41a625e58a899dcf3479385fa31f12b9db7afba",
       "models": [
         "DisasterRecovery",
         "EoaRecovery",
@@ -245,11 +248,11 @@
         "EoaRecovery",
         "QueueLease"
       ],
-      "sha256": "e13f61f476c4fe9b1b82f6a7024eed8b5d560225486c48456ea0848dec05a280"
+      "sha256": "4b6ebe3eed89f0c00a2beb0b65c8eb605343fe0672b27d50f1ad5eaad2e03ba7"
     },
     {
       "path": "executors/src/eoa/worker/send.rs",
-      "sha256": "dd6f2d9e314459a8a9677255ad9b008a47a53056bb303e0474e40d5bb1128bd9",
+      "sha256": "6dfb02a82622eeca5e5561b003b1feace9f529616be5add76a24516b5c205852",
       "models": [
         "DisasterRecovery",
         "EoaRecovery",
@@ -258,7 +261,7 @@
     },
     {
       "path": "executors/src/eoa/worker/send_dispatch_tests.rs",
-      "sha256": "3e9cbc5b29f1c1b88e25b3d3592544f62cb4c220c5bbcad2a01edb9020efb183",
+      "sha256": "8284268ef71bdb0119fadc9bf57280fcf13aea4ef11d58d4f5d3dc8fe1c02670",
       "models": [
         "EoaRecovery",
         "DisasterRecovery"
@@ -275,10 +278,11 @@
     },
     {
       "path": "executors/src/eoa/worker/transaction.rs",
-      "sha256": "5e54409bbfccdfbbcee6d76ca32f355bee9679cc36d9dd83505eb809d572f530",
+      "sha256": "64c670e416d439df6de5ce32ac28d2f6b53a7dfa27893abf52ea9b758e66ba8c",
       "models": [
         "DisasterRecovery",
-        "Fees"
+        "Fees",
+        "EoaPreparationFailure"
       ]
     },
     {
@@ -291,7 +295,7 @@
     },
     {
       "path": "executors/src/external_bundler/send.rs",
-      "sha256": "af0de44d186d91b37255e055ecf1bc87974b8d618351323cf0336e53e8d2c2bb",
+      "sha256": "e81f9af8806ff2800451431fb64723d7a1f8e6c58e8ac3f98acf2bc67a77b6f5",
       "models": [
         "DisasterRecovery"
       ]
@@ -301,7 +305,7 @@
       "models": [
         "DisasterRecovery"
       ],
-      "sha256": "10c53dfb01f76f223694a1b0df2faa8da62a9bfd2f7b2ea5385d8017128027c7"
+      "sha256": "1449ea9bb4cf97e798c9f92eb62cf385b5f7e528379205ed77774e02d63e637a"
     },
     {
       "path": "executors/src/finality.rs",
@@ -331,7 +335,7 @@
     },
     {
       "path": "executors/src/recovery.rs",
-      "sha256": "ad36d80717697f3695c31bdd753009992a33636ccd4e24ae239dc04899e03039",
+      "sha256": "fd381bf149dff18d397c056e0222de0c732ded83a8c0cfc6924c26913952e631",
       "models": [
         "DisasterRecovery",
         "DisasterRecoveryProjection"
@@ -346,11 +350,12 @@
     },
     {
       "path": "executors/src/solana_executor/recovery_tests.rs",
-      "sha256": "09c5d4149598e0dae329d938ce090b2f8c4ea7d6f70616044870b77ccf0e223c",
+      "sha256": "38823ac3b417f8d915a06db564c1d63c9d40ccb8d87159b749e2ce03045276ed",
       "models": [
         "DisasterRecovery",
         "SolanaRecovery",
-        "SolanaRetainedAttempt"
+        "SolanaRetainedAttempt",
+        "SolanaProcessingLease"
       ]
     },
     {
@@ -369,21 +374,23 @@
     },
     {
       "path": "executors/src/solana_executor/storage.rs",
-      "sha256": "a8700a8c7736737b5a6c8c3e618eb7dee39f2868b08e17fc6448c5f77a179b91",
+      "sha256": "a4713a6fa591e85ffde1745ebb34826cf5433a234a965a3732e191a0857e5ac6",
       "models": [
         "Admission",
         "SolanaRecovery",
-        "SolanaRetainedAttempt"
+        "SolanaRetainedAttempt",
+        "SolanaProcessingLease"
       ]
     },
     {
       "path": "executors/src/solana_executor/worker.rs",
-      "sha256": "2767f382da839ebc3a45b2234d83a625ab0cfaad25a6c5c8121b3dc7d1af70bb",
+      "sha256": "16c03e724b012cc6ed0948354af0ff915f59d32f0a753d77f4c0030173382b13",
       "models": [
         "DisasterRecovery",
         "SolanaRecovery",
         "DisasterRecoveryProjection",
-        "SolanaRetainedAttempt"
+        "SolanaRetainedAttempt",
+        "SolanaProcessingLease"
       ]
     },
     {
@@ -397,7 +404,7 @@
     },
     {
       "path": "scripts/local_eoa_recovery.py",
-      "sha256": "e044c9495ce18375772fca3edac92a7e5d675f95001f876afe48928163e20584",
+      "sha256": "5b1975411f94477700feee8d924d7926dbb5e3748722f299964956aeac1f6571",
       "models": [
         "DisasterRecovery",
         "EoaRecovery"
@@ -421,7 +428,7 @@
     },
     {
       "path": "scripts/local_solana_recovery.py",
-      "sha256": "0394f281e25d4a289bd3db3e190adf24bee7ed28d087fa5291a9fe3e375face2",
+      "sha256": "b84148062ab7dd5332e9451ac8bb6a345f1fcde6739f40cb743a8f73af3de293",
       "models": [
         "DisasterRecovery",
         "SolanaRecovery",
@@ -439,7 +446,7 @@
     },
     {
       "path": "server/src/bin/engine-recovery.rs",
-      "sha256": "61e8e345bd4c987188138d98166f1193cb3880e09c19985770eaf638cfceeaa7",
+      "sha256": "6735e363437738bab7e68dd4a482433594920c91020459989575acc05a477e4f",
       "models": [
         "DisasterRecovery"
       ]
@@ -468,7 +475,7 @@
     },
     {
       "path": "server/src/execution_router/mod.rs",
-      "sha256": "570c5284aa5f7005ef027aedc0f7eb397184c18b7fc6b4370c86c554a2b549c4",
+      "sha256": "26665bd1d1276f88ec0d49d801d5bd29bbe14c163240211d237c3ccf905f6e5b",
       "models": [
         "Admission",
         "DisasterRecovery",
@@ -505,14 +512,14 @@
     },
     {
       "path": "server/src/lib.rs",
-      "sha256": "00c234516c2327a6d2e6ba2453e03f674708c7b23a2b4c017a2175cfc171e02f",
+      "sha256": "d25ddc6fad1715a4c05af0262d8c4340f7426763f386b72d0fedea614b36d375",
       "models": [
         "DisasterRecovery"
       ]
     },
     {
       "path": "server/src/main.rs",
-      "sha256": "5d24cddbc8de2dd120d12d4f7541ad044eb4780e32221a86ebdea4d85840ecae",
+      "sha256": "24e0a248db2c90bc932593f14d036d94226fd3fd86d5e4e68d39a6937bd8c8fa",
       "models": [
         "DisasterRecovery",
         "DisasterRecoveryProjection"
@@ -527,10 +534,11 @@
     },
     {
       "path": "server/src/recovery.rs",
-      "sha256": "827eeb571f7f46061d42b66c4b58ffd81a4849f6fec52048b8467b08e2814af8",
+      "sha256": "d33dbb9b09f2fb4aa82f963f2bada648301dc976a5a381427018207755ef5594",
       "models": [
         "DisasterRecovery",
-        "DisasterRecoveryProjection"
+        "DisasterRecoveryProjection",
+        "IntentCancellation"
       ]
     },
     {
@@ -542,18 +550,19 @@
     },
     {
       "path": "server/src/solana_admission_tests.rs",
-      "sha256": "fa03eb98e10f61c064463b0bd843c17d62a9851b6317fd08a0fe445ec13f046f",
+      "sha256": "e15810d4ec75fc2acbe30280082d4b7ecf6f23b0fb21c6611aa9c4ad46c5d429",
       "models": [
         "Admission"
       ]
     },
     {
       "path": "server/tests/api_safety.rs",
-      "sha256": "1cc6ccc9ba7fcefe4787b41eb1ac52a9b93fc383616ded300048760e4ed835da",
+      "sha256": "155e305f6e9d5b5c74220d505cc9a8f1397d2c7fd7e11ad146716d98f4865fce",
       "models": [
         "Admission",
         "DisasterRecovery",
-        "SolanaRecovery"
+        "SolanaRecovery",
+        "IntentCancellation"
       ]
     },
     {
@@ -579,16 +588,18 @@
     },
     {
       "path": "twmq/src/lib.rs",
-      "sha256": "f6ae29909445a9f1ead10abe3debfed9c56aa379f3cbb696aa7c6a69092ce22e",
+      "sha256": "fbf4c56acc65cb027e065cf0c6597648baded7e901a7c1486ad5a034561f750f",
       "models": [
-        "QueueLease"
+        "QueueLease",
+        "SolanaProcessingLease"
       ]
     },
     {
       "path": "twmq/src/multilane.rs",
-      "sha256": "0c904b73cb7ee068e0cfa182341b753fd75dbb8d3bcda876cfd1a7b3471ecdda",
+      "sha256": "ed71c63468f267d9b4f5034f3125184e8c069f5e2d704df0188733ccdf3c5b18",
       "models": [
-        "QueueLease"
+        "QueueLease",
+        "SolanaProcessingLease"
       ]
     },
     {
@@ -614,9 +625,10 @@
     },
     {
       "path": "core/src/recovery/cancellation_tests.rs",
-      "sha256": "6c1d94ed0cd8bd35918878a9222bf89a5ce1661033896f970d677f536b1a24c8",
+      "sha256": "aec7f3893bc1d1a1c9242a4524b4406286f8b8ad321406077bc7ab652b0b589b",
       "models": [
-        "DisasterRecovery"
+        "DisasterRecovery",
+        "IntentCancellation"
       ]
     },
     {
@@ -629,9 +641,11 @@
     {
       "path": "core/src/error.rs",
       "models": [
-        "DisasterRecoveryProjection"
+        "DisasterRecoveryProjection",
+        "EoaRecovery",
+        "EoaPreparationFailure"
       ],
-      "sha256": "fd8eebfe284c32dd73c1351980e32aaca9acb4ceebc1d5a1f36635d11f2496a3"
+      "sha256": "103edf434760a66355f05bfcb9f57b416a7da9bf8bb473d307e7e4f98969ba80"
     },
     {
       "path": "core/src/recovery/projection.rs",
@@ -678,21 +692,21 @@
       "models": [
         "SolanaRecovery"
       ],
-      "sha256": "5f9c70904f30668da5a248a4bf34aa98206b6486bb345d203b043d1bcdb6c745"
+      "sha256": "ec36fcf25668ffa54c9784cf7470248529b46a277e69d45de685e034f180f8c0"
     },
     {
       "path": "executors/src/solana_executor/status_batcher_tests.rs",
       "models": [
         "SolanaRecovery"
       ],
-      "sha256": "8fbe78e6c7da0aac317f0dbe4e81770c201170d079821af788428d1a2053ecb4"
+      "sha256": "30bf928cdea825e9b85d8a83af4db922bf09d507451b4f157258a13ceef2f3d8"
     },
     {
       "path": "server/src/http/error.rs",
       "models": [
         "DisasterRecoveryProjection"
       ],
-      "sha256": "2f6dc401112a9f419b37c0612ba35e7d58bdbd293a736974dcea7deb3831d17a"
+      "sha256": "1c86ac510b41d449c60372cc43cedb275939777ef5f67bc07a29ac448c24c4cb"
     },
     {
       "path": "twmq/src/shutdown_tests.rs",
@@ -707,7 +721,7 @@
         "SolanaRetainedAttempt",
         "DisasterRecoveryProjection"
       ],
-      "sha256": "f2847b03ee8a5d60fb4753163dbc11228346f39b7bd45991fc9f4fc20dd83c6e"
+      "sha256": "f936b03daf26971f2dc840262e0e8f4b2f8bd35038d65f39c1bc58f280f65aa8"
     },
     {
       "path": "core/src/recovery/solana_projection_tests.rs",
@@ -715,7 +729,7 @@
         "SolanaRetainedAttempt",
         "DisasterRecoveryProjection"
       ],
-      "sha256": "1532ade53c1130266e6f73b49f86262974ff5a474ec02002b27c85468e75e4a9"
+      "sha256": "59f8781c6aecad2c398737ab96dcf64e7da77404b5beac2081b500ea3dc7dcbe"
     },
     {
       "path": "core/src/recovery/projection_reattach_tests.rs",
@@ -724,6 +738,142 @@
         "DisasterRecovery"
       ],
       "sha256": "d26c506a82e05af0453c6364c52a02ee5a7e33b7daa64d2825c46631701a8237"
+    },
+    {
+      "path": "server/src/http/routes/transaction.rs",
+      "models": [
+        "IntentCancellation"
+      ],
+      "sha256": "f12a5957e0aafc281bcd11953725040439f57b3abd7c160b3b04842e17feb76d"
+    },
+    {
+      "path": "core/src/credentials.rs",
+      "sha256": "f2ef34a98cf3a4d58dde78e0c5d22dfc821726939dc4f2d5aab48d1006474be3",
+      "models": [
+        "DisasterRecovery",
+        "EoaRecovery"
+      ]
+    },
+    {
+      "path": "twmq/src/job.rs",
+      "models": [
+        "SolanaProcessingLease"
+      ],
+      "sha256": "e4a41e9040af1606ee7987ae812e9ecde4e04f1bf92358e5801c735b4e03e8ee"
+    },
+    {
+      "path": "server/src/execution_router/cancellation_tests.rs",
+      "models": [
+        "IntentCancellation",
+        "Admission"
+      ],
+      "sha256": "4d9e92d8b37e327bf10609628d92ca91b660e3b13be3c3e16741ea4949c4e608"
+    },
+    {
+      "path": "scripts/test_local_eoa_recovery.py",
+      "models": [
+        "EoaRecovery",
+        "DisasterRecovery"
+      ],
+      "sha256": "84e399d485aa66c8870157bc410c4c8fc3756bc38c16a27fabd10b50cdafd1c6"
+    },
+    {
+      "path": "executors/src/eoa/store/submitted_member_tests.rs",
+      "sha256": "66c3f1eb9a8da5074523e92b20ca5faece30feb9c43ed7b1bf0517512aaa02e8",
+      "models": [
+        "EoaRecovery"
+      ]
+    },
+    {
+      "path": "core/src/recovery/inventory.rs",
+      "sha256": "0a48c836c968af6e73372dba19c2756b542a2bbaf1921bfa4833e30d71b141e5",
+      "models": [
+        "DisasterRecovery",
+        "QueueRebuild"
+      ]
+    },
+    {
+      "path": "executors/src/eoa/store/rebuild.rs",
+      "sha256": "f1ee06523dee95a4b001955a09c75d691816ca2f8654a35ac8a843c2d295a7e5",
+      "models": [
+        "EoaRecovery",
+        "QueueRebuild"
+      ]
+    },
+    {
+      "path": "server/src/queue_rebuild.rs",
+      "sha256": "7c4e2d17b65662be7ba2264dfb7dba2971bedb5481ae725fd5a69878e766aa88",
+      "models": [
+        "QueueRebuild",
+        "SolanaRetainedAttempt"
+      ]
+    },
+    {
+      "path": "core/src/recovery/maintenance.rs",
+      "sha256": "9635eca5cc98af896d9fe50de5c3dba4663a66e5f5431672832e7aee0601b4b8",
+      "models": [
+        "DisasterRecovery"
+      ]
+    },
+    {
+      "path": "core/src/recovery/preparation_failure.rs",
+      "models": [
+        "EoaPreparationFailure"
+      ],
+      "sha256": "d80a288d9f7753a9ea37e38ed9362af5c7a72095838f16fdd354405383e5de38"
+    },
+    {
+      "path": "core/src/recovery/preparation_failure_tests.rs",
+      "models": [
+        "EoaPreparationFailure"
+      ],
+      "sha256": "cba89b738e318caa3911511c9566ccbdc07e0465adf324205587f155312deb81"
+    },
+    {
+      "path": "executors/src/eoa/worker/send_preparation_failure_tests.rs",
+      "models": [
+        "EoaPreparationFailure"
+      ],
+      "sha256": "bb708dd73fe0e1f8268f9ac78fb72f667d1f23f7370968e400af7cc727c0e517"
+    },
+    {
+      "path": "scripts/local_eoa_preparation_failure.py",
+      "models": [
+        "EoaPreparationFailure"
+      ],
+      "sha256": "f0f97ba93efb7c43dd438dc657b7eb73af955368634ddadc24fdfa130bd3dada"
+    },
+    {
+      "path": "core/src/signer.rs",
+      "sha256": "ae80e28460b1ad782e9fc42c276c191dd1e5b7e72a78fb6e1e5218fe88a81870",
+      "models": [
+        "EoaRecovery",
+        "EoaPreparationFailure"
+      ]
+    },
+    {
+      "path": "core/tests/aws_kms_protocol.rs",
+      "sha256": "d45c0cba661f2f355ba7d067183fea6f3218d1203f294463097ad8279dc88f0d",
+      "models": [
+        "EoaRecovery",
+        "EoaPreparationFailure"
+      ]
+    },
+    {
+      "path": "executors/src/eoa/worker/send_failure_progress_tests.rs",
+      "models": [
+        "EoaRecovery",
+        "EoaPreparationFailure"
+      ],
+      "sha256": "1b891224b2e636a7047e37a47fdea257cc695c1f0ad51dfecf1a840ffce79361"
+    },
+    {
+      "path": "executors/src/eoa/worker/send_kms_service_tests.rs",
+      "models": [
+        "EoaRecovery",
+        "EoaPreparationFailure"
+      ],
+      "sha256": "b3afb461683f73193479cb6b25054e5b4ba3946cafe01ea006111a2d0c0960fe"
     }
   ],
   "review": {
@@ -938,6 +1088,106 @@
         "executors/src/solana_executor/worker.rs"
       ],
       "reason": "The five offline administration methods move verbatim into operations.rs, preserving owner-lock and transaction scopes, all ten awaits, exact-target acknowledgement/adoption and fresh post-observation. Solana execute_transaction retains admission, storage and journal-binding gates, then directly awaits either retained-attempt reconciliation or initial build/sign/persist/send. Extracted bodies preserve operation order, finality-before-expiry and the second history observation after expiry. No task, permission, new signature path, RPC, grant, schema or durability policy is introduced. Models and bounds remain unchanged; source hashes are a change-review guard, not a refinement proof. Existing crash/cancellation/recovery tests and matched load remain the executable regression checks."
+    },
+    "eoa_envelope_review_nov08": {
+      "date": "2026-11-08",
+      "base_commit": "4e262c80e9e3866d055c87c43cf9c7d6b377af2a",
+      "paths": [
+        "executors/src/eoa/worker/send_dispatch_tests.rs",
+        "executors/src/eoa/worker/transaction.rs",
+        "scripts/local_eoa_recovery.py"
+      ],
+      "reason": "Preparation explicitly selects CREATE or CALL, preserves legacy estimation, and rejects out-of-range gas rather than overflowing. Durable replay keys, broadcast authorization, fee-bump arithmetic and finality are unchanged. Existing models and bounds are unchanged; they do not prove Alloy construction or RPC gas arithmetic. Executable regressions cover signed CREATE identity and hostile estimates. The local Engine/Redis/Anvil harness checks deployed runtime, predicted addresses, value, crash recovery and duplicate retries."
+    },
+    "durable_cancellation_nov08": {
+      "date": "2026-11-08",
+      "base_commit": "0255e967b1fb2f1c9c5e33d87368aa5be1cf098f",
+      "paths": [
+        "core/src/recovery.rs",
+        "core/src/recovery/cancellation_tests.rs",
+        "server/src/http/routes/transaction.rs",
+        "server/src/recovery.rs",
+        "server/tests/api_safety.rs"
+      ],
+      "reason": "Cancellation checks unsigned status and moves the intent to existing quarantined state in one FULL authority transaction before queue mutation. It shares serialization with before_broadcast; existing replay/attempt evidence prevents cancellation. The owned task retains publication through caller cancellation. No schema, counter, retained-wire or finality-policy changes. Payload validation reuses one admitted-record snapshot instead of two reads; broadcast still revalidates current authority. IntentCancellation checks this new linearization protocol and its old cached-read counterexample; it is not a refinement or composition proof. Existing crash/rollback/source guards and executable tests remain required."
+    },
+    "bounded_api_batches_nov08": {
+      "date": "2026-11-08",
+      "base_commit": "4684945",
+      "paths": [
+        "server/src/execution_router/mod.rs",
+        "server/src/http/routes/contract_encode.rs",
+        "server/src/http/routes/contract_read.rs",
+        "server/src/http/routes/contract_write.rs",
+        "server/src/http/routes/sign_message.rs",
+        "server/src/http/routes/sign_typed_data.rs",
+        "server/src/lib.rs",
+        "server/tests/api_safety.rs",
+        "server/src/batch.rs"
+      ],
+      "reason": "A shared preflight rejects batches above 100 items before dependency or admission effects. Five signing/ABI preparation paths use ordered Futures buffering capped at 16 in place of join_all. No tasks, signing changes, retry policy, journal identity, dispatch or finality transitions are added. Existing models and bounds are unchanged; per-request size/concurrency/order are executable HTTP and controlled-future obligations, not TLA claims."
+    },
+    "native_environment_signer_nov08": {
+      "date": "2026-11-08",
+      "base_commit": "883d7d2874477fa2aafa09258f72201a387727b0",
+      "paths": [
+        "core/src/credentials.rs",
+        "core/Cargo.toml",
+        "scripts/local_eoa_recovery.py"
+      ],
+      "reason": "Environment-key derivation and local signing select Alloy native secp256k1 rather than k256 secret arithmetic. The development-only credential keeps its existing type and converts before signing, preserving configured chain ID. Public address validation, immutable admission, signed-wire reservation, queue serialization, nonce/finality and recovery authority are unchanged. EIP-155 fixed-wire and signature compatibility checks plus actual HTTP/Anvil process tests establish executable correspondence. The existing models/bounds are unchanged and abstract signing; hashes are a review guard, not a cryptographic, timing or Rust refinement proof. The transitive crypto-bigint advisory remains visible. Prehashes at/above the curve order may produce different valid signature bytes due to nonce preprocessing; curve-order boundary tests verify identity rather than universal byte equality. The upgrade harness starts the old binary and restarts the new one with the same state, requiring original mined transaction hashes and no duplicate effects."
+    },
+    "solana_processing_queue_lease_nov08": {
+      "date": "2026-11-08",
+      "base_commit": "1e62dd7291bc66a36117ba9a00dc4cd80996eafe",
+      "paths": [
+        "twmq/src/job.rs",
+        "twmq/src/lib.rs",
+        "twmq/src/multilane.rs",
+        "executors/src/solana_executor/storage.rs",
+        "executors/src/solana_executor/worker.rs",
+        "executors/src/solana_executor/recovery_tests.rs"
+      ],
+      "reason": "Queue pop attaches immutable lease key/token identity to BorrowedJob for regular and multilane queues. New Solana processing locks record that identity plus a distinct processing token. Atomic acquisition requires the current queue token and its expiring key; a known prior record may be replaced only after its queue owner is no longer live. Attempt reads/writes and final pre-RPC lock checks require both processing ownership and queue liveness, strengthening stale-worker refusal. Legacy UUID/opaque records retain conservative TTL behavior. Signed wire, admission, journal publication, grant budgets and finality/expiry policy are unchanged. Standard ERR lock-lost replies fix Redis error classification. SolanaProcessingLease abstracts the new-format conjunction of metadata and live lease key; positive invariants, two faults and an early-reclaim witness are checked. JSON/key construction, expiry timing, old-format compatibility and actual crash behavior remain executable obligations; no refinement/composition or wall-clock liveness proof is claimed."
+    },
+    "submitted_id_encoding": {
+      "decision": "Preserve ordinary/legacy members; tag and hex-encode IDs containing colon.",
+      "reason": "The submitted index previously silently omitted these accepted IDs. The encoding maps to the same ID/hash/nonce model values; normal and supported legacy strings remain byte-identical. Canonical decoding is required for exact cleanup. Round-trip tests cover colon/Unicode IDs, legacy rows, malformed/noncanonical hex and cleanup identity. No claim of parsing ambiguous malformed historical colon members."
+    },
+    "offline_queue_reconstruction": {
+      "decision": "Add QueueRebuild finite model and preserve existing independent authority/retained-wire protocols.",
+      "reason": "Offline CLI holds the exclusive journal owner, verifies continuity before/after bounded inventory/projection repair, starts no workers/HTTP and never grants a send. Inventory excludes terminal/quarantine and validates canonical attempt digests/replay binding. EOA repair validates all retained wire identities, preserves the nonce floor and mutates only under the current EOA owner token; unsupported/contradictory records fail closed. Solana workers still activate retained-wire recovery and consume its permanent journal budget. Existing queue counters/order/delay survive, live leases and cancellation/terminal witnesses reject repair. A new QueueRebuild model has one positive, six fault counterexamples and a successful-repair witness; file locks, numeric/encoding bounds, Redis runtime type safety, cryptography and cross-model composition remain assumptions/implementation tests. Tagged encoding only extends previously broken colon-containing EOA IDs; ordinary and supported legacy members retain their representation. An additional real-process jobs-only failure exposed a valid initial-submission boundary with no attempt-list entry. Repair now checks a bounded literal submitted member whose hash belongs to the retained history and repeats its exact score check under the EOA owner token. It still refuses absent/foreign/malformed witnesses; the test covers that valid empty-attempt-list projection."
+    },
+    "physical_journal_maintenance": {
+      "decision": "Permanent logical retention; verified offline SQLite snapshot/compaction without new authority state or schema.",
+      "reason": "The exclusive owner lock excludes serving workers. Unhalted current-schema/no-pending preconditions prevent maintenance from acknowledging checkpoints or clearing incidents. A private no-overwrite SQLite snapshot is checked against a bounded-row-memory digest of every table/value including recovery events and sqlite_sequence before publication. Source VACUUM must preserve that digest and the full control identity; failed verification latches a durable halt. WAL checkpoint/truncation reports busy readers rather than resetting continuity. Normal startup/admission/broadcast paths do not invoke maintenance. This physical operation stutters over DisasterRecovery logical state; SQLite atomicity, filesystem sync/power loss and the correctness/collision resistance of the digest are assumptions, not proved implementation refinement. Real SQLite/Redis tests check retained rows, export identity, private publication, actual free-page reclamation, restart/dedup/replay fences and owner/halt/pending/output rejection. Lifetime growth and permanent sensitive payload retention remain explicit contract limits."
     }
+  },
+  "reviews": {
+    "cancelled_queue_projection": {
+      "decision": "Complete only exact, healthy, unattempted ERC4337 cancellations; reconcile intake and queue projection after durable revocation.",
+      "reason": "IntentCancellation already serializes cancellation against the first broadcast reservation. Queue projection cleanup is a crash-recoverable consequence and grants no send permission. Matching payload/fingerprint, no replay key, zero attempts and a healthy owner are required before a worker may permanently finish revoked work. Mismatches, continuity loss, attempts and halts remain retry/refusal states. Real Redis/API and serialized-journal regressions cover cancellation before queue push, interrupted queue cancellation, late work arrival, restart, mismatched payloads and attempted/halted negatives. This does not prove arbitrary queue liveness or fairness."
+    },
+    "post_reservation_capacity": {
+      "decision": "Distinguish fresh capacity rejection from a durable intent whose Redis enqueue lost a capacity race.",
+      "reason": "AdmissionPending is HTTP503 with the original transactionId; callers must retry that ID because the retained journal reservation may execute through recovery. Fresh pre-reservation overload remains429, and exact terminal retries create no new work. No reservation is deleted or quarantined to manufacture rejection. Admission/QueueRebuild retain their journal-before-projection ordering; the HTTP contract and autogenerated-ID propagation are runtime obligations. A deterministic real Redis capacity cut tests the actual failed add, immutable reservation, no prior replay binding, structured response and exactly-once subsequent publication."
+    },
+    "cross_binary_identity_witness": {
+      "decision": "Bind each upgrade receipt to its original intent-specific retained hashes, rather than a global hash set.",
+      "reason": "EoaRecovery retains an intent/replay/wire binding across restart. The process oracle must reject swapped IDs, shared hashes, missing identity evidence and pending-node disagreement even if the global set of hashes is unchanged. The new helper checks the original journal snapshot before crash and each receipt after the binary change. Offline negative cases exercise these confusions; a four-CREATE old#10-to-runtime#17 process run passed with Engine/Redis SIGKILL and AOF replay. This validates a recorded runtime pair, not every later runtime or host power-loss recovery."
+    },
+    "retained_queue_projection_repairs": {
+      "decision": "Preserve current reusable worker generations and repair retained EOA floor/hash projections only after validating every witness under the owner fence.",
+      "reason": "QueueRebuild assumes validated intent-level terminality and a current exclusive owner. Historical successful reusable worker generations are not permanent intent tombstones; current unfinished retry counts/delays survive. Every retained attempt receives its hash alias, history remains newest-first, and a surviving attempted projection raises a missing/stale nonce floor without rebinding a nonce. Conflicting aliases/types/noninteger floors fail before writes. Existing borrowed JSON is bounded, decoded and checked against exact retained canonical wires, then literally rechecked in the final Lua mutation; unsigned journal records cannot adopt a borrowed wire. Existing terminal/quarantine exclusions, live-lease refusal and journal send gates remain unchanged. Rust/Redis regressions and direct production-Lua failure cuts cover generation reuse, idempotent counts, selective index loss and witness races. These are runtime validation obligations of the finite model, not a proof of Lua/SQLite refinement."
+    },
+    "canonical_nonce_progress": {
+      "decision": "Use canonical latest nonce for stall detection and gas-bump race checks; retain finality polling and exact-wire ownership.",
+      "reason": "EoaRecovery already models canonical latest separately from receipts. This change restricts bump scheduling to actual current-nonce submitted members, leaves fee/replay authority unchanged, and prevents a preconfirmation hint from refreshing the canonical progress clock. Included-but-unfinalized attempts and idle wallets do not produce stuck alerts. Indexed Redis counts run only after a stall threshold; finality and continuity polling continue independently. Executable Redis/RPC regressions cover idle, included/unfinalized, preconfirmation ahead, a future nonce gap, canonical progress, capped fees, missing requests and failed simulation; they assert retained members, no fallback sends, expected simulation calls and exported stuck metrics. This is scheduler/monitoring coverage, not a proof of chain inclusion liveness or wall-clock timing."
+    }
+  },
+  "review_notes": {
+    "durable_unsigned_preparation_failure": "An unsigned permanent EOA rejection requires exact admitted payload, no replay key and no attempts under owned FULL journal serialization before Redis failure/TTL/webhook. Batch refusals are per intent: eligible failures publish, uncertain entries retain authority and exact already-terminal entries lose only stale scheduling. Storage, continuity and owner errors still abort. Real mixed-workflow regressions exercise continued confirmation, identical-wire rebroadcast and a fresh terminal queue head; the seven finite protocol cases preserve the authority order but do not model arbitrary batch liveness or prove implementation refinement. Legacy expired Redis-only failures cannot be inferred.",
+    "kms_unsigned_retry": "Nested Alloy/AWS causes retain typed SDK code and HTTP status. Known auth/key/request codes are permanent only with a matching non408/non429 4xx; transport, 5xx, throttling, temporary KMS and unknown/legacy errors retry conservatively. Distinct nested error tags round-trip through retained failure evidence. Actual SDK vectors cover503 same-input recovery, permanent auth/key responses and signature errors; a real Redis/worker regression covers denied head, interrupted failure publication and later healthy nonce0 work. No AWS account/IAM/quota or cryptographic proof is claimed.",
+    "kms_source_boundary": "Signer conversion and actual SDK protocol tests are guarded as implementation obligations of unsigned failure classification. The finite EOA models abstract successful preparation and errors; they do not prove AWS metadata, DER/SPKI parsing, signature recovery or signer identity."
   }
 }

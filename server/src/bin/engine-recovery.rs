@@ -11,7 +11,7 @@ async fn main() {
 }
 async fn run() -> Result<(), Box<dyn std::error::Error>> {
     let mut args = std::env::args().skip(1);
-    let command=args.next().ok_or("Usage: engine-recovery <init|status|export|quarantine|recover|reattach> --path PRIVATE_LEDGER [--namespace NS | --new-namespace NS] [--out PRIVATE_EXPORT]")?;
+    let command=args.next().ok_or("Usage: engine-recovery <init|status|export|compact|quarantine|recover|reattach> --path PRIVATE_LEDGER [--namespace NS | --new-namespace NS] [--out PRIVATE_EXPORT]")?;
     let mut flags = BTreeMap::new();
     while let Some(flag) = args.next() {
         if !matches!(
@@ -43,6 +43,14 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
                 output.ok_or("--out is required; exports contain sensitive recovery data")?,
             )?;
             println!("Private recovery export written");
+            return Ok(());
+        }
+        "compact" if namespace.is_none() && new_namespace.is_none() => {
+            let result = RecoveryJournal::compact(
+                &path,
+                output.ok_or("--out is required for a new private SQLite backup")?,
+            )?;
+            println!("{}", serde_json::to_string_pretty(&result)?);
             return Ok(());
         }
         "quarantine" if output.is_none() && namespace.is_none() && new_namespace.is_none() => {

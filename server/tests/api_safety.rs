@@ -188,6 +188,146 @@ async fn state_with_rpc(
 
 #[tokio::test]
 #[ignore = "requires redis-server; starts its own disposable loopback process"]
+async fn durable_cancellation_without_a_job_succeeds_and_late_work_is_drained() {
+    use engine_core::recovery::{self, RecoveryJournal, admission_fingerprint};
+    const CHILD: &str = "ENGINE_TEST_CANCEL_PROJECTION_CHILD";
+    if std::env::var_os(CHILD).is_none() {
+        let directory =
+            std::env::temp_dir().join(format!("cancel-projection-{}", rand::random::<u64>()));
+        let output = Command::new(std::env::current_exe().unwrap())
+            .args([
+                "--exact",
+                "durable_cancellation_without_a_job_succeeds_and_late_work_is_drained",
+                "--ignored",
+                "--nocapture",
+            ])
+            .env(CHILD, &directory)
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "{} {}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+        std::fs::remove_dir_all(directory).unwrap();
+        return;
+    }
+    let directory = std::path::PathBuf::from(std::env::var_os(CHILD).unwrap());
+    let (_redis, client) = start_redis().await;
+    let url = match &client.get_connection_info().addr {
+        twmq::redis::ConnectionAddr::Tcp(host, port) => format!("redis://{host}:{port}/"),
+        _ => panic!("disposable Redis must be loopback TCP"),
+    };
+    let path = directory.join("journal.sqlite");
+    RecoveryJournal::initialize(&path, &url, Some("api_safety".into()))
+        .await
+        .unwrap();
+    let journal = RecoveryJournal::open(&path, &url, Some("api_safety".into()))
+        .await
+        .unwrap();
+    recovery::install(journal.clone()).unwrap();
+    let state = state(client.clone()).await;
+    let queue = state.queue_manager.external_bundler_send_queue.clone();
+    let registry = state.queue_manager.transaction_registry.clone();
+    let data = ExternalBundlerSendJobData {
+        transaction_id: "late-cancelled-job".into(),
+        chain_id: 31337,
+        transactions: vec![],
+        execution_options: serde_json::from_value(
+            json!({"signerAddress":"0x1111111111111111111111111111111111111111"}),
+        )
+        .unwrap(),
+        signing_credential: SigningCredential::Environment {
+            address: alloy::primitives::Address::repeat_byte(1),
+        },
+        rpc_credentials: RpcCredentials::Configured,
+        webhook_options: vec![],
+        pregenerated_nonce: Some(alloy::primitives::U256::from(1)),
+    };
+    let payload = serde_json::to_value(&data).unwrap();
+    journal
+        .reserve_admission(
+            "erc4337",
+            &data.transaction_id,
+            &admission_fingerprint("erc4337", &payload).unwrap(),
+            payload.clone(),
+        )
+        .await
+        .unwrap();
+    registry
+        .set_transaction_queue(&data.transaction_id, "external_bundler_send")
+        .await
+        .unwrap();
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let base = format!("http://{}", listener.local_addr().unwrap());
+    let mut server = EngineServer::new(state).await;
+    server.start(listener).unwrap();
+    // The registry is visible while intake has not yet pushed its job. The
+    // successful cancellation is durable even though Redis returns NotFound.
+    let response = reqwest::Client::new()
+        .post(format!(
+            "{base}/v1/transactions/{}/cancel",
+            data.transaction_id
+        ))
+        .header("x-diagnostic-access-password", "test-admin-password")
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(response.status(), reqwest::StatusCode::OK);
+    assert!(
+        response
+            .text()
+            .await
+            .unwrap()
+            .contains("CANCELLED_IMMEDIATELY")
+    );
+    assert!(
+        registry
+            .get_transaction_queue(&data.transaction_id)
+            .await
+            .unwrap()
+            .is_none()
+    );
+    assert!(
+        journal
+            .cancelled_unbroadcast_payload(&data.transaction_id, &payload)
+            .await
+            .unwrap()
+    );
+    // Simulate a process cut before intake's post-push reconciliation. The
+    // real send worker must complete this retained job without reaching RPC.
+    queue
+        .clone()
+        .job(data.clone())
+        .with_id(&data.transaction_id)
+        .push()
+        .await
+        .unwrap();
+    let worker = queue.work();
+    tokio::time::timeout(Duration::from_secs(5), async {
+        while queue.count(JobStatus::Failed).await.unwrap() != 1 {
+            tokio::time::sleep(Duration::from_millis(10)).await;
+        }
+    })
+    .await
+    .unwrap();
+    worker.shutdown().await.unwrap();
+    assert_eq!(queue.count(JobStatus::Pending).await.unwrap(), 0);
+    assert_eq!(queue.count(JobStatus::Delayed).await.unwrap(), 0);
+    assert_eq!(queue.count(JobStatus::Active).await.unwrap(), 0);
+    let retained = journal
+        .admission("erc4337", &data.transaction_id)
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(retained.state, recovery::AdmissionState::Quarantined);
+    assert!(retained.replay_key.is_none());
+    assert_eq!(RecoveryJournal::status(&path).unwrap().attempts, 0);
+}
+
+#[tokio::test]
+#[ignore = "requires redis-server; starts its own disposable loopback process"]
 async fn public_routes_reject_unauthorized_mutations_and_invalid_execution() {
     const CHILD: &str = "ENGINE_TEST_PUBLIC_API_ACCESS_CHILD";
     const TOKEN: &str = "test-engine-access-token-at-least-32-bytes";
@@ -319,23 +459,26 @@ async fn public_routes_reject_unauthorized_mutations_and_invalid_execution() {
                 .is_none()
         );
     }
-    assert!(
-        http.post(format!("{base_url}/v1/transactions/protected-job/cancel"))
-            .header("x-diagnostic-access-password", "test-admin-password")
-            .send()
-            .await
-            .unwrap()
-            .status()
-            .is_success()
-    );
-    assert_eq!(queue.count(JobStatus::Pending).await.unwrap(), 0);
+    let response = http
+        .post(format!("{base_url}/v1/transactions/protected-job/cancel"))
+        .header("x-diagnostic-access-password", "test-admin-password")
+        .send()
+        .await
+        .unwrap();
+    assert!(response.status().is_success());
+    assert!(response.text().await.unwrap().contains("CANNOT_CANCEL"));
+    assert_eq!(queue.count(JobStatus::Pending).await.unwrap(), 1);
     assert!(
         registry
             .get_transaction_queue("protected-job")
             .await
             .unwrap()
-            .is_none()
+            .is_some()
     );
+    // No journal is installed in this authorization fixture. The HTTP path
+    // must retain tracking; clean up the generic queue fixture explicitly.
+    queue.cancel_job("protected-job").await.unwrap();
+    registry.remove_transaction("protected-job").await.unwrap();
     assert!(
         http.post(format!(
             "{base_url}/v1/admin/queue/external_bundler_send/empty-idempotency-set"
@@ -425,6 +568,95 @@ async fn public_routes_reject_unauthorized_mutations_and_invalid_execution() {
     );
     assert_eq!(queue.count(JobStatus::Pending).await.unwrap(), 1);
 
+    // A compact body must not fan out into unbounded signing, ABI or RPC work.
+    // The fixture's provider endpoints are unavailable: reject the whole batch
+    // before dependencies or durable admission, rather than per-item failures.
+    let address = "0x1111111111111111111111111111111111111111";
+    let signing = json!({"type":"EOA","from":address});
+    let execution =
+        json!({"type":"EOA","chainId":31337,"from":address,"idempotencyKey":"oversized-batch"});
+    let call = json!({"contractAddress":address,"method":"balanceOf(address)","params":[address]});
+    let typed = json!({"types":{"EIP712Domain":[],"Message":[{"name":"value","type":"uint256"}]},"domain":{},"primaryType":"Message","message":{"value":1}});
+    for (path, mut body, item) in [
+        (
+            "sign/message",
+            json!({"signingOptions":signing}),
+            json!({"message":"test"}),
+        ),
+        ("sign/typed-data", json!({"signingOptions":signing}), typed),
+        (
+            "encode/contract",
+            json!({"encodeOptions":{"chainId":"31337"}}),
+            call.clone(),
+        ),
+        (
+            "read/contract",
+            json!({"readOptions":{"chainId":"31337"}}),
+            call.clone(),
+        ),
+        (
+            "write/contract",
+            json!({"executionOptions":execution}),
+            call,
+        ),
+        (
+            "write/transaction",
+            json!({"executionOptions":execution}),
+            json!({"to":address}),
+        ),
+    ] {
+        body["params"] = json!(vec![item; 101]);
+        let response = http
+            .post(format!("{base_url}/v1/{path}"))
+            .header("x-thirdweb-client-id", "test")
+            .header("x-thirdweb-service-key", "test")
+            .header("x-wallet-access-token", "test")
+            .header("x-engine-access-token", TOKEN)
+            .json(&body)
+            .send()
+            .await
+            .unwrap();
+        assert_eq!(
+            response.status(),
+            reqwest::StatusCode::BAD_REQUEST,
+            "{path}"
+        );
+        assert!(
+            response.text().await.unwrap().contains("at most 100 items"),
+            "{path}"
+        );
+    }
+    assert_eq!(queue.count(JobStatus::Pending).await.unwrap(), 1);
+    assert!(
+        registry
+            .get_transaction_queue("oversized-batch")
+            .await
+            .unwrap()
+            .is_none()
+    );
+
+    // The boundary remains usable. A supplied function signature keeps this
+    // successful 100-item encoding batch independent of external ABI services.
+    let response = http
+        .post(format!("{base_url}/v1/encode/contract"))
+        .json(
+            &json!({"encodeOptions":{"chainId":"31337"},"params":vec![json!({
+            "contractAddress":address,"method":"balanceOf(address)","params":[address]
+        });100]}),
+        )
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(response.status(), reqwest::StatusCode::OK);
+    let response: serde_json::Value = response.json().await.unwrap();
+    let results = response["result"].as_array().unwrap();
+    assert_eq!(results.len(), 100);
+    assert!(
+        results
+            .iter()
+            .all(|item| item["result"]["target"] == address)
+    );
+
     let eip_queue = state.queue_manager.eip7702_send_queue.clone();
     let eip_body = json!({
         "executionOptions": {"type":"EIP7702", "chainId":31337,
@@ -468,7 +700,8 @@ async fn public_routes_reject_unauthorized_mutations_and_invalid_execution() {
 #[test]
 #[ignore = "requires redis-server; isolated credentials and actual loopback HTTP"]
 fn configured_signer_routes_authenticate_and_queue_only_public_identity() {
-    use solana_sdk::{signature::Keypair, signer::Signer};
+    use solana_keypair::Keypair;
+    use solana_signer::Signer;
     const TEST: &str = "configured_signer_routes_authenticate_and_queue_only_public_identity";
     const CHILD: &str = "ENGINE_CONFIGURED_SIGNER_TEST_CHILD";
     if std::env::var_os(CHILD).is_none() {
@@ -522,7 +755,11 @@ fn configured_signer_routes_authenticate_and_queue_only_public_identity() {
     tokio::runtime::Runtime::new().unwrap().block_on(async {
         use base64::{Engine, engine::general_purpose::STANDARD};
         use engine_solana_core::transaction::{decode_transaction_wire, encode_transaction_wire};
-        use solana_sdk::{hash::Hash, message::{Message, VersionedMessage}, signature::Signature, transaction::VersionedTransaction};
+        use solana_hash::Hash;
+use solana_message::Message;
+use solana_message::VersionedMessage;
+use solana_signature::Signature;
+use solana_transaction::versioned::VersionedTransaction;
         let (_redis, client) = start_redis().await;
         let config = thirdweb_engine::EvmRpcConfig { endpoints: [("31337".into(), engine_core::chain::RpcEndpointConfig { url: "http://127.0.0.1:1".into(), ..Default::default() })].into(), ..Default::default() };
         let state = state_with_rpc(client.clone(), config).await;
@@ -864,6 +1101,69 @@ async fn legacy_signers_require_operator_access_before_admission_and_preserve_ba
                 .as_deref(),
             Some("external_bundler_send")
         );
+        // Cancellation must revoke the authoritative unsigned intent before
+        // dropping queue tracking. A stale worker with the original job cannot
+        // reserve a broadcast after this HTTP response, including on ID retry.
+        let unsigned = queue.get_job("kms").await.unwrap().unwrap();
+        let response = http
+            .post(format!("{base}/v1/transactions/kms/cancel"))
+            .header("x-diagnostic-access-password", "test-admin-password")
+            .send()
+            .await
+            .unwrap();
+        assert!(response.status().is_success());
+        assert!(
+            response
+                .text()
+                .await
+                .unwrap()
+                .contains("CANCELLED_IMMEDIATELY")
+        );
+        assert_eq!(
+            journal.admission_state("erc4337", "kms").await.unwrap(),
+            Some(recovery::AdmissionState::Quarantined)
+        );
+        assert!(
+            registry
+                .get_transaction_queue("kms")
+                .await
+                .unwrap()
+                .is_none()
+        );
+        let stale_replay = format!(
+            "erc4337:31337:{:#x}:{:#x}:{}",
+            unsigned
+                .data
+                .execution_options
+                .entrypoint_details
+                .entrypoint_address,
+            unsigned.data.execution_options.signer_address,
+            unsigned.data.pregenerated_nonce.unwrap()
+        );
+        assert!(
+            journal
+                .before_broadcast(
+                    "erc4337",
+                    "kms",
+                    &stale_replay,
+                    json!({"wire":"stale-worker"})
+                )
+                .await
+                .is_err()
+        );
+        let mut cancelled = body.clone();
+        cancelled["executionOptions"]["idempotencyKey"] = json!("kms");
+        let response = http
+            .post(format!("{base}/v1/write/transaction"))
+            .headers(headers("kms"))
+            .header("x-engine-access-token", TOKEN)
+            .json(&cancelled)
+            .send()
+            .await
+            .unwrap();
+        assert_eq!(response.status(), reqwest::StatusCode::SERVICE_UNAVAILABLE);
+        assert_eq!(queue.count(JobStatus::Pending).await.unwrap(), 1);
+        assert_eq!(RecoveryJournal::status(&path).unwrap().attempts, 1);
     } else {
         assert_eq!(RecoveryJournal::status(&path).unwrap().admissions, 0);
     }

@@ -18,12 +18,12 @@ use engine_solana_core::{
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use solana_commitment_config::{CommitmentConfig, CommitmentLevel};
+use solana_pubkey::Pubkey;
 use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 use solana_rpc_client_api::{
     config::{RpcSendTransactionConfig, RpcTransactionConfig},
     request::RpcRequest,
 };
-use solana_sdk::pubkey::Pubkey;
 use solana_transaction_status::{EncodedTransactionWithStatusMeta, UiTransactionEncoding};
 use spl_memo_interface::instruction::build_memo;
 use std::{sync::Arc, time::Duration};
@@ -172,6 +172,7 @@ impl From<LockError> for SolanaExecutorError {
     fn from(e: LockError) -> Self {
         match e {
             LockError::AlreadyLocked => SolanaExecutorError::LockHeldByAnotherWorker,
+            LockError::QueueLeaseLost => SolanaExecutorError::LockLost,
             LockError::RedisError(msg) => SolanaExecutorError::InternalError { message: msg },
         }
     }
@@ -287,16 +288,22 @@ impl DurableExecution for SolanaExecutorJobHandler {
                 info!("Starting to process Solana transaction");
 
                 // Try to acquire lock - NACK if another worker has it
-                let lock = self
-            .storage
-            .try_acquire_lock(transaction_id)
-            .await
-            .map_err(|e| match e {
+                let acquired = match job.queue_lease() {
+                    Some(lease) => {
+                        self.storage
+                            .try_acquire_lock_with_lease(transaction_id, lease)
+                            .await
+                    }
+                    None => self.storage.try_acquire_lock(transaction_id).await,
+                };
+                let lock = acquired.map_err(|e| match e {
                 LockError::AlreadyLocked => {
                     info!(transaction_id = %transaction_id, "Another worker holds lock, nacking");
                     SolanaExecutorError::LockHeldByAnotherWorker
                         .nack(Some(CONFIRMATION_RETRY_DELAY), RequeuePosition::Last)
                 }
+                LockError::QueueLeaseLost => SolanaExecutorError::LockLost
+                    .nack(Some(CONFIRMATION_RETRY_DELAY), RequeuePosition::Last),
                 LockError::RedisError(msg) => {
                     // An unavailable store says nothing about a prior broadcast's outcome.
                     // Requeue before creating an RPC client or touching the chain.
@@ -832,7 +839,7 @@ impl SolanaExecutorJobHandler {
                     .map_err(|e| self.rpc_error(&e, chain_id_str.as_str()))?;
                 (hash, Some(height))
             }
-            SolanaTransactionInput::Serialized(_) => (solana_sdk::hash::Hash::default(), None),
+            SolanaTransactionInput::Serialized(_) => (solana_hash::Hash::default(), None),
         };
 
         // Build transaction - handle execution options differently for instructions vs serialized

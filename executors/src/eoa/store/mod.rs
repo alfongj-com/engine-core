@@ -18,9 +18,10 @@ mod pending;
 mod submitted;
 
 pub mod hydrate;
+mod rebuild;
 
 pub mod error;
-pub use atomic::AtomicEoaExecutorStore;
+pub use atomic::{AtomicEoaExecutorStore, PendingFailureReport};
 pub use borrowed::{BorrowedProcessingReport, SubmissionResult, SubmissionResultType};
 pub use submitted::{
     CleanupReport, SubmittedNoopTransaction, SubmittedTransaction, SubmittedTransactionDehydrated,
@@ -425,6 +426,15 @@ pub struct EoaExecutorCounts {
     pub recycled_nonces: u64,
 }
 
+/// Work still waiting for canonical nonce progress. Included attempts retained
+/// for finality are deliberately excluded from the submitted counts.
+pub(crate) struct NonceWorkCounts {
+    pub pending: u64,
+    pub borrowed: u64,
+    pub unmined_attempts: u64,
+    pub current_nonce_attempts: u64,
+}
+
 impl EoaExecutorStore {
     /// Aggressively acquire EOA lock, forcefully taking over from stalled workers
     ///
@@ -620,6 +630,30 @@ impl EoaExecutorStore {
             submitted_transactions: counts.1,
             borrowed_transactions: counts.2,
             recycled_nonces: counts.3,
+        })
+    }
+
+    pub(crate) async fn get_nonce_work_counts(
+        &self,
+        latest: u64,
+    ) -> Result<NonceWorkCounts, TransactionStoreError> {
+        let mut conn = self.redis.clone();
+        let (pending, borrowed, unmined_attempts, current_nonce_attempts) = measure_eoa(
+            self.chain_id,
+            ExecutorOperation::RedisCounts,
+            twmq::redis::pipe()
+                .zcard(self.pending_transactions_zset_name())
+                .hlen(self.borrowed_transactions_hashmap_name())
+                .zcount(self.submitted_transactions_zset_name(), latest, "+inf")
+                .zcount(self.submitted_transactions_zset_name(), latest, latest)
+                .query_async(&mut conn),
+        )
+        .await?;
+        Ok(NonceWorkCounts {
+            pending,
+            borrowed,
+            unmined_attempts,
+            current_nonce_attempts,
         })
     }
 

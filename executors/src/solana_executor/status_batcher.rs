@@ -125,7 +125,7 @@ fn eligible_signature(request: &RpcRequest, params: &Value) -> Option<String> {
     let signature = signatures[0].as_str()?;
     // Bound queued input even for direct callers of the sender trait. The SDK
     // supplies validated signatures; invalid direct requests pass through.
-    signature.parse::<solana_sdk::signature::Signature>().ok()?;
+    signature.parse::<solana_signature::Signature>().ok()?;
     Some(signature.to_owned())
 }
 

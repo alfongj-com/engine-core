@@ -24,6 +24,8 @@ decision, not a claim that Lean cannot verify systems code.
 | EVM recovery | One intent per active nonce; crash retains attempts; absent receipts cannot cause a second execution; reverted receipt is failure | [EVM model](eoa.md) |
 | EVM allocator cleanup | Old retained receipts cannot rewind allocation below observed consumed count; outstanding reservations stay below the next nonce | [Allocator model](nonce-allocator.md) |
 | Solana recovery | Persist before send; retries keep signed identity; expiry/absence preserves evidence; fenced cleanup; exact journal-wire restoration with cumulative recovery grants | [Solana worker model](solana.md), [retained-attempt model](retained-solana.md) |
+| Solana processing ownership | Stale queue owners cannot mutate attempts; live locks cannot be stolen; dead-owner takeover is reachable | [Processing-lock design](../docs/design/solana-processing-locks.md); new-format locks, atomic Redis abstraction |
+| Durable cancellation | Unsigned cancellation and broadcast reservation share one authority transaction | `IntentCancellation`; caller survival and publication remain executable obligations |
 | Redis admission projection | Immutable request per retained Redis ID; atomic identity/queue admission; active identity survives cancellation; finite Redis retention boundary | [Admission model](admission.md); the server's independent journal adds longer-lived identity protection |
 | Finality | Provisional inclusion, orphaning and re-inclusion; both success and revert wait for canonical finality evidence | [Finality model](finality.md); honest RPC/stable consensus assumptions, explicit depth and catastrophic boundaries |
 | Depth checkpoint continuity | A shallow tip reorg above the qualified boundary must not halt; a qualified-boundary contradiction must halt | [Depth checkpoint model](depth-checkpoint.md); one checkpoint, explicit rollback boundary |
@@ -42,9 +44,11 @@ authoritative local ledger is retained**. Rolling back/copying that authority
 remains an explicit failure boundary. These separate models are not a
 machine-checked proof of their composition.
 
-The manifest contains **100 configurations**, including 25 focused checkpoint
-publication cases and 14 retained-Solana cases. Each positive configuration exhausts its declared finite
-bounds; each fault or reachability case must produce its named counterexample.
+The [manifest](models.json) defines the required configurations; each report
+records its exact case count. Each positive configuration exhausts its declared
+finite bounds; each fault or reachability case must produce its named counterexample.
+The [unsigned EOA failure model](eoa-preparation-failure.md) includes crash/rebuild
+recovery, competing broadcast authority and negative resurrection witnesses.
 [Historical evidence](https://github.com/alfongj-com/engine-core/blob/load-tests/formal/evidence/README.md)
 retains earlier source scopes. The [PR handoff](../WORK_IN_PROGRESS.md) identifies
 the current validation and measured results. No model proves a TPS target or
@@ -55,6 +59,10 @@ composes automatically into a whole-service proof.
 Requires Python 3.9+, Java 11+, and Kani 0.68.0 for the Rust checks. TLC 1.7.4 is
 downloaded from its official release and checked against a pinned SHA-256. Set
 `JAVA` or `TLA_JAR` to use existing installations; the jar digest is still enforced.
+The [download helper](download.py) puts network work in a child process so one
+deadline covers DNS, connections, slow headers, redirects, retries and the body.
+On timeout or interruption it kills and reaps the child and removes staging;
+only verified bytes replace the destination after successful completion.
 
 ```sh
 python3 -m unittest discover -s formal -p 'test_*.py' -v

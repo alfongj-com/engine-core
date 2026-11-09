@@ -12,7 +12,6 @@ use engine_core::{
     },
     transaction::InnerTransaction,
 };
-use futures::future::join_all;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use thirdweb_core::auth::ThirdwebAuth;
@@ -54,6 +53,7 @@ pub struct WriteContractRequest {
     ///
     /// All calls will be executed in a single transaction if possible,
     /// or as separate transactions if atomic batching is not supported
+    #[schema(max_items = 100)]
     pub params: Vec<ContractWrite>,
 
     #[serde(default)]
@@ -103,6 +103,7 @@ pub async fn write_contract(
     SigningCredentialsExtractor(signing_credential): SigningCredentialsExtractor,
     Json(request): Json<WriteContractRequest>,
 ) -> Result<impl IntoResponse, ApiEngineError> {
+    crate::batch::validate_size(request.params.len())?;
     state
         .execution_router
         .validate_webhooks(&request.webhook_options)?;
@@ -122,7 +123,7 @@ pub async fn write_contract(
         "Processing contract write request"
     );
 
-    // Prepare all contract calls in parallel
+    // Prepare a bounded batch in input order
     let prepare_futures = request.params.iter().map(|contract_write| {
         contract_write
             .contract_call
@@ -130,7 +131,7 @@ pub async fn write_contract(
     });
 
     let preparation_results: Vec<ContractOperationResult<PreparedContractCall>> =
-        join_all(prepare_futures).await;
+        crate::batch::collect(prepare_futures.collect()).await;
 
     // Convert successful preparations to InnerTransactions
     let mut inner_transactions = Vec::new();

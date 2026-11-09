@@ -30,6 +30,23 @@ def provenance(binary, source_commit, harness):
             "process_helper_sha256": file_hash(__file__)}
 
 
+def require_resume_provenance(saved, current):
+    """Resume the recorded experiment, without silently relabeling its code.
+
+    The source commit is an optional caller declaration, not build attestation.
+    A null declaration stays unknown; the exact binary digest and harness pins
+    remain mandatory. Source-specific qualification must supply its build commit.
+    """
+    fields = ("engine_binary_path", "engine_binary_sha256", "declared_binary_source_commit",
+              "harness_source_commit", "harness_sha256", "process_helper_sha256")
+    if not isinstance(saved, dict) or any(field not in saved for field in fields):
+        raise RuntimeError("Resume provenance is missing or incomplete; use the recorded checkout and binary")
+    changed = [field for field in fields if saved[field] != current[field]]
+    if changed:
+        raise RuntimeError("Resume provenance changed (" + ", ".join(changed) +
+                           "); use the recorded checkout and binary; do not rewrite the saved manifest")
+
+
 def pinned_binary(evidence):
     path = Path(evidence["engine_binary_path"])
     if file_hash(path) != evidence["engine_binary_sha256"]:

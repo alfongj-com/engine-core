@@ -19,7 +19,6 @@ use engine_core::{
     defs::AddressDef,
     error::{AlloyRpcErrorToEngineError, EngineError},
 };
-use futures::future::join_all;
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::Value as JsonValue;
 use serde_with::{DisplayFromStr, PickFirst, serde_as};
@@ -179,6 +178,7 @@ pub struct ReadRequest {
     /// List of contract function calls to execute
     ///
     /// All calls will be batched together using Multicall3 for efficiency
+    #[schema(max_items = 100)]
     pub params: Vec<ContractCall>,
 }
 
@@ -224,6 +224,7 @@ pub async fn read_contract(
     OptionalRpcCredentialsExtractor(rpc_credentials): OptionalRpcCredentialsExtractor,
     EngineJson(request): EngineJson<ReadRequest>,
 ) -> Result<impl IntoResponse, ApiEngineError> {
+    crate::batch::validate_size(request.params.len())?;
     if state.chains.is_configured(request.read_options.chain_id)
         && !matches!(
             rpc_credentials,
@@ -243,7 +244,7 @@ pub async fn read_contract(
 
     let chain = state.chains.get_chain(chain_id).api_error()?;
 
-    // Prepare all contract calls in parallel
+    // Prepare a bounded batch in input order
     let prepare_futures = request.params.iter().map(|contract_read| {
         contract_read.prepare_call_with_error_tracking(
             &state.abi_service,
@@ -253,7 +254,7 @@ pub async fn read_contract(
     });
 
     let preparation_results: Vec<ContractOperationResult<PreparedContractCall>> =
-        join_all(prepare_futures).await;
+        crate::batch::collect(prepare_futures.collect()).await;
 
     // Determine execution strategy and execute
     let results =

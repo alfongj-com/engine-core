@@ -66,6 +66,16 @@ pub struct AtomicEoaExecutorStore {
     pub(super) transaction_connection: tokio::sync::Mutex<MultiplexedConnection>,
 }
 
+/// Published failures, removed terminal scheduling and retained entries.
+/// A healthy refusal of one intent must not block another intent's cleanup.
+#[derive(Debug, Default, PartialEq, Eq)]
+pub struct PendingFailureReport {
+    pub published: usize,
+    /// Removed only stale pending membership for an exact already-terminal ID.
+    pub terminal_cleanup: usize,
+    pub retained: usize,
+}
+
 impl std::ops::Deref for AtomicEoaExecutorStore {
     type Target = EoaExecutorStore;
 
@@ -631,21 +641,125 @@ impl AtomicEoaExecutorStore {
         pending_transaction: &PendingTransaction,
         error: EoaExecutorWorkerError,
         webhook_queue: Arc<twmq::Queue<WebhookJobHandler>>,
-    ) -> Result<(), TransactionStoreError> {
+    ) -> Result<PendingFailureReport, TransactionStoreError> {
         self.fail_pending_transactions_batch(vec![(pending_transaction, error)], webhook_queue)
             .await
     }
 
-    /// Fail multiple transactions that are in the pending state in a single batch operation
-    /// This is more efficient than calling fail_pending_transaction multiple times
-    /// when there are many failures at once
+    /// Publish only entries with durable failure authority in one fenced Redis
+    /// operation. Exact terminal entries get scheduler-only cleanup; nonterminal
+    /// refusals/retryable entries stay untouched. Global journal, storage or owner
+    /// failures still abort. The report counts only committed Redis effects.
     pub async fn fail_pending_transactions_batch(
         &self,
-        failures: Vec<(&PendingTransaction, EoaExecutorWorkerError)>,
+        mut failures: Vec<(&PendingTransaction, EoaExecutorWorkerError)>,
         webhook_queue: Arc<twmq::Queue<WebhookJobHandler>>,
-    ) -> Result<(), TransactionStoreError> {
+    ) -> Result<PendingFailureReport, TransactionStoreError> {
         if failures.is_empty() {
-            return Ok(());
+            return Ok(PendingFailureReport::default());
+        }
+
+        let requested = failures.len();
+        self.ensure_eoa_lock_owned().await?;
+        let mut terminal_cleanup = Vec::new();
+        if let Some(journal) = engine_core::recovery::global() {
+            journal.ensure_healthy().await.map_err(|error| {
+                TransactionStoreError::InternalError {
+                    message: error.to_string(),
+                }
+            })?;
+            let mut eligible = Vec::with_capacity(failures.len());
+            for (pending, error) in failures {
+                // A retained failure is an irreversible decision. Retryable or
+                // post-dispatch errors cannot authorize it, including HTTP
+                // throttling on binaries predating the classifier correction.
+                let transient_http = matches!(
+                    &error,
+                    EoaExecutorWorkerError::RpcError {
+                        inner_error: engine_core::error::EngineError::RpcError {
+                            kind: engine_core::error::RpcErrorKind::TransportHttpError {
+                                status: 408 | 429,
+                                ..
+                            },
+                            ..
+                        },
+                        ..
+                    }
+                );
+                if transient_http
+                    || crate::eoa::worker::error::is_retryable_preparation_error(&error)
+                {
+                    continue;
+                }
+                // Missing/foreign IDs are per-intent refusals, not storage or
+                // deployment failures. Admissions never disappear while this
+                // journal owner is live; the mutation below rechecks identity
+                // and authority under its own serialized FULL transaction.
+                match journal.admission("eoa", &pending.transaction_id).await {
+                    Ok(Some(_)) => {}
+                    Ok(None) | Err(engine_core::recovery::RecoveryError::Conflict) => continue,
+                    Err(error) => {
+                        return Err(TransactionStoreError::InternalError {
+                            message: error.to_string(),
+                        });
+                    }
+                }
+                self.ensure_eoa_lock_owned().await?;
+                let payload = serde_json::to_value(&pending.user_request)?;
+                let retained = match journal
+                    .record_eoa_preparation_failure(
+                        &pending.transaction_id,
+                        &payload,
+                        serde_json::to_value(&error)?,
+                    )
+                    .await
+                {
+                    Ok(Some(error)) => error,
+                    Ok(None) => {
+                        // This mutation already checked the exact original
+                        // payload. Terminal authority is immutable; only its
+                        // stale scheduler membership may be removed, with no
+                        // replacement failure/status/TTL/webhook publication.
+                        let record = journal
+                            .admission("eoa", &pending.transaction_id)
+                            .await
+                            .map_err(|error| TransactionStoreError::InternalError {
+                                message: error.to_string(),
+                            })?;
+                        if record.is_some_and(|record| {
+                            record.state == engine_core::recovery::AdmissionState::Terminal
+                                && record.payload == payload
+                        }) {
+                            terminal_cleanup.push(pending.transaction_id.as_str());
+                        }
+                        continue;
+                    }
+                    Err(engine_core::recovery::RecoveryError::Conflict) => continue,
+                    Err(error) => {
+                        return Err(TransactionStoreError::InternalError {
+                            message: error.to_string(),
+                        });
+                    }
+                };
+                self.ensure_eoa_lock_owned().await?;
+                // The first committed failure, not a later cleanup error, is
+                // the notification/status authority after a process crash.
+                eligible.push((pending, serde_json::from_value(retained)?));
+            }
+            failures = eligible;
+            journal.ensure_healthy().await.map_err(|error| {
+                TransactionStoreError::InternalError {
+                    message: error.to_string(),
+                }
+            })?;
+        }
+        let report = PendingFailureReport {
+            published: failures.len(),
+            terminal_cleanup: terminal_cleanup.len(),
+            retained: requested - failures.len() - terminal_cleanup.len(),
+        };
+        if report.published + report.terminal_cleanup == 0 {
+            return Ok(report);
         }
 
         let mut pipeline = twmq::redis::pipe();
@@ -658,6 +772,7 @@ impl AtomicEoaExecutorStore {
         let transaction_ids: Vec<&str> = failures
             .iter()
             .map(|(p, _)| p.transaction_id.as_str())
+            .chain(terminal_cleanup)
             .collect();
         pipeline.zrem(&pending_key, &transaction_ids);
 
@@ -704,7 +819,7 @@ impl AtomicEoaExecutorStore {
             }
         }
 
-        self.execute_with_watch_and_retry(&FailPendingTransactions {
+        self.execute_with_watch_and_retry(&CommitPendingCleanup {
             keys: &self.keys,
             transaction_ids,
             pipeline,
@@ -712,15 +827,16 @@ impl AtomicEoaExecutorStore {
         .await?;
 
         tracing::info!(
-            count = failures.len(),
+            published = report.published,
+            terminal_cleanup = report.terminal_cleanup,
+            retained = report.retained,
             eoa = ?self.eoa(),
             chain_id = self.chain_id(),
             worker_id = %self.worker_id(),
-            "JOB_LIFECYCLE - Batch deleted {} failed pending transactions from EOA",
-            failures.len()
+            "JOB_LIFECYCLE - Committed pending failure and terminal scheduling cleanup"
         );
 
-        Ok(())
+        Ok(report)
     }
 
     pub async fn clean_submitted_transactions(
@@ -884,18 +1000,18 @@ impl SafeRedisTransaction for ResetNoncesTransaction<'_> {
 
 /// Failing a pending request must not overwrite a reservation created while RPC
 /// preparation was in flight. Membership and the owner token are checked together.
-struct FailPendingTransactions<'a> {
+struct CommitPendingCleanup<'a> {
     keys: &'a EoaExecutorStoreKeys,
     transaction_ids: Vec<&'a str>,
     pipeline: Pipeline,
 }
 
-impl SafeRedisTransaction for FailPendingTransactions<'_> {
+impl SafeRedisTransaction for CommitPendingCleanup<'_> {
     type ValidationData = ();
     type OperationResult = ();
 
     fn name(&self) -> &str {
-        "fail pending transactions"
+        "publish pending failures and remove terminal scheduling"
     }
 
     fn watch_keys(&self) -> Vec<String> {

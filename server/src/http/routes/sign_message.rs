@@ -11,7 +11,6 @@ use engine_core::{
     error::EngineError,
     signer::{AccountSigner, SigningOptions},
 };
-use futures::future::join_all;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -49,6 +48,7 @@ pub struct SignMessageRequest {
     /// Configuration options for signing
     pub signing_options: SigningOptions,
     /// List of messages to sign
+    #[schema(max_items = 100)]
     pub params: Vec<MessageInput>,
 }
 
@@ -88,7 +88,8 @@ pub async fn sign_message(
     SigningCredentialsExtractor(signing_credential): SigningCredentialsExtractor,
     EngineJson(request): EngineJson<SignMessageRequest>,
 ) -> Result<impl IntoResponse, ApiEngineError> {
-    // Process all messages in parallel
+    crate::batch::validate_size(request.params.len())?;
+    // Process a bounded batch in input order
     let sign_futures = request.params.iter().map(|message_input| {
         sign_single_message(
             &state,
@@ -98,7 +99,8 @@ pub async fn sign_message(
         )
     });
 
-    let results: Vec<BatchResultItem<SignResultData>> = join_all(sign_futures).await;
+    let results: Vec<BatchResultItem<SignResultData>> =
+        crate::batch::collect(sign_futures.collect()).await;
 
     Ok((StatusCode::OK, Json(BatchResults { result: results })))
 }

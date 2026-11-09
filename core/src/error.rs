@@ -8,7 +8,7 @@ use alloy::{
     },
 };
 use alloy_signer_aws::AwsSignerError;
-use aws_sdk_kms::error::SdkError;
+use aws_sdk_kms::error::{ProvideErrorMetadata, SdkError};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use thirdweb_core::error::ThirdwebError;
@@ -344,10 +344,7 @@ pub enum EngineError {
     #[schema(title = "AWS KMS Error")]
     #[error(transparent)]
     #[serde(rename_all = "camelCase")]
-    AwsKmsSignerError {
-        #[serde(flatten)]
-        error: SerialisableAwsSignerError,
-    },
+    AwsKmsSignerError { error: SerialisableAwsSignerError },
 
     #[schema(title = "Engine Internal Error")]
     #[error("Internal error: {message}")]
@@ -364,6 +361,16 @@ pub enum EngineError {
     #[schema(title = "Recovery Publication Pending")]
     #[error("Recovery publication pending: {message}")]
     RecoveryPending { message: String },
+
+    /// The journal has retained the intent, but queue publication is incomplete.
+    /// The same ID may execute through recovery; clients must not create a new ID.
+    #[schema(title = "Durable Admission Pending")]
+    #[error("Durable admission pending for {transaction_id}: {message}")]
+    AdmissionPending {
+        #[serde(rename = "transactionId")]
+        transaction_id: String,
+        message: String,
+    },
 }
 
 #[derive(thiserror::Error, Debug, Serialize, Clone, Deserialize, utoipa::ToSchema)]
@@ -389,7 +396,15 @@ pub enum SerialisableAwsSdkError {
 
     /// An error response was received from the service
     #[error("Service error: {message}")]
-    ServiceError { message: String },
+    ServiceError {
+        message: String,
+        /// SDK-parsed service code; absent in older retained errors.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        code: Option<String>,
+        /// Status from the same SDK response, never inferred from message text.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        http_status: Option<u16>,
+    },
 
     #[error("Other error: {message}")]
     Other { message: String },
@@ -437,7 +452,7 @@ pub enum SerialisableAwsSignerError {
     SignatureRecoveryFailed,
 }
 
-impl<T: Debug> From<SdkError<T>> for SerialisableAwsSdkError {
+impl<T: Debug + ProvideErrorMetadata> From<SdkError<T>> for SerialisableAwsSdkError {
     fn from(err: SdkError<T>) -> Self {
         match err {
             SdkError::ConstructionFailure(err) => SerialisableAwsSdkError::ConstructionFailure {
@@ -454,10 +469,90 @@ impl<T: Debug> From<SdkError<T>> for SerialisableAwsSdkError {
             },
             SdkError::ServiceError(err) => SerialisableAwsSdkError::ServiceError {
                 message: format!("{err:?}"),
+                code: err.err().code().map(str::to_owned),
+                http_status: Some(err.raw().status().as_u16()),
             },
             _ => SerialisableAwsSdkError::Other {
                 message: format!("{err:?}"),
             },
+        }
+    }
+}
+
+#[cfg(test)]
+mod kms_error_serialization_tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn retained_service_errors_without_metadata_remain_readable() {
+        let retained = json!({
+            "type": "SIGN",
+            "aws_sdk_error": {
+                "type": "SERVICE_ERROR",
+                "message": "retained before service metadata was recorded"
+            }
+        });
+        let error: SerialisableAwsSignerError = serde_json::from_value(retained.clone()).unwrap();
+        assert!(matches!(
+            &error,
+            SerialisableAwsSignerError::Sign {
+                aws_sdk_error: SerialisableAwsSdkError::ServiceError {
+                    code: None,
+                    http_status: None,
+                    ..
+                }
+            }
+        ));
+        assert_eq!(serde_json::to_value(error).unwrap(), retained);
+    }
+
+    #[test]
+    fn service_metadata_survives_retained_error_round_trip() {
+        for (code, status) in [
+            (Some("AccessDeniedException"), Some(403)),
+            (Some("KMSInternalException"), Some(503)),
+            (Some("FutureKmsError"), None),
+            (None, Some(400)),
+        ] {
+            let error = SerialisableAwsSdkError::ServiceError {
+                message: "message deliberately carries no classification".into(),
+                code: code.map(str::to_owned),
+                http_status: status,
+            };
+            let serialized = serde_json::to_value(error).unwrap();
+            let restored: SerialisableAwsSdkError =
+                serde_json::from_value(serialized.clone()).unwrap();
+            assert_eq!(serde_json::to_value(restored).unwrap(), serialized);
+        }
+    }
+
+    #[test]
+    fn engine_kms_error_keeps_outer_and_inner_discriminators() {
+        for error in [
+            SerialisableAwsSignerError::Sign {
+                aws_sdk_error: SerialisableAwsSdkError::ServiceError {
+                    message: "denied".into(),
+                    code: Some("AccessDeniedException".into()),
+                    http_status: Some(403),
+                },
+            },
+            SerialisableAwsSignerError::GetPublicKey {
+                aws_sdk_error: SerialisableAwsSdkError::ServiceError {
+                    message: "old service error without metadata".into(),
+                    code: None,
+                    http_status: None,
+                },
+            },
+            SerialisableAwsSignerError::SignatureRecoveryFailed,
+        ] {
+            let inner = serde_json::to_value(&error).unwrap();
+            let serialized =
+                serde_json::to_value(EngineError::AwsKmsSignerError { error }).unwrap();
+            assert_eq!(serialized["type"], "AWS_KMS_SIGNER_ERROR");
+            assert_eq!(serialized["error"], inner);
+            let restored: EngineError = serde_json::from_value(serialized.clone()).unwrap();
+            assert_eq!(serde_json::to_value(restored).unwrap(), serialized);
         }
     }
 }

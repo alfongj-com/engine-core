@@ -15,7 +15,7 @@ import subprocess
 import sys
 import tempfile
 import time
-import urllib.request
+from download import download
 
 ROOT = Path(__file__).resolve().parent.parent
 HERE = ROOT / "formal"
@@ -31,16 +31,7 @@ def sha256(path):
 def tlc_jar():
     path = Path(os.environ.get("TLA_JAR", HERE / ".cache" / f"tla2tools-{TLC_VERSION}.jar"))
     if not path.exists():
-        path.parent.mkdir(parents=True, exist_ok=True)
-        # Validate before publishing a cache entry; interrupted downloads cannot
-        # masquerade as a verified tool on the next invocation.
-        with urllib.request.urlopen(TLC_URL, timeout=60) as response:
-            data = response.read(16 * 1024 * 1024)
-        if hashlib.sha256(data).hexdigest() != TLC_SHA256:
-            raise RuntimeError("Downloaded TLC checksum does not match the pinned release")
-        temporary = path.with_suffix(".download")
-        temporary.write_bytes(data)
-        temporary.replace(path)
+        download(TLC_URL, TLC_SHA256, path, max_bytes=16 * 1024 * 1024)
     if sha256(path) != TLC_SHA256:
         raise RuntimeError(f"TLC checksum mismatch: {path}")
     return path.resolve()
