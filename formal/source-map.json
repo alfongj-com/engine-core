@@ -41,7 +41,7 @@
     },
     {
       "path": "core/src/recovery.rs",
-      "sha256": "0cd0ce755626fca0d8225af7ff3b9d880efb9ca26edfd52e88777e0e895c9b89",
+      "sha256": "9fef4e3787e54d3b9208dfc9061326db34c917e5ad4b728548989f96020c676a",
       "models": [
         "DisasterRecovery",
         "Finality",
@@ -67,7 +67,7 @@
         "DisasterRecoveryProjection",
         "SolanaRetainedAttempt"
       ],
-      "sha256": "2829c6523f39939a363c6e8a399c08f5548fbabe939f2fe074ca687f5fd74c92"
+      "sha256": "542c2eb184c73311388eb808bf608a8208883bd34835c7fc10d181b2821e5962"
     },
     {
       "path": "core/src/recovery/history_index_tests.rs",
@@ -443,7 +443,7 @@
     },
     {
       "path": "server/src/bin/engine-recovery.rs",
-      "sha256": "61e8e345bd4c987188138d98166f1193cb3880e09c19985770eaf638cfceeaa7",
+      "sha256": "6735e363437738bab7e68dd4a482433594920c91020459989575acc05a477e4f",
       "models": [
         "DisasterRecovery"
       ]
@@ -786,6 +786,13 @@
       "models": [
         "EoaRecovery"
       ]
+    },
+    {
+      "path": "core/src/recovery/maintenance.rs",
+      "sha256": "49a2ce3b6f59f123e3102ed2b3b384b57bfb3145ddf3d2b1149217def39ab2f2",
+      "models": [
+        "DisasterRecovery"
+      ]
     }
   ],
   "review": {
@@ -1069,6 +1076,10 @@
     "submitted_id_encoding": {
       "decision": "Preserve ordinary/legacy members; tag and hex-encode IDs containing colon.",
       "reason": "The submitted index previously silently omitted these accepted IDs. The encoding maps to the same ID/hash/nonce model values; normal and supported legacy strings remain byte-identical. Canonical decoding is required for exact cleanup. Round-trip tests cover colon/Unicode IDs, legacy rows, malformed/noncanonical hex and cleanup identity. No claim of parsing ambiguous malformed historical colon members."
+    },
+    "physical_journal_maintenance": {
+      "decision": "Permanent logical retention; verified offline SQLite snapshot/compaction without new authority state or schema.",
+      "reason": "The exclusive owner lock excludes serving workers. Unhalted current-schema/no-pending preconditions prevent maintenance from acknowledging checkpoints or clearing incidents. A private no-overwrite SQLite snapshot is checked against a bounded-row-memory digest of every table/value including recovery events and sqlite_sequence before publication. Source VACUUM must preserve that digest and the full control identity; failed verification latches a durable halt. WAL checkpoint/truncation reports busy readers rather than resetting continuity. Normal startup/admission/broadcast paths do not invoke maintenance. This physical operation stutters over DisasterRecovery logical state; SQLite atomicity, filesystem sync/power loss and the correctness/collision resistance of the digest are assumptions, not proved implementation refinement. Real SQLite/Redis tests check retained rows, export identity, private publication, actual free-page reclamation, restart/dedup/replay fences and owner/halt/pending/output rejection. Lifetime growth and permanent sensitive payload retention remain explicit contract limits."
     }
   }
 }
