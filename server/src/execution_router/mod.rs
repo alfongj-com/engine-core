@@ -231,10 +231,20 @@ impl ExecutionRouter {
         // Create job with transaction ID as the job ID for idempotency
         self.external_bundler_send_queue
             .clone()
-            .job(job_data)
+            .job(job_data.clone())
             .with_id(&base_execution_options.idempotency_key)
             .push()
             .await?;
+
+        if let Some(journal) = engine_core::recovery::global() {
+            reconcile_external_bundler_enqueue(
+                &self.external_bundler_send_queue,
+                &self.transaction_registry,
+                &journal,
+                &job_data,
+            )
+            .await?;
+        }
 
         tracing::debug!(
             transaction_id = base_execution_options.idempotency_key,
@@ -611,6 +621,39 @@ fn validate_execution_request(request: &SendTransactionRequest) -> Result<(), En
     }
     Ok(())
 }
+
+/// Cancellation can commit between registry publication and queue insertion.
+/// Recheck after insertion so that intake cannot report acceptance of a job
+/// already revoked at that point. A worker handles a crash before this cleanup.
+async fn reconcile_external_bundler_enqueue<H>(
+    queue: &Arc<Queue<H>>,
+    registry: &TransactionRegistry,
+    journal: &Arc<engine_core::recovery::RecoveryJournal>,
+    data: &ExternalBundlerSendJobData,
+) -> Result<(), EngineError>
+where
+    H: twmq::DurableExecution<JobData = ExternalBundlerSendJobData>,
+{
+    let payload = serde_json::to_value(data).map_err(|_| EngineError::InternalError {
+        message: "Cannot encode recovery payload".into(),
+    })?;
+    if !journal
+        .cancelled_unbroadcast_payload(&data.transaction_id, &payload)
+        .await
+        .map_err(crate::recovery::recovery_error)?
+    {
+        return Ok(());
+    }
+    queue.cancel_job(&data.transaction_id).await?;
+    registry.remove_transaction(&data.transaction_id).await?;
+    Err(EngineError::ValidationError {
+        message: "Transaction was cancelled before intake completed".into(),
+    })
+}
+
+#[cfg(test)]
+#[path = "cancellation_tests.rs"]
+mod cancellation_tests;
 
 #[cfg(test)]
 mod request_validation_tests {

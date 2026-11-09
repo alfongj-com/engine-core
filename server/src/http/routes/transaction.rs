@@ -99,7 +99,10 @@ pub async fn cancel_transaction(
                 .await
                 .map_err(|e| ApiEngineError(TwmqError::into(e)))?
             {
-                TwmqCancelResult::CancelledImmediately => {
+                TwmqCancelResult::CancelledImmediately | TwmqCancelResult::NotFound => {
+                    // The journal already committed revocation. Missing Redis
+                    // work (including the intake-before-push window) does not
+                    // make that durable cancellation unsuccessful.
                     // Remove from registry since it's cancelled
                     state
                         .queue_manager
@@ -122,14 +125,6 @@ pub async fn cancel_transaction(
                     );
 
                     CancelResult::CancellationPending
-                }
-                TwmqCancelResult::NotFound => {
-                    tracing::warn!(
-                        transaction_id = transaction_id,
-                        "Transaction not found in send queue"
-                    );
-
-                    CancelResult::NotFound
                 }
             }
         }
