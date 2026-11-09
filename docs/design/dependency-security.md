@@ -10,13 +10,27 @@ Until upstream releases compatible fixes, pin these small compatibility forks:
 
 - [Alloy patch](https://github.com/alfongj-com/alloy/compare/v1.8.3...12003e896f89eb9c9263102a5d7c9ec58fb113b9):
   dependency/API migration; current LRU; remove unsupported Turnkey/YubiHSM
-  feature graphs. Neither backend is exposed by Engine.
+  feature graphs. Neither backend is exposed by Engine. The compatibility changes
+  also adapt low-S normalization to the new return type, parse Anvil keys with
+  `from_slice`, and preserve the rand 0.8 API by rejection-sampling 32-byte keys
+  with the caller's CSPRNG and zeroizing temporary bytes. They do not use modulo
+  reduction or change signing bytes for existing keys.
 - [Alloy primitives patch](https://github.com/alfongj-com/alloy-core/compare/v1.7.3...36b85284347fcc45158f120e201492d3634acde8):
   k256 dependency and SEC1 point-trait rename, following upstream core PR #1147.
 
 No local cryptographic arithmetic, advisory exceptions or version disguises.
 Solana uses the same modular host-side types directly; the broad SDK's unused
 on-chain secp256k1 recovery no longer enters the dependency graph.
+
+Full commit pins protect source identity, not hosting availability. Production
+builds must retain their verified dependency sources in a mirror or vendor
+snapshot with `Cargo.lock`. `cargo vendor --locked --versioned-dirs` supplies the
+source configuration; verify that snapshot with an offline `cargo build --frozen`
+before retaining it as a build artifact. Discovery tags must never replace the
+full `rev` pins. Both forks have an `engine-security-2026-11-08` discovery tag;
+complete Git source bundles for the pinned revisions are retained with the local
+review evidence independently of GitHub. Unused GCP signer features add lockfile
+entries without compiling them; they remain outside Engine's qualified backends.
 
 ## Compatibility and removal
 
