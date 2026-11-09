@@ -20,6 +20,7 @@ use thirdweb_engine::{
 };
 use tracing_subscriber::{filter::EnvFilter, layer::SubscriberExt, util::SubscriberInitExt};
 
+mod queue_rebuild;
 mod shutdown;
 
 #[tokio::main]
@@ -84,9 +85,10 @@ async fn main() -> anyhow::Result<()> {
         println!("Fresh Redis namespace activated; uncertain broadcasts remain quarantined.");
         return Ok(());
     }
+    let rebuild_queues = arguments.as_slice() == ["--rebuild-queues"];
     anyhow::ensure!(
-        arguments.is_empty(),
-        "Unknown command; expected --initialize-recovery, --reattach-recovery or --recover-redis"
+        arguments.is_empty() || rebuild_queues,
+        "Unknown command; expected --initialize-recovery, --reattach-recovery, --recover-redis or --rebuild-queues"
     );
     // Install the exported collectors before journal, queue, or executor work
     // can start. Timers retain the collector active when they are created.
@@ -179,6 +181,19 @@ async fn main() -> anyhow::Result<()> {
         "Queue manager initialized with queue config: {:?}",
         config.queue
     );
+
+    if rebuild_queues {
+        let report = queue_rebuild::rebuild(
+            &recovery,
+            &queue_manager,
+            config.queue.execution_namespace.clone(),
+            config.queue.completed_transaction_ttl_seconds,
+        )
+        .await?;
+        recovery.close_and_drain().await;
+        println!("{}", serde_json::to_string_pretty(&report)?);
+        return Ok(());
+    }
 
     let shutdown_signal = shutdown::ShutdownSignal::listen()?;
 

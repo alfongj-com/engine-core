@@ -133,7 +133,7 @@ pub(crate) async fn before_eoa(
         .map_err(eoa_journal_error)
 }
 
-fn validate_eoa_wire(
+pub(crate) fn validate_eoa_wire(
     request: &EoaTransactionRequest,
     tx: &Signed<TypedTransaction>,
 ) -> Result<(), EoaExecutorWorkerError> {

@@ -85,8 +85,11 @@ def main():
     mode.add_argument("--create", action="store_true", help="Deploy fixed contracts through Engine; verify predicted addresses, runtime, value and duplicate retries")
     parser.add_argument("--engine-bin", type=Path, default=ROOT / "target/debug/thirdweb-engine")
     parser.add_argument("--restart-engine-bin", type=Path, help="Restart with a different binary against the same journal and Redis state")
+    parser.add_argument("--rebuild-jobs-only", action="store_true", help="Rebuild only missing worker jobs; keep EOA intent/attempt projections")
+    parser.add_argument("--rebuild-queues", action="store_true", help="Delete stopped EOA projections/jobs, rebuild twice from the journal, then reconcile exact original hashes")
     parser.add_argument("--report", type=Path)
     args = parser.parse_args()
+    args.rebuild_queues = args.rebuild_queues or args.rebuild_jobs_only
     args.engine_bin = args.engine_bin.resolve(strict=True)
     args.restart_engine_bin = (args.restart_engine_bin or args.engine_bin).resolve(strict=True)
     for binary in (args.engine_bin, args.restart_engine_bin):
@@ -151,7 +154,7 @@ def main():
         subprocess.run([str(args.engine_bin), "--initialize-recovery"],
             cwd=ROOT / "server", env=env, check=True, capture_output=True)
         process = engine("engine-before.log", args.engine_bin)
-        payloads = [{"executionOptions": {"chainId": 31337, "type": "EOA", "from": FROM, "idempotencyKey": f"{run_id}-{i}"},
+        payloads = [{"executionOptions": {"chainId": 31337, "type": "EOA", "from": FROM, "idempotencyKey": f"{run_id}:invoice:{i}" if args.rebuild_queues else f"{run_id}-{i}"},
             "params": [{"to": TO, "value": "0x1", "data": "0x", "gasLimit": 40000 if args.revert else 21000}]} for i in range(args.transactions)]
         created_addresses = []
         if args.create:
@@ -189,10 +192,15 @@ def main():
         until(lambda: int(rpc(rpc_url, "eth_getTransactionCount", [FROM, "pending"]), 16) == args.transactions)
         assert int(rpc(rpc_url, "eth_getTransactionCount", [FROM, "latest"]), 16) == 0
         prior_hashes = None
-        if report["binary_upgrade"]:
+        if report["binary_upgrade"] or args.rebuild_queues:
             pending = rpc(rpc_url, "eth_getBlockByNumber", ["pending", True])
             prior_hashes = {tx["hash"].lower() for tx in pending["transactions"]}
             assert len(prior_hashes) == args.transactions
+        if args.rebuild_queues:
+            locked = subprocess.run([str(args.restart_engine_bin), "--rebuild-queues"],
+                cwd=ROOT / "server", env=env, capture_output=True, timeout=30)
+            assert locked.returncode != 0 and b"already owned" in locked.stderr
+            report["live_journal_owner_refused_rebuild"] = True
         if args.live_redis_restart:
             stop(redis_process, crash=True)
             def live_halted():
@@ -219,6 +227,22 @@ def main():
             until(lambda: subprocess.run([os.environ.get("REDIS_CLI_BIN", "redis-cli"), "-p", str(redis_port), "PING"], capture_output=True, text=True).stdout.strip() == "PONG")
             subprocess.run([str(args.restart_engine_bin), "--reattach-recovery"],
                 cwd=ROOT / "server", env=env, check=True, capture_output=True)
+        if args.rebuild_queues:
+            cli = [os.environ.get("REDIS_CLI_BIN", "redis-cli"), "-p", str(redis_port), "--json"]
+            removed = []
+            patterns = [f"twmq:{run_id}_eoa_executor:*"]
+            if not args.rebuild_jobs_only:
+                patterns.append(f"{run_id}:eoa_executor:*")
+            for pattern in patterns:
+                keys = json.loads(subprocess.check_output(cli + ["KEYS", pattern], text=True))
+                if keys:
+                    subprocess.run(cli + ["DEL"] + keys, check=True, capture_output=True)
+                    removed.extend(keys)
+            assert removed
+            for _ in range(2):
+                rebuilt = subprocess.run([str(args.restart_engine_bin), "--rebuild-queues"],
+                    cwd=ROOT / "server", env=env, check=True, capture_output=True)
+            report["missing_projection_rebuilt_twice"] = True
         process = engine("engine-after.log", args.restart_engine_bin)
         if args.live_redis_restart:
             with sqlite3.connect(f"file:{logs / 'recovery.sqlite'}?mode=ro", uri=True) as db:
