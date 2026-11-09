@@ -1,0 +1,18 @@
+{
+  "outcome": "pass",
+  "transactions": 4,
+  "binary_upgrade": true,
+  "redis_crash": true,
+  "contract_creation": true,
+  "original_intent_hash_bindings_verified": true,
+  "retained_transaction_hashes_verified": true,
+  "unique_chain_effects": 4,
+  "duplicate_chain_effects": 0,
+  "contract_creations": 4,
+  "unauthorized_requests_rejected": 2,
+  "elapsed_seconds": 7.975,
+  "engine_binary_sha256": "1ba58eb5d47a7772046fc85fdcd6ad744ab1b197cf03de56454bc57df89e111c",
+  "restart_engine_binary_sha256": "68066fe73c0c3fe6597f601f308b80f22a2c59667810359bcdf8454c486ffc1d",
+  "raw_report_sha256": "a240514e82784e2f2ac7a1a809a22eab51c0aeb8897c27d73d950a25eb6338a0",
+  "scope": "Loopback Anvil contract creation, old frozen runtime#10 to frozen runtime#17, Engine/Redis SIGKILL with AOF replay; harnessb66e883; no public-network or host-power-loss claim"
+}

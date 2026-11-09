@@ -1,49 +1,67 @@
 # To Alfonso
 
-Updated November 8, 2026. Code and reviewed evidence are saved locally and pushed.
+Updated November 9, 2026. No credentials are needed for the local tests.
 
-## PRs
+## Code and PRs
 
-Seven fixes are stacked on the open [PR #4](https://github.com/alfongj-com/engine-core/pull/4):
+The open stack is **[#21](https://github.com/alfongj-com/engine-core/pull/21) →
+[#18](https://github.com/alfongj-com/engine-core/pull/18) →
+[#19](https://github.com/alfongj-com/engine-core/pull/19)**.
 
-1. [#5](https://github.com/alfongj-com/engine-core/pull/5): EOA creation, legacy estimation and gas overflow.
-2. [#6](https://github.com/alfongj-com/engine-core/pull/6): cancellation/broadcast race.
-3. [#7](https://github.com/alfongj-com/engine-core/pull/7): bounded HTTP batches and signing/ABI work.
-4. [#8](https://github.com/alfongj-com/engine-core/pull/8): 11 compatible dependency security fixes.
-5. [#9](https://github.com/alfongj-com/engine-core/pull/9): native environment-key signing and upgrade checks.
-6. [#10](https://github.com/alfongj-com/engine-core/pull/10): Solana crash-lock recovery with stale-worker fencing, found during the final load test.
-7. [#11](https://github.com/alfongj-com/engine-core/pull/11): strict public-testnet resume provenance and wallet-lock cleanup.
+- **#21:** carries the earlier reviewed stack into `main` and fixes intake,
+  cancellation and journal/Redis recovery gaps. Earlier merges into stack
+  parents had not brought all of those changes into `main`.
+- **#18:** repeated Linux capacity searches, individual/shared-chain checks and
+  chaos tests, with explicit rate and duration limits.
+- **#19:** read-only reconciliation of interrupted public runs and retries for
+  throttled preparation. Temporary follow-up PRs #20/#22 are closed; their fixes
+  are in the owning PR or the base integration.
 
-Merge order: **#4 → #5 → #6 → #7 → #8 → #9 → #10 → #11**. No PR was merged in this review.
+Fixes go on their owning open PR; dependent PRs are rebased. This agent does not
+merge PRs.
 
-Code: **`/Users/alfongj/Code/engine-core-review-stack`**, branch
-**`pin-testnet-resume-provenance`**, commit **`8039b2d`**.
-Runtime source is **`4dadaf5`**; the last PR changes harnesses/tests/documentation only.
-README and `LOCAL_TESTING.md` contain setup, commands and another agent's prompt.
-The older `/Users/alfongj/Code/engine-core` checkout is unchanged.
+Local code: **`/Users/alfongj/Code/engine-core-review-stack`**, branch
+**`reconcile-public-read-failures`**. Record `git rev-parse HEAD` before testing.
+Its `README.md` and `LOCAL_TESTING.md` contain setup, installed tool paths,
+commands and a prompt for another local agent. The older
+`/Users/alfongj/Code/engine-core` checkout is unchanged.
 
-Evidence: **`/Users/alfongj/Code/engine-core-review-evidence`**, pushed to **`load-tests`**.
-Read the [full review and measured limits](docs/baselines/code-review-2026-11-08/README.md).
-Private logs/fixtures: `/Users/alfongj/.local/share/engine-core/runs/code-review-2026-11-08/`.
-Completed steady validator ledgers have verified compressed archives there;
-the failed crash fixture, old incident journals and Nitro environment remain intact.
+Local evidence: **`/Users/alfongj/Code/engine-core-review-evidence`**, branch
+**`load-tests`**. Read the [source-specific results and limits](docs/baselines/pending-work-2026-11-08/README.md).
+Private originals and unresolved fixtures are under
+`/Users/alfongj/.local/share/engine-core/runs/pending-work-2026-11-08/`.
+Old incident journals, failed fixtures and the Nitro VM remain intact.
 
 ## Results
 
-- Full runtime workflow, **186 Redis/API tests** and **12 process scenarios** pass; all **41 offline harness tests** pass at the review head.
-- Final CI passes functional gates, **107 model cases / 95 source guards**, five fee proofs and two mutation checks. This is not a whole-service proof.
-- Ten five-minute runs complete **96,000 transfers at 8 + 8 + 16 TPS**. Latency varies; sustainable capacity is unconfirmed. No 50 TPS-per-chain claim.
-- The original shared-chain crash run exposed the lock delay and ended incomplete. The fixed binary passes the same 2,880-transfer fault workload, independent safety/liveness checks and final drain. Both results are retained.
-- **Dependency audit stays red:** one crypto-bigint vulnerability, one LRU unsoundness warning and five unmaintained warnings. Native signing mitigates environment-key exposure; the upstream dependency needs migration/backport.
-- **$0 public RPC credits spent.** Owned test services are stopped.
+- Runtime `4d05bbf`: full Rust checks, **196 Redis/API regressions**, **15 process
+  scenarios**, **115 finite model configurations** and five fee proofs pass.
+  Later fixes have separate exact-head CI; these are not whole-service proofs.
+- The dependency audit reports **zero vulnerabilities and zero unsoundness
+  warnings**. Five maintenance warnings remain; no advisory is suppressed.
+- Small public correctness/recovery checks cover Sepolia, OP Sepolia, Arbitrum
+  Sepolia, Base Sepolia and Solana Devnet. Four later EVM runs stop on provider
+  read timeouts; all reconcile from their original retained state with finalized
+  reads, **no new broadcasts and no duplicate effects**. Original failures stay
+  recorded as failures.
+- Public RPC use: **7,998 forwarded calls**, **about $0.048 at the configured
+  accounting rate**. This is an estimate, not a verified provider invoice.
+  Owned public services are stopped.
+- Historical Linux runtime `4d05bbf` qualifies **50 TPS for the local OP-mode
+  profile** and **25 TPS for local Agave**, each in three five-minute trials.
+  Higher rates and the other EVM profiles are unqualified. These results do not
+  establish a production or public-chain maximum. The Mac comparison stops
+  incomplete and supports no performance conclusion.
 
-## Remaining work
+## Remaining qualification
 
-1. Resolve the upstream cryptographic dependency for a clean audit.
-2. Qualify production storage/workloads, public providers, rollup settlement and KMS. Durable writes are a measured constraint on this Mac.
-3. Design journal retention and missing-job reconstruction. Keep the latest independent journal and one active Engine process per deployment on one Unix host. Missing Solana history never authorizes re-signing unknown work.
+Use the latest code's CI and capacity results before promoting it. Production
+hardware, public-provider limits, actual Nitro throughput, rollup settlement,
+physical power loss and real AWS KMS operation still need qualification. KMS
+protocol vectors do not establish correct transient-error handling, IAM or quotas.
 
-No access or credentials are needed from you to review the stack. Drain old workers
-gracefully before upgrading; legacy Solana locks retain their TTL. Follow the
-[upgrade/rollback runbook](https://github.com/alfongj-com/engine-core/blob/pin-testnet-resume-provenance/docs/design/redis-disaster-recovery.md#schema-upgrade-and-rollback)
-before opening deployed state. Schema 3 has no in-place downgrade.
+Deployment still requires one independent journal and one active Engine process
+on one Unix host. History is permanent; compaction reclaims free pages. Offline
+queue reconstruction cannot infer outcomes of unknown transactions or recreate
+missing Solana signing history. Follow the code branch's recovery/upgrade runbook;
+schema 3 has no in-place downgrade.

@@ -1,0 +1,94 @@
+{
+  "runtime_source_commit": "4d05bbf4c29007e306043cfda788e24e4c918d61",
+  "raw_results_sha256": "702182e81bf4e6328a205235b6853ea70f20417143d4f7a53c5348358952cdb0",
+  "explicit_redis_api_tests": 196,
+  "groups": [
+    70,
+    80,
+    4,
+    3,
+    36,
+    3
+  ],
+  "steps": [
+    {
+      "label": "formatting",
+      "exit": 0,
+      "seconds": 0.3449115417897701,
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "workspace",
+      "exit": 0,
+      "seconds": 149.7449701251462,
+      "log_sha256": "951e4ea70d6827e1c7c4bc6b920f61f93fab4d5d06d534c3379fa365795ffd21"
+    },
+    {
+      "label": "core recovery Redis",
+      "exit": 0,
+      "seconds": 23.679598624818027,
+      "log_sha256": "334e3588ad079da3da32709f35eeb8eac0c46bfb191cfcf584f353de15b20cf2"
+    },
+    {
+      "label": "executors Redis/RPC",
+      "exit": 0,
+      "seconds": 18.592422833200544,
+      "log_sha256": "ee5282966ccf7f95cb8c96657596d8f6fb36fd8de95792a9f36bd5dc1e4875fa"
+    },
+    {
+      "label": "server Solana retention",
+      "exit": 0,
+      "seconds": 10.756929125171155,
+      "log_sha256": "91405ce96a11ad26f00ab72710da308fc91069da8a3cde173fce5e3faa7c577b"
+    },
+    {
+      "label": "HTTP safety",
+      "exit": 0,
+      "seconds": 11.357839624863118,
+      "log_sha256": "86abf87eadc1ad92922390df6af0fb9ebe77feed0331b8a39eef07b63294b4e1"
+    },
+    {
+      "label": "queue Redis",
+      "exit": 0,
+      "seconds": 1.119520792271942,
+      "log_sha256": "f8655affad23e9ba48e7db1234ec80b4ca3d7cdb0f1427ad7a486aa7739f4fc7"
+    },
+    {
+      "label": "offline queue reconstruction CLI",
+      "exit": 0,
+      "seconds": 1.357861458323896,
+      "log_sha256": "a1b21390cf983454aa94f8939f6848919618e65d3c8e4f2e7433abe08c3c7d8f"
+    },
+    {
+      "label": "build both executables",
+      "exit": 0,
+      "seconds": 0.28765195794403553,
+      "log_sha256": "968694eb2dcf057f0b793892b3309e93c43d784f6c9588d49e7b6eeeaad76702"
+    },
+    {
+      "label": "capacity metrics guards",
+      "exit": 0,
+      "seconds": 0.10201304126530886,
+      "log_sha256": "fe836cbecd3b6b4f70bec51b58d30c3e45ad72ae7fb3cb63421a0f7337e651ae"
+    },
+    {
+      "label": "public harness guards",
+      "exit": 0,
+      "seconds": 12.389346790965647,
+      "log_sha256": "2023bba41043e9f8f7c391084329bab06c26d5b47577ccf284a505b88edda432"
+    },
+    {
+      "label": "RPC gateway guards",
+      "exit": 0,
+      "seconds": 0.9810575419105589,
+      "log_sha256": "cc8b0060336f44e17da3d1bb3c32537fb73da668b270581481cb6ecfa3bce121"
+    },
+    {
+      "label": "formal runner guards",
+      "exit": 0,
+      "seconds": 0.0674323751591146,
+      "log_sha256": "33060fd73862c5e1af97335504d5b45211fce6d229657f556d8deceeadc52ce4"
+    }
+  ],
+  "scope": "Completed local full suite for runtime #17; later review fixes have separate exact-head CI. Do not extend these results to untested later source."
+}

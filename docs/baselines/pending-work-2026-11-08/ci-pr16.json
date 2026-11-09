@@ -1,0 +1,185 @@
+{
+  "pr": 16,
+  "head_sha": "09ac4de4119125ae87992df3304353c95cbfd24d",
+  "formal": {
+    "run_id": 42552580966,
+    "url": "https://github.com/alfongj-com/engine-core/actions/runs/42552580966",
+    "conclusion": "success",
+    "model_cases": 115,
+    "kinds": {
+      "positive": 25,
+      "fault": 58,
+      "boundary": 12,
+      "witness": 20
+    },
+    "source_hashes_verified": 100,
+    "tlc_version": "1.7.4",
+    "tlc_sha256": "936a262061c914694dfd669a543be24573c45d5aa0ff20a8b96b23d01e050e88",
+    "report_sha256": "95f251691a14e435bcc96566aed6455557795e8e4c63642ed3f99f447c07b5d0",
+    "production_fee_harnesses": 5,
+    "fee_mutation_counterexamples": 2,
+    "kani_version": "0.68.0"
+  },
+  "rust": {
+    "run_id": 42552581193,
+    "url": "https://github.com/alfongj-com/engine-core/actions/runs/42552581193",
+    "conclusion": "success",
+    "failed_steps": [],
+    "required_functional_steps_passed": [
+      "Actual server crash recovery and duplicate admission",
+      "Compile every test and binary",
+      "EOA and Solana Redis, RPC and deployment regressions",
+      "Formatting",
+      "HTTP authorization and admission integration",
+      "Independent journal crash and rollback regressions",
+      "Offline queue reconstruction ownership and conflict regressions",
+      "Pre-finality reorg and same-nonce recovery",
+      "Public transaction harness guards (offline)",
+      "Queue lease and acknowledgement race regressions",
+      "Reconstruct missing EOA jobs and signed projections",
+      "Reconstruct missing Solana jobs, admission and signed projections",
+      "Redis AOF crash recovery",
+      "Redis data loss and stale-backup quarantine",
+      "Reverted execution and Redis crash recovery",
+      "Single payer Solana load and finality drain (local debug build)",
+      "Single signer EVM load and finality drain (local debug build)",
+      "Solana accepted-send response loss and process recovery",
+      "Solana request retention across queue pruning",
+      "Unit and hermetic integration suites"
+    ],
+    "local_chain_reports": [
+      {
+        "name": "local-eoa-rebuild-jobs.json",
+        "sha256": "71c65a8d70755aa032b3698b5f9b0a51631ae5cd52abc6bffee485ad71f3c03f",
+        "outcome": "pass",
+        "transactions": 8,
+        "unique_chain_effects": 8,
+        "duplicate_chain_effects": 0
+      },
+      {
+        "name": "local-eoa-rebuild.json",
+        "sha256": "7ee52b6dbbb6b93f440dbc348f4e9f110d147e1c519e98de21da46ea2dda8a4c",
+        "outcome": "pass",
+        "transactions": 8,
+        "unique_chain_effects": 8,
+        "duplicate_chain_effects": 0
+      },
+      {
+        "name": "local-eoa-recovery.json",
+        "sha256": "2a0d3afc72bf610a36a67de1abb5fe284473de340a6d1c8495d16ec9801a9415",
+        "outcome": "pass",
+        "transactions": 24,
+        "unique_chain_effects": 24,
+        "duplicate_chain_effects": 0
+      },
+      {
+        "name": "local-eoa-redis-crash.json",
+        "sha256": "64e8e6cd5fb0a09810dcaade890a0d384f67f41ed1e2f392baae7e494353d530",
+        "outcome": "pass",
+        "transactions": 24,
+        "unique_chain_effects": 24,
+        "duplicate_chain_effects": 0
+      },
+      {
+        "name": "local-eoa-reorg-reverted.json",
+        "sha256": "509713ae6ffcee1738ec12b9d57a36dd5b9dcf7dfb3f9c9e3c8f08985d4be2e7",
+        "outcome": "pass",
+        "unique_chain_effects": 1,
+        "duplicate_effects": 0
+      },
+      {
+        "name": "local-eoa-reorg.json",
+        "sha256": "bbf68f9bd3a78b04d7e9adbc4f4a963ba5fb30728dc4a9d7dee0a263c9c51c2e",
+        "outcome": "pass",
+        "unique_chain_effects": 1,
+        "duplicate_effects": 0
+      },
+      {
+        "name": "local-eoa-reverted-recovery.json",
+        "sha256": "e079536b0090d71727d281c24f3ad21d411230dfa1cc10e47655147f1bccd227",
+        "outcome": "pass",
+        "transactions": 8,
+        "unique_chain_effects": 8,
+        "duplicate_chain_effects": 0
+      },
+      {
+        "name": "local-eoa-throughput.json",
+        "sha256": "c5abea460a3e6424b0e05a810f99c96f11a124297fe7c799619a1a789678929a",
+        "outcome": "pass"
+      },
+      {
+        "name": "local-redis-loss.json",
+        "sha256": "d0e348360ea1a8e82da3b3ba303772e06486fb051f6ba6137858a319b4d97cad",
+        "outcome": "pass",
+        "duplicate_effects": 0
+      },
+      {
+        "name": "local-redis-rollback.json",
+        "sha256": "31676c14d6d90ac19426a813d72b93a0cd5e68e394be322d0afafd5317f02d9f",
+        "outcome": "pass",
+        "duplicate_effects": 0
+      },
+      {
+        "name": "local-solana-rebuild.json",
+        "sha256": "d013934562c7f668cc261e3b29655167ae1d5d4772857e8b82148b1876f3e314",
+        "outcome": "pass",
+        "transactions": 8,
+        "unique_chain_effects": 8,
+        "duplicate_chain_effects": 0
+      },
+      {
+        "name": "local-solana-recovery-projection-loss.json",
+        "sha256": "1fff275d8efca3a9a7614d9bc6ba35b9bf3ddfc64fcfdbe9c939778582750728",
+        "outcome": "pass",
+        "transactions": 12,
+        "unique_chain_effects": 12,
+        "duplicate_chain_effects": 0
+      },
+      {
+        "name": "local-solana-recovery.json",
+        "sha256": "1190cb5bdbb501056f7636083da2d6ced65018945bbd40d224450221c51c04ab",
+        "outcome": "pass",
+        "transactions": 12,
+        "unique_chain_effects": 12,
+        "duplicate_chain_effects": 0
+      },
+      {
+        "name": "local-solana-throughput.json",
+        "sha256": "66c874a72d76779748798b72c8fa4b520b6b838dbe0f149d4351eaa90291585a",
+        "outcome": "pass"
+      }
+    ],
+    "dependency_audit_verification": {
+      "audit_step_passed": true,
+      "advisory_ids_in_job_log": [
+        "RUSTSEC-2024-0388",
+        "RUSTSEC-2024-0436",
+        "RUSTSEC-2025-0141",
+        "RUSTSEC-2026-0441"
+      ],
+      "job_log_sha256": "2a50d04c3f8291ad7a2082996e0cdb986beba19cee6637e1710176c9f529dbc0"
+    }
+  },
+  "artifacts": [
+    {
+      "name": "rust-fee-proof-results",
+      "id": 13645983417,
+      "digest": "sha256:8e35bc513cabe21e73c77a00d9f394a9dbeb7439446d1488840d2d2d988bebf1",
+      "size_in_bytes": 11388
+    },
+    {
+      "name": "protocol-model-results",
+      "id": 13645579478,
+      "digest": "sha256:b44a84e09e165f6967b2587dbe642bf8154f7a4578701a57c394de49533ada33",
+      "size_in_bytes": 486552
+    },
+    {
+      "name": "local-chain-recovery-reports",
+      "id": 13646159072,
+      "digest": "sha256:4417d1570f641e81f9ff28b3b8619d954e1e5daa748fee9378dc5f7b44c5c38b",
+      "size_in_bytes": 12891
+    }
+  ],
+  "archive_digests_verified": true,
+  "scope": "Exact-head CI. Functional gates, dependency audit, finite protocol models and fee proof/mutation checks passed. Hash correspondence is not a refinement proof."
+}

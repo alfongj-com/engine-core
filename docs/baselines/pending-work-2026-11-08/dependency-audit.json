@@ -1,0 +1,39 @@
+{
+  "raw_report_sha256": "0562e23ecf64151d1f3e7fde837749dd26df0c7a1e14567971c23b5425ebd293",
+  "vulnerabilities": 0,
+  "unsound_warnings": 0,
+  "warnings": [
+    {
+      "category": "unmaintained",
+      "package": "bincode",
+      "version": "1.3.3",
+      "advisory": "RUSTSEC-2025-0141"
+    },
+    {
+      "category": "unmaintained",
+      "package": "bincode",
+      "version": "2.0.1",
+      "advisory": "RUSTSEC-2025-0141"
+    },
+    {
+      "category": "unmaintained",
+      "package": "derivative",
+      "version": "2.2.0",
+      "advisory": "RUSTSEC-2024-0388"
+    },
+    {
+      "category": "unmaintained",
+      "package": "paste",
+      "version": "1.0.15",
+      "advisory": "RUSTSEC-2024-0436"
+    },
+    {
+      "category": "unmaintained",
+      "package": "pin-utils",
+      "version": "0.1.0",
+      "advisory": "RUSTSEC-2026-0441"
+    }
+  ],
+  "ignored_advisories": [],
+  "scope": "Actual cargo-audit result, dependency graph shared by runtime #17 and subsequent runtime fixes until a lockfile change. Five maintenance warnings remain."
+}

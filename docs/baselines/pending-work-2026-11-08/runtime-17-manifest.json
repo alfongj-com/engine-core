@@ -1,0 +1,7 @@
+{
+  "binary_sha256": "68066fe73c0c3fe6597f601f308b80f22a2c59667810359bcdf8454c486ffc1d",
+  "runtime_source_commit": "4d05bbf4c29007e306043cfda788e24e4c918d61",
+  "checkout_commit": "017796646efb6a84b5f3225ce1138b73e58c7759",
+  "compiled_by": "run-final-rust-tests.py, rust-suite-5h419gc6",
+  "profile": "dev debug=0 incremental=0; not release capacity"
+}

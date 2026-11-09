@@ -1,0 +1,1081 @@
+{
+  "scope": "Four small EVM testnet runs and Solana Devnet, repeated across two binaries. Interrupted EVM failures retained and reconciled with original state/IDs and finalized reads, without broadcasts. Not public-provider throughput qualification. Reconciliation source is separately pinned and predates later guard review fixes.",
+  "runs": [
+    {
+      "phase": "initial",
+      "raw_report_sha256": "f9067476cd25dca011d08cd16b069068766a0e050c915c60be19d35c12a7cb50",
+      "scenario": "public EOA response loss and Engine/Redis crash recovery",
+      "chain_id": 11155111,
+      "network": "sepolia",
+      "transactions": 4,
+      "offered_rate_tps": 1.0,
+      "outcome": "pass",
+      "binary_sha256": "fb259e00c4eb4d48d64e05d4bbb886d87300efc758b233fee699d5f6433173da",
+      "finality_timeout_seconds": 1800,
+      "expected_execution_status": "0x1",
+      "unique_chain_effects": 4,
+      "successful_transfers": 4,
+      "finalized_reverted_executions": 0,
+      "unknown_outcome_same_id_retries": 4,
+      "duplicate_chain_effects": 0,
+      "duplicate_requests": 4,
+      "duplicate_rpc_sends": 0,
+      "actual_fees_wei": 267604014000,
+      "receipt_execution_fees_wei": 267604014000,
+      "receipt_l1_fees_wei": 0,
+      "other_fee_components_wei": 0,
+      "additional_chain_fee_reserve_wei": 0,
+      "total_debit_allocation_wei": 1036998662844,
+      "admission_seconds": 3.063,
+      "completion_seconds": 810.922,
+      "batch_completion_tps": 0.005,
+      "maximum_schedule_lag_ms": 10.018,
+      "discarded_send_responses": 4,
+      "unique_upstream_accepted_sends": 4,
+      "actual_rpc_sends": 40,
+      "unique_signed_wires": 4,
+      "redis_persistence": "appendonly=yes, appendfsync=always; process crash tests do not prove failover/power-loss safety",
+      "confirmation_scope": "Engine terminal receipt, canonical block hash, and covering finalized checkpoint from the configured provider; not a light-client consensus proof",
+      "workload": "1 wei EIP-1559 transfers",
+      "elapsed_seconds": 819.349,
+      "rpc_calls": 1075,
+      "estimated_rpc_cost_usd": 0.00645,
+      "provenance": {
+        "engine_binary_sha256": "fb259e00c4eb4d48d64e05d4bbb886d87300efc758b233fee699d5f6433173da",
+        "declared_binary_source_commit": "cb4e52b38055823cd39894e4f539348acd03304c",
+        "harness_source_commit": "cb4e52b38055823cd39894e4f539348acd03304c",
+        "harness_sha256": "fb6417c8f92dcbda5b4b263f533bda2057d5de97dc1201062c641c5e4973d4f0",
+        "process_helper_sha256": "13a040bf66852cb96bee9c1a1430e2afe8334c94e2fff50739a5b14a9b64eaa7"
+      },
+      "rpc_methods": {
+        "11155111:eth_chainId": {
+          "count": 1,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 196.40120799996657
+        },
+        "11155111:eth_getBalance": {
+          "count": 7,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 299.44799899990903
+        },
+        "11155111:eth_getTransactionCount": {
+          "count": 960,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 50403.86901000101
+        },
+        "11155111:eth_getBlockByNumber": {
+          "count": 12,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 618.8726260000258
+        },
+        "11155111:eth_getCode": {
+          "count": 5,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 444.0615000000689
+        },
+        "11155111:eth_maxPriorityFeePerGas": {
+          "count": 1,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 49.53366700001061
+        },
+        "11155111:eth_estimateGas": {
+          "count": 5,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 677.334332999948
+        },
+        "11155111:eth_sendRawTransaction": {
+          "count": 40,
+          "httpErrors": 0,
+          "rpcErrors": 36,
+          "totalMs": 6328.2714589997195
+        },
+        "11155111:eth_getTransactionReceipt": {
+          "count": 40,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 3886.261165999749
+        },
+        "11155111:eth_getTransactionByHash": {
+          "count": 4,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 194.55387500021607
+        }
+      }
+    },
+    {
+      "phase": "interrupted",
+      "raw_report_sha256": "a68edb1f84712d55eb7581ea72b35bb98bbff0008e7930ae4e4c98aa768a366f",
+      "scenario": "public EOA response loss and Engine/Redis crash recovery",
+      "chain_id": 11155111,
+      "network": "sepolia",
+      "transactions": 4,
+      "offered_rate_tps": 1.0,
+      "outcome": "fail",
+      "binary_sha256": "68066fe73c0c3fe6597f601f308b80f22a2c59667810359bcdf8454c486ffc1d",
+      "finality_timeout_seconds": 1800,
+      "expected_execution_status": "0x1",
+      "elapsed_seconds": 392.501,
+      "rpc_calls": 511,
+      "estimated_rpc_cost_usd": 0.003066,
+      "reconciliation_lock_retained": true,
+      "provenance": {
+        "engine_binary_sha256": "68066fe73c0c3fe6597f601f308b80f22a2c59667810359bcdf8454c486ffc1d",
+        "declared_binary_source_commit": "4d05bbf4c29007e306043cfda788e24e4c918d61",
+        "harness_source_commit": "017796646efb6a84b5f3225ce1138b73e58c7759",
+        "harness_sha256": "fb6417c8f92dcbda5b4b263f533bda2057d5de97dc1201062c641c5e4973d4f0",
+        "process_helper_sha256": "13a040bf66852cb96bee9c1a1430e2afe8334c94e2fff50739a5b14a9b64eaa7"
+      },
+      "rpc_methods": {
+        "11155111:eth_chainId": {
+          "count": 1,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 186.62225000000035
+        },
+        "11155111:eth_getBalance": {
+          "count": 3,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 129.6181250000027
+        },
+        "11155111:eth_getTransactionCount": {
+          "count": 449,
+          "httpErrors": 1,
+          "rpcErrors": 1,
+          "totalMs": 37424.46912099972
+        },
+        "11155111:eth_getCode": {
+          "count": 4,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 179.27145800004655
+        },
+        "11155111:eth_getBlockByNumber": {
+          "count": 2,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 93.45429200000035
+        },
+        "11155111:eth_maxPriorityFeePerGas": {
+          "count": 1,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 157.43987500000003
+        },
+        "11155111:eth_estimateGas": {
+          "count": 5,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 452.6796669999985
+        },
+        "11155111:eth_sendRawTransaction": {
+          "count": 26,
+          "httpErrors": 0,
+          "rpcErrors": 22,
+          "totalMs": 3913.926169000004
+        },
+        "11155111:eth_getTransactionReceipt": {
+          "count": 20,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 2658.241830999992
+        }
+      },
+      "failure_category": "provider transport timeout; guard stopped on HTTP 502"
+    },
+    {
+      "phase": "read-only reconciliation",
+      "raw_report_sha256": "44077d2a9bb6bfd61cf9767fe030544ebb6126384f4f1c18d9178c6711a6a4cf",
+      "scenario": "restore existing EVM AOF and reconcile original IDs without broadcasts",
+      "chain_id": 11155111,
+      "network": "sepolia",
+      "transactions": 4,
+      "outcome": "pass",
+      "binary_sha256": "68066fe73c0c3fe6597f601f308b80f22a2c59667810359bcdf8454c486ffc1d",
+      "unique_chain_effects": 4,
+      "duplicate_chain_effects": 0,
+      "duplicate_requests": 4,
+      "actual_fees_wei": 267604281600,
+      "receipt_execution_fees_wei": 267604281600,
+      "receipt_l1_fees_wei": 0,
+      "other_fee_components_wei": 0,
+      "redis_persistence": "existing appendonly AOF restored with appendfsync=always",
+      "confirmation_scope": "original transfers, finalized Engine terminal evidence and independent canonical/finalized rechecks; no broadcasts",
+      "elapsed_seconds": 9.255,
+      "rpc_calls": 48,
+      "estimated_rpc_cost_usd": 0.000288,
+      "original_outcome": "fail",
+      "rpc_sends": 0,
+      "refused_broadcasts": 0,
+      "original_failure_evidence_unchanged": true,
+      "reconciliation_lock_cleared": true,
+      "rpc_read_limit": 600,
+      "original_provenance": {
+        "engine_binary_sha256": "68066fe73c0c3fe6597f601f308b80f22a2c59667810359bcdf8454c486ffc1d",
+        "declared_binary_source_commit": "4d05bbf4c29007e306043cfda788e24e4c918d61",
+        "harness_source_commit": "017796646efb6a84b5f3225ce1138b73e58c7759",
+        "harness_sha256": "fb6417c8f92dcbda5b4b263f533bda2057d5de97dc1201062c641c5e4973d4f0",
+        "process_helper_sha256": "13a040bf66852cb96bee9c1a1430e2afe8334c94e2fff50739a5b14a9b64eaa7"
+      },
+      "reconciliation_provenance": {
+        "engine_binary_sha256": "68066fe73c0c3fe6597f601f308b80f22a2c59667810359bcdf8454c486ffc1d",
+        "declared_binary_source_commit": "4d05bbf4c29007e306043cfda788e24e4c918d61",
+        "harness_source_commit": "cf56bf0b6851a26fa2aca46396938cab62eedc23",
+        "harness_sha256": "14acd8dc5bbe84aa83855457565546f2ffd722194dcc40f147b24ea59d185213",
+        "process_helper_sha256": "13a040bf66852cb96bee9c1a1430e2afe8334c94e2fff50739a5b14a9b64eaa7"
+      },
+      "original_evidence_sha256": {
+        "manifest.json": "9b399fce3b2e99c472011047e2f736387c2b8a5d028ee82be5d008782a0c8ff7",
+        "report.json": "a68edb1f84712d55eb7581ea72b35bb98bbff0008e7930ae4e4c98aa768a366f",
+        "signed-wires.json": "3c503d93cf200eba252824f9e7ee4b51696f73db72c63b207390cc8d0feebb04"
+      },
+      "pre_restore_journal_snapshot_sha256": {
+        "recovery.sqlite": "660fce9a32922e5853a5e4bc02c4752007bab2347597ecc42b74aa27dfd8a941",
+        "recovery.sqlite-wal": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "recovery.sqlite-shm": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+      },
+      "reconciliation_dependency_sha256": {
+        "testnet_evm_write.py": "d6afada4e0385dcc2afc74c10a974aa44576cf4b32e12f360d992051d69348fc"
+      }
+    },
+    {
+      "phase": "initial",
+      "raw_report_sha256": "4b50de3c4f1f62bcda4d9442c92576f3f2b13e5c3971919a6cd2900f55656026",
+      "scenario": "public EOA response loss and Engine/Redis crash recovery",
+      "chain_id": 11155420,
+      "network": "optimism-sepolia",
+      "transactions": 4,
+      "offered_rate_tps": 1.0,
+      "outcome": "pass",
+      "binary_sha256": "fb259e00c4eb4d48d64e05d4bbb886d87300efc758b233fee699d5f6433173da",
+      "finality_timeout_seconds": 1800,
+      "expected_execution_status": "0x1",
+      "unique_chain_effects": 4,
+      "successful_transfers": 4,
+      "finalized_reverted_executions": 0,
+      "unknown_outcome_same_id_retries": 4,
+      "duplicate_chain_effects": 0,
+      "duplicate_requests": 4,
+      "duplicate_rpc_sends": 0,
+      "actual_fees_wei": 84021001072,
+      "receipt_execution_fees_wei": 84021000000,
+      "receipt_l1_fees_wei": 1072,
+      "other_fee_components_wei": 0,
+      "additional_chain_fee_reserve_wei": 4000000000000,
+      "total_debit_allocation_wei": 4105078750004,
+      "admission_seconds": 3.06,
+      "completion_seconds": 1242.018,
+      "batch_completion_tps": 0.003,
+      "maximum_schedule_lag_ms": 9.898,
+      "discarded_send_responses": 4,
+      "unique_upstream_accepted_sends": 4,
+      "actual_rpc_sends": 9,
+      "unique_signed_wires": 4,
+      "redis_persistence": "appendonly=yes, appendfsync=always; process crash tests do not prove failover/power-loss safety",
+      "confirmation_scope": "Engine terminal receipt, canonical block hash, and covering finalized checkpoint from the configured provider; not a light-client consensus proof",
+      "workload": "1 wei EIP-1559 transfers",
+      "elapsed_seconds": 1250.438,
+      "rpc_calls": 1530,
+      "estimated_rpc_cost_usd": 0.00918,
+      "provenance": {
+        "engine_binary_sha256": "fb259e00c4eb4d48d64e05d4bbb886d87300efc758b233fee699d5f6433173da",
+        "declared_binary_source_commit": "cb4e52b38055823cd39894e4f539348acd03304c",
+        "harness_source_commit": "cb4e52b38055823cd39894e4f539348acd03304c",
+        "harness_sha256": "fb6417c8f92dcbda5b4b263f533bda2057d5de97dc1201062c641c5e4973d4f0",
+        "process_helper_sha256": "13a040bf66852cb96bee9c1a1430e2afe8334c94e2fff50739a5b14a9b64eaa7"
+      },
+      "rpc_methods": {
+        "11155420:eth_chainId": {
+          "count": 1,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 197.1109170000418
+        },
+        "11155420:eth_getBalance": {
+          "count": 7,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 435.40550099959364
+        },
+        "11155420:eth_getTransactionCount": {
+          "count": 1461,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 72457.44091199868
+        },
+        "11155420:eth_getBlockByNumber": {
+          "count": 22,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 1102.1653320000041
+        },
+        "11155420:eth_getCode": {
+          "count": 7,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 964.4347490000073
+        },
+        "11155420:eth_maxPriorityFeePerGas": {
+          "count": 1,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 133.65562499995576
+        },
+        "11155420:eth_estimateGas": {
+          "count": 5,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 296.662624999939
+        },
+        "11155420:eth_sendRawTransaction": {
+          "count": 9,
+          "httpErrors": 0,
+          "rpcErrors": 5,
+          "totalMs": 2273.9692499999073
+        },
+        "11155420:eth_getTransactionReceipt": {
+          "count": 13,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 1352.3253329998115
+        },
+        "11155420:eth_getTransactionByHash": {
+          "count": 4,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 164.56912399991415
+        }
+      }
+    },
+    {
+      "phase": "interrupted",
+      "raw_report_sha256": "6f5d2c932118aacf423c5e74c0ebac3d806f5e05dd553094d58c846625f42f46",
+      "scenario": "public EOA response loss and Engine/Redis crash recovery",
+      "chain_id": 11155420,
+      "network": "optimism-sepolia",
+      "transactions": 4,
+      "offered_rate_tps": 1.0,
+      "outcome": "fail",
+      "binary_sha256": "68066fe73c0c3fe6597f601f308b80f22a2c59667810359bcdf8454c486ffc1d",
+      "finality_timeout_seconds": 1800,
+      "expected_execution_status": "0x1",
+      "elapsed_seconds": 392.497,
+      "rpc_calls": 476,
+      "estimated_rpc_cost_usd": 0.002856,
+      "reconciliation_lock_retained": true,
+      "provenance": {
+        "engine_binary_sha256": "68066fe73c0c3fe6597f601f308b80f22a2c59667810359bcdf8454c486ffc1d",
+        "declared_binary_source_commit": "4d05bbf4c29007e306043cfda788e24e4c918d61",
+        "harness_source_commit": "017796646efb6a84b5f3225ce1138b73e58c7759",
+        "harness_sha256": "fb6417c8f92dcbda5b4b263f533bda2057d5de97dc1201062c641c5e4973d4f0",
+        "process_helper_sha256": "13a040bf66852cb96bee9c1a1430e2afe8334c94e2fff50739a5b14a9b64eaa7"
+      },
+      "rpc_methods": {
+        "11155420:eth_chainId": {
+          "count": 1,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 187.31320799999958
+        },
+        "11155420:eth_getBalance": {
+          "count": 3,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 244.21616799999902
+        },
+        "11155420:eth_getTransactionCount": {
+          "count": 446,
+          "httpErrors": 1,
+          "rpcErrors": 1,
+          "totalMs": 35480.44025400016
+        },
+        "11155420:eth_getCode": {
+          "count": 4,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 977.5979579999985
+        },
+        "11155420:eth_getBlockByNumber": {
+          "count": 2,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 78.98058300000048
+        },
+        "11155420:eth_maxPriorityFeePerGas": {
+          "count": 1,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 43.99383300000045
+        },
+        "11155420:eth_estimateGas": {
+          "count": 5,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 215.5262930000008
+        },
+        "11155420:eth_sendRawTransaction": {
+          "count": 10,
+          "httpErrors": 0,
+          "rpcErrors": 6,
+          "totalMs": 2825.6723329999986
+        },
+        "11155420:eth_getTransactionReceipt": {
+          "count": 4,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 478.47733399999925
+        }
+      },
+      "failure_category": "provider transport timeout; guard stopped on HTTP 502"
+    },
+    {
+      "phase": "read-only reconciliation",
+      "raw_report_sha256": "4d9ac7042912ac2bdcb331cb9a71a7fc74821e66b0f530a083c95535b5bbb89b",
+      "scenario": "restore existing EVM AOF and reconcile original IDs without broadcasts",
+      "chain_id": 11155420,
+      "network": "optimism-sepolia",
+      "transactions": 4,
+      "outcome": "pass",
+      "binary_sha256": "68066fe73c0c3fe6597f601f308b80f22a2c59667810359bcdf8454c486ffc1d",
+      "unique_chain_effects": 4,
+      "duplicate_chain_effects": 0,
+      "duplicate_requests": 4,
+      "actual_fees_wei": 84021001120,
+      "receipt_execution_fees_wei": 84021000000,
+      "receipt_l1_fees_wei": 1120,
+      "other_fee_components_wei": 0,
+      "redis_persistence": "existing appendonly AOF restored with appendfsync=always",
+      "confirmation_scope": "original transfers, finalized Engine terminal evidence and independent canonical/finalized rechecks; no broadcasts",
+      "elapsed_seconds": 233.004,
+      "rpc_calls": 86,
+      "estimated_rpc_cost_usd": 0.000516,
+      "original_outcome": "fail",
+      "rpc_sends": 0,
+      "refused_broadcasts": 0,
+      "original_failure_evidence_unchanged": true,
+      "reconciliation_lock_cleared": true,
+      "rpc_read_limit": 600,
+      "original_provenance": {
+        "engine_binary_sha256": "68066fe73c0c3fe6597f601f308b80f22a2c59667810359bcdf8454c486ffc1d",
+        "declared_binary_source_commit": "4d05bbf4c29007e306043cfda788e24e4c918d61",
+        "harness_source_commit": "017796646efb6a84b5f3225ce1138b73e58c7759",
+        "harness_sha256": "fb6417c8f92dcbda5b4b263f533bda2057d5de97dc1201062c641c5e4973d4f0",
+        "process_helper_sha256": "13a040bf66852cb96bee9c1a1430e2afe8334c94e2fff50739a5b14a9b64eaa7"
+      },
+      "reconciliation_provenance": {
+        "engine_binary_sha256": "68066fe73c0c3fe6597f601f308b80f22a2c59667810359bcdf8454c486ffc1d",
+        "declared_binary_source_commit": "4d05bbf4c29007e306043cfda788e24e4c918d61",
+        "harness_source_commit": "cf56bf0b6851a26fa2aca46396938cab62eedc23",
+        "harness_sha256": "14acd8dc5bbe84aa83855457565546f2ffd722194dcc40f147b24ea59d185213",
+        "process_helper_sha256": "13a040bf66852cb96bee9c1a1430e2afe8334c94e2fff50739a5b14a9b64eaa7"
+      },
+      "original_evidence_sha256": {
+        "manifest.json": "2a59e54c28d6d1d65b7543685e3629b456a02aee9648b35e267e7d9c38027575",
+        "report.json": "6f5d2c932118aacf423c5e74c0ebac3d806f5e05dd553094d58c846625f42f46",
+        "signed-wires.json": "edbf3ccf8ae0f9b41fad835fb6464788b080a6ca1ff20aedc5c9e8b245a10b07"
+      },
+      "pre_restore_journal_snapshot_sha256": {
+        "recovery.sqlite": "c3c7ea2b01fb7dc541221c20b99d2fa6316c9dda6988378f1e6505843526fd3f",
+        "recovery.sqlite-wal": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "recovery.sqlite-shm": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+      },
+      "reconciliation_dependency_sha256": {
+        "testnet_evm_write.py": "d6afada4e0385dcc2afc74c10a974aa44576cf4b32e12f360d992051d69348fc"
+      }
+    },
+    {
+      "phase": "initial",
+      "raw_report_sha256": "2146042ddfad6c85afa1f5612b89f8e75185a41587414a878be847380fbdb5e4",
+      "scenario": "public EOA response loss and Engine/Redis crash recovery",
+      "chain_id": 421614,
+      "network": "arbitrum-sepolia",
+      "transactions": 4,
+      "offered_rate_tps": 1.0,
+      "outcome": "pass",
+      "binary_sha256": "fb259e00c4eb4d48d64e05d4bbb886d87300efc758b233fee699d5f6433173da",
+      "finality_timeout_seconds": 1800,
+      "expected_execution_status": "0x1",
+      "unique_chain_effects": 4,
+      "successful_transfers": 4,
+      "finalized_reverted_executions": 0,
+      "unknown_outcome_same_id_retries": 4,
+      "duplicate_chain_effects": 0,
+      "duplicate_requests": 4,
+      "duplicate_rpc_sends": 0,
+      "actual_fees_wei": 1769460000000,
+      "receipt_execution_fees_wei": 1769460000000,
+      "receipt_l1_fees_wei": 0,
+      "other_fee_components_wei": 0,
+      "additional_chain_fee_reserve_wei": 0,
+      "total_debit_allocation_wei": 6483750000004,
+      "admission_seconds": 3.066,
+      "completion_seconds": 1194.574,
+      "batch_completion_tps": 0.003,
+      "maximum_schedule_lag_ms": 10.013,
+      "discarded_send_responses": 4,
+      "unique_upstream_accepted_sends": 4,
+      "actual_rpc_sends": 15,
+      "unique_signed_wires": 4,
+      "redis_persistence": "appendonly=yes, appendfsync=always; process crash tests do not prove failover/power-loss safety",
+      "confirmation_scope": "Engine terminal receipt, canonical block hash, and covering finalized checkpoint from the configured provider; not a light-client consensus proof",
+      "workload": "1 wei EIP-1559 transfers",
+      "elapsed_seconds": 1203.571,
+      "rpc_calls": 1469,
+      "estimated_rpc_cost_usd": 0.008814,
+      "provenance": {
+        "engine_binary_sha256": "fb259e00c4eb4d48d64e05d4bbb886d87300efc758b233fee699d5f6433173da",
+        "declared_binary_source_commit": "cb4e52b38055823cd39894e4f539348acd03304c",
+        "harness_source_commit": "cb4e52b38055823cd39894e4f539348acd03304c",
+        "harness_sha256": "fb6417c8f92dcbda5b4b263f533bda2057d5de97dc1201062c641c5e4973d4f0",
+        "process_helper_sha256": "13a040bf66852cb96bee9c1a1430e2afe8334c94e2fff50739a5b14a9b64eaa7"
+      },
+      "rpc_methods": {
+        "421614:eth_chainId": {
+          "count": 1,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 197.8413329999894
+        },
+        "421614:eth_getBalance": {
+          "count": 7,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 283.8469579999801
+        },
+        "421614:eth_getTransactionCount": {
+          "count": 1381,
+          "httpErrors": 0,
+          "rpcErrors": 3,
+          "totalMs": 129873.85041900026
+        },
+        "421614:eth_getBlockByNumber": {
+          "count": 37,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 1755.8985019992688
+        },
+        "421614:eth_getCode": {
+          "count": 6,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 596.2626679999521
+        },
+        "421614:eth_maxPriorityFeePerGas": {
+          "count": 1,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 67.46904200001154
+        },
+        "421614:eth_estimateGas": {
+          "count": 5,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 315.6190419999766
+        },
+        "421614:eth_sendRawTransaction": {
+          "count": 15,
+          "httpErrors": 0,
+          "rpcErrors": 11,
+          "totalMs": 2496.768834000046
+        },
+        "421614:eth_getTransactionReceipt": {
+          "count": 12,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 1271.3373319999664
+        },
+        "421614:eth_getTransactionByHash": {
+          "count": 4,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 192.80400000000373
+        }
+      }
+    },
+    {
+      "phase": "interrupted",
+      "raw_report_sha256": "5d7dd5bb9cc106f6d6b8d1362e446a182f849c5c562be0596509ed99be5e52bd",
+      "scenario": "public EOA response loss and Engine/Redis crash recovery",
+      "chain_id": 421614,
+      "network": "arbitrum-sepolia",
+      "transactions": 4,
+      "offered_rate_tps": 1.0,
+      "outcome": "fail",
+      "binary_sha256": "68066fe73c0c3fe6597f601f308b80f22a2c59667810359bcdf8454c486ffc1d",
+      "finality_timeout_seconds": 1800,
+      "expected_execution_status": "0x1",
+      "elapsed_seconds": 392.505,
+      "rpc_calls": 478,
+      "estimated_rpc_cost_usd": 0.002868,
+      "reconciliation_lock_retained": true,
+      "provenance": {
+        "engine_binary_sha256": "68066fe73c0c3fe6597f601f308b80f22a2c59667810359bcdf8454c486ffc1d",
+        "declared_binary_source_commit": "4d05bbf4c29007e306043cfda788e24e4c918d61",
+        "harness_source_commit": "017796646efb6a84b5f3225ce1138b73e58c7759",
+        "harness_sha256": "fb6417c8f92dcbda5b4b263f533bda2057d5de97dc1201062c641c5e4973d4f0",
+        "process_helper_sha256": "13a040bf66852cb96bee9c1a1430e2afe8334c94e2fff50739a5b14a9b64eaa7"
+      },
+      "rpc_methods": {
+        "421614:eth_chainId": {
+          "count": 1,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 186.1715830000012
+        },
+        "421614:eth_getBalance": {
+          "count": 3,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 123.72862400000122
+        },
+        "421614:eth_getTransactionCount": {
+          "count": 448,
+          "httpErrors": 1,
+          "rpcErrors": 1,
+          "totalMs": 55172.52766500041
+        },
+        "421614:eth_getCode": {
+          "count": 4,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 511.88204000001497
+        },
+        "421614:eth_getBlockByNumber": {
+          "count": 2,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 79.51229199999943
+        },
+        "421614:eth_maxPriorityFeePerGas": {
+          "count": 1,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 37.66679099999965
+        },
+        "421614:eth_estimateGas": {
+          "count": 5,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 323.53504299999804
+        },
+        "421614:eth_sendRawTransaction": {
+          "count": 10,
+          "httpErrors": 0,
+          "rpcErrors": 6,
+          "totalMs": 1487.3665409999976
+        },
+        "421614:eth_getTransactionReceipt": {
+          "count": 4,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 571.7545400000017
+        }
+      },
+      "failure_category": "provider transport timeout; guard stopped on HTTP 502"
+    },
+    {
+      "phase": "read-only reconciliation",
+      "raw_report_sha256": "17c693aa4bbe050bb15f8a729103cce16a6ee8ac1f64ffaf274bbe763435bbdb",
+      "scenario": "restore existing EVM AOF and reconcile original IDs without broadcasts",
+      "chain_id": 421614,
+      "network": "arbitrum-sepolia",
+      "transactions": 4,
+      "outcome": "pass",
+      "binary_sha256": "68066fe73c0c3fe6597f601f308b80f22a2c59667810359bcdf8454c486ffc1d",
+      "unique_chain_effects": 4,
+      "duplicate_chain_effects": 0,
+      "duplicate_requests": 4,
+      "actual_fees_wei": 1764252000000,
+      "receipt_execution_fees_wei": 1764252000000,
+      "receipt_l1_fees_wei": 0,
+      "other_fee_components_wei": 0,
+      "redis_persistence": "existing appendonly AOF restored with appendfsync=always",
+      "confirmation_scope": "original transfers, finalized Engine terminal evidence and independent canonical/finalized rechecks; no broadcasts",
+      "elapsed_seconds": 9.379,
+      "rpc_calls": 72,
+      "estimated_rpc_cost_usd": 0.000432,
+      "original_outcome": "fail",
+      "rpc_sends": 0,
+      "refused_broadcasts": 0,
+      "original_failure_evidence_unchanged": true,
+      "reconciliation_lock_cleared": true,
+      "rpc_read_limit": 600,
+      "original_provenance": {
+        "engine_binary_sha256": "68066fe73c0c3fe6597f601f308b80f22a2c59667810359bcdf8454c486ffc1d",
+        "declared_binary_source_commit": "4d05bbf4c29007e306043cfda788e24e4c918d61",
+        "harness_source_commit": "017796646efb6a84b5f3225ce1138b73e58c7759",
+        "harness_sha256": "fb6417c8f92dcbda5b4b263f533bda2057d5de97dc1201062c641c5e4973d4f0",
+        "process_helper_sha256": "13a040bf66852cb96bee9c1a1430e2afe8334c94e2fff50739a5b14a9b64eaa7"
+      },
+      "reconciliation_provenance": {
+        "engine_binary_sha256": "68066fe73c0c3fe6597f601f308b80f22a2c59667810359bcdf8454c486ffc1d",
+        "declared_binary_source_commit": "4d05bbf4c29007e306043cfda788e24e4c918d61",
+        "harness_source_commit": "cf56bf0b6851a26fa2aca46396938cab62eedc23",
+        "harness_sha256": "14acd8dc5bbe84aa83855457565546f2ffd722194dcc40f147b24ea59d185213",
+        "process_helper_sha256": "13a040bf66852cb96bee9c1a1430e2afe8334c94e2fff50739a5b14a9b64eaa7"
+      },
+      "original_evidence_sha256": {
+        "manifest.json": "1bf94c1e08f712cbccb29560f01a1fab4d01c81e10baac81b24c2508add0e975",
+        "report.json": "5d7dd5bb9cc106f6d6b8d1362e446a182f849c5c562be0596509ed99be5e52bd",
+        "signed-wires.json": "1a266e0bfc4cdab6b870ab66f85ba39a1fde56ff426bbef9fb65b6ece2b7ff13"
+      },
+      "pre_restore_journal_snapshot_sha256": {
+        "recovery.sqlite": "a69b0d7ff06e0455cf7eb75d23b8bde5f66423c23803abab07b9e3bc152dab2d",
+        "recovery.sqlite-wal": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "recovery.sqlite-shm": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+      },
+      "reconciliation_dependency_sha256": {
+        "testnet_evm_write.py": "d6afada4e0385dcc2afc74c10a974aa44576cf4b32e12f360d992051d69348fc"
+      }
+    },
+    {
+      "phase": "initial",
+      "raw_report_sha256": "ccb7666242e6ebc503dfccc6e60d582479a97bebc33b04502b50b947aac949e5",
+      "scenario": "public EOA response loss and Engine/Redis crash recovery",
+      "chain_id": 84532,
+      "network": "base-sepolia",
+      "transactions": 4,
+      "offered_rate_tps": 1.0,
+      "outcome": "pass",
+      "binary_sha256": "fb259e00c4eb4d48d64e05d4bbb886d87300efc758b233fee699d5f6433173da",
+      "finality_timeout_seconds": 1800,
+      "expected_execution_status": "0x1",
+      "unique_chain_effects": 4,
+      "successful_transfers": 4,
+      "finalized_reverted_executions": 0,
+      "unknown_outcome_same_id_retries": 4,
+      "duplicate_chain_effects": 0,
+      "duplicate_requests": 4,
+      "duplicate_rpc_sends": 0,
+      "actual_fees_wei": 504000000368,
+      "receipt_execution_fees_wei": 504000000000,
+      "receipt_l1_fees_wei": 368,
+      "other_fee_components_wei": 0,
+      "additional_chain_fee_reserve_wei": 4000000000000,
+      "total_debit_allocation_wei": 5680000000004,
+      "admission_seconds": 3.037,
+      "completion_seconds": 1242.039,
+      "batch_completion_tps": 0.003,
+      "maximum_schedule_lag_ms": 8.252,
+      "discarded_send_responses": 4,
+      "unique_upstream_accepted_sends": 4,
+      "actual_rpc_sends": 9,
+      "unique_signed_wires": 4,
+      "redis_persistence": "appendonly=yes, appendfsync=always; process crash tests do not prove failover/power-loss safety",
+      "confirmation_scope": "Engine terminal receipt, canonical block hash, and covering finalized checkpoint from the configured provider; not a light-client consensus proof",
+      "workload": "1 wei EIP-1559 transfers",
+      "elapsed_seconds": 1250.688,
+      "rpc_calls": 1555,
+      "estimated_rpc_cost_usd": 0.00933,
+      "provenance": {
+        "engine_binary_sha256": "fb259e00c4eb4d48d64e05d4bbb886d87300efc758b233fee699d5f6433173da",
+        "declared_binary_source_commit": "cb4e52b38055823cd39894e4f539348acd03304c",
+        "harness_source_commit": "cb4e52b38055823cd39894e4f539348acd03304c",
+        "harness_sha256": "fb6417c8f92dcbda5b4b263f533bda2057d5de97dc1201062c641c5e4973d4f0",
+        "process_helper_sha256": "13a040bf66852cb96bee9c1a1430e2afe8334c94e2fff50739a5b14a9b64eaa7"
+      },
+      "rpc_methods": {
+        "84532:eth_chainId": {
+          "count": 1,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 195.43679200002225
+        },
+        "84532:eth_getBalance": {
+          "count": 7,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 315.2695820002118
+        },
+        "84532:eth_getTransactionCount": {
+          "count": 1462,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 76545.22686100542
+        },
+        "84532:eth_getBlockByNumber": {
+          "count": 44,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 1959.6718389996095
+        },
+        "84532:eth_getCode": {
+          "count": 7,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 586.4945430000662
+        },
+        "84532:eth_maxPriorityFeePerGas": {
+          "count": 1,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 45.84224999998696
+        },
+        "84532:eth_estimateGas": {
+          "count": 5,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 1109.2381239999668
+        },
+        "84532:eth_sendRawTransaction": {
+          "count": 9,
+          "httpErrors": 0,
+          "rpcErrors": 5,
+          "totalMs": 1940.8699159999378
+        },
+        "84532:eth_getTransactionReceipt": {
+          "count": 15,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 2081.466458000592
+        },
+        "84532:eth_getTransactionByHash": {
+          "count": 4,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 169.64033299987204
+        }
+      }
+    },
+    {
+      "phase": "interrupted",
+      "raw_report_sha256": "8ca81499df8f4119b5b75052121641deee7b8d60180efb59fdc089d0d32c33be",
+      "scenario": "public EOA response loss and Engine/Redis crash recovery",
+      "chain_id": 84532,
+      "network": "base-sepolia",
+      "transactions": 4,
+      "offered_rate_tps": 1.0,
+      "outcome": "fail",
+      "binary_sha256": "68066fe73c0c3fe6597f601f308b80f22a2c59667810359bcdf8454c486ffc1d",
+      "finality_timeout_seconds": 1800,
+      "expected_execution_status": "0x1",
+      "elapsed_seconds": 392.484,
+      "rpc_calls": 477,
+      "estimated_rpc_cost_usd": 0.002862,
+      "reconciliation_lock_retained": true,
+      "provenance": {
+        "engine_binary_sha256": "68066fe73c0c3fe6597f601f308b80f22a2c59667810359bcdf8454c486ffc1d",
+        "declared_binary_source_commit": "4d05bbf4c29007e306043cfda788e24e4c918d61",
+        "harness_source_commit": "017796646efb6a84b5f3225ce1138b73e58c7759",
+        "harness_sha256": "fb6417c8f92dcbda5b4b263f533bda2057d5de97dc1201062c641c5e4973d4f0",
+        "process_helper_sha256": "13a040bf66852cb96bee9c1a1430e2afe8334c94e2fff50739a5b14a9b64eaa7"
+      },
+      "rpc_methods": {
+        "84532:eth_chainId": {
+          "count": 1,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 196.52295799999956
+        },
+        "84532:eth_getBalance": {
+          "count": 3,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 144.1128329999974
+        },
+        "84532:eth_getTransactionCount": {
+          "count": 447,
+          "httpErrors": 1,
+          "rpcErrors": 1,
+          "totalMs": 37958.37507600076
+        },
+        "84532:eth_getCode": {
+          "count": 4,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 175.50274900002296
+        },
+        "84532:eth_getBlockByNumber": {
+          "count": 2,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 83.69333300000108
+        },
+        "84532:eth_maxPriorityFeePerGas": {
+          "count": 1,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 40.86504100000093
+        },
+        "84532:eth_estimateGas": {
+          "count": 5,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 240.6318330000031
+        },
+        "84532:eth_sendRawTransaction": {
+          "count": 10,
+          "httpErrors": 0,
+          "rpcErrors": 6,
+          "totalMs": 2075.7973730000012
+        },
+        "84532:eth_getTransactionReceipt": {
+          "count": 4,
+          "httpErrors": 0,
+          "rpcErrors": 0,
+          "totalMs": 409.867709999995
+        }
+      },
+      "failure_category": "provider transport timeout; guard stopped on HTTP 502"
+    },
+    {
+      "phase": "read-only reconciliation",
+      "raw_report_sha256": "484bdf3355557a6c7aa8a036a8a424dcc455d9f7d5505b1564124ab40c00570f",
+      "scenario": "restore existing EVM AOF and reconcile original IDs without broadcasts",
+      "chain_id": 84532,
+      "network": "base-sepolia",
+      "transactions": 4,
+      "outcome": "pass",
+      "binary_sha256": "68066fe73c0c3fe6597f601f308b80f22a2c59667810359bcdf8454c486ffc1d",
+      "unique_chain_effects": 4,
+      "duplicate_chain_effects": 0,
+      "duplicate_requests": 4,
+      "actual_fees_wei": 504000000376,
+      "receipt_execution_fees_wei": 504000000000,
+      "receipt_l1_fees_wei": 376,
+      "other_fee_components_wei": 0,
+      "redis_persistence": "existing appendonly AOF restored with appendfsync=always",
+      "confirmation_scope": "original transfers, finalized Engine terminal evidence and independent canonical/finalized rechecks; no broadcasts",
+      "elapsed_seconds": 233.025,
+      "rpc_calls": 94,
+      "estimated_rpc_cost_usd": 0.000564,
+      "original_outcome": "fail",
+      "rpc_sends": 0,
+      "refused_broadcasts": 0,
+      "original_failure_evidence_unchanged": true,
+      "reconciliation_lock_cleared": true,
+      "rpc_read_limit": 600,
+      "original_provenance": {
+        "engine_binary_sha256": "68066fe73c0c3fe6597f601f308b80f22a2c59667810359bcdf8454c486ffc1d",
+        "declared_binary_source_commit": "4d05bbf4c29007e306043cfda788e24e4c918d61",
+        "harness_source_commit": "017796646efb6a84b5f3225ce1138b73e58c7759",
+        "harness_sha256": "fb6417c8f92dcbda5b4b263f533bda2057d5de97dc1201062c641c5e4973d4f0",
+        "process_helper_sha256": "13a040bf66852cb96bee9c1a1430e2afe8334c94e2fff50739a5b14a9b64eaa7"
+      },
+      "reconciliation_provenance": {
+        "engine_binary_sha256": "68066fe73c0c3fe6597f601f308b80f22a2c59667810359bcdf8454c486ffc1d",
+        "declared_binary_source_commit": "4d05bbf4c29007e306043cfda788e24e4c918d61",
+        "harness_source_commit": "cf56bf0b6851a26fa2aca46396938cab62eedc23",
+        "harness_sha256": "14acd8dc5bbe84aa83855457565546f2ffd722194dcc40f147b24ea59d185213",
+        "process_helper_sha256": "13a040bf66852cb96bee9c1a1430e2afe8334c94e2fff50739a5b14a9b64eaa7"
+      },
+      "original_evidence_sha256": {
+        "manifest.json": "4513bf931a4bf4676ef56428ba477c0750cd463a5925701a69cb44999b9b6c85",
+        "report.json": "8ca81499df8f4119b5b75052121641deee7b8d60180efb59fdc089d0d32c33be",
+        "signed-wires.json": "c439c5bcb87202a36606c5d3f34bbb6d4b377cc58066a2fece6ad45285b02d7e"
+      },
+      "pre_restore_journal_snapshot_sha256": {
+        "recovery.sqlite": "0e302083c3d15b7068f5431448946d3520d06ba0d20be4f43106d019df5ea14a",
+        "recovery.sqlite-wal": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "recovery.sqlite-shm": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+      },
+      "reconciliation_dependency_sha256": {
+        "testnet_evm_write.py": "d6afada4e0385dcc2afc74c10a974aa44576cf4b32e12f360d992051d69348fc"
+      }
+    },
+    {
+      "phase": "initial",
+      "raw_report_sha256": "7f66db43edb9b33aab981e28c433b85f1e458312b983eb5dc8b8ae09dbd0373f",
+      "outcome": "pass",
+      "network": "solana-devnet",
+      "transactions": 4,
+      "engine_local_concurrency": 4,
+      "unique_finalized_effects": 4,
+      "duplicate_effects": 0,
+      "duplicate_replay_extra_broadcasts": 0,
+      "transferred_lamports": 650243,
+      "fees_lamports": 20000,
+      "crash_mode": true,
+      "discarded_send_responses": 3,
+      "wire_retransmissions": 4,
+      "crash_recovered_intents": 3,
+      "unknown_outcome_same_id_retries": 3,
+      "crash_scope": "Engine SIGKILL after response loss; rent bootstrap already finalized; Redis remains running",
+      "rpc_reserved": 44,
+      "elapsed_seconds": 19.4,
+      "requested_post_bootstrap_admissions_per_second": 1.0,
+      "paced_admissions": 3,
+      "paced_admission_elapsed_seconds": 2.001,
+      "observed_admission_spacing_per_second": 0.999,
+      "bootstrap_admission_to_finalized_observed_seconds": 2.616,
+      "admission_profile": "First rent-bearing transfer finalized before remaining paced transfers; duplicate replays follow completion",
+      "latency_scope": "HTTP admission start to local observation of Engine finalized result; polling and recovery time included",
+      "redis_persistence": "appendonly yes; appendfsync always; Redis not deliberately crashed",
+      "free_official_rpc_calls": 1,
+      "provenance": {
+        "engine_binary_sha256": "fb259e00c4eb4d48d64e05d4bbb886d87300efc758b233fee699d5f6433173da",
+        "declared_binary_source_commit": "cb4e52b38055823cd39894e4f539348acd03304c",
+        "harness_source_commit": "cb4e52b38055823cd39894e4f539348acd03304c",
+        "harness_sha256": "ca8baeef2cadd03c6912fe2dad693e5f4e1f6b071aca90308722d03409cd65f4",
+        "process_helper_sha256": "13a040bf66852cb96bee9c1a1430e2afe8334c94e2fff50739a5b14a9b64eaa7"
+      },
+      "rpc_methods": {
+        "getGenesisHash": 3,
+        "getBalance": 4,
+        "getLatestBlockhash": 4,
+        "getFeeForMessage": 4,
+        "sendTransaction": 8,
+        "getSignatureStatuses": 5,
+        "getTransaction": 8,
+        "getBlockHeight": 7,
+        "getSignaturesForAddress": 1
+      }
+    },
+    {
+      "phase": "runtime17",
+      "raw_report_sha256": "5492b6d7abb9bbd0c3510c34b2530699bfabe723a30ef8a5dfe2e7d73e619ebf",
+      "outcome": "pass",
+      "network": "solana-devnet",
+      "transactions": 4,
+      "engine_local_concurrency": 4,
+      "unique_finalized_effects": 4,
+      "duplicate_effects": 0,
+      "duplicate_replay_extra_broadcasts": 0,
+      "transferred_lamports": 650243,
+      "fees_lamports": 20000,
+      "crash_mode": true,
+      "discarded_send_responses": 3,
+      "wire_retransmissions": 3,
+      "crash_recovered_intents": 3,
+      "unknown_outcome_same_id_retries": 3,
+      "crash_scope": "Engine SIGKILL after response loss; rent bootstrap already finalized; Redis remains running",
+      "rpc_reserved": 43,
+      "elapsed_seconds": 18.622,
+      "requested_post_bootstrap_admissions_per_second": 1.0,
+      "paced_admissions": 3,
+      "paced_admission_elapsed_seconds": 2.003,
+      "observed_admission_spacing_per_second": 0.998,
+      "bootstrap_admission_to_finalized_observed_seconds": 2.079,
+      "admission_profile": "First rent-bearing transfer finalized before remaining paced transfers; duplicate replays follow completion",
+      "latency_scope": "HTTP admission start to local observation of Engine finalized result; polling and recovery time included",
+      "redis_persistence": "appendonly yes; appendfsync always; Redis not deliberately crashed",
+      "free_official_rpc_calls": 1,
+      "provenance": {
+        "engine_binary_sha256": "68066fe73c0c3fe6597f601f308b80f22a2c59667810359bcdf8454c486ffc1d",
+        "declared_binary_source_commit": "4d05bbf4c29007e306043cfda788e24e4c918d61",
+        "harness_source_commit": "017796646efb6a84b5f3225ce1138b73e58c7759",
+        "harness_sha256": "ca8baeef2cadd03c6912fe2dad693e5f4e1f6b071aca90308722d03409cd65f4",
+        "process_helper_sha256": "13a040bf66852cb96bee9c1a1430e2afe8334c94e2fff50739a5b14a9b64eaa7"
+      },
+      "rpc_methods": {
+        "getGenesisHash": 3,
+        "getBalance": 4,
+        "getLatestBlockhash": 4,
+        "getFeeForMessage": 4,
+        "sendTransaction": 7,
+        "getSignatureStatuses": 5,
+        "getTransaction": 8,
+        "getBlockHeight": 7,
+        "getSignaturesForAddress": 1
+      }
+    }
+  ]
+}
