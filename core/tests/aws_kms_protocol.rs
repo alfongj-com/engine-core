@@ -18,6 +18,7 @@ use base64::{Engine, engine::general_purpose::STANDARD};
 use engine_core::credentials::{AwsKmsCredential, KmsClientCache};
 use serde_json::{Value, json};
 use std::{
+    collections::BTreeMap,
     process::{Command, Stdio},
     sync::{Arc, Mutex},
     time::{Duration, Instant},
@@ -28,6 +29,7 @@ struct Observed {
     gets: usize,
     signs: usize,
     invalid_requests: usize,
+    by_key: BTreeMap<String, (usize, usize)>,
 }
 
 fn key(byte: u8) -> Secp256k1Signer {
@@ -59,16 +61,36 @@ async fn kms(
     let id = request["KeyId"].as_str().unwrap_or("");
     let valid = authorization.starts_with("AWS4-HMAC-SHA256 ")
         && authorization.contains("Credential=fixture-access/")
-        && id.starts_with("alias/");
+        && matches!(
+            id,
+            "alias/low-s"
+                | "alias/high-s"
+                | "alias/wrong-key"
+                | "alias/invalid-der"
+                | "alias/invalid-spki"
+        );
     let response = if !valid {
         observed.lock().unwrap().invalid_requests += 1;
         json!({"__type":"ValidationException","message":"Invalid fixture request"})
     } else if target.ends_with(".GetPublicKey") {
         observed.lock().unwrap().gets += 1;
+        observed
+            .lock()
+            .unwrap()
+            .by_key
+            .entry(id.into())
+            .or_default()
+            .0 += 1;
         // SubjectPublicKeyInfo: id-ecPublicKey + secp256k1 + uncompressed point.
         let mut spki =
             alloy::hex::decode("3056301006072a8648ce3d020106052b8104000a03420004").unwrap();
-        spki.extend_from_slice(key(1).public_key().as_slice());
+        // Positive aliases have different public keys: swapping two valid key
+        // IDs must fail the independently expected address/signature vectors.
+        spki.extend_from_slice(
+            key(if id == "alias/high-s" { 3 } else { 1 })
+                .public_key()
+                .as_slice(),
+        );
         if id == "alias/invalid-spki" {
             spki = vec![0x30, 0];
         }
@@ -94,11 +116,22 @@ async fn kms(
             );
         }
         observed.lock().unwrap().signs += 1;
+        observed
+            .lock()
+            .unwrap()
+            .by_key
+            .entry(id.into())
+            .or_default()
+            .1 += 1;
         // Independent libsecp256k1 produces the signature; RustCrypto only
         // serializes its public scalars into the DER representation used by KMS.
-        let signature = key(if id == "alias/wrong-key" { 2 } else { 1 })
-            .sign_hash_sync(&B256::from_slice(&digest))
-            .unwrap();
+        let signature = key(match id {
+            "alias/wrong-key" => 2,
+            "alias/high-s" => 3,
+            _ => 1,
+        })
+        .sign_hash_sync(&B256::from_slice(&digest))
+        .unwrap();
         let s = if id == "alias/high-s" {
             order() - signature.s()
         } else {
@@ -145,8 +178,8 @@ async fn credential(id: &str) -> alloy_signer_aws::AwsSigner {
     .unwrap()
 }
 async fn vectors() {
-    let native = key(1);
     for mode in ["alias/low-s", "alias/high-s"] {
+        let native = key(if mode == "alias/high-s" { 3 } else { 1 });
         let signer = credential(mode).await;
         assert_eq!(Signer::address(&signer), native.address());
         assert_eq!(signer.chain_id(), Some(1));
@@ -274,4 +307,14 @@ fn aws_kms_protocol_vectors() {
     assert_eq!(observed.invalid_requests, 0);
     assert_eq!(observed.gets, 5);
     assert_eq!(observed.signs, 16);
+    assert_eq!(
+        observed.by_key,
+        BTreeMap::from([
+            ("alias/low-s".into(), (1, 7)),
+            ("alias/high-s".into(), (1, 7)),
+            ("alias/wrong-key".into(), (1, 1)),
+            ("alias/invalid-der".into(), (1, 1)),
+            ("alias/invalid-spki".into(), (1, 0)),
+        ])
+    );
 }

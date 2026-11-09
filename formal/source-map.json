@@ -246,7 +246,7 @@
         "EoaRecovery",
         "QueueLease"
       ],
-      "sha256": "e13f61f476c4fe9b1b82f6a7024eed8b5d560225486c48456ea0848dec05a280"
+      "sha256": "4b6ebe3eed89f0c00a2beb0b65c8eb605343fe0672b27d50f1ad5eaad2e03ba7"
     },
     {
       "path": "executors/src/eoa/worker/send.rs",
