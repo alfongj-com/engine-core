@@ -44,9 +44,11 @@ authoritative local ledger is retained**. Rolling back/copying that authority
 remains an explicit failure boundary. These separate models are not a
 machine-checked proof of their composition.
 
-The manifest contains **107 configurations**, including 25 focused checkpoint
-publication cases and 14 retained-Solana cases. Each positive configuration exhausts its declared finite
-bounds; each fault or reachability case must produce its named counterexample.
+The [manifest](models.json) defines the required configurations; each report
+records its exact case count. Each positive configuration exhausts its declared
+finite bounds; each fault or reachability case must produce its named counterexample.
+The [unsigned EOA failure model](eoa-preparation-failure.md) includes crash/rebuild
+recovery, competing broadcast authority and negative resurrection witnesses.
 [Historical evidence](https://github.com/alfongj-com/engine-core/blob/load-tests/formal/evidence/README.md)
 retains earlier source scopes. The [PR handoff](../WORK_IN_PROGRESS.md) identifies
 the current validation and measured results. No model proves a TPS target or
