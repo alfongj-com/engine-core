@@ -41,6 +41,18 @@ async fn assert_unfailed(fixture: &Fixture, id: &str) {
     assert_eq!(conn.ttl::<_, i64>(&key).await.unwrap(), -1);
 }
 
+async fn run_workflow(fixture: &Fixture) -> crate::eoa::worker::EoaExecutorWorkerResult {
+    match fixture.worker.execute_main_workflow().await {
+        Ok(result) => result,
+        Err(twmq::job::JobError::Nack { error, .. }) => {
+            panic!("Worker workflow unexpectedly nacked: {error}");
+        }
+        Err(twmq::job::JobError::Fail(error)) => {
+            panic!("Worker workflow unexpectedly failed: {error}");
+        }
+    }
+}
+
 #[tokio::test]
 #[ignore = "requires disposable Redis in TEST_REDIS_URL; isolated journal/signing subprocess"]
 async fn mixed_refusals_publish_only_eligible_failures_and_keep_global_halts_fatal() {
@@ -189,10 +201,29 @@ async fn mixed_refusals_publish_only_eligible_failures_and_keep_global_halts_fat
         Some(AdmissionState::Terminal)
     );
     fixture.journal.ensure_healthy().await.unwrap();
-    fixture
-        .journal
-        .halt("global authority failure fixture")
-        .await;
+    let _: () = fixture
+        .worker
+        .store
+        .redis
+        .clone()
+        .set(
+            format!("{}:recovery:checkpoint", fixture.namespace),
+            "foreign-marker",
+        )
+        .await
+        .unwrap();
+    assert!(matches!(
+        fixture.journal.ensure_healthy().await,
+        Err(engine_core::recovery::RecoveryError::RecoveryRequired(
+            "Redis checkpoint mismatch"
+        ))
+    ));
+    let halted = RecoveryJournal::status(fixture.directory.join("journal.sqlite")).unwrap();
+    assert!(halted.halted);
+    assert_eq!(
+        halted.halt_reason.as_deref(),
+        Some("Redis checkpoint mismatch")
+    );
     assert!(
         fixture
             .worker
@@ -309,7 +340,7 @@ async fn stale_refused_attempt_does_not_starve_unsigned_cull_rebroadcast_or_conf
             );
         }
         fixture.release_all();
-        let result = fixture.worker.execute_main_workflow().await.unwrap();
+        let result = run_workflow(&fixture).await;
         assert_eq!(
             result.recovered_transactions, 1,
             "retained nonce-one wire must be rebroadcast"
@@ -433,7 +464,7 @@ async fn exact_terminal_pending_cleanup_preserves_outcome_and_allows_next_send()
         }).await.unwrap();
         fixture.state.lock().unwrap().latest_nonce = 1;
         fixture.release_all();
-        let result = fixture.worker.execute_main_workflow().await.unwrap();
+        let result = run_workflow(&fixture).await;
         assert_eq!(result.sent_transactions, 1);
         assert_eq!(result.pending_transactions, 0);
         assert_eq!(result.submitted_transactions, 1);

@@ -865,7 +865,7 @@
         "EoaRecovery",
         "EoaPreparationFailure"
       ],
-      "sha256": "8202e9fd21fa698c48f871d94b4d573b270714ffc0a4d480ca5d13aeeae0e0a2"
+      "sha256": "1b891224b2e636a7047e37a47fdea257cc695c1f0ad51dfecf1a840ffce79361"
     },
     {
       "path": "executors/src/eoa/worker/send_kms_service_tests.rs",
