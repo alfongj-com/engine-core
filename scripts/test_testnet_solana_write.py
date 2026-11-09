@@ -9,6 +9,7 @@ import threading
 import unittest
 from pathlib import Path
 from unittest.mock import patch
+import testnet_solana_write as solana_harness
 
 from testnet_solana_write import (DEVNET_GENESIS, MEMO, PAYER, RPC, SYSTEM, PolicyProxy, Run,
                                  b58decode, b58encode, finish_run, inspect_wire, payload,
@@ -37,6 +38,58 @@ def fixture(amount=890880, recipient=None, identity=None, signature=b"s" * 64,
     if extra_instruction:
         message += b"\x02\x00\x00"
     return base64.b64encode(b"\x01" + signature + message + lookup).decode()
+
+
+class ResumeProvenanceTests(unittest.TestCase):
+    def test_invalid_resume_stops_before_provider_calls_and_preserves_saved_state(self):
+        current = {"engine_binary_path": "/unused/frozen-engine", "engine_binary_sha256": "a" * 64,
+                   "declared_binary_source_commit": "b" * 40, "harness_source_commit": "c" * 40,
+                   "harness_sha256": "d" * 64, "process_helper_sha256": "e" * 64}
+        for saved in [None, {**current, "process_helper_sha256": "f" * 64}]:
+            with self.subTest(saved=saved), tempfile.TemporaryDirectory() as temp:
+                directory = (Path(temp) / "run").resolve()
+                directory.mkdir()
+                state = Path(temp) / "state"
+                state.mkdir()
+                active = state / "solana-write-active.json"
+                active.write_text(json.dumps({"run_directory": str(directory)}))
+                original_active = active.read_bytes()
+                keypair = Path(temp) / "keypair.json"
+                keypair.write_text("[]")
+                keypair.chmod(0o600)
+                run_id = "public-solana-" + "a" * 32
+                recipient = b58encode(bytes(range(32)))
+                manifest = {"payer": PAYER, "gateway": RPC, "version": 1, "run_id": run_id,
+                            "recipient": recipient, "crash": False,
+                            "payloads": [payload(run_id + "-0", recipient, 890880)],
+                            "rent_exempt_minimum_lamports": 890880, "total_transfer_lamports": 890880,
+                            "wires": {}, "rpc_reserved": 0, "processes": [],
+                            "outcome": "unknown", "proxy_failure": {"reason": "retained"}}
+                (directory / "redis/appendonlydir").mkdir(parents=True)
+                (directory / "recovery.sqlite").touch()
+                if saved is not None:
+                    manifest["provenance"] = saved
+                path = directory / "manifest.json"
+                path.write_text(json.dumps(manifest))
+                original_manifest = path.read_bytes()
+                args = ["testnet_solana_write.py", "--execute", "--engine-bin", current["engine_binary_path"],
+                        "--resume", str(directory)]
+                with (patch("sys.argv", args), patch.object(solana_harness, "STATE", state),
+                      patch.object(solana_harness, "KEYPAIR", keypair),
+                      patch.object(solana_harness, "provenance", return_value=current),
+                      patch.object(solana_harness.subprocess, "check_output", return_value=PAYER),
+                      patch.object(solana_harness, "Run") as run,
+                      patch.object(solana_harness, "gateway_counters") as counters,
+                      patch.object(solana_harness, "request") as provider):
+                    with self.assertRaisesRegex(RuntimeError, "Resume provenance"):
+                        solana_harness.main()
+                    run.assert_not_called()
+                    counters.assert_not_called()
+                    provider.assert_not_called()
+                self.assertEqual(path.read_bytes(), original_manifest)
+                self.assertEqual(active.read_bytes(), original_active)
+                with (state / "solana-write.lock").open("a") as lock:
+                    solana_harness.fcntl.flock(lock, solana_harness.fcntl.LOCK_EX | solana_harness.fcntl.LOCK_NB)
 
 
 class GuardTests(unittest.TestCase):

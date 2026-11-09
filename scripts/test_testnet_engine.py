@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from testnet_engine import pinned_binary, prepare_recovery, provenance
+from testnet_engine import pinned_binary, prepare_recovery, provenance, require_resume_provenance
 
 
 class EngineSetupTests(unittest.TestCase):
@@ -29,6 +29,23 @@ class EngineSetupTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, "binary changed"):
                 prepare_recovery(self.evidence, self.directory, self.env)
             spawn.assert_not_called()
+
+    def test_resume_requires_complete_matching_binary_and_harness_identity(self):
+        original = dict(self.evidence)
+        require_resume_provenance(self.evidence, dict(self.evidence))
+        self.assertEqual(self.evidence, original)
+        for field in original:
+            with self.subTest(field=field):
+                current = {**original, field: "changed"}
+                with self.assertRaisesRegex(RuntimeError, "Resume provenance changed.*" + field):
+                    require_resume_provenance(original, current)
+                missing = dict(original)
+                del missing[field]
+                with self.assertRaisesRegex(RuntimeError, "missing or incomplete"):
+                    require_resume_provenance(missing, original)
+        with self.assertRaisesRegex(RuntimeError, "missing or incomplete"):
+            require_resume_provenance(None, original)
+        self.assertEqual(self.evidence, original)
 
     def test_new_and_resumed_authority_cannot_be_interchanged(self):
         with patch("testnet_engine.subprocess.run") as spawn:

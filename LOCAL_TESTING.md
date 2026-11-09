@@ -12,7 +12,7 @@ Neither establishes public RPC capacity, rollup settlement or production readine
 | PR #1 baseline | Merged into `main` at `154b0ac`; preserved branch `production-hardening` at `8741b88` |
 | PR #2 baseline | Merged into `main` at `918d7d9`; preserved branch `crash-recovery-and-chain-fairness` |
 | [PR #3](https://github.com/alfongj-com/engine-core/pull/3) baseline | Merged into `main` at `8fa866e`; executable implementation `04d15d8` |
-| Active review | `/Users/alfongj/Code/engine-core-review-stack`, branch `reclaim-solana-processing-locks` |
+| Active review | `/Users/alfongj/Code/engine-core-review-stack`, branch `pin-testnet-resume-provenance` |
 | Full historical evidence in Git | Local and remote branch `load-tests`; use its current head for new evidence |
 | Browsable local evidence | `/Users/alfongj/Code/engine-core-review-evidence/LOAD_TESTS.md`; historical readonly snapshots remain under `.local/share/engine-core/evidence/` |
 | Installed test tools and checksum manifest | `/Users/alfongj/.local/share/engine-core/tools/` |
@@ -59,7 +59,7 @@ another agent's work. These commands create detached test checkouts when absent:
 cd /Users/alfongj/Code/engine-core
 git status --short --branch
 git worktree add --detach /Users/alfongj/Code/engine-core-test-pr4-baseline 4e262c8
-git worktree add --detach /Users/alfongj/Code/engine-core-test-review-locks reclaim-solana-processing-locks
+git worktree add --detach /Users/alfongj/Code/engine-core-test-review-provenance pin-testnet-resume-provenance
 cd /Users/alfongj/Code/engine-core-test-pr4-baseline
 source /Users/alfongj/.local/share/engine-core/tools/env.sh
 unset CARGO_TARGET_DIR
@@ -287,6 +287,12 @@ retained journal and AOF. Do not pass `--run-dir` or create new payloads:
   --execute --resume "$ENGINE_PUBLIC_RUN/solana" --timeout 600
 ```
 
+Solana `--resume` requires the recorded binary path/hash, declared binary source,
+harness commit, harness hash and process-helper hash. Missing or changed provenance
+is refused before provider calls or manifest updates. Use the original checkout and
+frozen executable for an unfinished run; do not rewrite its manifest to bypass this
+check. A documentation-only commit also changes the recorded checkout identity.
+
 Reports on stdout contain aggregate results; private files may contain addresses,
 signed bytes and process credentials. Publish only reviewed, sanitized aggregates
 on `load-tests`, keeping baseline and candidate provenance separate. These small
@@ -299,12 +305,12 @@ Test Engine Core locally on this Mac.
 
 Repository: /Users/alfongj/Code/engine-core-review-stack
 Read README.md and LOCAL_TESTING.md first. Read the saved WIP notes with:
-  git show reclaim-solana-processing-locks:WORK_IN_PROGRESS.md
+  git show pin-testnet-resume-provenance:WORK_IN_PROGRESS.md
 Load tools with:
   source /Users/alfongj/.local/share/engine-core/tools/env.sh
 
 Use isolated test checkouts as documented; do not switch or reset the main
-checkout. Compare baseline 4e262c8 (PR #4) and the current reclaim-solana-processing-locks
+checkout. Compare baseline 4e262c8 (PR #4) and the current pin-testnet-resume-provenance
 branch in separate checkouts. Active work is in
 /Users/alfongj/Code/engine-core-review-stack; preserve its edits. Inspect existing test directories
 before reusing them. Build each checkout's own target/debug/thirdweb-engine.
