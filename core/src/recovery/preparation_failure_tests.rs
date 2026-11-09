@@ -330,13 +330,15 @@ async fn another_terminal_or_cancelled_decision_is_not_a_preparation_failure_or_
         })
         .await
         .unwrap();
-    assert!(
+    assert!(matches!(
         journal
             .eoa_preparation_failure("other-terminal", &request("other-terminal"))
-            .await
-            .is_err()
-    );
-    assert!(RecoveryJournal::status(&fixture.path).unwrap().halted);
+            .await,
+        Err(RecoveryError::RecoveryRequired("ledger unavailable"))
+    ));
+    let status = RecoveryJournal::status(&fixture.path).unwrap();
+    assert!(status.halted);
+    assert_eq!(status.halt_reason.as_deref(), Some("ledger unavailable"));
     drop(journal);
     fixture.cleanup(&[]).await;
 }

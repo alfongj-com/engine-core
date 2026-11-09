@@ -1,5 +1,6 @@
 //! Exercise the real permanent-failure store and worker cleanup against Redis.
 use super::*;
+use engine_core::error::{EngineError, SerialisableAwsSdkError, SerialisableAwsSignerError};
 use engine_core::recovery::AdmissionState;
 
 fn failure(message: &str) -> EoaExecutorWorkerError {
@@ -288,4 +289,121 @@ async fn stale_eoa_owner_cannot_commit_a_new_durable_preparation_failure() {
     );
     assert_eq!(webhook_count(&fixture).await, 0);
     fixture.cleanup().await;
+}
+
+#[tokio::test]
+#[ignore = "requires disposable Redis in TEST_REDIS_URL; isolated journal/signing subprocess"]
+async fn uncertain_kms_failure_keeps_unsigned_work_for_successful_retry() {
+    if !child(
+        "preparation_failure_tests::uncertain_kms_failure_keeps_unsigned_work_for_successful_retry",
+    ) {
+        return;
+    }
+    tokio::time::timeout(LIMIT, async {
+        let fixture = Fixture::new(1, 1).await;
+        let pending = fixture
+            .worker
+            .store
+            .peek_pending_transactions(1)
+            .await
+            .unwrap()
+            .pop()
+            .unwrap();
+        let error = EoaExecutorWorkerError::SigningError {
+            message: "KMS signing response lost".into(),
+            inner_error: EngineError::AwsKmsSignerError {
+                error: SerialisableAwsSignerError::Sign {
+                    aws_sdk_error: SerialisableAwsSdkError::Other {
+                        message: "SDK erased the transient cause".into(),
+                    },
+                },
+            },
+        };
+        assert!(
+            fixture
+                .worker
+                .clean_prepration_results(vec![(&pending, Err(error.clone()))], true)
+                .await
+                .unwrap()
+                .is_empty()
+        );
+        // A caller bypassing worker classification still cannot make this
+        // ambiguous infrastructure failure an irreversible failure decision.
+        assert!(
+            fixture
+                .worker
+                .store
+                .fail_pending_transactions_batch(
+                    vec![(&pending, error)],
+                    fixture.worker.webhook_queue.clone()
+                )
+                .await
+                .is_err()
+        );
+        assert_eq!(
+            fixture
+                .worker
+                .store
+                .get_pending_transactions_count()
+                .await
+                .unwrap(),
+            1
+        );
+        assert_eq!(
+            fixture
+                .journal
+                .admission_state("eoa", &pending.transaction_id)
+                .await
+                .unwrap(),
+            Some(AdmissionState::Admitted)
+        );
+        assert!(
+            fixture
+                .journal
+                .terminal_evidence("eoa", &pending.transaction_id)
+                .await
+                .unwrap()
+                .is_none()
+        );
+        assert_eq!(webhook_count(&fixture).await, 0);
+        assert_eq!(
+            RecoveryJournal::status(fixture.directory.join("journal.sqlite"))
+                .unwrap()
+                .attempts,
+            0
+        );
+        let mut conn = fixture.worker.store.redis.clone();
+        let key = fixture
+            .worker
+            .store
+            .transaction_data_key_name(&pending.transaction_id);
+        let reason: Option<String> = conn.hget(&key, "failure_reason").await.unwrap();
+        let ttl: i64 = conn.ttl(&key).await.unwrap();
+        assert!(reason.is_none());
+        assert_eq!(ttl, -1);
+        // Exercise the ordinary worker again with a healthy signer: the same
+        // original request can now reserve nonce zero and dispatch exactly once.
+        fixture.release_all();
+        assert_eq!(fixture.worker.process_new_transactions(1).await.unwrap(), 1);
+        assert_eq!(
+            fixture
+                .worker
+                .store
+                .get_submitted_transactions_count()
+                .await
+                .unwrap(),
+            1
+        );
+        assert_eq!(
+            RecoveryJournal::status(fixture.directory.join("journal.sqlite"))
+                .unwrap()
+                .attempts,
+            1
+        );
+        assert_eq!(fixture.state.lock().unwrap().wires.len(), 1);
+        assert_eq!(fixture.state.lock().unwrap().wires[0].0, 0);
+        fixture.cleanup().await;
+    })
+    .await
+    .unwrap();
 }
