@@ -19,6 +19,8 @@ The open stack is **[#21](https://github.com/alfongj-com/engine-core/pull/21) â†
 
 Fixes go on their owning open PR; dependent PRs are rebased. This agent does not
 merge PRs.
+Merge each PR into `main` in this order; retarget the next PR to `main` after its
+parent merges. Merging into an already merged parent branch does not update `main`.
 
 Local code: **`/Users/alfongj/Code/engine-core-review-stack`**, branch
 **`reconcile-public-read-failures`**. Record `git rev-parse HEAD` before testing.
@@ -26,8 +28,9 @@ Its `README.md` and `LOCAL_TESTING.md` contain setup, installed tool paths,
 commands and a prompt for another local agent. The older
 `/Users/alfongj/Code/engine-core` checkout is unchanged.
 
-Local evidence: **`/Users/alfongj/Code/engine-core-review-evidence`**, branch
-**`load-tests`**. Read the [source-specific results and limits](docs/baselines/pending-work-2026-11-08/README.md).
+Local evidence: **`/Users/alfongj/Code/engine-core-review-evidence`**, local branch
+**`review-evidence-oct11`**, tracking GitHub's **`load-tests`** branch. Read the
+[source-specific results and limits](docs/baselines/pending-work-2026-11-08/README.md).
 Private originals and unresolved fixtures are under
 `/Users/alfongj/.local/share/engine-core/runs/pending-work-2026-11-08/`.
 Old incident journals, failed fixtures and the Nitro VM remain intact.

@@ -50,6 +50,35 @@ The OP-mode 100-TPS run drains but fails the backlog-growth criterion; Agave's
 a green job with no qualifying rate does not establish capacity. Those harness
 defects are corrected in the review PR before new measurements.
 
+The corrected-clock run also records journal wait observations. For the first
+qualified trial of each profile, load-phase counter differences give these means:
+
+| Profile and trial | Admission lane wait | Health lane wait | SQLite commit | Redis continuity read |
+| --- | ---: | ---: | ---: | ---: |
+| OP-mode 50 TPS, `01-none.json` | 0.50 ms | 1.70 ms | 0.33 ms | 0.12 ms |
+| Agave 25 TPS, `00-none.json` | 77.02 ms | 97.93 ms | 0.36 ms | 0.58 ms |
+
+These are overlapping-operation means, not latency percentiles or additive
+transaction costs. They show queueing in that Agave trial; they do not establish
+one universal bottleneck. The raw time series is private; exported reports retain
+its digest and phase summaries.
+
+The [later 600-second search](linux-capacity-42565910045.json), source `83a4df1`,
+passes single Agave screens at 25 and 50 TPS, then stops incomplete at 100 TPS.
+All 59,897 accepted transactions finalize on chain, but Engine acknowledges only
+42,500 before its 240-second drain ends; 17,397 remain in its journal/queue.
+Another 103 offers are dropped before HTTP. The safety oracle passes and the
+completion check correctly fails. Neither earlier screen receives the three
+required confirmations, so this run qualifies no rate.
+
+In its final 480-second load window, the shared journal serial hold occupies
+97% of wall time. Mean admission/broadcast/terminal lane waits are about
+246/214/293 ms, while FULL commits average 0.37 ms and Redis checkpoint mirrors
+0.60 ms. Included and terminal rates trail the offered rate and backlogs grow.
+This is an Engine scheduling/serialization limit in that trial; allowing a
+longer drain would not make 100 TPS sustainable. The original failed fixture is
+retained privately in its verified archive.
+
 The 250ms EVM profile is Ethereum-mode Anvil, not Nitro. Small public Arbitrum
 checks do not establish Arbitrum throughput. Earlier Nitro results remain
 historical and its retained VM is untouched.

@@ -55,13 +55,14 @@
       "raw_summary_sha256": "07a71d72cf8665f46fc0699a715e2296cab060d8f81539ba102747c4b6259142",
       "trials": [
         {
+          "report_name": "00-none.json",
           "rates": {
             "evm025": 25
           },
+          "chaos": "none",
           "exit": 0,
           "seconds": 309.21,
           "outcome": "pass",
-          "chaos": "none",
           "duration_seconds": 300.0,
           "source_commit": "017796646efb6a84b5f3225ce1138b73e58c7759",
           "engine_binary_sha256": "73c20c3f71fde61590c861c5544d17b08a591aa896f966c767543d6f72c9aecf",
@@ -390,13 +391,14 @@
           }
         },
         {
+          "report_name": "01-none.json",
           "rates": {
             "evm025": 50
           },
+          "chaos": "none",
           "exit": 0,
           "seconds": 311.954,
           "outcome": "pass",
-          "chaos": "none",
           "duration_seconds": 300.0,
           "source_commit": "017796646efb6a84b5f3225ce1138b73e58c7759",
           "engine_binary_sha256": "73c20c3f71fde61590c861c5544d17b08a591aa896f966c767543d6f72c9aecf",
@@ -725,13 +727,14 @@
           }
         },
         {
+          "report_name": "02-none.json",
           "rates": {
             "evm025": 100
           },
+          "chaos": "none",
           "exit": 0,
           "seconds": 318.526,
           "outcome": "pass",
-          "chaos": "none",
           "duration_seconds": 300.0,
           "source_commit": "017796646efb6a84b5f3225ce1138b73e58c7759",
           "engine_binary_sha256": "73c20c3f71fde61590c861c5544d17b08a591aa896f966c767543d6f72c9aecf",
@@ -1060,13 +1063,14 @@
           }
         },
         {
+          "report_name": "03-none.json",
           "rates": {
             "evm025": 200
           },
+          "chaos": "none",
           "exit": 1,
           "seconds": 401.961,
           "outcome": "incomplete",
-          "chaos": "none",
           "duration_seconds": 300.0,
           "source_commit": "017796646efb6a84b5f3225ce1138b73e58c7759",
           "engine_binary_sha256": "73c20c3f71fde61590c861c5544d17b08a591aa896f966c767543d6f72c9aecf",
@@ -1417,13 +1421,14 @@
       "raw_summary_sha256": "ef8f06110facc47bd711ac1708a7a76ae0731bcf15702f160e8d2a637e6b77a4",
       "trials": [
         {
+          "report_name": "00-none.json",
           "rates": {
             "evm12": 25
           },
+          "chaos": "none",
           "exit": 0,
           "seconds": 347.049,
           "outcome": "pass",
-          "chaos": "none",
           "duration_seconds": 300.0,
           "source_commit": "017796646efb6a84b5f3225ce1138b73e58c7759",
           "engine_binary_sha256": "73c20c3f71fde61590c861c5544d17b08a591aa896f966c767543d6f72c9aecf",
@@ -1734,13 +1739,14 @@
           }
         },
         {
+          "report_name": "01-none.json",
           "rates": {
             "evm12": 50
           },
+          "chaos": "none",
           "exit": 0,
           "seconds": 353.583,
           "outcome": "pass",
-          "chaos": "none",
           "duration_seconds": 300.0,
           "source_commit": "017796646efb6a84b5f3225ce1138b73e58c7759",
           "engine_binary_sha256": "73c20c3f71fde61590c861c5544d17b08a591aa896f966c767543d6f72c9aecf",
@@ -2069,13 +2075,14 @@
           }
         },
         {
+          "report_name": "02-none.json",
           "rates": {
             "evm12": 100
           },
+          "chaos": "none",
           "exit": 0,
           "seconds": 372.889,
           "outcome": "pass",
-          "chaos": "none",
           "duration_seconds": 300.0,
           "source_commit": "017796646efb6a84b5f3225ce1138b73e58c7759",
           "engine_binary_sha256": "73c20c3f71fde61590c861c5544d17b08a591aa896f966c767543d6f72c9aecf",
@@ -2404,13 +2411,14 @@
           }
         },
         {
+          "report_name": "03-none.json",
           "rates": {
             "evm12": 200
           },
+          "chaos": "none",
           "exit": 1,
           "seconds": 586.69,
           "outcome": "incomplete",
-          "chaos": "none",
           "duration_seconds": 300.0,
           "source_commit": "017796646efb6a84b5f3225ce1138b73e58c7759",
           "engine_binary_sha256": "73c20c3f71fde61590c861c5544d17b08a591aa896f966c767543d6f72c9aecf",
@@ -2769,13 +2777,14 @@
       "raw_summary_sha256": "83e5ccdb4665069b9ce17ce9466984a8ad03060a79806f27d32b02b4d53b6563",
       "trials": [
         {
+          "report_name": "00-none.json",
           "rates": {
             "evm2": 25
           },
+          "chaos": "none",
           "exit": 1,
           "seconds": 316.785,
           "outcome": "incomplete",
-          "chaos": "none",
           "duration_seconds": 300.0,
           "source_commit": "017796646efb6a84b5f3225ce1138b73e58c7759",
           "engine_binary_sha256": "73c20c3f71fde61590c861c5544d17b08a591aa896f966c767543d6f72c9aecf",
@@ -3112,13 +3121,14 @@
       "raw_summary_sha256": "82d6f810835774bee4a9387e704513a454055eb012b94e9753467eda7f1286f3",
       "trials": [
         {
+          "report_name": "00-none.json",
           "rates": {
             "solana": 25
           },
+          "chaos": "none",
           "exit": 0,
           "seconds": 350.085,
           "outcome": "pass",
-          "chaos": "none",
           "duration_seconds": 300.0,
           "source_commit": "017796646efb6a84b5f3225ce1138b73e58c7759",
           "engine_binary_sha256": "73c20c3f71fde61590c861c5544d17b08a591aa896f966c767543d6f72c9aecf",
@@ -3393,13 +3403,14 @@
           }
         },
         {
+          "report_name": "01-none.json",
           "rates": {
             "solana": 50
           },
+          "chaos": "none",
           "exit": 0,
           "seconds": 362.413,
           "outcome": "pass",
-          "chaos": "none",
           "duration_seconds": 300.0,
           "source_commit": "017796646efb6a84b5f3225ce1138b73e58c7759",
           "engine_binary_sha256": "73c20c3f71fde61590c861c5544d17b08a591aa896f966c767543d6f72c9aecf",
@@ -3700,13 +3711,14 @@
           }
         },
         {
+          "report_name": "02-none.json",
           "rates": {
             "solana": 100
           },
+          "chaos": "none",
           "exit": 2,
           "seconds": 513.385,
           "outcome": "pass",
-          "chaos": "none",
           "duration_seconds": 300.0,
           "source_commit": "017796646efb6a84b5f3225ce1138b73e58c7759",
           "engine_binary_sha256": "73c20c3f71fde61590c861c5544d17b08a591aa896f966c767543d6f72c9aecf",
@@ -4009,13 +4021,14 @@
           }
         },
         {
+          "report_name": "03-none.json",
           "rates": {
             "solana": 50
           },
+          "chaos": "none",
           "exit": 2,
           "seconds": 362.533,
           "outcome": "pass",
-          "chaos": "none",
           "duration_seconds": 300.0,
           "source_commit": "017796646efb6a84b5f3225ce1138b73e58c7759",
           "engine_binary_sha256": "73c20c3f71fde61590c861c5544d17b08a591aa896f966c767543d6f72c9aecf",
@@ -4318,13 +4331,14 @@
           }
         },
         {
+          "report_name": "04-none.json",
           "rates": {
             "solana": 25
           },
+          "chaos": "none",
           "exit": 0,
           "seconds": 350.373,
           "outcome": "pass",
-          "chaos": "none",
           "duration_seconds": 300.0,
           "source_commit": "017796646efb6a84b5f3225ce1138b73e58c7759",
           "engine_binary_sha256": "73c20c3f71fde61590c861c5544d17b08a591aa896f966c767543d6f72c9aecf",
@@ -4625,13 +4639,14 @@
           }
         },
         {
+          "report_name": "05-none.json",
           "rates": {
             "solana": 25
           },
+          "chaos": "none",
           "exit": 0,
           "seconds": 350.088,
           "outcome": "pass",
-          "chaos": "none",
           "duration_seconds": 300.0,
           "source_commit": "017796646efb6a84b5f3225ce1138b73e58c7759",
           "engine_binary_sha256": "73c20c3f71fde61590c861c5544d17b08a591aa896f966c767543d6f72c9aecf",
@@ -4934,5 +4949,6 @@
       ]
     }
   ],
+  "shared": [],
   "scope": "Four-core hosted Linux, frozen release binary, local Anvil/Agave, Redis always and SQLite FULL/fullfsync. EVM250ms is Ethereum-mode Anvil, not Nitro. Green jobs without a qualified rate do not qualify. Prior harness defects and negative trials are retained; later review fixes require new measurements."
 }
