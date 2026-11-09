@@ -68,9 +68,11 @@ RPC request volume, so compare it within the provider's quota.
 The coordinator never releases or transfers a transaction lease. The existing process timeout bounds each worker attempt; journal/lease checks remain authoritative before send and terminal cleanup. Batch errors consume each participating caller's existing logical reconciliation attempt; there is no hidden transport retry or expanded lifetime budget. Serialized-input processed admission/preflight, instruction-input finalized preflight, and finalized terminal receipt checks are unchanged. Null/expired history remains insufficient to re-sign an intent.
 
 Checkpoint publication retries are separate from polling batches. A transient
-publication error retries the same work after two seconds; a missing Redis signed
-attempt still parks after marker repair. Batching cannot reconstruct it. Retained
-attempts can resume terminal reconciliation; see [the failure boundaries](recoverable-projection.md#checkpoint-repair-versus-transaction-recovery).
+publication error retries the same work after two seconds. Schema-3 recovery can
+restore a missing Redis attempt from its exact validated journal record; batching
+does not perform that restoration. Missing or ambiguous journal evidence remains
+parked. See [retained transaction recovery](retained-solana-recovery.md) for the
+separate durable recovery allowance and [the failure boundaries](recoverable-projection.md#checkpoint-repair-versus-transaction-recovery).
 
 ## Validation requirements
 

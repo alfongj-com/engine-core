@@ -1,16 +1,16 @@
 # RPC providers and test budget
 
-Date: September 17, 2026. Updated for the configured-provider and Solana recovery changes in this fork. Prices are public USD rates, using monthly billing where applicable. This document separates estimated transaction demand from published provider quotas. Executed measurements are recorded in the verification report.
+Updated October 13, 2026 for schema-3 recovery and bounded Solana status batching. The provider comparison retains its **September 17 historical scope**; only dRPC method pricing was rechecked today. Historical planning tables below are not current capacity estimates.
 
-**September 27 review:** dRPC method pricing was rechecked; other provider comparisons retain their September 17 scope. The simple request tables below are historical planning scenarios, preceding current finality checks and scheduling. Use the [current method mix and restart-safe budget](https://github.com/alfongj-com/engine-core/blob/load-tests/docs/baselines/capacity-2026-09-26/rpc-budget.md) for new runs; the provider account balance remains unqueried.
+Use the [PR #3 measured method counts and workload provenance](https://github.com/alfongj-com/engine-core/blob/load-tests/docs/baselines/retained-recovery-2026-10-12/README.md) as the local baseline, then measure the intended public endpoints. The provider account balance remains unknown.
 
 ## Recommendation
 
-Use free endpoints for small correctness checks. For short load tests, try **dRPC paid first**, then measure whether it can sustain our workload. Its ordinary methods cost **$6/million calls**; the paid service documents no rate cap while the deposit remains funded. This does not guarantee endpoint speed or transaction inclusion. The required minimum deposit was not established from public documentation. [Method prices](https://drpc.org/docs/pricing/compute-units), [rate limits](https://drpc.org/docs/howitworks/ratelimiting), [payment model](https://drpc.org/docs/pricing/requests).
+Use the existing dRPC account for a capped validation pass, then measure whether it sustains this workload. Rechecked October 13: the published method schedule charges 20 CU per ordinary RPC method at $0.30/million CU, or **$6/million calls**. Counting even zero-cost identity methods at that rate gives a conservative estimate. Price does not establish endpoint capacity. [Method prices](https://drpc.org/docs/pricing/compute-units).
 
 Start with **Ethereum Sepolia (11155111), Arbitrum Sepolia (421614), OP Sepolia (11155420), Base Sepolia (84532), and Solana Devnet**. dRPC lists all five on its [status page](https://status.drpc.org/). Endpoint availability is not a performance guarantee. Solana recommends Devnet for application development; its separately named Testnet primarily serves validator testing. [Solana networks](https://solana.com/docs/references/clusters).
 
-Alchemy PAYG is a useful alternative for smaller EVM runs. Ankr has higher advertised capacity at a higher per-call price. Recompare after collecting traffic: the cheapest short experiment need not be the cheapest month of continuous use.
+Recompare alternatives after collecting traffic; the historical provider table is a starting point, not a current purchase recommendation.
 
 ## 1. Requests this engine makes
 
@@ -31,6 +31,8 @@ For `T` transactions/second, `W` active wallets and a measured cycle time of `P`
 
 Current scheduling depends on progress: useful nondelegated work can rejoin the queue immediately, while polling-only work remains delayed. The separate finality poll uses policy-head nonce hints, canonical block/checkpoint reads and continuity checks. Receipts are not polled for every outstanding transaction each cycle. The formula and table below omit that later work, replay and independent verification; use measured method counts for a new budget.
 
+**Historical EVM planning scenario:** excludes the current full finality/recovery method mix.
+
 | Transactions/second | Calls/second, 10 wallets | With preconfirmation enabled | Calls/hour, ordinary EVM | dRPC/hour |
 | ---: | ---: | ---: | ---: | ---: |
 | 10 | 50 | 60 | 180,000 | $1.08 |
@@ -45,19 +47,21 @@ Source locations: [fee/gas preparation](../../executors/src/eoa/worker/transacti
 
 ### Solana
 
-For instruction-built transactions, the restored signer and recovery path need:
+For instruction-built transactions, budget actual HTTP methods rather than logical worker polls:
 
-**Calls/transaction = `3 + F + S + H + R`.**
+**HTTP calls/intent ≈ `3 + F + S + H + R`.**
 
-- `3`: `getLatestBlockhash`, `sendTransaction`, successful `getTransaction`.
+- `3`: initial `getLatestBlockhash`, `sendTransaction`, and successful finalized `getTransaction`.
 - `F`: one `getRecentPrioritizationFees` for automatic fees; zero for manual/omitted fees.
-- `S`: historical `getSignatureStatuses` polls, currently one signature per request.
-- `H`: finalized `getBlockHeight` calls while the signature is absent (or `isBlockhashValid` for serialized inputs). A visible status waiting for finality needs no height lookup.
-- `R`: repeat broadcasts of the same bytes after uncertain submission, capped at 20 total sends per attempt and spaced by at least two seconds.
+- `S`: historical status HTTP calls allocated across participating intents. Eligible concurrent singleton polls are coalesced into **at most 32 signatures per request**, with a 5 ms collection window. Partial batches, isolated endpoints and disabled coalescing increase calls; do not assume every batch fills.
+- `H`: actual finalized `getBlockHeight` calls while status is absent, or `isBlockhashValid` for serialized inputs. These results are **not cached by Engine**; cached RPC clients and genesis checks do not remove height calls. A visible status waiting for finality needs no height lookup. Provider caching can affect latency, but forwarded methods still count toward the gateway budget.
+- `R`: same-wire retransmissions after uncertainty. The original Redis path allows 20 sends including the initial send; schema 3 adds a separate durable allowance of 20 recovery grants shared across all restorations. Lost grants consume credit. There is no unconditional 40-send lifetime bound because the original Redis counter can roll back.
 
-Serialized input uses `isBlockhashValid` instead of the initial `getLatestBlockhash` and preserves its own compute-budget instructions; it does not estimate or override priority fees.
+This shorthand excludes startup checks, failed/repeated receipt reads and independent verification; measure those too. Serialized input uses `isBlockhashValid` instead of the initial `getLatestBlockhash` and preserves its own compute-budget instructions. See [batching and opt-out behavior](solana-status-batching.md) and [retained-attempt recovery limits](retained-solana-recovery.md).
 
-Confirmation polling now has an explicit whole-second setting, `queue.solana_confirmation_poll_interval_seconds`, from 1 to 5 (default 1; candidate measurements also use 2). Queue/HTTP delay affects observed cadence; absent-status and network retries are separate. Durable settlement requires **finalized**, so use time to finality rather than first inclusion. The scenarios below assume the default one-second poll.
+`queue.solana_confirmation_poll_interval_seconds` ranges from 1 to 5 (default 1). Queue/HTTP delays and absent-status retries affect the actual cadence. Settlement requires **finalized** status plus a matching receipt. The 500-check local reconciliation allowance resets after projection reconstruction; it is not a lifetime RPC-read quota. Expired unknown outcomes retain their identity and park.
+
+**Historical unbatched Solana planning scenarios:** these assume one status request per poll and a one-second interval. They are retained for comparison, not for sizing the current implementation.
 
 | Assumed time until requested commitment is visible | Calls/transaction with automatic fees | Calls/second at 10 / 50 / 100 transactions/second |
 | --- | ---: | ---: |
@@ -65,11 +69,13 @@ Confirmation polling now has an explicit whole-second setting, `queue.solana_con
 | 15 seconds | 19–20 | 200 / 1,000 / 2,000, using 20 |
 | 30 seconds | 34–35 | 350 / 1,750 / 3,500, using 35 |
 
-These are scenarios, not observed Solana timing. The table assumes the signature becomes visible promptly, with no extra height checks or rebroadcasts. Absent statuses add those calls; expired attempts with unresolved outcomes pause instead of generating a new signature. The bounded HTTP sender does not add hidden retries. Preflight is part of submission; this path makes no separate client `simulateTransaction` call.
+These assume prompt signature visibility, with no extra height checks or rebroadcasts. Current batching changes the status term; public-provider history latency and partial batches must be measured. The bounded HTTP sender adds no hidden retries. Preflight belongs to submission; the worker makes no separate `simulateTransaction` call.
 
-Source: [Solana worker](../../executors/src/solana_executor/worker.rs), [default commitment](../../core/src/execution_options/solana.rs). Status batching can query up to 256 signatures per RPC call; the current worker does not use it. Preserve a baseline before optimizing. [Solana RPC specification](https://solana.com/docs/rpc/http/getsignaturestatuses).
+Source: [Solana worker](../../executors/src/solana_executor/worker.rs), [RPC transport](../../executors/src/solana_executor/rpc_cache.rs), [batch coordinator](../../executors/src/solana_executor/status_batcher.rs). For actual local counts, see the [PR #3 measurements](https://github.com/alfongj-com/engine-core/blob/load-tests/docs/baselines/retained-recovery-2026-10-12/README.md).
 
-## 2. Published prices and limits
+## 2. Historical provider comparison — September 17, 2026
+
+The rates, quotas, availability and fit assessments in this section are historical, except dRPC method pricing rechecked above. Recheck a provider before purchasing or sizing a run. The Solana fit assessments use the old unbatched scenarios.
 
 RPS means RPC requests/second, not blockchain transactions/second. Credits, compute units (CUs), and request units (RUs) are different currencies. Batching generally still charges each RPC method; a Solana status call containing many signatures is a different optimization.
 
@@ -108,17 +114,19 @@ Alfonso originally supplied an existing dRPC key with $50 in credit; its current
 
 The gateway counts each method in a batch, including failed requests. It persists reservations before forwarding and preserves the ceiling across restarts. Two million calls is the absolute limit. Its estimates do not replace the provider's invoice or account balance, and do not include another application's use of the same key. The actual counter and reserved upper bound are recorded with the results.
 
-Use short ramps and preserve at least 25% of remaining calls for reconciliation. The September 27 metadata review found 374,000 calls reserved: restarting leaves 1,626,000 calls, of which at most 1,219,500 should fund new work. Unused in-memory reservations are forfeited on restart; do not reset or reclaim them. See the [current budget record](https://github.com/alfongj-com/engine-core/blob/load-tests/docs/baselines/capacity-2026-09-26/rpc-budget.md). A read-only capacity probe does not need funded wallets; transaction submission does.
+The October 13 validation pass has an additional **100,000-method ceiling**, a conservative **$0.60** estimate at the verified ordinary-method rate, within the existing two-million global limit. Before this pass, the gateway had observed **370,084 forwarded methods**. This is a historical starting count, not the current balance or reserved high-water mark. Persisted reservations remain authoritative; unused reservations are forfeited on restart and must not be reset or reclaimed.
 
-For scale, 100 EVM transactions/s in the ten-wallet model consumes about **1.063 billion calls per 30 days**, approximately **$6,376 at dRPC's flat rate**. The cheapest short experiment need not be the cheapest continuous deployment.
+Use short ramps and preserve at least 25% of the pass allowance for reconciliation. Record actual forwards and reserved upper bounds with each result. The [September budget record](https://github.com/alfongj-com/engine-core/blob/load-tests/docs/baselines/capacity-2026-09-26/rpc-budget.md) describes the earlier reservation state. Read-only capacity probes do not need funded wallets; submissions do.
+
+For historical scale only, 100 EVM transactions/s in the simplified ten-wallet model consumes about **1.063 billion calls per 30 days**, approximately **$6,376 at dRPC's flat rate**. The cheapest short experiment need not be the cheapest continuous deployment.
 
 ## 4. Qualification sequence
 
 1. **Local correctness.** Configured EVM clients, isolated credentials, Solana signing and crash recovery must pass local HTTP/Redis/validator tests. [Implementation and limits](rpc-and-solana-recovery.md).
 2. **Live provider checks.** Verify chain identities through Engine and test the actual read-method mix, including gas/fee preparation and real receipts. Record offered versus completed rate, latency, 429s, upstream errors and local saturation separately. Reusing recent receipts can benefit from provider caches; report this.
 3. **Funded low-rate submissions.** Start at one transaction/s on each network. Observe confirmation delay, wallet occupancy, method counts and fees. Separate inclusion from finality. A successful signature or simulation is not an executed transaction.
-4. **Short throughput ramps.** Increase only while queue depth and chain progress remain healthy. Provide about twice the observed RPC demand: the initial EVM model calls for approximately 1,000 RPC/s at 100 transactions/s; the illustrative Solana 15-second case calls for 4,000. If that capacity is not measured, label the experiment provider-limited or unqualified.
-5. **Compare and improve.** Reconcile unique effects after drain. Compare local and public results, then fix the measured bottleneck and rerun the same workload. Solana polling currently uses one signature per call; batching is a likely cost reduction, but needs separate correctness tests.
+4. **Short throughput ramps.** Increase only while queue depth and chain progress remain healthy. Seek about twice the measured RPC demand as headroom; include status batch sizes, height checks, retries, finality reads and verification. Do not size the current run from the historical tables. If effective capacity is unmeasured, label it unqualified; distinguish RPC throttling from local saturation.
+5. **Compare and improve.** Reconcile unique effects after drain. Compare the frozen public baseline with the same workload after cleanup. Report logical status polls, actual HTTP batches, inclusion/finality latency and offered/completed rates separately. A lower RPC count alone is not a throughput result.
 
 The local environment signer currently provides one EVM identity. Configure and qualify its outstanding window first; tests that independently require many funded wallets still need a reviewed key-reference selection mechanism. Smart accounts, bundlers, paymasters, ERC-4337 and EIP-7702 require separate qualification and pricing.
 

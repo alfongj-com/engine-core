@@ -636,7 +636,6 @@ impl SolanaExecutorJobHandler {
     ) -> JobResult<SolanaExecutorResult, SolanaExecutorError> {
         let transaction_id = &job_data.transaction_id;
         let chain_id_str = &job_data.transaction.execution_options.chain_id;
-        let signer_address = job_data.transaction.execution_options.signer_address;
         // Caller-provided hashes can be newer than the finalized bank. Admission
         // and preflight must see those hashes without lowering durable settlement:
         // reconcile_status always requires finalized status and a matching receipt.
@@ -685,102 +684,143 @@ impl SolanaExecutorJobHandler {
             }
         }
 
-        if let Some(mut attempt) = stored_attempt.clone() {
-            if attempt.reconciliation_checks >= MAX_RECONCILIATION_CHECKS && !journal_terminal {
-                return Err(Self::park(
-                    &attempt,
-                    "reconciliation budget exhausted; resume explicitly",
-                ));
-            }
-            attempt.reconciliation_checks = attempt.reconciliation_checks.saturating_add(1);
-            self.storage
-                .update_attempt(transaction_id, &attempt, lock)
-                .await
-                .map_err(|e| self.handle_redis_error(e, transaction_id))?;
-
-            // History lookup also finds landed transactions after the recent cache rotates.
-            if let Some(result) = self
-                .reconcile_status(rpc_client, job_data, &attempt)
-                .await?
-            {
-                return result;
-            }
-
-            if journal_terminal {
-                return Err(Self::park(
-                    &attempt,
-                    "Durable final outcome awaits matching RPC evidence before Redis cleanup",
-                ));
-            }
-
-            // Legacy records have no reproducible signed bytes and historically stored the
-            // wrong hash for serialized inputs. They may be confirmed, never rebuilt.
-            if attempt.signed_transaction.is_none() {
-                return Err(Self::park(&attempt, "legacy attempt lacks signed bytes"));
-            }
-            let expired = if let Some(last_valid_height) = attempt.blockhash_last_valid_height {
-                rpc_client
-                    .get_block_height_with_commitment(CommitmentConfig::finalized())
-                    .await
-                    .map_err(|e| self.rpc_error(&e, chain_id_str.as_str()))?
-                    > last_valid_height
-            } else {
-                // Serialized inputs have no trustworthy lastValidBlockHeight. A false
-                // validity result can also mean a lagging node/noncanonical hash.
-                // Preserve evidence and stop rather than inventing an expiry bound.
-                let valid = rpc_client
-                    .is_blockhash_valid(&attempt.blockhash, submission_commitment)
-                    .await
-                    .map_err(|e| self.rpc_error(&e, chain_id_str.as_str()))?;
-                if !valid {
-                    if let Some(result) = self
-                        .reconcile_status(rpc_client, job_data, &attempt)
-                        .await?
-                    {
-                        return result;
-                    }
-                    return Err(Self::park(
-                        &attempt,
-                        "serialized blockhash no longer valid; expiry height unknown",
-                    ));
-                }
-                false
-            };
-            if !expired {
-                return self
-                    .broadcast_attempt(
-                        rpc_client,
-                        job_data,
-                        attempt,
-                        lock,
-                        submission_commitment.commitment,
-                    )
-                    .await;
-            }
-
-            // Ordering matters: a transaction can land between the first status query
-            // and the expiry check. Query history again AFTER finalized expiry.
-            if let Some(result) = self
-                .reconcile_status(rpc_client, job_data, &attempt)
-                .await?
-            {
-                return result;
-            }
-            // A historical null is not proof of non-execution: a load-balanced RPC
-            // can answer from a lagging or pruned history node. Even after finalized
-            // expiry, refreshing a signature could execute an already-landed intent
-            // twice. Preserve evidence for operator reconciliation instead.
-            return Err(Self::park(
-                &attempt,
-                "blockhash expired but execution outcome is unknown; automatic re-signing disabled",
-            ));
-        } else if job_attempt_number > MAX_SEND_ATTEMPTS_WITHOUT_TRANSACTION {
+        if let Some(attempt) = stored_attempt.clone() {
+            return self
+                .reconcile_existing_attempt(
+                    rpc_client,
+                    job_data,
+                    attempt,
+                    lock,
+                    submission_commitment,
+                    journal_terminal,
+                )
+                .await;
+        }
+        if job_attempt_number > MAX_SEND_ATTEMPTS_WITHOUT_TRANSACTION {
             return Err(SolanaExecutorError::MaxRetriesExceeded {
                 max_retries: MAX_SEND_ATTEMPTS_WITHOUT_TRANSACTION,
             }
             .fail());
         }
+        self.build_and_submit_first_attempt(rpc_client, job_data, lock, submission_commitment)
+            .await
+    }
 
+    /// Existing identities can reconcile or retransmit their exact bytes. They
+    /// never return to transaction construction, including after expiry.
+    async fn reconcile_existing_attempt(
+        &self,
+        rpc_client: &RpcClient,
+        job_data: &SolanaExecutorJobData,
+        mut attempt: SolanaTransactionAttempt,
+        lock: &TransactionLock,
+        submission_commitment: CommitmentConfig,
+        journal_terminal: bool,
+    ) -> JobResult<SolanaExecutorResult, SolanaExecutorError> {
+        let transaction_id = &job_data.transaction_id;
+        let chain_id_str = &job_data.transaction.execution_options.chain_id;
+        if attempt.reconciliation_checks >= MAX_RECONCILIATION_CHECKS && !journal_terminal {
+            return Err(Self::park(
+                &attempt,
+                "reconciliation budget exhausted; resume explicitly",
+            ));
+        }
+        attempt.reconciliation_checks = attempt.reconciliation_checks.saturating_add(1);
+        self.storage
+            .update_attempt(transaction_id, &attempt, lock)
+            .await
+            .map_err(|e| self.handle_redis_error(e, transaction_id))?;
+
+        // History lookup also finds landed transactions after the recent cache rotates.
+        if let Some(result) = self
+            .reconcile_status(rpc_client, job_data, &attempt)
+            .await?
+        {
+            return result;
+        }
+
+        if journal_terminal {
+            return Err(Self::park(
+                &attempt,
+                "Durable final outcome awaits matching RPC evidence before Redis cleanup",
+            ));
+        }
+
+        // Legacy records have no reproducible signed bytes and historically stored the
+        // wrong hash for serialized inputs. They may be confirmed, never rebuilt.
+        if attempt.signed_transaction.is_none() {
+            return Err(Self::park(&attempt, "legacy attempt lacks signed bytes"));
+        }
+        let expired = if let Some(last_valid_height) = attempt.blockhash_last_valid_height {
+            rpc_client
+                .get_block_height_with_commitment(CommitmentConfig::finalized())
+                .await
+                .map_err(|e| self.rpc_error(&e, chain_id_str.as_str()))?
+                > last_valid_height
+        } else {
+            // Serialized inputs have no trustworthy lastValidBlockHeight. A false
+            // validity result can also mean a lagging node/noncanonical hash.
+            // Preserve evidence and stop rather than inventing an expiry bound.
+            let valid = rpc_client
+                .is_blockhash_valid(&attempt.blockhash, submission_commitment)
+                .await
+                .map_err(|e| self.rpc_error(&e, chain_id_str.as_str()))?;
+            if !valid {
+                if let Some(result) = self
+                    .reconcile_status(rpc_client, job_data, &attempt)
+                    .await?
+                {
+                    return result;
+                }
+                return Err(Self::park(
+                    &attempt,
+                    "serialized blockhash no longer valid; expiry height unknown",
+                ));
+            }
+            false
+        };
+        if !expired {
+            return self
+                .broadcast_attempt(
+                    rpc_client,
+                    job_data,
+                    attempt,
+                    lock,
+                    submission_commitment.commitment,
+                )
+                .await;
+        }
+
+        // Ordering matters: a transaction can land between the first status query
+        // and the expiry check. Query history again AFTER finalized expiry.
+        if let Some(result) = self
+            .reconcile_status(rpc_client, job_data, &attempt)
+            .await?
+        {
+            return result;
+        }
+        // A historical null is not proof of non-execution: a load-balanced RPC
+        // can answer from a lagging or pruned history node. Even after finalized
+        // expiry, refreshing a signature could execute an already-landed intent
+        // twice. Preserve evidence for operator reconciliation instead.
+        Err(Self::park(
+            &attempt,
+            "blockhash expired but execution outcome is unknown; automatic re-signing disabled",
+        ))
+    }
+
+    /// Called only after the absence/binding gates and unsigned retry limit in
+    /// execute_transaction. Reserve the first signed identity before Redis/send.
+    async fn build_and_submit_first_attempt(
+        &self,
+        rpc_client: &RpcClient,
+        job_data: &SolanaExecutorJobData,
+        lock: &TransactionLock,
+        submission_commitment: CommitmentConfig,
+    ) -> JobResult<SolanaExecutorResult, SolanaExecutorError> {
+        let transaction_id = &job_data.transaction_id;
+        let chain_id_str = &job_data.transaction.execution_options.chain_id;
+        let signer_address = job_data.transaction.execution_options.signer_address;
         let submission_attempt_number = 1;
         // Serialized transactions preserve their caller-provided hash. Fetching a new
         // blockhash here and recording it would associate unrelated validity metadata.
