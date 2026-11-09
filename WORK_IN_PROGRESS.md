@@ -34,11 +34,13 @@ runtime, binary and harness provenance. Small funded correctness checks do not
 establish sustainable throughput or RPC capacity. Provider-based finality checks
 are not independent consensus proofs.
 
-Local testing exposed an existing EOA contract-creation defect: an absent `to`
-is admitted, but preparation omits the explicit creation kind and never signs.
-Fixing that path needs a separate behavior change and a creation regression test.
-The reverted-call harness uses a separately signed, fixed fixture; its deployment
-does not qualify Engine contract creation.
+The November 8 code review fixes EOA contract creation by explicitly selecting
+CREATE when `to` is absent. The local `--create --redis-crash` regression deploys
+through Engine, checks predicted addresses, bytecode and value after restart,
+and retries the same IDs without extra creations. Preparation also rejects
+overflowing gas estimates and preserves legacy gas-price estimation. The prior
+public reverted-call fixture used a separate signer and remains historical setup
+evidence, not Engine creation coverage.
 
 ## Evidence and reproduction
 
