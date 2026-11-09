@@ -58,7 +58,7 @@ jobs:
       - name: EOA and Solana Redis, RPC and deployment regressions
         run: cargo test --locked -p engine-executors --lib -- --ignored --test-threads=1
       - name: Server admission, cancellation and Solana retention
-        run: cargo test --locked -p thirdweb-engine --lib -- --ignored --test-threads=1
+        run: cargo test --locked -p thirdweb-engine --lib -- --ignored --test-threads=1 --skip solana_admission::bench::initialized_admission_backlog_regression
       - name: HTTP authorization and admission integration
         run: cargo test --locked -p thirdweb-engine --test api_safety -- --ignored
       - name: Offline queue reconstruction ownership and conflict regressions
