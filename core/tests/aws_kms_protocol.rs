@@ -1,7 +1,7 @@
 //! Actual AWS SDK + Engine credential path against a loopback KMS protocol peer.
 //! Known public development keys only. No AWS account, metadata or paid service.
 use alloy::{
-    consensus::{SignableTransaction, TxEnvelope, TxLegacy},
+    consensus::{SignableTransaction, TxEnvelope, TxLegacy, TypedTransaction},
     eips::eip2718::Encodable2718,
     network::TxSigner,
     primitives::{B256, Bytes, TxKind, U256, address},
@@ -15,7 +15,11 @@ use axum::{
     routing::post,
 };
 use base64::{Engine, engine::general_purpose::STANDARD};
-use engine_core::credentials::{AwsKmsCredential, KmsClientCache};
+use engine_core::{
+    credentials::{AwsKmsCredential, KmsClientCache, SigningCredential},
+    error::{EngineError, SerialisableAwsSdkError, SerialisableAwsSignerError},
+    signer::{AccountSigner, EoaSigner, EoaSigningOptions},
+};
 use serde_json::{Value, json};
 use std::{
     collections::BTreeMap,
@@ -68,19 +72,23 @@ async fn kms(
                 | "alias/wrong-key"
                 | "alias/invalid-der"
                 | "alias/invalid-spki"
+                | "alias/sign-outage"
+                | "alias/public-key-outage"
         );
     let response = if !valid {
         observed.lock().unwrap().invalid_requests += 1;
         json!({"__type":"ValidationException","message":"Invalid fixture request"})
     } else if target.ends_with(".GetPublicKey") {
-        observed.lock().unwrap().gets += 1;
-        observed
-            .lock()
-            .unwrap()
-            .by_key
-            .entry(id.into())
-            .or_default()
-            .0 += 1;
+        let calls = {
+            let mut seen = observed.lock().unwrap();
+            seen.gets += 1;
+            let count = &mut seen.by_key.entry(id.into()).or_default().0;
+            *count += 1;
+            *count
+        };
+        if id == "alias/public-key-outage" && calls == 1 {
+            return unavailable();
+        }
         // SubjectPublicKeyInfo: id-ecPublicKey + secp256k1 + uncompressed point.
         let mut spki =
             alloy::hex::decode("3056301006072a8648ce3d020106052b8104000a03420004").unwrap();
@@ -115,14 +123,16 @@ async fn kms(
                 .unwrap(),
             );
         }
-        observed.lock().unwrap().signs += 1;
-        observed
-            .lock()
-            .unwrap()
-            .by_key
-            .entry(id.into())
-            .or_default()
-            .1 += 1;
+        let calls = {
+            let mut seen = observed.lock().unwrap();
+            seen.signs += 1;
+            let count = &mut seen.by_key.entry(id.into()).or_default().1;
+            *count += 1;
+            *count
+        };
+        if id == "alias/sign-outage" && calls == 1 {
+            return unavailable();
+        }
         // Independent libsecp256k1 produces the signature; RustCrypto only
         // serializes its public scalars into the DER representation used by KMS.
         let signature = key(match id {
@@ -164,7 +174,18 @@ async fn kms(
     )
 }
 
-async fn credential(id: &str) -> alloy_signer_aws::AwsSigner {
+fn unavailable() -> (StatusCode, [(&'static str, &'static str); 1], Vec<u8>) {
+    (
+        StatusCode::SERVICE_UNAVAILABLE,
+        [("content-type", "application/x-amz-json-1.1")],
+        serde_json::to_vec(
+            &json!({"__type":"KMSInternalException","message":"Fixture service outage"}),
+        )
+        .unwrap(),
+    )
+}
+
+fn configured_credential(id: &str) -> AwsKmsCredential {
     let cache: KmsClientCache = moka::future::Cache::new(4);
     AwsKmsCredential::new(
         "fixture-access".into(),
@@ -173,9 +194,99 @@ async fn credential(id: &str) -> alloy_signer_aws::AwsSigner {
         "us-east-1".into(),
         cache,
     )
-    .get_signer(Some(1))
-    .await
-    .unwrap()
+}
+
+async fn credential(id: &str) -> alloy_signer_aws::AwsSigner {
+    configured_credential(id).get_signer(Some(1)).await.unwrap()
+}
+
+async fn engine_error_and_recovery_vectors() {
+    let engine = EoaSigner::new(thirdweb_core::iaw::IAWClient::new("http://127.0.0.1:1").unwrap());
+    let native = key(1);
+    let options = EoaSigningOptions {
+        from: native.address(),
+        chain_id: Some(1),
+    };
+    let transaction: TypedTransaction = TxLegacy {
+        chain_id: Some(1),
+        nonce: 9,
+        gas_price: 20_000_000_000,
+        gas_limit: 21000,
+        to: TxKind::Call(address!("3535353535353535353535353535353535353535")),
+        value: U256::from(1),
+        input: Bytes::new(),
+    }
+    .into();
+    for id in ["alias/sign-outage", "alias/public-key-outage"] {
+        let credential = SigningCredential::AwsKms(configured_credential(id));
+        let error = engine
+            .sign_transaction(options.clone(), &transaction, &credential)
+            .await
+            .unwrap_err();
+        match error {
+            EngineError::AwsKmsSignerError {
+                error:
+                    SerialisableAwsSignerError::Sign {
+                        aws_sdk_error: SerialisableAwsSdkError::ServiceError { .. },
+                    },
+            } => assert_eq!(id, "alias/sign-outage"),
+            EngineError::AwsKmsSignerError {
+                error:
+                    SerialisableAwsSignerError::GetPublicKey {
+                        aws_sdk_error: SerialisableAwsSdkError::ServiceError { .. },
+                    },
+            } => assert_eq!(id, "alias/public-key-outage"),
+            other => panic!("SDK outage lost its typed cause: {other:?}"),
+        }
+        // No endpoint/key/input change and no hidden SDK retries. The same
+        // original transaction succeeds once the protocol peer recovers.
+        let signature = engine
+            .sign_transaction(options.clone(), &transaction, &credential)
+            .await
+            .unwrap();
+        assert_eq!(
+            signature,
+            native
+                .sign_hash_sync(&transaction.signature_hash())
+                .unwrap()
+                .to_string()
+        );
+    }
+    for id in ["alias/invalid-der", "alias/wrong-key"] {
+        let credential = SigningCredential::AwsKms(configured_credential(id));
+        let error = engine
+            .sign_transaction(options.clone(), &transaction, &credential)
+            .await
+            .unwrap_err();
+        match error {
+            EngineError::AwsKmsSignerError {
+                error: SerialisableAwsSignerError::K256 { .. },
+            } => assert_eq!(id, "alias/invalid-der"),
+            EngineError::AwsKmsSignerError {
+                error: SerialisableAwsSignerError::SignatureRecoveryFailed,
+            } => assert_eq!(id, "alias/wrong-key"),
+            other => panic!("Invalid signature lost its permanent typed cause: {other:?}"),
+        }
+    }
+    let credential = SigningCredential::AwsKms(configured_credential("alias/low-s"));
+    let wrong_address = EoaSigningOptions {
+        from: key(2).address(),
+        chain_id: Some(1),
+    };
+    assert!(matches!(
+        engine
+            .sign_transaction(wrong_address, &transaction, &credential)
+            .await,
+        Err(EngineError::ValidationError { .. })
+    ));
+    let mut wrong_chain = transaction.clone();
+    wrong_chain.set_chain_id(2);
+    assert!(matches!(
+        engine
+            .sign_transaction(options, &wrong_chain, &credential)
+            .await,
+        Err(EngineError::ValidationError { .. })
+    ));
 }
 async fn vectors() {
     for mode in ["alias/low-s", "alias/high-s"] {
@@ -233,6 +344,7 @@ async fn vectors() {
         cache,
     );
     assert!(invalid.get_signer(Some(1)).await.is_err());
+    engine_error_and_recovery_vectors().await;
 }
 
 #[test]
@@ -305,16 +417,18 @@ fn aws_kms_protocol_vectors() {
     );
     let observed = observed.lock().unwrap();
     assert_eq!(observed.invalid_requests, 0);
-    assert_eq!(observed.gets, 5);
-    assert_eq!(observed.signs, 16);
+    assert_eq!(observed.gets, 13);
+    assert_eq!(observed.signs, 21);
     assert_eq!(
         observed.by_key,
         BTreeMap::from([
-            ("alias/low-s".into(), (1, 7)),
+            ("alias/low-s".into(), (3, 7)),
             ("alias/high-s".into(), (1, 7)),
-            ("alias/wrong-key".into(), (1, 1)),
-            ("alias/invalid-der".into(), (1, 1)),
+            ("alias/wrong-key".into(), (2, 2)),
+            ("alias/invalid-der".into(), (2, 2)),
             ("alias/invalid-spki".into(), (1, 0)),
+            ("alias/sign-outage".into(), (2, 2)),
+            ("alias/public-key-outage".into(), (2, 1)),
         ])
     );
 }

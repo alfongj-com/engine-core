@@ -7,7 +7,7 @@ use alloy::{
 };
 use engine_core::{
     chain::Chain,
-    error::{EngineError, RpcErrorKind},
+    error::{EngineError, RpcErrorKind, SerialisableAwsSdkError, SerialisableAwsSignerError},
 };
 use serde::{Deserialize, Serialize};
 use thirdweb_core::iaw::IAWError;
@@ -211,6 +211,19 @@ pub fn is_retryable_preparation_error(error: &EoaExecutorWorkerError) -> bool {
         EoaExecutorWorkerError::SigningError { inner_error, .. } => match inner_error {
             // if iaw error, it's retryable only if it's a network error
             EngineError::IawError { error, .. } => matches!(error, IAWError::NetworkError { .. }),
+            EngineError::AwsKmsSignerError { error } => match error {
+                SerialisableAwsSignerError::Sign { aws_sdk_error }
+                | SerialisableAwsSignerError::GetPublicKey { aws_sdk_error } => {
+                    // A service/transport failure does not reject the unsigned
+                    // intent. The existing preparation budget bounds retries.
+                    !matches!(
+                        aws_sdk_error,
+                        SerialisableAwsSdkError::ConstructionFailure { .. }
+                    )
+                }
+                SerialisableAwsSignerError::Unknown { .. } => true,
+                _ => false, // Invalid keys, DER/SPKI, recovery and local crypto.
+            },
             _ => false,
         },
         EoaExecutorWorkerError::TransactionNotFound { .. } => false, // Deterministic
@@ -265,4 +278,85 @@ pub fn is_unsupported_eip1559_error(error: &RpcError<TransportErrorKind>) -> boo
     }
 
     false
+}
+
+#[cfg(test)]
+mod kms_preparation_tests {
+    use super::*;
+
+    fn retryable(error: SerialisableAwsSignerError) -> bool {
+        is_retryable_preparation_error(&EoaExecutorWorkerError::SigningError {
+            message: "KMS preparation fixture".into(),
+            inner_error: EngineError::AwsKmsSignerError { error },
+        })
+    }
+
+    #[test]
+    fn kms_service_uncertainty_keeps_unsigned_work_retryable() {
+        for aws_sdk_error in [
+            SerialisableAwsSdkError::TimeoutError {
+                message: "timeout".into(),
+            },
+            SerialisableAwsSdkError::DispatchFailure {
+                message: "disconnected".into(),
+            },
+            SerialisableAwsSdkError::ResponseError {
+                message: "incomplete response".into(),
+            },
+            SerialisableAwsSdkError::ServiceError {
+                message: "throttled or unavailable".into(),
+            },
+            SerialisableAwsSdkError::Other {
+                message: "unknown SDK failure".into(),
+            },
+        ] {
+            assert!(retryable(SerialisableAwsSignerError::Sign {
+                aws_sdk_error: aws_sdk_error.clone()
+            }));
+            assert!(retryable(SerialisableAwsSignerError::GetPublicKey {
+                aws_sdk_error
+            }));
+        }
+        assert!(retryable(SerialisableAwsSignerError::Unknown {
+            message: "untyped signer failure".into()
+        }));
+    }
+
+    #[test]
+    fn kms_request_and_cryptographic_rejections_stay_permanent() {
+        for error in [
+            SerialisableAwsSignerError::Sign {
+                aws_sdk_error: SerialisableAwsSdkError::ConstructionFailure {
+                    message: "invalid request".into(),
+                },
+            },
+            SerialisableAwsSignerError::GetPublicKey {
+                aws_sdk_error: SerialisableAwsSdkError::ConstructionFailure {
+                    message: "invalid request".into(),
+                },
+            },
+            SerialisableAwsSignerError::K256 {
+                message: "invalid DER scalars".into(),
+            },
+            SerialisableAwsSignerError::Spki {
+                message: "invalid public key".into(),
+            },
+            SerialisableAwsSignerError::Hex {
+                message: "invalid bytes".into(),
+            },
+            SerialisableAwsSignerError::SignatureNotFound,
+            SerialisableAwsSignerError::PublicKeyNotFound,
+            SerialisableAwsSignerError::SignatureRecoveryFailed,
+        ] {
+            assert!(!retryable(error));
+        }
+        assert!(!is_retryable_preparation_error(
+            &EoaExecutorWorkerError::SigningError {
+                message: "wrong requested address".into(),
+                inner_error: EngineError::ValidationError {
+                    message: "Signing key does not match the requested signer address".into()
+                },
+            }
+        ));
+    }
 }
