@@ -64,6 +64,38 @@ impl super::atomic::AtomicEoaExecutorStore {
         if replay_key.is_some() != !attempts.is_empty() {
             return Err(conflict());
         }
+        // A surviving borrowed field is evidence only after validating its
+        // literal retained wire. Keep its original timestamps, and recheck the
+        // exact JSON witness in the final owner-fenced mutation below.
+        let borrowed_witness: Option<String> = Script::new(
+            r#"
+            if redis.call('HSTRLEN',KEYS[1],ARGV[1])>33554432 then
+                return redis.error_reply('Borrowed projection exceeds repair bound')
+            end
+            return redis.call('HGET',KEYS[1],ARGV[1])
+        "#,
+        )
+        .key(self.borrowed_transactions_hashmap_name())
+        .arg(&request.transaction_id)
+        .invoke_async(&mut self.redis.clone())
+        .await?;
+        if let Some(encoded) = &borrowed_witness {
+            let observed: BorrowedTransactionData =
+                serde_json::from_str(encoded).map_err(|_| conflict())?;
+            crate::recovery::validate_eoa_wire(request, &observed.signed_transaction)
+                .map_err(|_| conflict())?;
+            let envelope: TxEnvelope = observed.signed_transaction.clone().into();
+            let bytes = envelope.encoded_2718();
+            if observed.transaction_id != request.transaction_id
+                || observed.hash != observed.signed_transaction.hash().to_string()
+                || !attempts.iter().any(|attempt| {
+                    let retained: TxEnvelope = attempt.details.clone().into();
+                    retained.encoded_2718() == bytes
+                })
+            {
+                return Err(conflict());
+            }
+        }
         // Initial submissions need not have an attempt-list entry. Read a
         // bounded literal submitted member, then recheck that exact witness in
         // Lua under the same EOA owner token; never infer it from nonce progress.
@@ -170,9 +202,14 @@ impl super::atomic::AtomicEoaExecutorStore {
                 if status ~= 'pending' and status ~= 'submitted' then return -1 end
                 -- A durable binding must still have a borrowed/submitted projection.
                 -- Do not let a partial pending record allocate another nonce.
-                if next_nonce and redis.call('HEXISTS',KEYS[3],ARGV[1]) == 0 then
-                    local score = ARGV[10] ~= '' and redis.call('ZSCORE',KEYS[5],ARGV[10]) or false
-                    if score == false or tonumber(score) ~= tonumber(ARGV[5])-1 then return -1 end
+                if next_nonce then
+                    local borrowed=redis.call('HGET',KEYS[3],ARGV[1])
+                    if borrowed then
+                        if ARGV[11]=='' or borrowed~=ARGV[11] then return -1 end
+                    else
+                        local score = ARGV[10] ~= '' and redis.call('ZSCORE',KEYS[5],ARGV[10]) or false
+                        if score == false or tonumber(score) ~= next_nonce-1 then return -1 end
+                    end
                 end
                 if next_nonce then return restore_binding() end
                 if redis.call('HEXISTS',KEYS[3],ARGV[1]) == 0 then
@@ -230,6 +267,7 @@ impl super::atomic::AtomicEoaExecutorStore {
             .arg(MAX_PENDING_TRANSACTIONS)
             .arg(self.worker_id())
             .arg(submitted_witness)
+            .arg(borrowed_witness.unwrap_or_default())
             .invoke_async(&mut self.redis.clone())
             .await?;
         if result == -2 {
@@ -453,6 +491,13 @@ mod tests {
                         .await
                         .unwrap();
                 }
+                let original_borrowed: Option<String> = redis
+                    .hget(
+                        store.borrowed_transactions_hashmap_name(),
+                        &request.transaction_id,
+                    )
+                    .await
+                    .unwrap();
                 let _: () = redis
                     .zadd(store.recycled_nonces_zset_name(), 5, 5)
                     .await
@@ -471,6 +516,16 @@ mod tests {
                 assert_eq!(
                     store.get_borrowed_transactions_count().await.unwrap(),
                     u64::from(borrowed_survives)
+                );
+                assert_eq!(
+                    redis
+                        .hget::<_, _, Option<String>>(
+                            store.borrowed_transactions_hashmap_name(),
+                            &request.transaction_id
+                        )
+                        .await
+                        .unwrap(),
+                    original_borrowed
                 );
                 assert_eq!(
                     redis
@@ -509,6 +564,151 @@ mod tests {
                 );
                 cleanup(store).await;
             }
+        }
+    }
+
+    #[tokio::test]
+    #[ignore = "requires disposable Redis in TEST_REDIS_URL"]
+    async fn borrowed_witness_must_match_retained_authority_before_indexes_are_repaired() {
+        for corruption in [
+            "id",
+            "hash",
+            "nonce",
+            "wire",
+            "payload",
+            "json",
+            "unattempted",
+        ] {
+            let (store, request, history, key) = fixture().await;
+            store
+                .rebuild_missing_intent(&request, Some(&key), &history)
+                .await
+                .unwrap();
+            let mut redis = store.redis.clone();
+            let original: String = redis
+                .hget(
+                    store.borrowed_transactions_hashmap_name(),
+                    &request.transaction_id,
+                )
+                .await
+                .unwrap();
+            let mut borrowed: BorrowedTransactionData = serde_json::from_str(&original).unwrap();
+            borrowed.queued_at = 12;
+            borrowed.borrowed_at = 34;
+            match corruption {
+                "id" => borrowed.transaction_id = "other-intent".into(),
+                "hash" => borrowed.hash = B256::ZERO.to_string(),
+                "nonce" | "wire" | "payload" => {
+                    let signer = PrivateKeySigner::from_bytes(&B256::repeat_byte(1)).unwrap();
+                    let tx = TxEip1559 {
+                        chain_id: request.chain_id,
+                        nonce: if corruption == "nonce" { 6 } else { 5 },
+                        gas_limit: 21000,
+                        max_fee_per_gas: 4,
+                        max_priority_fee_per_gas: 1,
+                        to: TxKind::Call(request.to.unwrap()),
+                        value: if corruption == "payload" {
+                            U256::from(2)
+                        } else {
+                            request.value
+                        },
+                        ..Default::default()
+                    };
+                    let signature = signer.sign_hash_sync(&tx.signature_hash()).unwrap();
+                    let envelope: TxEnvelope = tx.into_signed(signature).into();
+                    borrowed.hash = envelope.tx_hash().to_string();
+                    borrowed.signed_transaction = envelope.into_signed();
+                }
+                _ => {}
+            }
+            let encoded = if corruption == "json" {
+                "{".into()
+            } else {
+                serde_json::to_string(&borrowed).unwrap()
+            };
+            let _: () = redis
+                .hset(
+                    store.borrowed_transactions_hashmap_name(),
+                    &request.transaction_id,
+                    &encoded,
+                )
+                .await
+                .unwrap();
+            let _: () = redis
+                .del(store.optimistic_transaction_count_key_name())
+                .await
+                .unwrap();
+            for attempt in &history {
+                let _: () = redis
+                    .del(store.transaction_hash_to_id_key_name(
+                        attempt["transactionHash"].as_str().unwrap(),
+                    ))
+                    .await
+                    .unwrap();
+            }
+            let result = if corruption == "unattempted" {
+                store.rebuild_missing_intent(&request, None, &[]).await
+            } else {
+                store
+                    .rebuild_missing_intent(&request, Some(&key), &history)
+                    .await
+            };
+            assert!(result.is_err(), "{corruption}");
+            assert!(
+                !redis
+                    .exists::<_, bool>(store.optimistic_transaction_count_key_name())
+                    .await
+                    .unwrap()
+            );
+            assert_eq!(
+                redis
+                    .hget::<_, _, String>(
+                        store.borrowed_transactions_hashmap_name(),
+                        &request.transaction_id
+                    )
+                    .await
+                    .unwrap(),
+                encoded
+            );
+            for attempt in &history {
+                assert_eq!(
+                    store
+                        .get_transaction_id_for_hash(attempt["transactionHash"].as_str().unwrap())
+                        .await
+                        .unwrap(),
+                    None
+                );
+            }
+            // Metadata alone is not corruption and must be preserved verbatim.
+            let mut valid: BorrowedTransactionData = serde_json::from_str(&original).unwrap();
+            valid.queued_at = 12;
+            valid.borrowed_at = 34;
+            let valid = serde_json::to_string(&valid).unwrap();
+            let _: () = redis
+                .hset(
+                    store.borrowed_transactions_hashmap_name(),
+                    &request.transaction_id,
+                    &valid,
+                )
+                .await
+                .unwrap();
+            assert!(
+                store
+                    .rebuild_missing_intent(&request, Some(&key), &history)
+                    .await
+                    .unwrap()
+            );
+            assert_eq!(
+                redis
+                    .hget::<_, _, String>(
+                        store.borrowed_transactions_hashmap_name(),
+                        &request.transaction_id
+                    )
+                    .await
+                    .unwrap(),
+                valid
+            );
+            cleanup(store).await;
         }
     }
 
