@@ -12,13 +12,13 @@ Neither establishes public RPC capacity, rollup settlement or production readine
 | PR #1 baseline | Merged into `main` at `154b0ac`; preserved branch `production-hardening` at `8741b88` |
 | PR #2 baseline | Merged into `main` at `918d7d9`; preserved branch `crash-recovery-and-chain-fairness` |
 | [PR #3](https://github.com/alfongj-com/engine-core/pull/3) baseline | Merged into `main` at `8fa866e`; executable implementation `04d15d8` |
-| Active review | `/Users/alfongj/Code/engine-core-review-stack`, branch `native-environment-signer`, implementation `5ae3601` |
+| Active review | `/Users/alfongj/Code/engine-core-review-stack`, branch `reclaim-solana-processing-locks` |
 | Full historical evidence in Git | Local and remote branch `load-tests`; use its current head for new evidence |
 | Browsable local evidence | `/Users/alfongj/Code/engine-core-review-evidence/LOAD_TESTS.md`; historical readonly snapshots remain under `.local/share/engine-core/evidence/` |
 | Installed test tools and checksum manifest | `/Users/alfongj/.local/share/engine-core/tools/` |
 | Private retained incident data; leave untouched | `/Users/alfongj/.local/share/engine-core-custody/` |
 
-PRs #1–3 are merged. PR #4 is the cleanup baseline. PRs #5–#9 add EOA creation/gas fixes, durable cancellation, bounded API work, dependency patches and native environment-key signing. See the [November review](https://github.com/alfongj-com/engine-core/blob/load-tests/docs/baselines/code-review-2026-11-08/README.md) for results tied to each source and binary. The [October public-chain campaign](https://github.com/alfongj-com/engine-core/blob/load-tests/docs/baselines/testnet-cleanup-2026-10-13/README.md) is historical evidence. Read [WORK_IN_PROGRESS.md](WORK_IN_PROGRESS.md) for current scope and limits.
+PRs #1–3 are merged. PR #4 is the cleanup baseline. PRs #5–#9 add EOA creation/gas fixes, durable cancellation, bounded API work, dependency patches and native environment-key signing. The latest branch also reclaims dead Solana processing locks using the queue lease, with stale-worker fencing. See the [November review](https://github.com/alfongj-com/engine-core/blob/load-tests/docs/baselines/code-review-2026-11-08/README.md) for results tied to each source and binary. The [October public-chain campaign](https://github.com/alfongj-com/engine-core/blob/load-tests/docs/baselines/testnet-cleanup-2026-10-13/README.md) is historical evidence. Read [WORK_IN_PROGRESS.md](WORK_IN_PROGRESS.md) for current scope and limits.
 
 The tools formerly under `/tmp/engine-*` were removed by temporary-file cleanup.
 Use the persistent paths below. The old release binary is preserved as
@@ -59,7 +59,7 @@ another agent's work. These commands create detached test checkouts when absent:
 cd /Users/alfongj/Code/engine-core
 git status --short --branch
 git worktree add --detach /Users/alfongj/Code/engine-core-test-pr4-baseline 4e262c8
-git worktree add --detach /Users/alfongj/Code/engine-core-test-review-native native-environment-signer
+git worktree add --detach /Users/alfongj/Code/engine-core-test-review-locks reclaim-solana-processing-locks
 cd /Users/alfongj/Code/engine-core-test-pr4-baseline
 source /Users/alfongj/.local/share/engine-core/tools/env.sh
 unset CARGO_TARGET_DIR
@@ -299,12 +299,12 @@ Test Engine Core locally on this Mac.
 
 Repository: /Users/alfongj/Code/engine-core-review-stack
 Read README.md and LOCAL_TESTING.md first. Read the saved WIP notes with:
-  git show native-environment-signer:WORK_IN_PROGRESS.md
+  git show reclaim-solana-processing-locks:WORK_IN_PROGRESS.md
 Load tools with:
   source /Users/alfongj/.local/share/engine-core/tools/env.sh
 
 Use isolated test checkouts as documented; do not switch or reset the main
-checkout. Compare baseline 4e262c8 (PR #4) and the current native-environment-signer
+checkout. Compare baseline 4e262c8 (PR #4) and the current reclaim-solana-processing-locks
 branch in separate checkouts. Active work is in
 /Users/alfongj/Code/engine-core-review-stack; preserve its edits. Inspect existing test directories
 before reusing them. Build each checkout's own target/debug/thirdweb-engine.
@@ -316,7 +316,8 @@ keys, faucets, old incident journals or the retained Nitro VM. Preserve failed
 reports and runtime data. Do not clear safety fences or suppress failed tests.
 
 The review fixes EOA construction, cancellation authority and unbounded API batches,
-patches security dependencies and selects native environment-key signing. The baseline
+patches security dependencies, selects native environment-key signing and fences Solana
+processing locks with queue ownership. The baseline
 already includes retained Solana recovery and pending-target reattachment.
 Read WORK_IN_PROGRESS.md for the latest qualification results and remaining limits.
 Verify the exact commit you build; historical test passes do not qualify later code.
