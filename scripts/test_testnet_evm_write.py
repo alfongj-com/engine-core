@@ -7,6 +7,7 @@ from pathlib import Path
 import tempfile
 import threading
 import unittest
+import urllib.error
 from unittest.mock import patch
 
 from testnet_evm_write import Guard, finalize_guard, rlp, validate_revert_target, verify_finalized_receipt, verify_retained_terminal
@@ -172,6 +173,43 @@ class GuardTests(unittest.TestCase):
         self.assertTrue(finished.is_set())
         self.assertEqual(report["outcome"], "fail")
         self.assertEqual(report["guard_errors"], ["RuntimeError: Late gateway failure"])
+
+    def test_upstream_timeout_is_forwarded_and_uncertain_wire_stays_reserved(self):
+        body = {"jsonrpc": "2.0", "id": 1, "method": "eth_sendRawTransaction", "params": [self.wire()]}
+        failure = urllib.error.HTTPError("http://127.0.0.1", 502, "timeout", {}, None)
+        response = {"jsonrpc": "2.0", "id": 1, "result": "0x" + "33" * 32}
+        with patch("testnet_evm_write.request", side_effect=[failure, (200, response)]) as forward:
+            for expected in (502, 200):
+                connection = http.client.HTTPConnection("127.0.0.1", self.guard.server.server_address[1], timeout=2)
+                try:
+                    connection.request("POST", "/", json.dumps(body))
+                    reply = connection.getresponse()
+                    self.assertEqual(reply.status, expected)
+                    value = json.loads(reply.read())
+                    self.assertEqual("error" in value, expected == 502)
+                finally:
+                    connection.close()
+            self.assertEqual(forward.call_count, 2, "the guard never retries on its own")
+        self.assertEqual(self.guard.errors, [])
+        self.assertEqual(self.guard.upstream_http_errors, {502: 1})
+        saved = json.loads((Path(self.temp.name) / "signed-wires.json").read_text())["7"]
+        self.assertEqual((saved["wire"], saved["attempts"]), (self.wire(), 2))
+        self.assertIn("error", saved["responses"][0])
+        self.assertEqual(self.guard.accepted, {"7": response["result"]})
+
+    def test_budget_failure_remains_fatal_before_any_automatic_retry(self):
+        failure = urllib.error.HTTPError("http://127.0.0.1", 402, "budget", {}, None)
+        with patch("testnet_evm_write.request", side_effect=failure) as forward:
+            connection = http.client.HTTPConnection("127.0.0.1", self.guard.server.server_address[1], timeout=2)
+            try:
+                connection.request("POST", "/", json.dumps({"jsonrpc": "2.0", "id": 1, "method": "eth_chainId", "params": []}))
+                with self.assertRaises(http.client.RemoteDisconnected):
+                    connection.getresponse()
+            finally:
+                connection.close()
+            forward.assert_called_once()
+        self.assertEqual(len(self.guard.errors), 1)
+        self.assertEqual(self.guard.upstream_http_errors, {})
 
 
 class FinalityTests(unittest.TestCase):

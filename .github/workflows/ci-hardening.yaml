@@ -92,7 +92,9 @@ jobs:
         run: |
           python3 formal/download.py https://github.com/foundry-rs/foundry/releases/download/v1.8.1/foundry_v1.8.1_linux_amd64.tar.gz 37b45855232e57624d90113b049ca54f0c92055bb5c1997fcbdc3076c7b89c10 /tmp/foundry.tar.gz
           mkdir -p /tmp/engine-foundry
-          tar xzf /tmp/foundry.tar.gz -C /tmp/engine-foundry anvil
+          tar xzf /tmp/foundry.tar.gz -C /tmp/engine-foundry anvil cast
+      - name: Native retained-wire hash and read-only reconciliation guards
+        run: CAST_BIN=/tmp/engine-foundry/cast python3 -m unittest discover -s scripts -p 'test_testnet_evm_reconcile.py' -v
       - name: Capacity evidence qualification guards
         run: ANVIL_BIN=/tmp/engine-foundry/anvil python3 -m unittest discover -s scripts -p 'capacity*test.py' -v
       - name: Actual server crash recovery and duplicate admission

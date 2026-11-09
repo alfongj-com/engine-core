@@ -8,6 +8,7 @@ wire variants and RPC count. It is test infrastructure, not an Engine fee policy
 """
 import argparse
 import concurrent.futures
+from collections import Counter
 import hashlib
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
@@ -19,6 +20,7 @@ import subprocess
 import threading
 import time
 import urllib.request
+import urllib.error
 import uuid
 
 from local_eoa_recovery import ports, stop
@@ -174,6 +176,7 @@ class Guard:
         self.lock = threading.Lock()
         self.calls, self.sends, self.dropped = 0, 0, 0
         self.wires, self.errors = {}, []
+        self.upstream_http_errors = Counter()
         self.accepted = {}
         self.hide = crash
         owner = self
@@ -204,10 +207,24 @@ class Guard:
                         owner.validate(body["params"][0])
                     with owner.lock:
                         hide = owner.hide
+                    http_status = 200
                     if hide and method == "eth_getTransactionReceipt":
                         response = {"jsonrpc": "2.0", "id": body["id"], "result": None}
                     else:
-                        _, response = request(owner.upstream, body)
+                        try:
+                            _, response = request(owner.upstream, body)
+                        except urllib.error.HTTPError as error:
+                            # Let Engine exercise its real retry/uncertainty
+                            # handling. Policy/budget/authentication failures
+                            # remain fatal; never retry a send in this guard.
+                            if error.code not in (429, 500, 502, 503, 504):
+                                raise
+                            http_status = error.code
+                            error.close()
+                            with owner.lock:
+                                owner.upstream_http_errors[http_status] += 1
+                            response = {"jsonrpc": "2.0", "id": body["id"],
+                                        "error": {"code": -32000, "message": "Upstream HTTP unavailable"}}
                     if method == "eth_sendRawTransaction":
                         with owner.lock:
                             owner.sends += 1
@@ -228,7 +245,7 @@ class Guard:
                             self.connection.shutdown(socket.SHUT_RDWR)
                             return
                     encoded = json.dumps(response).encode()
-                    self.send_response(200)
+                    self.send_response(http_status)
                     self.send_header("Content-Type", "application/json")
                     self.send_header("Content-Length", str(len(encoded)))
                     self.end_headers()
@@ -309,6 +326,7 @@ def finalize_guard(guard, report):
     if guard is not None:
         guard.close()
         report["guard_errors"] = list(guard.errors)
+        report["upstream_http_errors"] = dict(guard.upstream_http_errors)
         if guard.errors:
             report["outcome"] = "fail"
             report.setdefault("error", "Forwarding guard failed; inspect retained evidence")
