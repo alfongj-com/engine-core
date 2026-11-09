@@ -140,7 +140,7 @@
     },
     {
       "path": "executors/src/eoa/store/mod.rs",
-      "sha256": "19c73886b6b9d0fee151c4e4802d9d97ac024e28f5466691e17da2b22d6bc25e",
+      "sha256": "12fccecb4493cec2fc0e541970bfd1e1d1c58640a197fec4716dc0f915d73ba2",
       "models": [
         "DisasterRecovery",
         "EoaRecovery",
@@ -177,7 +177,7 @@
     },
     {
       "path": "executors/src/eoa/worker/confirm.rs",
-      "sha256": "d045cd9b652bbb396c64a1585ca04987c3d00fb4170b37d9798fe8afa33af3ed",
+      "sha256": "0b133cc9c157cb52db45cc582893421a57b1927a6251125e1f7376805586e3c8",
       "models": [
         "DisasterRecovery",
         "EoaRecovery",
@@ -201,7 +201,7 @@
     },
     {
       "path": "executors/src/eoa/worker/fee_tests.rs",
-      "sha256": "1d4f8b258453e88bf5e52d6d0e1eb94bd0862a038e88f4df7ddb59a6df8c72fd",
+      "sha256": "25fe8b4ff444f1fdeb3f7660796fd966abf2906170268b01fcbb33b24b6e0faa",
       "models": [
         "Fees"
       ]
@@ -1114,6 +1114,10 @@
     "retained_queue_projection_repairs": {
       "decision": "Preserve current reusable worker generations and repair retained EOA floor/hash projections only after validating every witness under the owner fence.",
       "reason": "QueueRebuild assumes validated intent-level terminality and a current exclusive owner. Historical successful reusable worker generations are not permanent intent tombstones; current unfinished retry counts/delays survive. Every retained attempt receives its hash alias, history remains newest-first, and a surviving attempted projection raises a missing/stale nonce floor without rebinding a nonce. Conflicting aliases/types/noninteger floors fail before writes. Existing borrowed JSON is bounded, decoded and checked against exact retained canonical wires, then literally rechecked in the final Lua mutation; unsigned journal records cannot adopt a borrowed wire. Existing terminal/quarantine exclusions, live-lease refusal and journal send gates remain unchanged. Rust/Redis regressions and direct production-Lua failure cuts cover generation reuse, idempotent counts, selective index loss and witness races. These are runtime validation obligations of the finite model, not a proof of Lua/SQLite refinement."
+    },
+    "canonical_nonce_progress": {
+      "decision": "Use canonical latest nonce for stall detection and gas-bump race checks; retain finality polling and exact-wire ownership.",
+      "reason": "EoaRecovery already models canonical latest separately from receipts. This change restricts bump scheduling to actual current-nonce submitted members, leaves fee/replay authority unchanged, and prevents a preconfirmation hint from refreshing the canonical progress clock. Included-but-unfinalized attempts and idle wallets do not produce stuck alerts. Indexed Redis counts run only after a stall threshold; finality and continuity polling continue independently. Executable Redis/RPC regressions cover idle, included/unfinalized, preconfirmation ahead, a future nonce gap, canonical progress, capped fees, missing requests and failed simulation; they assert retained members, no fallback sends, expected simulation calls and exported stuck metrics. This is scheduler/monitoring coverage, not a proof of chain inclusion liveness or wall-clock timing."
     }
   }
 }
