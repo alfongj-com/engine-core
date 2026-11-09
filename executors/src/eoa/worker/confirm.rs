@@ -172,16 +172,15 @@ impl<C: Chain> EoaExecutorWorker<C> {
             Ok(cached_nonce) => cached_nonce,
         };
 
-        let submitted_count = self.store.get_submitted_transactions_count().await?;
-
         // A rollback or a stalled submitted suffix can contain many nonce gaps.
         // Recover existing wires on a separate bounded cadence; neither an RPC
         // error nor an accepted rebroadcast is counted as new useful work.
         self.replay_submitted_gap(transaction_counts.latest, cached_transaction_count)
             .await?;
 
-        // no nonce progress
-        if transaction_counts.preconfirmed <= cached_transaction_count {
+        // Only canonical nonce progress resets the stall clock. A sequencer's
+        // preconfirmation can stay ahead indefinitely without inclusion.
+        if transaction_counts.latest <= cached_transaction_count {
             let current_health = self.get_eoa_health().await?;
             let now = EoaExecutorStore::now();
             // No nonce progress - check if we should attempt gas bumping for stalled nonce
@@ -190,8 +189,25 @@ impl<C: Chain> EoaExecutorWorker<C> {
             // Check if EOA has sufficient funds before attempting gas bump
             let is_out_of_funds = current_health.balance <= current_health.balance_threshold;
 
-            // if there are waiting transactions and EOA has sufficient funds, we can attempt a gas bump
-            if time_since_movement > NONCE_STALL_LIMIT_MS && submitted_count > 0 {
+            // These indexed counts cost one Redis round trip only after a
+            // threshold is reached. Mined-but-unfinalized attempts and an idle
+            // signer cannot justify replacement or a stuck-signer alert.
+            let waiting = if time_since_movement > NONCE_STALL_LIMIT_MS
+                || self.store.eoa_metrics.is_stuck(time_since_movement)
+            {
+                Some(
+                    self.store
+                        .get_nonce_work_counts(transaction_counts.latest)
+                        .await?,
+                )
+            } else {
+                None
+            };
+            if time_since_movement > NONCE_STALL_LIMIT_MS
+                && waiting
+                    .as_ref()
+                    .is_some_and(|work| work.current_nonce_attempts > 0)
+            {
                 if is_out_of_funds {
                     tracing::warn!(
                         time_since_movement = time_since_movement,
@@ -204,19 +220,19 @@ impl<C: Chain> EoaExecutorWorker<C> {
                     tracing::info!(
                         time_since_movement = time_since_movement,
                         stall_timeout = NONCE_STALL_LIMIT_MS,
-                        current_chain_nonce = transaction_counts.preconfirmed,
+                        current_chain_nonce = transaction_counts.latest,
                         cached_transaction_count = cached_transaction_count,
                         "Nonce has been stalled, attempting gas bump"
                     );
 
                     // Attempt gas bump for the next expected nonce
                     if let Err(e) = self
-                        .attempt_gas_bump_for_stalled_nonce(transaction_counts.preconfirmed)
+                        .attempt_gas_bump_for_stalled_nonce(transaction_counts.latest)
                         .await
                     {
                         tracing::warn!(
                             error = ?e,
-                            bumped_nonce = transaction_counts.preconfirmed,
+                            bumped_nonce = transaction_counts.latest,
                             preconfirmed_nonce = transaction_counts.preconfirmed,
                             latest_nonce = transaction_counts.latest,
                             "Gas bump failed; preserving submitted intent for reconciliation"
@@ -227,7 +243,11 @@ impl<C: Chain> EoaExecutorWorker<C> {
 
             // Check if EOA is stuck and record metric using the clean EoaMetrics abstraction
             let time_since_movement_seconds = time_since_movement as f64 / 1000.0;
-            if self.store.eoa_metrics.is_stuck(time_since_movement) {
+            if self.store.eoa_metrics.is_stuck(time_since_movement)
+                && waiting.as_ref().is_some_and(|work| {
+                    work.pending > 0 || work.borrowed > 0 || work.unmined_attempts > 0
+                })
+            {
                 tracing::warn!(
                     time_since_movement = time_since_movement,
                     stuck_threshold = self.store.eoa_metrics.stuck_threshold_seconds,
@@ -247,7 +267,6 @@ impl<C: Chain> EoaExecutorWorker<C> {
             }
 
             tracing::debug!("No nonce progress, still going ahead with confirm flow");
-            // return Ok(CleanupReport::default());
         }
 
         tracing::info!(
@@ -587,13 +606,13 @@ impl<C: Chain> EoaExecutorWorker<C> {
 
                     // If nonce has moved ahead, the transaction likely confirmed
                     // Break out of gas bump flow and let regular confirmation flow handle it
-                    if fresh_transaction_counts.preconfirmed > expected_nonce {
+                    if fresh_transaction_counts.latest > expected_nonce {
                         tracing::info!(
                             transaction_id = ?newest_transaction_data.transaction_id,
                             nonce = expected_nonce,
                             current_preconfirmed_nonce = fresh_transaction_counts.preconfirmed,
                             current_latest_nonce = fresh_transaction_counts.latest,
-                            "Gas bump simulation failed but nonce has moved ahead - transaction likely confirmed. Breaking out of gas bump flow."
+                            "Gas bump simulation failed after canonical nonce progress; returning to confirmation flow"
                         );
 
                         if let Ok(mut health) = self.get_eoa_health().await {

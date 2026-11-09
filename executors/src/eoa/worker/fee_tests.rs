@@ -131,7 +131,7 @@ fn estimated_fee_bumps_saturate_without_wrapping_or_panicking() {
 /// boundary. No live credentials, external nodes, or chain broadcasts are used.
 #[tokio::test]
 #[ignore = "requires disposable Redis in TEST_REDIS_URL"]
-async fn stalled_nonce_preserves_capped_unbuildable_and_missing_intents() {
+async fn stalled_nonce_preserves_intents_and_distinguishes_finality_from_nonce_work() {
     use crate::{
         eoa::{
             EoaExecutorStore,
@@ -142,7 +142,7 @@ async fn stalled_nonce_preserves_capped_unbuildable_and_missing_intents() {
     };
     use alloy::providers::ProviderBuilder;
     use engine_core::{
-        chain::{RpcCredentials, ThirdwebChainConfig},
+        chain::{RpcCredentials, RpcEndpointConfig, ThirdwebChainConfig},
         signer::EoaSigner,
     };
     use serde_json::{Value, json};
@@ -157,6 +157,8 @@ async fn stalled_nonce_preserves_capped_unbuildable_and_missing_intents() {
     let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
     let url = format!("http://{}", listener.local_addr().unwrap());
     let methods = Arc::new(Mutex::new(Vec::new()));
+    let counts = Arc::new(Mutex::new((0u64, 0u64)));
+    let rpc_counts = counts.clone();
     let seen = methods.clone();
     let server = tokio::spawn(async move {
         loop {
@@ -189,7 +191,8 @@ async fn stalled_nonce_preserves_capped_unbuildable_and_missing_intents() {
             let method = request["method"].as_str().unwrap();
             seen.lock().unwrap().push(method.to_owned());
             let mut reply = if method == "eth_getTransactionCount" {
-                json!({"result":"0x0"})
+                let (latest, pending) = *rpc_counts.lock().unwrap();
+                json!({"result":format!("0x{:x}", if request["params"][1] == "pending" { pending } else { latest })})
             } else if method == "eth_getTransactionReceipt" {
                 json!({"result":null})
             } else if method == "eth_feeHistory" || method == "eth_getBlockByNumber" {
@@ -208,8 +211,30 @@ async fn stalled_nonce_preserves_capped_unbuildable_and_missing_intents() {
     )
     .unwrap();
     let redis = client.get_connection_manager().await.unwrap();
-    for scenario in ["capped", "unbuildable", "missing", "unsupported-partial"] {
+    for scenario in [
+        "capped",
+        "unbuildable",
+        "missing",
+        "unsupported-partial",
+        "mined-unfinalized",
+        "idle",
+        "pending-ahead",
+        "future-gap",
+        "canonical-advanced",
+    ] {
         methods.lock().unwrap().clear();
+        let latest = u64::from(matches!(
+            scenario,
+            "mined-unfinalized" | "canonical-advanced"
+        ));
+        *counts.lock().unwrap() = (
+            latest,
+            if scenario == "pending-ahead" {
+                1
+            } else {
+                latest
+            },
+        );
         let namespace = format!("fee-ceiling:{}", uuid::Uuid::new_v4());
         let key = PrivateKeySigner::random();
         let eoa = key.address();
@@ -240,7 +265,15 @@ async fn stalled_nonce_preserves_capped_unbuildable_and_missing_intents() {
             bundler_base_url: "invalid",
             paymaster_base_url: "invalid",
         }
-        .to_chain()
+        .to_chain_with_rpc(
+            Some(&RpcEndpointConfig {
+                url: url.clone(),
+                use_pending_for_preconfirmation: scenario == "pending-ahead",
+                ..Default::default()
+            }),
+            std::time::Duration::from_secs(5),
+            std::time::Duration::from_secs(1),
+        )
         .unwrap();
         chain.provider = ProviderBuilder::new()
             .disable_recommended_fillers()
@@ -262,7 +295,11 @@ async fn stalled_nonce_preserves_capped_unbuildable_and_missing_intents() {
         };
         worker
             .store
-            .update_cached_transaction_count(0)
+            .update_cached_transaction_count(if scenario == "canonical-advanced" {
+                0
+            } else {
+                latest
+            })
             .await
             .unwrap();
         worker
@@ -282,20 +319,22 @@ async fn stalled_nonce_preserves_capped_unbuildable_and_missing_intents() {
         let tx = SubmittedTransactionDehydrated {
             transaction_id: scenario.into(),
             transaction_hash: alloy::primitives::B256::repeat_byte(7).to_string(),
-            nonce: 0,
+            nonce: u64::from(scenario == "future-gap"),
             submitted_at: 1,
             queued_at: 1,
         };
         let mut conn = redis.clone();
         let (member, nonce) = tx.to_redis_string_with_nonce();
-        let _: () = conn
-            .zadd(
-                worker.store.submitted_transactions_zset_name(),
-                &member,
-                nonce,
-            )
-            .await
-            .unwrap();
+        if scenario != "idle" {
+            let _: () = conn
+                .zadd(
+                    worker.store.submitted_transactions_zset_name(),
+                    &member,
+                    nonce,
+                )
+                .await
+                .unwrap();
+        }
         if scenario != "missing" {
             let request = EoaTransactionRequest {
                 transaction_id: scenario.into(),
@@ -304,7 +343,11 @@ async fn stalled_nonce_preserves_capped_unbuildable_and_missing_intents() {
                 to: Some(Address::repeat_byte(7)),
                 value: U256::from(1),
                 data: Bytes::new(),
-                gas_limit: (scenario != "unbuildable").then_some(21000),
+                gas_limit: (!matches!(
+                    scenario,
+                    "unbuildable" | "pending-ahead" | "mined-unfinalized" | "future-gap"
+                ))
+                .then_some(21000),
                 webhook_options: vec![],
                 transaction_type_data: Some(TransactionTypeData::Eip1559(Transaction1559Data {
                     max_fee_per_gas: Some(100),
@@ -346,7 +389,7 @@ async fn stalled_nonce_preserves_capped_unbuildable_and_missing_intents() {
                 .get_submitted_transactions_count()
                 .await
                 .unwrap(),
-            1
+            u64::from(scenario != "idle")
         );
         assert_eq!(
             worker.store.get_pending_transactions_count().await.unwrap(),
@@ -357,7 +400,14 @@ async fn stalled_nonce_preserves_capped_unbuildable_and_missing_intents() {
             .zrange(worker.store.submitted_transactions_zset_name(), 0, -1)
             .await
             .unwrap();
-        assert_eq!(remaining, vec![member]);
+        assert_eq!(
+            remaining,
+            if scenario == "idle" {
+                vec![]
+            } else {
+                vec![member]
+            }
+        );
         let attempts: u64 = conn
             .llen(worker.store.transaction_attempts_list_name(scenario))
             .await
@@ -370,7 +420,7 @@ async fn stalled_nonce_preserves_capped_unbuildable_and_missing_intents() {
         );
         assert_eq!(
             seen.iter().filter(|m| *m == "eth_estimateGas").count(),
-            usize::from(scenario == "unbuildable"),
+            usize::from(matches!(scenario, "unbuildable" | "pending-ahead")),
             "a failed bump must not estimate an unrelated fallback self-transfer: {seen:?}"
         );
         assert!(
@@ -387,6 +437,36 @@ async fn stalled_nonce_preserves_capped_unbuildable_and_missing_intents() {
         if scenario == "unsupported-partial" {
             assert!(seen.iter().any(|m| m == "eth_feeHistory"));
             assert!(!seen.iter().any(|m| m == "eth_gasPrice"));
+        }
+        let exposition = crate::metrics::export_default_metrics().unwrap();
+        let stuck = exposition
+            .lines()
+            .find(|line| {
+                line.starts_with("tw_engine_executor_eoa_stuck_duration_seconds_count{")
+                    && line.contains(&format!("eoa_address=\"{eoa}\""))
+            })
+            .map(|line| line.rsplit_once(' ').unwrap().1.parse::<u64>().unwrap())
+            .unwrap_or(0);
+        assert_eq!(
+            stuck,
+            u64::from(!matches!(
+                scenario,
+                "mined-unfinalized" | "idle" | "canonical-advanced"
+            )),
+            "{scenario}: only unresolved nonce work is stuck"
+        );
+        let movement = worker
+            .get_eoa_health()
+            .await
+            .unwrap()
+            .last_nonce_movement_at;
+        if scenario == "canonical-advanced" {
+            assert!(movement > 1, "canonical progress refreshes the stall clock");
+        } else {
+            assert_eq!(
+                movement, 1,
+                "a pending/preconfirmation hint must not refresh canonical progress"
+            );
         }
         drop(worker);
         let keys: Vec<String> = conn.keys(format!("*{namespace}*")).await.unwrap();

@@ -140,7 +140,7 @@
     },
     {
       "path": "executors/src/eoa/store/mod.rs",
-      "sha256": "19c73886b6b9d0fee151c4e4802d9d97ac024e28f5466691e17da2b22d6bc25e",
+      "sha256": "12fccecb4493cec2fc0e541970bfd1e1d1c58640a197fec4716dc0f915d73ba2",
       "models": [
         "DisasterRecovery",
         "EoaRecovery",
@@ -177,7 +177,7 @@
     },
     {
       "path": "executors/src/eoa/worker/confirm.rs",
-      "sha256": "d045cd9b652bbb396c64a1585ca04987c3d00fb4170b37d9798fe8afa33af3ed",
+      "sha256": "0b133cc9c157cb52db45cc582893421a57b1927a6251125e1f7376805586e3c8",
       "models": [
         "DisasterRecovery",
         "EoaRecovery",
@@ -201,7 +201,7 @@
     },
     {
       "path": "executors/src/eoa/worker/fee_tests.rs",
-      "sha256": "1d4f8b258453e88bf5e52d6d0e1eb94bd0862a038e88f4df7ddb59a6df8c72fd",
+      "sha256": "25fe8b4ff444f1fdeb3f7660796fd966abf2906170268b01fcbb33b24b6e0faa",
       "models": [
         "Fees"
       ]
@@ -1080,6 +1080,12 @@
     "physical_journal_maintenance": {
       "decision": "Permanent logical retention; verified offline SQLite snapshot/compaction without new authority state or schema.",
       "reason": "The exclusive owner lock excludes serving workers. Unhalted current-schema/no-pending preconditions prevent maintenance from acknowledging checkpoints or clearing incidents. A private no-overwrite SQLite snapshot is checked against a bounded-row-memory digest of every table/value including recovery events and sqlite_sequence before publication. Source VACUUM must preserve that digest and the full control identity; failed verification latches a durable halt. WAL checkpoint/truncation reports busy readers rather than resetting continuity. Normal startup/admission/broadcast paths do not invoke maintenance. This physical operation stutters over DisasterRecovery logical state; SQLite atomicity, filesystem sync/power loss and the correctness/collision resistance of the digest are assumptions, not proved implementation refinement. Real SQLite/Redis tests check retained rows, export identity, private publication, actual free-page reclamation, restart/dedup/replay fences and owner/halt/pending/output rejection. Lifetime growth and permanent sensitive payload retention remain explicit contract limits."
+    }
+  },
+  "reviews": {
+    "canonical_nonce_progress": {
+      "decision": "Use canonical latest nonce for stall detection and gas-bump race checks; retain finality polling and exact-wire ownership.",
+      "reason": "EoaRecovery already models canonical latest separately from receipts. This change restricts bump scheduling to actual current-nonce submitted members, leaves fee/replay authority unchanged, and prevents a preconfirmation hint from refreshing the canonical progress clock. Included-but-unfinalized attempts and idle wallets do not produce stuck alerts. Indexed Redis counts run only after a stall threshold; finality and continuity polling continue independently. Executable Redis/RPC regressions cover idle, included/unfinalized, preconfirmation ahead, a future nonce gap, canonical progress, capped fees, missing requests and failed simulation; they assert retained members, no fallback sends, expected simulation calls and exported stuck metrics. This is scheduler/monitoring coverage, not a proof of chain inclusion liveness or wall-clock timing."
     }
   }
 }
