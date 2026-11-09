@@ -6,12 +6,12 @@ use engine_core::execution_options::solana::{
     CommitmentLevel as ExecutionCommitment, SolanaChainId, SolanaExecutionOptions,
 };
 use serde_json::Value;
-use solana_sdk::{
-    hash::Hash,
-    message::{VersionedMessage, v0},
-    signature::{Keypair, Signer},
-    transaction::VersionedTransaction,
-};
+use solana_hash::Hash;
+use solana_keypair::Keypair;
+use solana_message::VersionedMessage;
+use solana_message::v0;
+use solana_signer::Signer;
+use solana_transaction::versioned::VersionedTransaction;
 use std::{collections::VecDeque, sync::Mutex};
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
@@ -1201,7 +1201,7 @@ async fn a_receipt_for_another_signature_is_not_success() {
     let lock = f.seed().await;
     let mut wrong = details(&f.attempt);
     wrong.body.as_mut().unwrap()["result"]["transaction"]["signatures"][0] =
-        json!(solana_sdk::signature::Signature::default().to_string());
+        json!(solana_signature::Signature::default().to_string());
     let (rpc, _, server) = rpc(vec![status(finalized()), wrong]).await;
     assert!(matches!(
         assert_nack(f.handler.execute_transaction(&rpc, &f.data, &lock, 1).await),
@@ -2197,11 +2197,11 @@ fn retained_wire_validation_rejects_changed_identity_crypto_and_encoding() {
     bad.blockhash = Hash::new_unique();
     cases.push(bad);
     let mut bad = attempt.clone();
-    bad.signature = solana_sdk::signature::Signature::default();
+    bad.signature = solana_signature::Signature::default();
     cases.push(bad);
     let mut bad = attempt.clone();
     let mut invalid_crypto = signed.clone();
-    invalid_crypto.signatures[0] = solana_sdk::signature::Signature::default();
+    invalid_crypto.signatures[0] = solana_signature::Signature::default();
     bad.signature = invalid_crypto.signatures[0];
     bad.signed_transaction = Some(
         base64::engine::general_purpose::STANDARD

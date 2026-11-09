@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use serde_with::{DisplayFromStr, serde_as};
-use solana_sdk::{hash::Hash, signature::Signature};
+use solana_hash::Hash;
+use solana_signature::Signature;
 use twmq::{
     job::QueueLease,
     redis,

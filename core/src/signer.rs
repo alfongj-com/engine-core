@@ -560,11 +560,12 @@ impl SolanaSigner {
     /// co-signatures; a partially signed transaction must supply every other signer.
     pub async fn sign_transaction(
         &self,
-        mut transaction: solana_sdk::transaction::VersionedTransaction,
-        from: solana_sdk::pubkey::Pubkey,
+        mut transaction: solana_transaction::versioned::VersionedTransaction,
+        from: solana_pubkey::Pubkey,
         credentials: &SigningCredential,
-    ) -> Result<solana_sdk::transaction::VersionedTransaction, EngineError> {
-        use solana_sdk::{signature::Signature, signer::Signer};
+    ) -> Result<solana_transaction::versioned::VersionedTransaction, EngineError> {
+        use solana_signature::Signature;
+        use solana_signer::Signer;
         let invalid = |message: &str| EngineError::ValidationError {
             message: message.into(),
         };

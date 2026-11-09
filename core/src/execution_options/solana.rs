@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use serde_with::{DisplayFromStr, serde_as};
 use solana_commitment_config::CommitmentLevel as SolanaCommitmentLevel;
-use solana_sdk::pubkey::Pubkey;
+use solana_pubkey::Pubkey;
 
 /// Solana chain identifier
 #[derive(Deserialize, Serialize, Debug, Clone, utoipa::ToSchema, Hash, Eq, PartialEq, Copy)]
