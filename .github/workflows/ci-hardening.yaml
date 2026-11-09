@@ -9,6 +9,21 @@ on:
         description: Run the bounded release-build capacity search instead of correctness gates
         type: boolean
         default: false
+      capacity_max_screen_rate:
+        description: Highest screening candidate in TPS; not an absolute maximum
+        type: choice
+        default: '800'
+        options: ['800', '400', '200', '100', '50', '25']
+      capacity_seconds:
+        description: Offered duration per trial; use 600 with the 480-second window
+        type: choice
+        default: '300'
+        options: ['300', '600', '900']
+      capacity_late_window_seconds:
+        description: Observation window; must leave at least 60 seconds for warmup
+        type: choice
+        default: '180'
+        options: ['180', '240', '480', '840']
 concurrency:
   group: rust-correctness-${{ github.event.pull_request.head.ref || github.ref_name }}-${{ inputs.capacity && github.run_id || 'correctness' }}
   cancel-in-progress: true
@@ -163,7 +178,7 @@ jobs:
   capacity-individual:
     needs: capacity-build
     runs-on: ubuntu-latest
-    timeout-minutes: 75
+    timeout-minutes: 360
     strategy:
       fail-fast: false
       matrix:
@@ -188,6 +203,9 @@ jobs:
       - name: Measure individual rate and confirm three runs
         env:
           PROFILE: ${{ matrix.profile }}
+          MAX_SCREEN_RATE: ${{ inputs.capacity_max_screen_rate }}
+          TRIAL_SECONDS: ${{ inputs.capacity_seconds }}
+          LATE_WINDOW_SECONDS: ${{ inputs.capacity_late_window_seconds }}
           ANVIL_BIN: /tmp/engine-foundry/anvil
           CAST_BIN: /tmp/engine-foundry/cast
         run: |
@@ -198,7 +216,7 @@ jobs:
           mkdir "$RUNNER_TEMP/fixtures"
           export TMPDIR="$RUNNER_TEMP/fixtures"
           ANVIL_BIN=/tmp/engine-foundry/anvil python3 -m unittest discover -s scripts -p 'capacity*test.py'
-          python3 scripts/capacity_sweep.py individual --profile "$PROFILE" --engine-bin "$RUNNER_TEMP/capacity-bin/thirdweb-engine" --solana-bin-dir /tmp/engine-solana/solana-release/bin --output "$RUNNER_TEMP/capacity-$PROFILE"
+          python3 scripts/capacity_sweep.py individual --profile "$PROFILE" --max-screen-rate "$MAX_SCREEN_RATE" --seconds "$TRIAL_SECONDS" --late-window-seconds "$LATE_WINDOW_SECONDS" --engine-bin "$RUNNER_TEMP/capacity-bin/thirdweb-engine" --solana-bin-dir /tmp/engine-solana/solana-release/bin --output "$RUNNER_TEMP/capacity-$PROFILE"
       - name: Preserve failed trial fixtures
         if: failure()
         run: |
@@ -216,7 +234,7 @@ jobs:
   capacity-shared:
     needs: capacity-individual
     runs-on: ubuntu-latest
-    timeout-minutes: 100
+    timeout-minutes: 360
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
@@ -240,6 +258,8 @@ jobs:
           tar xjf /tmp/solana.tar.bz2 -C /tmp/engine-solana
       - name: Measure shared rates and mixed fault workloads
         env:
+          TRIAL_SECONDS: ${{ inputs.capacity_seconds }}
+          LATE_WINDOW_SECONDS: ${{ inputs.capacity_late_window_seconds }}
           ANVIL_BIN: /tmp/engine-foundry/anvil
           CAST_BIN: /tmp/engine-foundry/cast
         run: |
@@ -249,7 +269,7 @@ jobs:
           cd "$GITHUB_WORKSPACE"
           mkdir "$RUNNER_TEMP/fixtures"
           export TMPDIR="$RUNNER_TEMP/fixtures"
-          python3 scripts/capacity_sweep.py shared --individuals "$RUNNER_TEMP/individuals" --engine-bin "$RUNNER_TEMP/capacity-bin/thirdweb-engine" --solana-bin-dir /tmp/engine-solana/solana-release/bin --output "$RUNNER_TEMP/capacity-shared"
+          python3 scripts/capacity_sweep.py shared --seconds "$TRIAL_SECONDS" --late-window-seconds "$LATE_WINDOW_SECONDS" --individuals "$RUNNER_TEMP/individuals" --engine-bin "$RUNNER_TEMP/capacity-bin/thirdweb-engine" --solana-bin-dir /tmp/engine-solana/solana-release/bin --output "$RUNNER_TEMP/capacity-shared"
       - name: Preserve failed trial fixtures
         if: failure()
         run: |
