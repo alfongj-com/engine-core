@@ -26,3 +26,15 @@ TEST_REDIS_URL=redis://127.0.0.1:PORT cargo test --locked -p engine-executors --
 ```
 
 All four regressions passed on 2026-09-17, including the normally ignored Redis case on its own disposable server. They cover legacy/EIP-1559/EIP-7702 ceilings, signed-wire fee and intent preservation with partial caps, overflow-safe arithmetic, and the real confirmation flow with Redis plus an HTTP RPC stub. The latter checks capped, unbuildable, missing-request, and unsupported partial-fee cases: no replacement broadcast, no fallback gas-price lookup or self-transfer, no reset, and unchanged submitted state. They do not contact a public chain or spend funds.
+
+## Canonical progress and finality waits
+
+Use `latest` for the nonce-stall clock and replacement target. An explicitly
+enabled preconfirmation endpoint may free sending capacity, but its `pending`
+count is not canonical progress, including after a failed gas estimate.
+
+After the stall threshold, indexed Redis counts distinguish unsigned/borrowed
+work, current-nonce attempts and future nonce gaps. Only an existing current-nonce
+attempt can trigger a fee bump; its independent receipt and retained-wire gates
+still apply. Mined attempts awaiting finality and idle signers do not emit stuck
+alerts. Finality/continuity polling continues even when no nonce work remains.
