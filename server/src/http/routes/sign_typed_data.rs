@@ -34,6 +34,7 @@ pub struct SignTypedDataRequest {
     pub signing_options: SigningOptions,
     /// List of typed data to sign
     #[schema(value_type = Vec<TypedDataDef>)]
+    #[schema(max_items = 100)]
     pub params: Vec<TypedData>,
 }
 

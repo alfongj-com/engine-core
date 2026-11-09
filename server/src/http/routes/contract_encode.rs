@@ -40,6 +40,7 @@ pub struct EncodeRequest {
     /// List of contract function calls to encode
     ///
     /// Each call will be encoded to its raw transaction data
+    #[schema(max_items = 100)]
     pub params: Vec<ContractCall>,
 }
 

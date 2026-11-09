@@ -178,6 +178,7 @@ pub struct ReadRequest {
     /// List of contract function calls to execute
     ///
     /// All calls will be batched together using Multicall3 for efficiency
+    #[schema(max_items = 100)]
     pub params: Vec<ContractCall>,
 }
 

@@ -48,6 +48,7 @@ pub struct SignMessageRequest {
     /// Configuration options for signing
     pub signing_options: SigningOptions,
     /// List of messages to sign
+    #[schema(max_items = 100)]
     pub params: Vec<MessageInput>,
 }
 
