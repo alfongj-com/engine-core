@@ -11,7 +11,8 @@ import unittest
 from unittest.mock import patch
 
 import testnet_evm_write as evm
-from testnet_evm_reconcile import NoBroadcastGuard, ReadBudget, reconcile_fees, verified_runtime
+from testnet_evm_reconcile import NoBroadcastGuard, ReadBudget, reconcile_fees, retained_transaction_hash, verified_runtime
+from test_testnet_evm_write import encode
 
 
 class ReconciliationTests(unittest.TestCase):
@@ -30,6 +31,11 @@ class ReconciliationTests(unittest.TestCase):
             verified, current = verified_runtime(manifest, original)
             self.assertEqual(verified, saved)
             self.assertEqual(current["engine_binary_sha256"], saved["engine_binary_sha256"])
+            without_source = copy.deepcopy(manifest)
+            without_source["provenance"]["declared_binary_source_commit"] = None
+            old, now = verified_runtime(without_source, copy.deepcopy(without_source))
+            self.assertIsNone(old["declared_binary_source_commit"])
+            self.assertIsNone(now["declared_binary_source_commit"])
             for field in ("engine_binary_sha256", "harness_sha256", "process_helper_sha256"):
                 changed = copy.deepcopy(manifest)
                 changed["provenance"][field] = "0" * 64
@@ -45,6 +51,33 @@ class ReconciliationTests(unittest.TestCase):
             binary.write_text("changed")
             with self.assertRaisesRegex(RuntimeError, "binary changed"):
                 verified_runtime(manifest, original)
+
+    def test_wire_hash_handles_lost_replies_and_refuses_contradictory_hashes(self):
+        fields = [11155111, 7, 10, 100, 21000, bytes.fromhex("11" * 20), 1, b"", [], 0, 1, 2]
+        wire = "0x02" + encode(fields).hex()
+        expected = "0x" + "33" * 32
+        entry = {"wire": wire, "responses": [{"error": {"code": -32000}}, {"error": {"code": -32000}}]}
+        with patch("testnet_evm_reconcile.subprocess.check_output", return_value=expected + "\n") as keccak:
+            self.assertEqual(retained_transaction_hash(entry, "/offline/cast"), expected)
+            keccak.assert_called_once_with(["/offline/cast", "keccak", wire], text=True, stderr=subprocess.PIPE, timeout=5)
+            entry["responses"].append({"result": expected})
+            self.assertEqual(retained_transaction_hash(entry, "/offline/cast"), expected)
+            entry["responses"].append({"result": "0x" + "44" * 32})
+            with self.assertRaisesRegex(RuntimeError, "disagrees"):
+                retained_transaction_hash(entry, "/offline/cast")
+        with patch("testnet_evm_reconcile.subprocess.check_output", return_value="SHA3 is not Keccak"):
+            with self.assertRaisesRegex(RuntimeError, "Invalid local"):
+                retained_transaction_hash({"wire": wire, "responses": []}, "/offline/cast")
+
+    @unittest.skipUnless(os.environ.get("CAST_BIN"), "Set CAST_BIN for native offline Keccak")
+    def test_native_keccak_checks_the_exact_retained_bytes_without_rpc(self):
+        wire = "0x02" + encode([11155111, 7, 10, 100, 21000, bytes.fromhex("11" * 20), 1, b"", [], 0, 1, 2]).hex()
+        with patch("testnet_evm_write.request") as rpc:
+            actual = retained_transaction_hash({"wire": wire, "responses": []}, os.environ["CAST_BIN"])
+            self.assertRegex(actual, r"^0x[0-9a-f]{64}$")
+            different = retained_transaction_hash({"wire": wire[:-2] + "03", "responses": []}, os.environ["CAST_BIN"])
+            self.assertNotEqual(actual, different)
+            rpc.assert_not_called()
 
     def test_fee_reconciliation_preserves_original_allocation_including_operator_fees(self):
         manifest = {"initial_sender_balance_wei": 1000, "transactions": 4, "total_debit_allocation_wei": 100}

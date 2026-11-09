@@ -83,8 +83,11 @@ def verified_runtime(manifest, original):
     saved = manifest.get("provenance")
     required = ("engine_binary_path", "engine_binary_sha256", "declared_binary_source_commit",
                 "harness_source_commit", "harness_sha256", "process_helper_sha256")
-    if not isinstance(saved, dict) or any(not saved.get(field) for field in required):
+    if not isinstance(saved, dict) or any(field not in saved for field in required):
         raise RuntimeError("Incomplete original provenance; use the recorded checkout")
+    if any(not isinstance(saved[field], str) or not saved[field]
+           for field in required if field != "declared_binary_source_commit"):
+        raise RuntimeError("Invalid original provenance")
     if (original.get("provenance") != saved
             or manifest.get("binary_sha256") != saved["engine_binary_sha256"]
             or original.get("binary_sha256") != saved["engine_binary_sha256"]
@@ -99,6 +102,30 @@ def verified_runtime(manifest, original):
         if hashlib.sha256(source).hexdigest() != saved[field]:
             raise RuntimeError("Original harness does not match its recorded Git tree")
     return saved, current
+
+
+def retained_transaction_hash(entry, cast_binary):
+    """A transport response is corroboration; retained wire defines identity.
+
+    Foundry's offline Keccak command avoids substituting standardized SHA3-256
+    for Ethereum Keccak. This command never submits a transaction or uses RPC.
+    """
+    wire = entry["wire"]
+    evm.Guard.fields(wire)  # Bound/validate the retained EIP-1559 representation.
+    result = subprocess.check_output([str(cast_binary), "keccak", wire],
+        text=True, stderr=subprocess.PIPE, timeout=5).strip().lower()
+    if not re.fullmatch(r"0x[0-9a-f]{64}", result):
+        raise RuntimeError("Invalid local transaction hash")
+    responses = entry["responses"]
+    if not isinstance(responses, list):
+        raise RuntimeError("Invalid retained response history")
+    accepted = {response["result"].lower() for response in responses
+                if isinstance(response, dict) and "error" not in response
+                and isinstance(response.get("result"), str)
+                and re.fullmatch(r"0x[0-9a-fA-F]{64}", response["result"])}
+    if accepted and accepted != {result}:
+        raise RuntimeError("Accepted response disagrees with retained wire hash")
+    return result
 
 
 def reconcile_fees(manifest, final_balance, execution_fees, l1_fees):
@@ -145,6 +172,7 @@ def main():
     parser.add_argument("--timeout", type=int, default=1800)
     parser.add_argument("--redis-server", default=os.environ.get("REDIS_SERVER_BIN", "redis-server"))
     parser.add_argument("--redis-cli", default=os.environ.get("REDIS_CLI_BIN", "redis-cli"))
+    parser.add_argument("--cast-bin", default=os.environ.get("CAST_BIN", "cast"))
     parser.add_argument("--report", type=Path, required=True)
     args = parser.parse_args()
     assert re.fullmatch(r"[0-9a-f]{32}", args.run_id)
@@ -167,6 +195,8 @@ def main():
     assert_ports_free([redis_port, proxy_port, server_port])
     saved_provenance, reconciliation_provenance = verified_runtime(manifest, original)
     evm.pinned_binary(saved_provenance)
+    cast_binary = Path(shutil.which(args.cast_bin) or args.cast_bin).expanduser().resolve(strict=True)
+    assert cast_binary.is_file() and os.access(cast_binary, os.X_OK), "Offline Foundry cast is required"
     assert saved_env[f"APP__EVM_RPC__ENDPOINTS__{chain}__FINALITY__MODE"] == "finalized"
     assert saved_env["APP__RECOVERY__JOURNAL_PATH"] == str(directory / "recovery.sqlite")
     assert manifest["value_wei"] == 1 and manifest["expected_execution_status"] == "0x1", "Transfer-only reconciliation"
@@ -198,7 +228,8 @@ def main():
               "transactions": count, "outcome": "incomplete", "original_outcome": original["outcome"],
               "original_error": original.get("error"), "original_evidence_sha256": original_hashes,
               "original_provenance": saved_provenance, "reconciliation_provenance": reconciliation_provenance,
-              "reconciliation_dependency_sha256": {"testnet_evm_write.py": file_hash(Path(evm.__file__))},
+              "reconciliation_dependency_sha256": {"testnet_evm_write.py": file_hash(Path(evm.__file__)),
+                                                   "foundry-cast": file_hash(cast_binary)},
               "binary_sha256": manifest["binary_sha256"],
               "confirmation_scope": "original transfers, finalized Engine terminal evidence and independent canonical/finalized rechecks; no broadcasts",
               "rpc_read_limit": args.max_rpc_calls}
@@ -226,12 +257,7 @@ def main():
         assert len(manifest["payloads"]) == count
         verified, hashes, execution_fees, l1_fees = [], set(), 0, 0
         for nonce, wire in sorted(wires.items(), key=lambda pair: int(pair[0])):
-            accepted = {response["result"].lower() for response in wire["responses"]
-                        if isinstance(response, dict) and "error" not in response
-                        and isinstance(response.get("result"), str)
-                        and re.fullmatch(r"0x[0-9a-fA-F]{64}", response["result"])}
-            assert len(accepted) == 1, "Original accepted hash is missing or inconsistent"
-            tx_hash = accepted.pop()
+            tx_hash = retained_transaction_hash(wire, cast_binary)
             assert evm.Guard.nonce(wire["wire"]) == int(nonce)
             receipt = evm.rpc(url, "eth_getTransactionReceipt", [tx_hash])
             tx = evm.rpc(url, "eth_getTransactionByHash", [tx_hash])

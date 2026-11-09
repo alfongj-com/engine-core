@@ -394,3 +394,9 @@ reattaches the original namespace. Every broadcast is refused. Only original
 same-ID requests are replayed; receipt identity, finality, fees and balances are
 checked before releasing the chain lock. Legacy/incomplete provenance requires
 its recorded checkout. A failed attempt retains the lock and original evidence.
+
+Reconciliation derives each transaction hash locally from its retained signed
+bytes using offline Foundry `cast keccak` (`CAST_BIN` or `--cast-bin`). A successful
+RPC reply is corroboration: missing replies permit read-only lookup; contradictory
+hash replies reject reconciliation. The original optional source-commit label
+may be null; matching binary and committed original harness hashes remain required.
