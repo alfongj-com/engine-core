@@ -36,7 +36,12 @@ fn retained_failure(conn: &Connection, record: &AdmissionRecord) -> Result<Optio
         |row| row.get(0),
     )?;
     let evidence: Value = serde_json::from_str(&encoded).map_err(|_| RecoveryError::Storage)?;
-    if evidence["kind"] != WITNESS_KIND || !evidence["error"].is_object() {
+    if evidence["kind"] != WITNESS_KIND {
+        // A different terminal decision still forbids execution. It is not
+        // permission to publish this particular failure or to halt the host.
+        return Ok(None);
+    }
+    if !evidence["error"].is_object() {
         return Err(RecoveryError::Storage);
     }
     Ok(Some(evidence["error"].clone()))

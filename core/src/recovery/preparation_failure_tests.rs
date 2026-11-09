@@ -252,3 +252,91 @@ async fn preparation_failure_requires_exact_unsigned_eoa_and_owned_complete_publ
     drop(journal);
     fixture.cleanup(&[]).await;
 }
+
+#[tokio::test]
+#[ignore = "requires disposable Redis in TEST_REDIS_URL"]
+async fn another_terminal_or_cancelled_decision_is_not_a_preparation_failure_or_host_halt() {
+    let fixture = Fixture::fresh();
+    fixture.initialize().await;
+    let journal = fixture.open().await;
+    admit(&journal, "erc4337", "cancelled", request("cancelled")).await;
+    assert!(journal.cancel_unbroadcast("cancelled").await.unwrap());
+    assert!(matches!(
+        journal
+            .record_eoa_preparation_failure("cancelled", &request("cancelled"), failure())
+            .await,
+        Err(RecoveryError::Conflict)
+    ));
+    assert!(matches!(
+        journal
+            .eoa_preparation_failure("cancelled", &request("cancelled"))
+            .await,
+        Err(RecoveryError::Conflict)
+    ));
+    // Compatibility fixture for another unsigned terminal witness. Current EOA
+    // chain-finality writes require attempts; future/legacy terminal evidence
+    // must remain a refusal, not an unrelated whole-host storage incident.
+    admit(&journal, "eoa", "other-terminal", request("other-terminal")).await;
+    journal
+        .db(|conn| {
+            conn.execute(
+                "INSERT INTO terminal_evidence(id,evidence) VALUES('other-terminal',?)",
+                [json!({"kind":"other_unsigned_terminal"}).to_string()],
+            )?;
+            conn.execute(
+                "UPDATE admissions SET state='terminal' WHERE id='other-terminal'",
+                [],
+            )?;
+            Ok(())
+        })
+        .await
+        .unwrap();
+    assert!(
+        journal
+            .eoa_preparation_failure("other-terminal", &request("other-terminal"))
+            .await
+            .unwrap()
+            .is_none()
+    );
+    assert!(
+        journal
+            .record_eoa_preparation_failure("other-terminal", &request("other-terminal"), failure())
+            .await
+            .unwrap()
+            .is_none()
+    );
+    journal.ensure_healthy().await.unwrap();
+    assert!(!RecoveryJournal::status(&fixture.path).unwrap().halted);
+    assert!(journal.rebuild_page(None).await.unwrap().is_empty());
+    assert!(matches!(
+        journal
+            .before_broadcast(
+                "eoa",
+                "other-terminal",
+                REPLAY,
+                json!({"wire":"must not send"})
+            )
+            .await,
+        Err(RecoveryError::RecoveryRequired(_))
+    ));
+    // Malformed evidence claiming our own witness type remains fail-closed.
+    journal
+        .db(|conn| {
+            conn.execute(
+                "UPDATE terminal_evidence SET evidence=? WHERE id='other-terminal'",
+                [json!({"kind":WITNESS_KIND,"error":null}).to_string()],
+            )?;
+            Ok(())
+        })
+        .await
+        .unwrap();
+    assert!(
+        journal
+            .eoa_preparation_failure("other-terminal", &request("other-terminal"))
+            .await
+            .is_err()
+    );
+    assert!(RecoveryJournal::status(&fixture.path).unwrap().halted);
+    drop(journal);
+    fixture.cleanup(&[]).await;
+}
