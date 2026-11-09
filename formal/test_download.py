@@ -12,10 +12,10 @@ import threading
 import time
 import unittest
 from unittest.mock import patch
-from urllib.error import HTTPError
 from urllib.parse import parse_qs, urlsplit
 
 import check
+import download as downloader
 from download import DownloadError, download
 
 
@@ -69,7 +69,8 @@ class PinnedDownload(unittest.TestCase):
             self.assertFalse(self.destination.exists())
         else:
             self.assertEqual(self.destination.read_bytes(), expected)
-        self.assertEqual(list(self.destination.parent.glob("*.partial")), [])
+        self.assertEqual(set(self.destination.parent.iterdir()),
+                         {self.destination} if expected is not None else set())
 
     def test_transient_status_retries_original_url_with_unique_query(self):
         for status in (408, 429, 500, 502, 503, 504):
@@ -94,7 +95,7 @@ class PinnedDownload(unittest.TestCase):
             with self.subTest(status=status):
                 self.destination.write_bytes(PAYLOAD)
                 with server(lambda h, _n: respond(h, b"denied", status=status)) as (url, requests):
-                    with self.assertRaises(HTTPError):
+                    with self.assertRaisesRegex(DownloadError, f"HTTP Error {status}"):
                         download(url, DIGEST, self.destination, retry_delay=0)
                 self.assertEqual(len(requests), 1)
                 self.assert_clean(PAYLOAD)
@@ -166,15 +167,61 @@ class PinnedDownload(unittest.TestCase):
         self.assertEqual(len(requests), 1)
         self.assert_clean(PAYLOAD)
 
+    def test_slow_headers_obey_overall_deadline_and_reap_worker(self):
+        self.destination.write_bytes(PAYLOAD)
+        processes = []
+        popen = subprocess.Popen
+
+        def track_process(*args, **kwargs):
+            child = popen(*args, **kwargs)
+            processes.append(child)
+            return child
+
+        def trickle_headers(handler, _number):
+            for byte in b"HTTP/1.0 200 OK\r\nContent-Length: 1\r\n\r\nx":
+                handler.connection.sendall(bytes([byte]))
+                time.sleep(0.03)
+
+        with server(trickle_headers) as (url, requests), \
+                patch.object(downloader.subprocess, "Popen", side_effect=track_process):
+            started = time.monotonic()
+            with self.assertRaisesRegex(DownloadError, "deadline exceeded"):
+                download(url, DIGEST, self.destination, deadline_seconds=0.3, retry_delay=0)
+            elapsed = time.monotonic() - started
+        self.assertLess(elapsed, 0.8)  # Full headers take over one second.
+        self.assertEqual(len(requests), 1)
+        self.assertEqual(len(processes), 1)
+        self.assertIsNotNone(processes[0].poll(), "Timed-out network worker was not reaped")
+        self.assertTrue(processes[0].stderr.closed)
+        self.assert_clean(PAYLOAD)
+
+    def test_redirects_share_one_deadline_and_leave_no_staging(self):
+        def redirect(handler, number):
+            time.sleep(0.12)
+            handler.send_response(302)
+            handler.send_header("Location", f"/redirect/{number}")
+            handler.end_headers()
+
+        with server(redirect) as (url, requests):
+            started = time.monotonic()
+            with self.assertRaisesRegex(DownloadError, "deadline exceeded"):
+                download(url, DIGEST, self.destination, deadline_seconds=0.35, retry_delay=0)
+            elapsed = time.monotonic() - started
+        self.assertLess(elapsed, 0.8)
+        self.assertGreaterEqual(len(requests), 1)
+        self.assertLess(len(requests), 5)
+        self.assert_clean()
+
     @unittest.skipUnless(os.name == "posix", "SIGINT cleanup uses POSIX process signals")
     def test_cli_interruption_cleans_partial_and_preserves_output(self):
-        release = threading.Event()
+        disconnected = threading.Event()
         self.destination.write_bytes(PAYLOAD)
 
         def slow(handler, _number):
             respond(handler, PAYLOAD[:1], length=len(PAYLOAD))
-            release.wait(timeout=5)
-            handler.wfile.write(PAYLOAD[1:])
+            handler.connection.settimeout(5)
+            if handler.connection.recv(1) == b"":
+                disconnected.set()
 
         with server(slow) as (url, _requests):
             child = subprocess.Popen([sys.executable, str(Path(__file__).with_name("download.py")),
@@ -182,15 +229,15 @@ class PinnedDownload(unittest.TestCase):
                                      stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             try:
                 deadline = time.monotonic() + 5
-                while not list(self.destination.parent.glob("*.partial")):
+                while not list(self.destination.parent.rglob("*.partial")):
                     self.assertIsNone(child.poll(), "Downloader exited before receiving the response")
                     self.assertLess(time.monotonic(), deadline, "Downloader did not start a partial file")
                     time.sleep(0.01)
                 child.send_signal(signal.SIGINT)
                 child.communicate(timeout=5)
                 self.assertNotEqual(child.returncode, 0)
+                self.assertTrue(disconnected.wait(timeout=1), "Interrupted CLI leaked its network worker")
             finally:
-                release.set()
                 if child.poll() is None:
                     child.kill()
                     child.communicate(timeout=5)

@@ -59,6 +59,10 @@ composes automatically into a whole-service proof.
 Requires Python 3.9+, Java 11+, and Kani 0.68.0 for the Rust checks. TLC 1.7.4 is
 downloaded from its official release and checked against a pinned SHA-256. Set
 `JAVA` or `TLA_JAR` to use existing installations; the jar digest is still enforced.
+The [download helper](download.py) puts network work in a child process so one
+deadline covers DNS, connections, slow headers, redirects, retries and the body.
+On timeout or interruption it kills and reaps the child and removes staging;
+only verified bytes replace the destination after successful completion.
 
 ```sh
 python3 -m unittest discover -s formal -p 'test_*.py' -v

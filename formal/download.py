@@ -8,6 +8,8 @@ import os
 from pathlib import Path
 import re
 import socket
+import subprocess
+import sys
 import tempfile
 import time
 import urllib.error
@@ -34,15 +36,7 @@ def _retry_url(url):
     return urllib.parse.urlunsplit(parts._replace(query=query))
 
 
-def download(url, expected_sha256, destination, *, attempts=4, max_bytes=1024**3,
-             deadline_seconds=300, retry_delay=1):
-    """Publish only verified bytes. Existing output survives every failed attempt.
-
-    HTTP integrity/framing failures are permanent. Only transport failures and
-    408/429/5xx responses retry; retries cache-bust the original release URL.
-    Check the overall deadline between chunks and before publication. A body
-    read already in progress can overrun it by at most its 30-second I/O timeout.
-    """
+def _validate(url, expected_sha256, attempts, max_bytes, deadline_seconds, retry_delay):
     parts = urllib.parse.urlsplit(url)
     if parts.scheme not in {"http", "https"} or not parts.netloc:
         raise ValueError("Download URL must use HTTP or HTTPS")
@@ -53,8 +47,51 @@ def download(url, expected_sha256, destination, *, attempts=4, max_bytes=1024**3
     if (not math.isfinite(deadline_seconds) or deadline_seconds <= 0
             or not math.isfinite(retry_delay) or retry_delay < 0):
         raise ValueError("Download needs a positive finite deadline and nonnegative retry delay")
+
+
+def download(url, expected_sha256, destination, *, attempts=4, max_bytes=1024**3,
+             deadline_seconds=300, retry_delay=1):
+    """Fetch under one deadline, then atomically publish only verified bytes.
+
+    urllib's inactivity timeout does not bound slow headers, DNS or redirects.
+    Isolate it in a child process so the parent can enforce the overall budget.
+    The child writes staged output; the parent publishes on success and
+    kills/reaps the child before removing staging on timeout or interruption.
+    """
+    _validate(url, expected_sha256, attempts, max_bytes, deadline_seconds, retry_delay)
+    deadline = time.monotonic() + deadline_seconds
     destination = Path(destination)
     destination.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix=".engine-download-", dir=destination.parent) as directory:
+        staged = Path(directory) / "artifact"
+        command = [sys.executable, str(Path(__file__).resolve()), "--_worker",
+                   "--attempts", str(attempts), "--max-bytes", str(max_bytes),
+                   "--deadline-seconds", str(_remaining(deadline)),
+                   "--retry-delay", str(retry_delay), "--", url, expected_sha256, str(staged)]
+        child = subprocess.Popen(command, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+        try:
+            try:
+                _stdout, errors = child.communicate(timeout=_remaining(deadline))
+            except subprocess.TimeoutExpired as error:
+                raise DownloadError("Download deadline exceeded") from error
+            if child.returncode != 0:
+                raise DownloadError(errors.decode("utf-8", errors="replace").strip()
+                                    or f"Download worker exited with status {child.returncode}")
+            _remaining(deadline)
+            staged.replace(destination)
+            return destination
+        finally:
+            if child.poll() is None:
+                child.kill()
+            # communicate also drains/closes pipes and joins its Windows pipe
+            # readers after a timeout; wait alone would only reap the process.
+            child.communicate()
+
+
+def _fetch(url, expected_sha256, destination, *, attempts, max_bytes, deadline_seconds, retry_delay):
+    """Worker: transport-only retries and streaming verification into staging."""
+    _validate(url, expected_sha256, attempts, max_bytes, deadline_seconds, retry_delay)
+    destination = Path(destination)
     deadline = time.monotonic() + deadline_seconds
     expected_sha256 = expected_sha256.lower()
     last_error = None
@@ -128,12 +165,17 @@ def main():
     parser.add_argument("--attempts", type=int, default=4)
     parser.add_argument("--max-bytes", type=int, default=1024**3)
     parser.add_argument("--deadline-seconds", type=float, default=300)
+    parser.add_argument("--retry-delay", type=float, default=1)
+    parser.add_argument("--_worker", action="store_true", help=argparse.SUPPRESS)
     args = parser.parse_args()
     try:
-        download(args.url, args.sha256, args.destination, attempts=args.attempts,
-                 max_bytes=args.max_bytes, deadline_seconds=args.deadline_seconds)
+        operation = _fetch if args._worker else download
+        operation(args.url, args.sha256, args.destination, attempts=args.attempts,
+                  max_bytes=args.max_bytes, deadline_seconds=args.deadline_seconds,
+                  retry_delay=args.retry_delay)
     except (OSError, ValueError, RuntimeError) as error:
-        parser.exit(1, f"Download failed: {error}\n")
+        prefix = "" if args._worker else "Download failed: "
+        parser.exit(1, f"{prefix}{error}\n")
 
 
 if __name__ == "__main__":
