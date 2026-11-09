@@ -38,3 +38,15 @@ work, current-nonce attempts and future nonce gaps. Only an existing current-non
 attempt can trigger a fee bump; its independent receipt and retained-wire gates
 still apply. Mined attempts awaiting finality and idle signers do not emit stuck
 alerts. Finality/continuity polling continues even when no nonce work remains.
+
+## Temporary preparation failures
+
+HTTP 408 and 429 keep an unsigned intent pending, as do server and transport
+failures. Other HTTP client/authentication errors remain permanent preparation
+failures. This classification does not change uncertainty after dispatch: a send
+error cannot release a retained nonce or authorize a different wire.
+
+Each worker cycle consumes at most one existing preparation retry budget when a
+transient failure persists. It sends a valid prepared prefix, then yields the
+unsigned suffix to a later cycle. Recycled-nonce work also yields before NOOP
+refill. Deterministic rejections can still refill the batch within the cycle.
