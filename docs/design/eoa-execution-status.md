@@ -5,6 +5,18 @@ does not establish long-term finality; reorganization recovery remains separate.
 
 ## Contract
 
+### Admission responses
+
+HTTP `429` rejects a fresh request before durable admission. A capacity race
+after the journal commits returns `503` with `error.details.type:
+"ADMISSION_PENDING"` and `error.details.transactionId`, including an automatically
+generated ID. This intent remains reserved and may execute through recovery.
+Retry the original request with that ID as `idempotencyKey`; never create a new
+ID to work around the error. An existing active ID has the same `503` contract
+while the queue is full. An exact terminal retry needs no queue capacity.
+
+### Receipt responses
+
 | Receipt status | Stored status | Confirmation webhook | Worker cycle count |
 | --- | --- | --- | --- |
 | `1` | `confirmed` | `confirm` / `SUCCESS` | `confirmedTransactions` |
@@ -35,9 +47,9 @@ failure and successful confirmation payloads are unchanged.
 Terminal status, completion time, receipt, retention TTL, submitted-set cleanup,
 and webhook enqueue share the fenced Redis transaction. The request identity
 and attempt history remain for the configured completed-transaction retention
-period. An identical ID retry within that period returns without requeueing;
-an ID with different intent conflicts. Reusing an ID after retention expires
-can create a new intent.
+period. The durable journal retains ID ownership independently of that Redis
+TTL. An identical terminal retry returns without requeueing after Redis expiry;
+an ID with different intent conflicts.
 
 Previously, receipt status `0` was reported as confirmation success. Consumers
 must now handle `TRANSACTION_REVERTED` as a terminal confirmation failure. The
