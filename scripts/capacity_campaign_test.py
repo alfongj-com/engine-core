@@ -10,6 +10,7 @@ from pathlib import Path
 import sqlite3
 import tempfile
 import threading
+from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
@@ -23,6 +24,46 @@ class Clock:
 
 
 class SchedulingTests(unittest.TestCase):
+    def test_initial_observation_cannot_make_the_first_arrival_late(self):
+        clock = Clock()
+        value = campaign.Campaign.__new__(campaign.Campaign)
+        value.started, value.phase, value.report = 0, "setup", {}
+        value.journal, value.id_chain, value.times = Path("unused"), {}, {}
+        sampled = []
+        def baseline():
+            sampled.append(value.phase)
+            clock.sleep(2)  # Much longer than the actual25ms admission tolerance.
+        value.sample = baseline
+        value.start_provider_guards = lambda: clock.sleep(.5)
+        with patch.object(campaign, "JournalObserver", return_value=SimpleNamespace(start=0)), \
+                patch.object(campaign.time, "monotonic", clock.clock):
+            value.arm_arrivals()
+        self.assertEqual(sampled, ["setup"])
+        self.assertEqual(value.started, 3.5)
+        self.assertEqual(value.observer.start, value.started)
+        sent, dropped = [], []
+        campaign.open_loop({"one": 10}, .2, value.started, .025,
+            lambda offer: sent.append(offer.index) or True,
+            lambda offer, reason: dropped.append((offer.index, reason)), clock.clock, clock.sleep)
+        self.assertEqual(sent, [0, 1])
+        self.assertEqual(dropped, [])
+
+    def test_periodic_observation_starts_after_the_first_offered_interval(self):
+        clock, seen = Clock(), []
+        value = campaign.Campaign.__new__(campaign.Campaign)
+        value.started, value.args = 1, SimpleNamespace(sample_seconds=5)
+        class Stop:
+            calls = 0
+            def wait(self, seconds):
+                clock.sleep(seconds)
+                self.calls += 1
+                return self.calls > 2
+        value.stop_sampler = Stop()
+        value.sample = lambda: seen.append(clock.now)
+        with patch.object(campaign.time, "monotonic", clock.clock):
+            value.sampling()
+        self.assertEqual(seen, [6, 11])
+
     def test_stall_discards_missed_slots_without_catchup_or_retry(self):
         clock = Clock()
         sent, dropped = [], []
