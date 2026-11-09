@@ -63,6 +63,40 @@ impl super::atomic::AtomicEoaExecutorStore {
         if replay_key.is_some() != !attempts.is_empty() {
             return Err(conflict());
         }
+        // Initial submissions need not have an attempt-list entry. Read a
+        // bounded literal submitted member, then recheck that exact witness in
+        // Lua under the same EOA owner token; never infer it from nonce progress.
+        let mut submitted_witness = String::new();
+        if let Some(nonce) = nonce {
+            let rows: Vec<SubmittedTransactionStringWithNonce> = twmq::redis::cmd("ZRANGEBYSCORE")
+                .arg(self.submitted_transactions_zset_name())
+                .arg(nonce)
+                .arg(nonce)
+                .arg("WITHSCORES")
+                .arg("LIMIT")
+                .arg(0)
+                .arg(129)
+                .query_async(&mut self.redis.clone())
+                .await?;
+            if rows.len() > 128 {
+                return Err(conflict());
+            }
+            for row in rows {
+                let parsed =
+                    SubmittedTransactionDehydrated::from_redis_strings(std::slice::from_ref(&row));
+                let Some(member) = parsed.first() else {
+                    return Err(conflict());
+                };
+                if member.transaction_id != request.transaction_id
+                    || !attempts
+                        .iter()
+                        .any(|a| a.details.hash().to_string() == member.transaction_hash)
+                {
+                    return Err(conflict());
+                }
+                submitted_witness = row.0;
+            }
+        }
         let borrowed = attempts.last().map(|a| BorrowedTransactionData {
             transaction_id: request.transaction_id.clone(),
             signed_transaction: a.details.clone(),
@@ -108,10 +142,10 @@ impl super::atomic::AtomicEoaExecutorStore {
                 if status ~= 'pending' and status ~= 'submitted' then return -1 end
                 -- A durable binding must still have a borrowed/submitted projection.
                 -- Do not let a partial pending record allocate another nonce.
-                if ARGV[5] ~= '' and redis.call('HEXISTS',KEYS[3],ARGV[1]) == 0
-                    and (redis.call('LLEN',KEYS[4]) == 0
-                        or redis.call('ZCOUNT',KEYS[5],tonumber(ARGV[5])-1,tonumber(ARGV[5])-1)==0)
-                    then return -1 end
+                if ARGV[5] ~= '' and redis.call('HEXISTS',KEYS[3],ARGV[1]) == 0 then
+                    local score = ARGV[10] ~= '' and redis.call('ZSCORE',KEYS[5],ARGV[10]) or false
+                    if score == false or tonumber(score) ~= tonumber(ARGV[5])-1 then return -1 end
+                end
                 if ARGV[5] == '' and redis.call('HEXISTS',KEYS[3],ARGV[1]) == 0 then
                     if status ~= 'pending' or redis.call('EXISTS',KEYS[4]) == 1 then return -1 end
                     local created = redis.call('HGET',KEYS[1],'created_at')
@@ -166,6 +200,7 @@ impl super::atomic::AtomicEoaExecutorStore {
         .arg(serde_json::to_string(&submitted)?)
         .arg(MAX_PENDING_TRANSACTIONS)
         .arg(self.worker_id())
+        .arg(submitted_witness)
         .invoke_async(&mut self.redis.clone())
         .await?;
         if result == -2 {
@@ -295,6 +330,27 @@ mod tests {
             .unwrap()
             .unwrap();
         assert_eq!(original.attempts.len(), 2);
+        let _: () = store
+            .redis
+            .clone()
+            .hdel(
+                store.borrowed_transactions_hashmap_name(),
+                &request.transaction_id,
+            )
+            .await
+            .unwrap();
+        let _: () = store
+            .redis
+            .clone()
+            .del(store.transaction_attempts_list_name(&request.transaction_id))
+            .await
+            .unwrap();
+        store
+            .rebuild_missing_intent(&request, Some(&key), &history)
+            .await
+            .unwrap();
+        assert_eq!(store.get_submitted_transactions_count().await.unwrap(), 2);
+
         assert_eq!(
             original.attempts[0].details.hash().to_string(),
             history[0]["transactionHash"]

@@ -766,7 +766,7 @@
     },
     {
       "path": "executors/src/eoa/store/rebuild.rs",
-      "sha256": "82910954cd27dcf794314e027e2f3b0bfb6298b4cabcbf24f4c4e82807756436",
+      "sha256": "b530b39351eab5ee8d670f2b99f7c88aab0b8fa4fc46ab1d285b09113cbbfbad",
       "models": [
         "EoaRecovery",
         "QueueRebuild"
@@ -1064,7 +1064,7 @@
     },
     "offline_queue_reconstruction": {
       "decision": "Add QueueRebuild finite model and preserve existing independent authority/retained-wire protocols.",
-      "reason": "Offline CLI holds the exclusive journal owner, verifies continuity before/after bounded inventory/projection repair, starts no workers/HTTP and never grants a send. Inventory excludes terminal/quarantine and validates canonical attempt digests/replay binding. EOA repair validates all retained wire identities, preserves the nonce floor and mutates only under the current EOA owner token; unsupported/contradictory records fail closed. Solana workers still activate retained-wire recovery and consume its permanent journal budget. Existing queue counters/order/delay survive, live leases and cancellation/terminal witnesses reject repair. A new QueueRebuild model has one positive, six fault counterexamples and a successful-repair witness; file locks, numeric/encoding bounds, Redis runtime type safety, cryptography and cross-model composition remain assumptions/implementation tests. Tagged encoding only extends previously broken colon-containing EOA IDs; ordinary and supported legacy members retain their representation."
+      "reason": "Offline CLI holds the exclusive journal owner, verifies continuity before/after bounded inventory/projection repair, starts no workers/HTTP and never grants a send. Inventory excludes terminal/quarantine and validates canonical attempt digests/replay binding. EOA repair validates all retained wire identities, preserves the nonce floor and mutates only under the current EOA owner token; unsupported/contradictory records fail closed. Solana workers still activate retained-wire recovery and consume its permanent journal budget. Existing queue counters/order/delay survive, live leases and cancellation/terminal witnesses reject repair. A new QueueRebuild model has one positive, six fault counterexamples and a successful-repair witness; file locks, numeric/encoding bounds, Redis runtime type safety, cryptography and cross-model composition remain assumptions/implementation tests. Tagged encoding only extends previously broken colon-containing EOA IDs; ordinary and supported legacy members retain their representation. An additional real-process jobs-only failure exposed a valid initial-submission boundary with no attempt-list entry. Repair now checks a bounded literal submitted member whose hash belongs to the retained history and repeats its exact score check under the EOA owner token. It still refuses absent/foreign/malformed witnesses; the test covers that valid empty-attempt-list projection."
     },
     "submitted_id_encoding": {
       "decision": "Preserve ordinary/legacy members; tag and hex-encode IDs containing colon.",
