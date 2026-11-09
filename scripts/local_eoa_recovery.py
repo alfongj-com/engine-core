@@ -54,7 +54,7 @@ def rpc(url, method, params):
     return result["result"]
 
 
-def capture_intent_hashes(journal, transaction_ids, pending_hashes):
+def capture_intent_hashes(journal, transaction_ids, pending_transactions):
     """Freeze the original journal's ID-to-hash binding before the upgrade."""
     assert len(set(transaction_ids)) == len(transaction_ids), "Duplicate original intent ID"
     by_id, owners = {}, {}
@@ -62,13 +62,34 @@ def capture_intent_hashes(journal, transaction_ids, pending_hashes):
         db.execute("BEGIN")
         for transaction_id in transaction_ids:
             attempts = db.execute("SELECT payload FROM attempts WHERE id=? ORDER BY sequence", (transaction_id,)).fetchall()
-            hashes = {json.loads(row[0])["transactionHash"].lower() for row in attempts}
+            hashes, original_nonce = set(), None
+            for row in attempts:
+                attempt = json.loads(row[0])
+                transaction_hash, nonce = attempt["transactionHash"].lower(), attempt["nonce"]
+                assert type(nonce) is int and nonce >= 0, "Invalid original attempt nonce"
+                if original_nonce is None:
+                    original_nonce = nonce
+                assert nonce == original_nonce, "Original intent changed its reserved nonce"
+                owner = (transaction_id, nonce)
+                assert transaction_hash not in owners or owners[transaction_hash] == owner, \
+                    "An original hash belongs to multiple intent IDs"
+                owners[transaction_hash] = owner
+                hashes.add(transaction_hash)
             assert hashes, "Original intent has no durable signed attempt"
-            for transaction_hash in hashes:
-                assert transaction_hash not in owners, "An original hash belongs to multiple intent IDs"
-                owners[transaction_hash] = transaction_id
             by_id[transaction_id] = hashes
-    assert set(owners) == pending_hashes, "Original durable attempts differ from Anvil's pending transactions"
+    pending_hashes, pending_owners = set(), set()
+    for transaction in pending_transactions:
+        transaction_hash = transaction["hash"].lower()
+        assert transaction_hash not in pending_hashes, "Duplicate pending transaction hash"
+        assert transaction_hash in owners, "Original durable attempts differ from Anvil's pending transactions"
+        transaction_id, nonce = owners[transaction_hash]
+        assert int(transaction["nonce"], 16) == nonce, "Pending transaction nonce differs from its durable attempt"
+        pending_hashes.add(transaction_hash)
+        pending_owners.add(transaction_id)
+    # Anvil keeps the current fee replacement, while the journal correctly
+    # retains superseded hashes too. Every unmined intent still needs its own
+    # current pending witness; all retained hashes remain valid receipt history.
+    assert pending_owners == set(transaction_ids), "Original intent has no pending signed transaction"
     return by_id
 
 
@@ -214,12 +235,11 @@ def main():
         prior_hashes = None
         if report["binary_upgrade"]:
             pending = rpc(rpc_url, "eth_getBlockByNumber", ["pending", True])
-            prior_hashes = {tx["hash"].lower() for tx in pending["transactions"]}
-            assert len(prior_hashes) == args.transactions
+            assert len(pending["transactions"]) == args.transactions
             prior_hashes = capture_intent_hashes(
                 logs / "recovery.sqlite",
                 [payload["executionOptions"]["idempotencyKey"] for payload in payloads],
-                prior_hashes,
+                pending["transactions"],
             )
         if args.live_redis_restart:
             stop(redis_process, crash=True)
