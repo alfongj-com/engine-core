@@ -357,3 +357,20 @@ With Engine stopped, `engine-recovery compact --path data/recovery.sqlite
 compacts the original without deleting any logical history. See
 [journal retention and maintenance](docs/design/journal-maintenance.md) for disk
 bounds, permanent retention and rollback limits.
+
+### Release capacity search on Linux
+
+Manually dispatch **Rust correctness gates**, select the review branch and enable
+`capacity`. The normal PR correctness jobs remain separate. One frozen release
+binary is used for all local-node trials: 12s/2s/250ms EVM profiles and Agave,
+25→50→100→200→400→800 TPS screens, then three five-minute confirmations of the
+highest passing tested rate. A drained queue alone cannot qualify a rate.
+
+The shared job verifies the individual reports and binary digest, tries their
+combined rates, and reports any reduction needed on one shared Engine/journal.
+It then runs mixed transactions with Engine crash, lost replies, RPC errors,
+Redis restart and a pre-finality reorg. SQLite FULL and Redis `always` stay enabled.
+Every trial report and storage/Redis timing snapshot is uploaded; failed fixtures
+are retained as artifacts. No public RPC or wallet funding is used. These results
+qualify the runner's tested workload; they do not establish public sequencer,
+L1 settlement, production hardware or power-loss guarantees.
