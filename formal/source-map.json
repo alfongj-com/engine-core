@@ -41,7 +41,7 @@
     },
     {
       "path": "core/src/recovery.rs",
-      "sha256": "844126c5231fec0036370f250f2ecd272cae67065e20331b593683e07b414839",
+      "sha256": "3e8bbb45445b296e37f4c9c9d3cfc2db11e9b9f742ac0aa146a693a30bb2c9ea",
       "models": [
         "DisasterRecovery",
         "Finality",
@@ -292,7 +292,7 @@
     },
     {
       "path": "executors/src/external_bundler/send.rs",
-      "sha256": "af0de44d186d91b37255e055ecf1bc87974b8d618351323cf0336e53e8d2c2bb",
+      "sha256": "e81f9af8806ff2800451431fb64723d7a1f8e6c58e8ac3f98acf2bc67a77b6f5",
       "models": [
         "DisasterRecovery"
       ]
@@ -302,7 +302,7 @@
       "models": [
         "DisasterRecovery"
       ],
-      "sha256": "10c53dfb01f76f223694a1b0df2faa8da62a9bfd2f7b2ea5385d8017128027c7"
+      "sha256": "1449ea9bb4cf97e798c9f92eb62cf385b5f7e528379205ed77774e02d63e637a"
     },
     {
       "path": "executors/src/finality.rs",
@@ -401,7 +401,7 @@
     },
     {
       "path": "scripts/local_eoa_recovery.py",
-      "sha256": "0bc81dfcd4f404c5e238558218f6c13bd13dc8f10cbf3d23b18ffa1f01fd965c",
+      "sha256": "c923086d8d20e2b1aaba4ca2e8571c5ef633b2c77bb6d5412ccb2ec4ce5d4690",
       "models": [
         "DisasterRecovery",
         "EoaRecovery"
@@ -472,7 +472,7 @@
     },
     {
       "path": "server/src/execution_router/mod.rs",
-      "sha256": "d02bd1154fe350fb915b069c9d4740f3057528339132dfc3512d9104def9db36",
+      "sha256": "26665bd1d1276f88ec0d49d801d5bd29bbe14c163240211d237c3ccf905f6e5b",
       "models": [
         "Admission",
         "DisasterRecovery",
@@ -531,7 +531,7 @@
     },
     {
       "path": "server/src/recovery.rs",
-      "sha256": "086c65f98d9dced965f5658cc79a09149c000f2253e4f2469dc28b8b5cf98985",
+      "sha256": "d33dbb9b09f2fb4aa82f963f2bada648301dc976a5a381427018207755ef5594",
       "models": [
         "DisasterRecovery",
         "DisasterRecoveryProjection",
@@ -554,7 +554,7 @@
     },
     {
       "path": "server/tests/api_safety.rs",
-      "sha256": "9544415a35ca228d1805c4234dce5781c2fb846e101e6b4393270af5ba98f3d9",
+      "sha256": "155e305f6e9d5b5c74220d505cc9a8f1397d2c7fd7e11ad146716d98f4865fce",
       "models": [
         "Admission",
         "DisasterRecovery",
@@ -622,7 +622,7 @@
     },
     {
       "path": "core/src/recovery/cancellation_tests.rs",
-      "sha256": "a09fa5cf49e8a66d950aefb96a4ede0338a2645909b5c998cf1c015d0453084b",
+      "sha256": "aec7f3893bc1d1a1c9242a4524b4406286f8b8ad321406077bc7ab652b0b589b",
       "models": [
         "DisasterRecovery",
         "IntentCancellation"
@@ -640,7 +640,7 @@
       "models": [
         "DisasterRecoveryProjection"
       ],
-      "sha256": "fd8eebfe284c32dd73c1351980e32aaca9acb4ceebc1d5a1f36635d11f2496a3"
+      "sha256": "3e5f23adffc97f4ff9e67819e4064d1f8d2afd8a4b8ea62cf91b48b64573e842"
     },
     {
       "path": "core/src/recovery/projection.rs",
@@ -701,7 +701,7 @@
       "models": [
         "DisasterRecoveryProjection"
       ],
-      "sha256": "2f6dc401112a9f419b37c0612ba35e7d58bdbd293a736974dcea7deb3831d17a"
+      "sha256": "1c86ac510b41d449c60372cc43cedb275939777ef5f67bc07a29ac448c24c4cb"
     },
     {
       "path": "twmq/src/shutdown_tests.rs",
@@ -739,7 +739,7 @@
       "models": [
         "IntentCancellation"
       ],
-      "sha256": "5a05707eedab2d3aea3ecd03cffb979610eccdca2a283aaf254b527aeae54939"
+      "sha256": "f12a5957e0aafc281bcd11953725040439f57b3abd7c160b3b04842e17feb76d"
     },
     {
       "path": "core/src/credentials.rs",
@@ -755,6 +755,22 @@
         "SolanaProcessingLease"
       ],
       "sha256": "e4a41e9040af1606ee7987ae812e9ecde4e04f1bf92358e5801c735b4e03e8ee"
+    },
+    {
+      "path": "server/src/execution_router/cancellation_tests.rs",
+      "models": [
+        "IntentCancellation",
+        "Admission"
+      ],
+      "sha256": "4d9e92d8b37e327bf10609628d92ca91b660e3b13be3c3e16741ea4949c4e608"
+    },
+    {
+      "path": "scripts/test_local_eoa_recovery.py",
+      "models": [
+        "EoaRecovery",
+        "DisasterRecovery"
+      ],
+      "sha256": "84e399d485aa66c8870157bc410c4c8fc3756bc38c16a27fabd10b50cdafd1c6"
     }
   ],
   "review": {
@@ -1030,6 +1046,20 @@
         "executors/src/solana_executor/recovery_tests.rs"
       ],
       "reason": "Queue pop attaches immutable lease key/token identity to BorrowedJob for regular and multilane queues. New Solana processing locks record that identity plus a distinct processing token. Atomic acquisition requires the current queue token and its expiring key; a known prior record may be replaced only after its queue owner is no longer live. Attempt reads/writes and final pre-RPC lock checks require both processing ownership and queue liveness, strengthening stale-worker refusal. Legacy UUID/opaque records retain conservative TTL behavior. Signed wire, admission, journal publication, grant budgets and finality/expiry policy are unchanged. Standard ERR lock-lost replies fix Redis error classification. SolanaProcessingLease abstracts the new-format conjunction of metadata and live lease key; positive invariants, two faults and an early-reclaim witness are checked. JSON/key construction, expiry timing, old-format compatibility and actual crash behavior remain executable obligations; no refinement/composition or wall-clock liveness proof is claimed."
+    }
+  },
+  "reviews": {
+    "cancelled_queue_projection": {
+      "decision": "Complete only exact, healthy, unattempted ERC4337 cancellations; reconcile intake and queue projection after durable revocation.",
+      "reason": "IntentCancellation already serializes cancellation against the first broadcast reservation. Queue projection cleanup is a crash-recoverable consequence and grants no send permission. Matching payload/fingerprint, no replay key, zero attempts and a healthy owner are required before a worker may permanently finish revoked work. Mismatches, continuity loss, attempts and halts remain retry/refusal states. Real Redis/API and serialized-journal regressions cover cancellation before queue push, interrupted queue cancellation, late work arrival, restart, mismatched payloads and attempted/halted negatives. This does not prove arbitrary queue liveness or fairness."
+    },
+    "post_reservation_capacity": {
+      "decision": "Distinguish fresh capacity rejection from a durable intent whose Redis enqueue lost a capacity race.",
+      "reason": "AdmissionPending is HTTP503 with the original transactionId; callers must retry that ID because the retained journal reservation may execute through recovery. Fresh pre-reservation overload remains429, and exact terminal retries create no new work. No reservation is deleted or quarantined to manufacture rejection. Admission/QueueRebuild retain their journal-before-projection ordering; the HTTP contract and autogenerated-ID propagation are runtime obligations. A deterministic real Redis capacity cut tests the actual failed add, immutable reservation, no prior replay binding, structured response and exactly-once subsequent publication."
+    },
+    "cross_binary_identity_witness": {
+      "decision": "Bind each upgrade receipt to its original intent-specific retained hashes, rather than a global hash set.",
+      "reason": "EoaRecovery retains an intent/replay/wire binding across restart. The process oracle must reject swapped IDs, shared hashes, missing identity evidence and pending-node disagreement even if the global set of hashes is unchanged. The new helper checks the original journal snapshot before crash and each receipt after the binary change. Offline negative cases exercise these confusions; a four-CREATE old#10-to-runtime#17 process run passed with Engine/Redis SIGKILL and AOF replay. This validates a recorded runtime pair, not every later runtime or host power-loss recovery."
     }
   }
 }
