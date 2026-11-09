@@ -1,5 +1,7 @@
 import copy
 from collections import Counter
+from contextlib import redirect_stderr
+import io
 import json
 from pathlib import Path
 import tempfile
@@ -7,7 +9,7 @@ import threading
 from types import SimpleNamespace
 import unittest
 
-from capacity_sweep import NoQualifiedRate, PROFILES, Sweep, closed_trial, eligible, selected_rates
+from capacity_sweep import NoQualifiedRate, PROFILES, Sweep, arguments, closed_trial, eligible, selected_rates
 
 
 class QualificationTests(unittest.TestCase):
@@ -106,7 +108,7 @@ class PlannedSweep(Sweep):
     """Exercise the real bounded search with explicit trial outcomes; no nodes."""
     def __init__(self, directory, candidates):
         self.output = Path(directory)
-        self.args = SimpleNamespace(profile="solana", individuals=self.output / "individuals")
+        self.args = SimpleNamespace(profile="solana", individuals=self.output / "individuals", max_screen_rate=800)
         self.binary_sha = "fixed"
         self.summary = {"trials": []}
         self.candidates = iter(candidates)
@@ -135,6 +137,44 @@ class PlannedSweep(Sweep):
 
 
 class SearchTests(unittest.TestCase):
+    def test_restricted_screen_confirms_ceiling_without_offering_above_it(self):
+        with tempfile.TemporaryDirectory() as directory:
+            sweep = PlannedSweep(directory, [True] * 5)
+            sweep.args.max_screen_rate = 100
+            sweep.individual()
+            self.assertEqual([rates["solana"] for rates, _ in sweep.calls], [25, 50, 100, 100, 100])
+            saved = json.loads((Path(directory) / "summary.json").read_text())
+            self.assertEqual(saved["qualified_tps"], 100)
+            self.assertEqual(saved["configured_search_ceiling_tps"], 100)
+            self.assertTrue(saved["search_ceiling_reached"])
+            self.assertEqual(len(saved["confirmation_reports"]), 3)
+
+    def test_default_search_still_screens_every_existing_candidate(self):
+        with tempfile.TemporaryDirectory() as directory:
+            sweep = PlannedSweep(directory, [True] * 8)
+            sweep.individual()
+            self.assertEqual([rates["solana"] for rates, _ in sweep.calls], [25, 50, 100, 200, 400, 800, 800, 800])
+            self.assertEqual(sweep.summary["configured_search_ceiling_tps"], 800)
+            self.assertTrue(sweep.summary["search_ceiling_reached"])
+
+    def test_screening_argument_rejects_invalid_candidates_before_any_fixture(self):
+        common = ["individual", "--profile", "solana", "--engine-bin", "/unused/engine",
+                  "--solana-bin-dir", "/unused/solana", "--output", "/unused/output"]
+        self.assertEqual(arguments(common).max_screen_rate, 800)
+        self.assertEqual(arguments(common + ["--max-screen-rate", "100"]).max_screen_rate, 100)
+        for value in ("0", "-1", "12", "101", "1600"):
+            with self.subTest(value=value), redirect_stderr(io.StringIO()), self.assertRaises(SystemExit) as raised:
+                arguments(common + ["--max-screen-rate", value])
+            self.assertEqual(raised.exception.code, 2)
+        with tempfile.TemporaryDirectory() as directory:
+            args = arguments(common)
+            args.output = Path(directory) / "must-not-be-created"
+            for value in (0, -1, 12, 101, True):
+                args.max_screen_rate = value
+                with self.subTest(value=value), self.assertRaises(ValueError):
+                    Sweep(args)
+                self.assertFalse(args.output.exists())
+
     def test_failed_twelve_confirmation_still_tests_and_confirms_six(self):
         with tempfile.TemporaryDirectory() as directory:
             sweep = PlannedSweep(directory, [False, True, False, True, True, True])

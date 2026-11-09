@@ -124,6 +124,8 @@ def closed_trial(report):
 
 class Sweep:
     def __init__(self, args):
+        if type(args.max_screen_rate) is not int or args.max_screen_rate not in RATES:
+            raise ValueError("Screening ceiling must be one of the existing rate candidates")
         self.args = args
         self.output = args.output.resolve()
         self.output.mkdir(mode=0o700, parents=True, exist_ok=False)
@@ -134,6 +136,9 @@ class Sweep:
                         "platform": platform.platform(), "logical_cpus": os.cpu_count(),
                         "seconds_per_trial": 300, "late_window_seconds": 180,
                         "redis_fsync": "always", "trials": []}
+        if args.mode == "individual":
+            self.summary["configured_search_ceiling_tps"] = args.max_screen_rate
+            self.summary["search_scope"] = "Highest qualifying tested candidate within the configured ceiling; not an absolute maximum"
 
     def save(self):
         temporary = self.output / ".summary.tmp"
@@ -188,9 +193,12 @@ class Sweep:
         return row
 
     def individual(self):
-        self.summary.update(profile=self.args.profile, qualified_tps=None, confirmation_reports=[])
+        self.summary.update(profile=self.args.profile, qualified_tps=None, confirmation_reports=[],
+                            configured_search_ceiling_tps=self.args.max_screen_rate)
         candidates = []
         for rate in RATES:
+            if rate > self.args.max_screen_rate:
+                break
             row = self.trial({self.args.profile: rate})
             if not row["capacity_candidate"]:
                 break
@@ -217,7 +225,7 @@ class Sweep:
             if not row["capacity_candidate"]:
                 return False
         self.summary.update(qualified_tps=rate, confirmation_reports=[row["report"] for row in repeats],
-                            search_ceiling_reached=rate == RATES[-1])
+                            search_ceiling_reached=rate == self.args.max_screen_rate)
         return True
 
     def shared(self):
@@ -264,7 +272,7 @@ class Sweep:
         raise NoQualifiedRate("No shared rate passed three confirmations")
 
 
-def main():
+def arguments(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("mode", choices=("individual", "shared"))
     parser.add_argument("--profile", choices=PROFILES)
@@ -272,9 +280,16 @@ def main():
     parser.add_argument("--engine-bin", required=True, type=Path)
     parser.add_argument("--solana-bin-dir", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
-    args = parser.parse_args()
+    parser.add_argument("--max-screen-rate", type=int, choices=RATES, default=RATES[-1],
+                        help="Individual screening ceiling in TPS; a bounded search, not an absolute maximum")
+    args = parser.parse_args(argv)
     if (args.mode == "individual" and not args.profile) or (args.mode == "shared" and not args.individuals):
         parser.error("individual needs --profile; shared needs --individuals")
+    return args
+
+
+def main():
+    args = arguments()
     sweep = Sweep(args)
     try:
         getattr(sweep, args.mode)()
