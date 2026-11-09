@@ -118,7 +118,7 @@
     },
     {
       "path": "executors/src/eoa/store/atomic.rs",
-      "sha256": "c08a8f326b7df869f5f7f20b3a161d62d409ddaacb4103f580a7c56c43a51113",
+      "sha256": "e64763d3025668143b3d826636377bf0dfa272089c9f3e78fe7d96fa411d5274",
       "models": [
         "DisasterRecovery",
         "EoaRecovery",
@@ -142,7 +142,7 @@
     },
     {
       "path": "executors/src/eoa/store/mod.rs",
-      "sha256": "12fccecb4493cec2fc0e541970bfd1e1d1c58640a197fec4716dc0f915d73ba2",
+      "sha256": "5c411e7c3f71397b7ff4b237fd28e8699c77072011348f3571bf7b968d44e0ff",
       "models": [
         "DisasterRecovery",
         "EoaRecovery",
@@ -189,7 +189,7 @@
     },
     {
       "path": "executors/src/eoa/worker/error.rs",
-      "sha256": "18f84ef51315db240981574bc13b3c11f7edb7ff89a5c1ff9dacf99155e30560",
+      "sha256": "065858f440b602838b5d4fab295ded4f70a3e46f945f0aa0d17f28e6d4a4d72d",
       "models": [
         "EoaRecovery"
       ]
@@ -227,7 +227,7 @@
     },
     {
       "path": "executors/src/eoa/worker/mod.rs",
-      "sha256": "6e9d03ecb5bf8bbae076e54516fa83d157eb41e071cd47915c6c0976ff700ee9",
+      "sha256": "53e8fc99576f7f0f9fcda760b41a625e58a899dcf3479385fa31f12b9db7afba",
       "models": [
         "DisasterRecovery",
         "EoaRecovery",
@@ -252,7 +252,7 @@
     },
     {
       "path": "executors/src/eoa/worker/send.rs",
-      "sha256": "8721df1dbd35c32fbb521b3313627885e38017eec5b2f2d820ff3034fa829bfc",
+      "sha256": "6dfb02a82622eeca5e5561b003b1feace9f529616be5add76a24516b5c205852",
       "models": [
         "DisasterRecovery",
         "EoaRecovery",
@@ -261,7 +261,7 @@
     },
     {
       "path": "executors/src/eoa/worker/send_dispatch_tests.rs",
-      "sha256": "12144e1809b762dcf8956fc4c66761c9a180dc55716f745807051d16eb731ae9",
+      "sha256": "8284268ef71bdb0119fadc9bf57280fcf13aea4ef11d58d4f5d3dc8fe1c02670",
       "models": [
         "EoaRecovery",
         "DisasterRecovery"
@@ -278,7 +278,7 @@
     },
     {
       "path": "executors/src/eoa/worker/transaction.rs",
-      "sha256": "4341e5cd0968aeb48c2ab15388993da50a249c999a0c1142d4e118db4075201e",
+      "sha256": "64c670e416d439df6de5ce32ac28d2f6b53a7dfa27893abf52ea9b758e66ba8c",
       "models": [
         "DisasterRecovery",
         "Fees",
@@ -641,9 +641,11 @@
     {
       "path": "core/src/error.rs",
       "models": [
-        "DisasterRecoveryProjection"
+        "DisasterRecoveryProjection",
+        "EoaRecovery",
+        "EoaPreparationFailure"
       ],
-      "sha256": "3e5f23adffc97f4ff9e67819e4064d1f8d2afd8a4b8ea62cf91b48b64573e842"
+      "sha256": "103edf434760a66355f05bfcb9f57b416a7da9bf8bb473d307e7e4f98969ba80"
     },
     {
       "path": "core/src/recovery/projection.rs",
@@ -832,7 +834,7 @@
       "models": [
         "EoaPreparationFailure"
       ],
-      "sha256": "5dd955640ed8208577ce0261f968a331b599c78444a90fa569c0bcc0ab70fd68"
+      "sha256": "bb708dd73fe0e1f8268f9ac78fb72f667d1f23f7370968e400af7cc727c0e517"
     },
     {
       "path": "scripts/local_eoa_preparation_failure.py",
@@ -840,6 +842,38 @@
         "EoaPreparationFailure"
       ],
       "sha256": "f0f97ba93efb7c43dd438dc657b7eb73af955368634ddadc24fdfa130bd3dada"
+    },
+    {
+      "path": "core/src/signer.rs",
+      "sha256": "ae80e28460b1ad782e9fc42c276c191dd1e5b7e72a78fb6e1e5218fe88a81870",
+      "models": [
+        "EoaRecovery",
+        "EoaPreparationFailure"
+      ]
+    },
+    {
+      "path": "core/tests/aws_kms_protocol.rs",
+      "sha256": "d45c0cba661f2f355ba7d067183fea6f3218d1203f294463097ad8279dc88f0d",
+      "models": [
+        "EoaRecovery",
+        "EoaPreparationFailure"
+      ]
+    },
+    {
+      "path": "executors/src/eoa/worker/send_failure_progress_tests.rs",
+      "models": [
+        "EoaRecovery",
+        "EoaPreparationFailure"
+      ],
+      "sha256": "8202e9fd21fa698c48f871d94b4d573b270714ffc0a4d480ca5d13aeeae0e0a2"
+    },
+    {
+      "path": "executors/src/eoa/worker/send_kms_service_tests.rs",
+      "models": [
+        "EoaRecovery",
+        "EoaPreparationFailure"
+      ],
+      "sha256": "b3afb461683f73193479cb6b25054e5b4ba3946cafe01ea006111a2d0c0960fe"
     }
   ],
   "review": {
@@ -1152,7 +1186,8 @@
     }
   },
   "review_notes": {
-    "durable_unsigned_preparation_failure": "A permanent EOA preparation failure requires exact admitted payload, no replay key and no attempts under owned journal serialization before Redis failed status or webhook. Retained original negative evidence resumes publication after a crash; attempted, quarantined and unrelated terminal outcomes cannot be rejected. Seven finite protocol cases include original Redis-only resurrection and attempted-work mutation counterexamples, plus reachable recovery/broadcast winners. Rust/Redis/process tests cover implementation separately; old expired Redis-only failures cannot be inferred. No refinement/composition proof.",
-    "kms_unsigned_retry": "Preserve nested Alloy/AWS typed causes; unsigned SDK transport/service/unknown failures remain retryable under the existing bounded preparation loop, while construction/input/cryptographic errors are permanent. Actual loopback SDK503\u2192same-input recovery and typed malformed signatures plus real Redis/worker no-terminal\u2192successful nonce0 retry cover the boundary; no AWS account/IAM/quota qualification."
+    "durable_unsigned_preparation_failure": "An unsigned permanent EOA rejection requires exact admitted payload, no replay key and no attempts under owned FULL journal serialization before Redis failure/TTL/webhook. Batch refusals are per intent: eligible failures publish, uncertain entries retain authority and exact already-terminal entries lose only stale scheduling. Storage, continuity and owner errors still abort. Real mixed-workflow regressions exercise continued confirmation, identical-wire rebroadcast and a fresh terminal queue head; the seven finite protocol cases preserve the authority order but do not model arbitrary batch liveness or prove implementation refinement. Legacy expired Redis-only failures cannot be inferred.",
+    "kms_unsigned_retry": "Nested Alloy/AWS causes retain typed SDK code and HTTP status. Known auth/key/request codes are permanent only with a matching non408/non429 4xx; transport, 5xx, throttling, temporary KMS and unknown/legacy errors retry conservatively. Distinct nested error tags round-trip through retained failure evidence. Actual SDK vectors cover503 same-input recovery, permanent auth/key responses and signature errors; a real Redis/worker regression covers denied head, interrupted failure publication and later healthy nonce0 work. No AWS account/IAM/quota or cryptographic proof is claimed.",
+    "kms_source_boundary": "Signer conversion and actual SDK protocol tests are guarded as implementation obligations of unsigned failure classification. The finite EOA models abstract successful preparation and errors; they do not prove AWS metadata, DER/SPKI parsing, signature recovery or signer identity."
   }
 }

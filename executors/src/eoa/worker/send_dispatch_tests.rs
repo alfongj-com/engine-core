@@ -47,6 +47,9 @@ mod preparation_failure_tests;
 #[path = "send_failure_progress_tests.rs"]
 mod failure_progress_tests;
 
+#[path = "send_kms_service_tests.rs"]
+mod kms_service_tests;
+
 fn child(test: &str) -> bool {
     const FLAG: &str = "ENGINE_EOA_DISPATCH_TEST_CHILD";
     if std::env::var(FLAG).as_deref() == Ok(test) {
