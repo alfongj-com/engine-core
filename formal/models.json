@@ -640,5 +640,53 @@
     "config": "SolanaProcessingLease_reclaim_witness.cfg",
     "expected": "invariant:DeadOwnerReclaimNotReached",
     "kind": "witness"
+  },
+  {
+    "module": "QueueRebuild",
+    "config": "QueueRebuild.cfg",
+    "expected": "pass",
+    "kind": "positive"
+  },
+  {
+    "module": "QueueRebuild",
+    "config": "QueueRebuild_revive.cfg",
+    "expected": "invariant:AuthorityRequired",
+    "kind": "fault"
+  },
+  {
+    "module": "QueueRebuild",
+    "config": "QueueRebuild_halt.cfg",
+    "expected": "invariant:AuthorityRequired",
+    "kind": "fault"
+  },
+  {
+    "module": "QueueRebuild",
+    "config": "QueueRebuild_lease.cfg",
+    "expected": "invariant:LeasePreserved",
+    "kind": "fault"
+  },
+  {
+    "module": "QueueRebuild",
+    "config": "QueueRebuild_resign.cfg",
+    "expected": "invariant:IdentityPreserved",
+    "kind": "fault"
+  },
+  {
+    "module": "QueueRebuild",
+    "config": "QueueRebuild_permission.cfg",
+    "expected": "invariant:NoPermissionFromRepair",
+    "kind": "fault"
+  },
+  {
+    "module": "QueueRebuild",
+    "config": "QueueRebuild_budget.cfg",
+    "expected": "invariant:RecoveryBudgetBounded",
+    "kind": "fault"
+  },
+  {
+    "module": "QueueRebuild",
+    "config": "QueueRebuild_witness.cfg",
+    "expected": "invariant:RepairNotReached",
+    "kind": "witness"
   }
 ]

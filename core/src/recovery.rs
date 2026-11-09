@@ -29,6 +29,9 @@ struct SerialGuard<'a> {
 
 static GLOBAL: OnceLock<Arc<RecoveryJournal>> = OnceLock::new();
 const SCHEMA: i64 = 3;
+#[path = "recovery/inventory.rs"]
+mod inventory;
+pub use inventory::RebuildRecord;
 #[path = "recovery/operations.rs"]
 mod operations;
 #[path = "recovery/projection.rs"]

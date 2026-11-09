@@ -106,8 +106,10 @@ claim. In particular, the first Solana attempt can be bound in SQLite before its
 Redis attempt is stored. The worker can reconstruct that missing attempt from
 the exact retained journal record under its storage lock. It validates the signed
 bytes and durably bounds recovery sends; it never rebuilds or re-signs the request.
-Conflicting or quarantined records remain blocked. Missing queue jobs and unknown
-chain outcomes still require separate reconciliation. See
+Conflicting or quarantined records remain blocked. Missing queue jobs can be rebuilt offline from eligible journal records with
+`thirdweb-engine --rebuild-queues`; terminal/quarantined and unsupported records
+remain blocked. See [queue reconstruction](queue-reconstruction.md). Unknown
+chain outcomes still require their existing reconciliation policy. See
 [retained Solana recovery](retained-solana-recovery.md).
 Ordinary Redis persistence remains necessary for availability.
 

@@ -18,6 +18,7 @@ mod pending;
 mod submitted;
 
 pub mod hydrate;
+mod rebuild;
 
 pub mod error;
 pub use atomic::AtomicEoaExecutorStore;

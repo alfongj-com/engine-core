@@ -63,6 +63,8 @@ jobs:
         run: cargo test --locked -p thirdweb-engine --lib -- --ignored --test-threads=1 --skip solana_admission::bench::initialized_admission_backlog_regression
       - name: HTTP authorization and admission integration
         run: cargo test --locked -p thirdweb-engine --test api_safety -- --ignored
+      - name: Offline queue reconstruction ownership and conflict regressions
+        run: cargo test --locked -p thirdweb-engine --bin thirdweb-engine queue_rebuild::tests -- --ignored --test-threads=1
       - name: Queue lease and acknowledgement race regressions
         run: cargo test --locked -p twmq --lib -- --ignored
       - name: Install pinned local EVM
@@ -75,6 +77,10 @@ jobs:
         run: |
           cargo build --locked --bin thirdweb-engine
           ANVIL_BIN=/tmp/engine-foundry/anvil python3 scripts/local_eoa_recovery.py --report /tmp/local-eoa-recovery.json
+      - name: Reconstruct missing EOA jobs and signed projections
+        run: |
+          ANVIL_BIN=/tmp/engine-foundry/anvil python3 scripts/local_eoa_recovery.py --transactions 8 --rebuild-queues --report /tmp/local-eoa-rebuild.json
+          ANVIL_BIN=/tmp/engine-foundry/anvil python3 scripts/local_eoa_recovery.py --transactions 8 --rebuild-jobs-only --report /tmp/local-eoa-rebuild-jobs.json
       - name: Redis AOF crash recovery
         run: ANVIL_BIN=/tmp/engine-foundry/anvil python3 scripts/local_eoa_recovery.py --redis-crash --report /tmp/local-eoa-redis-crash.json
       - name: Reverted execution and Redis crash recovery
@@ -97,6 +103,8 @@ jobs:
           tar xjf /tmp/solana.tar.bz2 -C /tmp/engine-solana
       - name: Solana accepted-send response loss and process recovery
         run: python3 scripts/local_solana_recovery.py --solana-bin-dir /tmp/engine-solana/solana-release/bin --rust-log debug --report /tmp/local-solana-recovery.json
+      - name: Reconstruct missing Solana jobs, admission and signed projections
+        run: python3 scripts/local_solana_recovery.py --solana-bin-dir /tmp/engine-solana/solana-release/bin --transactions 8 --drop-attempts-on-restart --rebuild-queues --rust-log debug --report /tmp/local-solana-rebuild.json
       - name: Single payer Solana load and finality drain (local debug build)
         run: python3 scripts/local_solana_throughput.py --engine-bin "$PWD/target/debug/thirdweb-engine" --solana-bin-dir /tmp/engine-solana/solana-release/bin --rate 50 --seconds 20 --redis-fsync everysec --drain-seconds 120 --report /tmp/local-solana-throughput.json
       - name: Preserve local-chain scenario reports
