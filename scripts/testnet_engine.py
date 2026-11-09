@@ -31,7 +31,12 @@ def provenance(binary, source_commit, harness):
 
 
 def require_resume_provenance(saved, current):
-    """Resume the recorded experiment, without silently relabeling its code."""
+    """Resume the recorded experiment, without silently relabeling its code.
+
+    The source commit is an optional caller declaration, not build attestation.
+    A null declaration stays unknown; the exact binary digest and harness pins
+    remain mandatory. Source-specific qualification must supply its build commit.
+    """
     fields = ("engine_binary_path", "engine_binary_sha256", "declared_binary_source_commit",
               "harness_source_commit", "harness_sha256", "process_helper_sha256")
     if not isinstance(saved, dict) or any(field not in saved for field in fields):

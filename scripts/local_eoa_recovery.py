@@ -53,6 +53,29 @@ def rpc(url, method, params):
         raise AssertionError(f"{method}: {result['error']}")
     return result["result"]
 
+
+def capture_intent_hashes(journal, transaction_ids, pending_hashes):
+    """Freeze the original journal's ID-to-hash binding before the upgrade."""
+    assert len(set(transaction_ids)) == len(transaction_ids), "Duplicate original intent ID"
+    by_id, owners = {}, {}
+    with sqlite3.connect(f"file:{Path(journal).resolve()}?mode=ro", uri=True) as db:
+        db.execute("BEGIN")
+        for transaction_id in transaction_ids:
+            attempts = db.execute("SELECT payload FROM attempts WHERE id=? ORDER BY sequence", (transaction_id,)).fetchall()
+            hashes = {json.loads(row[0])["transactionHash"].lower() for row in attempts}
+            assert hashes, "Original intent has no durable signed attempt"
+            for transaction_hash in hashes:
+                assert transaction_hash not in owners, "An original hash belongs to multiple intent IDs"
+                owners[transaction_hash] = transaction_id
+            by_id[transaction_id] = hashes
+    assert set(owners) == pending_hashes, "Original durable attempts differ from Anvil's pending transactions"
+    return by_id
+
+
+def verify_original_receipt(transaction_id, receipt, original_hashes):
+    assert receipt["transactionHash"].lower() in original_hashes.get(transaction_id, set()), \
+        "Upgrade changed the original intent-to-transaction binding"
+
 def until(check, timeout=45):
     deadline = time.monotonic() + timeout
     last = None
@@ -193,6 +216,11 @@ def main():
             pending = rpc(rpc_url, "eth_getBlockByNumber", ["pending", True])
             prior_hashes = {tx["hash"].lower() for tx in pending["transactions"]}
             assert len(prior_hashes) == args.transactions
+            prior_hashes = capture_intent_hashes(
+                logs / "recovery.sqlite",
+                [payload["executionOptions"]["idempotencyKey"] for payload in payloads],
+                prior_hashes,
+            )
         if args.live_redis_restart:
             stop(redis_process, crash=True)
             def live_halted():
@@ -239,7 +267,7 @@ def main():
                 if data and data.get("receipt"):
                     assert data["receipt"]["status"] == ("0x0" if args.revert else "0x1"), data["receipt"]
                     if prior_hashes is not None:
-                        assert data["receipt"]["transactionHash"].lower() in prior_hashes, "Upgrade replaced an original signed transaction"
+                        verify_original_receipt(txid, data["receipt"], prior_hashes)
                     if args.create:
                         # Concurrent admissions need not receive nonces in
                         # caller order. Derive the expected address from the
@@ -262,6 +290,7 @@ def main():
         until(confirmations)
         if prior_hashes is not None:
             report["retained_transaction_hashes_verified"] = True
+            report["original_intent_hash_bindings_verified"] = True
         with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
             list(pool.map(send, payloads))
         time.sleep(2)

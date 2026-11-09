@@ -2,7 +2,7 @@
 
 ## Problem
 
-Solana jobs have a renewable queue lease and a separate 120-second processing
+Solana jobs have a fixed queue lease and a separate 120-second processing
 lock. After Engine dies, the queue can reassign a job before that lock expires.
 A signed transaction can expire while its replacement worker waits. A local
 three-chain crash run reproduced this delay and parked an unknown outcome.
@@ -34,10 +34,17 @@ workers gracefully before upgrading where possible; a crash of an old worker
 can still impose the old TTL. Never delete ambiguous locks to force progress or
 sign a replacement for an expired transaction with an unknown outcome.
 
-The queue must renew leases while jobs run. A long queue lease, Redis outage or
-slow restart can still exceed Solana's blockhash validity window. This is no
-deadline guarantee. Redis is the existing single-instance queue authority; this
-does not add Redis Cluster or multi-host journal support.
+The queue sets the lease TTL on pop and does not renew it. Keep
+`queue.lease_duration_seconds` above the worker's 90-second processing deadline
+with time for journal writes and fenced completion; the server default is 600
+seconds. A shorter lease can expire while the original worker is alive. Its
+stale writes/completion are refused, and only a live replacement can reconcile
+the retained attempt; this prevents stale ownership but may delay progress.
+
+A long queue lease, Redis outage or slow restart can still exceed Solana's
+blockhash validity window. This is no deadline guarantee. Redis is the existing
+single-instance queue authority; this does not add Redis Cluster or multi-host
+journal support.
 
 ## Verification
 

@@ -62,6 +62,16 @@ class EngineSetupTests(unittest.TestCase):
             self.assertEqual(spawn.call_args.args[0], [str(self.binary.resolve()), "--reattach-recovery"])
             self.assertEqual(spawn.call_count, 2)
 
+    def test_unknown_source_stays_explicit_without_weakening_binary_identity(self):
+        evidence = provenance(self.binary, None, __file__)
+        self.assertIsNone(evidence["declared_binary_source_commit"])
+        require_resume_provenance(evidence, dict(evidence))
+        self.assertIsNone(evidence["declared_binary_source_commit"])
+        for field in ["engine_binary_sha256", "harness_sha256", "process_helper_sha256"]:
+            with self.subTest(field=field):
+                with self.assertRaisesRegex(RuntimeError, "Resume provenance changed"):
+                    require_resume_provenance(evidence, {**evidence, field:"changed"})
+
     def test_refused_reattach_never_falls_back_to_initialize(self):
         (self.directory / "recovery.sqlite").touch()
         with patch("testnet_engine.subprocess.run") as spawn:
