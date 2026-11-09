@@ -10,6 +10,14 @@ pub(super) fn publish_private(
     output: &Path,
     write: impl FnOnce(&mut File) -> Result<()>,
 ) -> Result<()> {
+    publish_private_path(output, |_, file| write(file))
+}
+
+/// SQLite snapshots need the temporary pathname as well as its private file.
+pub(super) fn publish_private_path(
+    output: &Path,
+    write: impl FnOnce(&Path, &mut File) -> Result<()>,
+) -> Result<()> {
     prepare_directory(output, false)?;
     let parent = output
         .parent()
@@ -26,7 +34,7 @@ pub(super) fn publish_private(
     }
     let mut file = private_new_file(&temporary)?;
     let pending = PendingExport(temporary);
-    write(&mut file)?;
+    write(&pending.0, &mut file)?;
     file.sync_all()?;
     fs::hard_link(&pending.0, output)?;
     fs::remove_file(&pending.0)?;
