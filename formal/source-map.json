@@ -41,13 +41,14 @@
     },
     {
       "path": "core/src/recovery.rs",
-      "sha256": "4b3349ef5afe100eebc4ab61616ff685315e185265258b1fa29cd36172e17c21",
+      "sha256": "ea5281a6c3e2248cc85a99d4a57732e5c9c0939f0dcf7fae43e0ba19e3a8d097",
       "models": [
         "DisasterRecovery",
         "Finality",
         "EoaRecovery",
         "DisasterRecoveryProjection",
-        "SolanaRetainedAttempt"
+        "SolanaRetainedAttempt",
+        "IntentCancellation"
       ]
     },
     {
@@ -527,10 +528,11 @@
     },
     {
       "path": "server/src/recovery.rs",
-      "sha256": "827eeb571f7f46061d42b66c4b58ffd81a4849f6fec52048b8467b08e2814af8",
+      "sha256": "086c65f98d9dced965f5658cc79a09149c000f2253e4f2469dc28b8b5cf98985",
       "models": [
         "DisasterRecovery",
-        "DisasterRecoveryProjection"
+        "DisasterRecoveryProjection",
+        "IntentCancellation"
       ]
     },
     {
@@ -549,11 +551,12 @@
     },
     {
       "path": "server/tests/api_safety.rs",
-      "sha256": "1cc6ccc9ba7fcefe4787b41eb1ac52a9b93fc383616ded300048760e4ed835da",
+      "sha256": "a1e4ea1b20f543a976090d27328a4c1e0b87541da2e5f97d45122ff16c489315",
       "models": [
         "Admission",
         "DisasterRecovery",
-        "SolanaRecovery"
+        "SolanaRecovery",
+        "IntentCancellation"
       ]
     },
     {
@@ -614,9 +617,10 @@
     },
     {
       "path": "core/src/recovery/cancellation_tests.rs",
-      "sha256": "6c1d94ed0cd8bd35918878a9222bf89a5ce1661033896f970d677f536b1a24c8",
+      "sha256": "a09fa5cf49e8a66d950aefb96a4ede0338a2645909b5c998cf1c015d0453084b",
       "models": [
-        "DisasterRecovery"
+        "DisasterRecovery",
+        "IntentCancellation"
       ]
     },
     {
@@ -724,6 +728,13 @@
         "DisasterRecovery"
       ],
       "sha256": "d26c506a82e05af0453c6364c52a02ee5a7e33b7daa64d2825c46631701a8237"
+    },
+    {
+      "path": "server/src/http/routes/transaction.rs",
+      "models": [
+        "IntentCancellation"
+      ],
+      "sha256": "5a05707eedab2d3aea3ecd03cffb979610eccdca2a283aaf254b527aeae54939"
     }
   ],
   "review": {
@@ -948,6 +959,18 @@
         "scripts/local_eoa_recovery.py"
       ],
       "reason": "Preparation explicitly selects CREATE or CALL, preserves legacy estimation, and rejects out-of-range gas rather than overflowing. Durable replay keys, broadcast authorization, fee-bump arithmetic and finality are unchanged. Existing models and bounds are unchanged; they do not prove Alloy construction or RPC gas arithmetic. Executable regressions cover signed CREATE identity and hostile estimates. The local Engine/Redis/Anvil harness checks deployed runtime, predicted addresses, value, crash recovery and duplicate retries."
+    },
+    "durable_cancellation_nov08": {
+      "date": "2026-11-08",
+      "base_commit": "0255e967b1fb2f1c9c5e33d87368aa5be1cf098f",
+      "paths": [
+        "core/src/recovery.rs",
+        "core/src/recovery/cancellation_tests.rs",
+        "server/src/http/routes/transaction.rs",
+        "server/src/recovery.rs",
+        "server/tests/api_safety.rs"
+      ],
+      "reason": "Cancellation checks unsigned status and moves the intent to existing quarantined state in one FULL authority transaction before queue mutation. It shares serialization with before_broadcast; existing replay/attempt evidence prevents cancellation. The owned task retains publication through caller cancellation. No schema, counter, retained-wire or finality-policy changes. Payload validation reuses one admitted-record snapshot instead of two reads; broadcast still revalidates current authority. IntentCancellation checks this new linearization protocol and its old cached-read counterexample; it is not a refinement or composition proof. Existing crash/rollback/source guards and executable tests remain required."
     }
   }
 }
